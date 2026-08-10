@@ -33,4 +33,6 @@ build/
 
 # Local files
 /AGENTS.md
-/.env
+.env
+.env.*
+!.env.example
