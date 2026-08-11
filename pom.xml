@@ -108,6 +108,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- JPA slice tests (separater Test-Starter seit Spring Boot 4) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Security Tests -->
         <dependency>
             <groupId>org.springframework.security</groupId>
