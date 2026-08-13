@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><title>Aufgabe – ProjectFlow</title></head>
+<body><main>
+<a th:href="@{/projects/{id}(id=${task.planContainerId})}">Zum Projektplan</a>
+<h1 th:text="${task.title}">Aufgabe</h1>
+<p th:text="${task.description}"></p>
+<p th:if="${task.affectedDependencyCount > 0}">Beim Löschen werden <span th:text="${task.affectedDependencyCount}"></span> Abhängigkeiten entfernt.</p>
+<form th:if="${task.editable}" th:action="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}" th:object="${taskForm}" method="post">
+    <input type="hidden" th:field="*{lockVersion}"><input type="hidden" th:field="*{sortOrder}">
+    <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
+    <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
+    <label for="status">Status</label><select id="status" th:field="*{status}"><option value="OPEN">Offen</option><option value="IN_PROGRESS">In Bearbeitung</option><option value="COMPLETED">Erledigt</option></select>
+    <label for="priority">Priorität</label><select id="priority" th:field="*{priority}"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option></select>
+    <label for="section">Phase</label><select id="section" th:field="*{planSectionId}"><option value="">Ohne Phase</option><option th:each="section : ${task.availableSections}" th:value="${section.id}" th:text="${section.title}"></option></select>
+    <label for="startDate">Startdatum</label><input id="startDate" type="date" th:field="*{startDate}">
+    <label for="dueDate">Fälligkeitsdatum</label><input id="dueDate" type="date" th:field="*{dueDate}">
+    <label for="assignee">Zuständigkeit</label><select id="assignee" th:field="*{assigneeId}"><option value="">Nicht zugewiesen</option><option th:each="member : ${task.availableAssignees}" th:value="${member.id}" th:text="${member.displayName}"></option></select>
+    <button type="submit">Aufgabe speichern</button>
+</form>
+<form th:if="${task.editable}" th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post">
+    <button type="submit">Aufgabe endgültig löschen</button>
+</form>
+</main></body></html>

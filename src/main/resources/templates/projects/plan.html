@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title th:text="${plan.project.title} + ' – ProjectFlow'">Projektplan</title></head>
+<body><main>
+<a th:href="@{/projects}">Zur Projektübersicht</a>
+<h1 th:text="${plan.project.title}">Projekt</h1>
+<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
+<p th:unless="${plan.editable}">Dieses Projekt ist schreibgeschützt.</p>
+
+<section><h2>Phasen</h2>
+    <article th:each="section : ${plan.sections}">
+        <h3 th:text="${section.title}"></h3>
+        <p><span th:text="${section.taskCount}"></span> Aufgaben, <span th:text="${section.milestoneCount}"></span> Meilensteine</p>
+        <ol>
+            <li th:each="element : ${section.elements}">
+                <a th:if="${element.type.name() == 'TASK'}" th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}" th:text="${element.title}"></a>
+                <a th:if="${element.type.name() == 'MILESTONE'}" th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}" th:text="${element.title}"></a>
+                <span th:if="${element.relevantDate}" th:text="${element.relevantDate}"></span>
+            </li>
+        </ol>
+        <div th:if="${plan.editable}">
+            <form th:action="@{/projects/{projectId}/sections/{sectionId}/edit(projectId=${plan.project.id},sectionId=${section.id})}" method="post">
+                <input type="hidden" name="lockVersion" th:value="${section.lockVersion}">
+                <label th:for="${'section-title-' + section.id}">Titel</label>
+                <input th:id="${'section-title-' + section.id}" name="title" th:value="${section.title}" required maxlength="100">
+                <label th:for="${'section-description-' + section.id}">Beschreibung</label>
+                <textarea th:id="${'section-description-' + section.id}" name="description" maxlength="2000" th:text="${section.description}"></textarea>
+                <label th:for="${'section-start-' + section.id}">Start</label>
+                <input th:id="${'section-start-' + section.id}" type="date" name="startDate" th:value="${section.startDate}">
+                <label th:for="${'section-end-' + section.id}">Ende</label>
+                <input th:id="${'section-end-' + section.id}" type="date" name="endDate" th:value="${section.endDate}">
+                <input type="hidden" name="sortOrder" th:value="${section.sortOrder}">
+                <button type="submit">Phase speichern</button>
+            </form>
+            <form th:action="@{/projects/{projectId}/sections/{sectionId}/delete(projectId=${plan.project.id},sectionId=${section.id})}" method="post">
+                <label th:for="${'delete-mode-' + section.id}">Inhalte</label>
+                <select th:id="${'delete-mode-' + section.id}" name="mode" required>
+                    <option value="DELETE_CONTENT">Mit Inhalten löschen</option>
+                    <option value="MOVE_CONTENT">In andere Phase verschieben</option>
+                </select>
+                <label th:for="${'target-section-' + section.id}">Zielphase</label>
+                <select th:id="${'target-section-' + section.id}" name="targetSectionId">
+                    <option value="">Keine</option>
+                    <option th:each="target : ${plan.sections}" th:unless="${target.id == section.id}" th:value="${target.id}" th:text="${target.title}"></option>
+                </select>
+                <button type="submit">Phase löschen</button>
+            </form>
+        </div>
+    </article>
+    <form th:if="${plan.editable}" th:action="@{/projects/{id}/sections(id=${plan.project.id})}" th:object="${sectionForm}" method="post">
+        <label for="new-section-title">Neue Phase</label><input id="new-section-title" th:field="*{title}" required maxlength="100">
+        <button type="submit">Phase anlegen</button>
+    </form>
+</section>
+<section th:unless="${#lists.isEmpty(plan.unsectionedElements)}"><h2>Ohne Phase</h2><ol>
+    <li th:each="element : ${plan.unsectionedElements}">
+        <a th:if="${element.type.name() == 'TASK'}" th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}" th:text="${element.title}"></a>
+        <a th:if="${element.type.name() == 'MILESTONE'}" th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}" th:text="${element.title}"></a>
+    </li>
+</ol></section>
+<section><h2>Neue Aufgabe</h2>
+    <form th:if="${plan.editable}" th:action="@{/projects/{id}/tasks(id=${plan.project.id})}" th:object="${taskForm}" method="post">
+        <label for="new-task-title">Neue Aufgabe</label><input id="new-task-title" th:field="*{title}" required maxlength="100">
+        <label for="task-priority">Priorität</label><select id="task-priority" th:field="*{priority}" required>
+            <option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option>
+        </select>
+        <label for="task-section">Phase</label><select id="task-section" th:field="*{planSectionId}">
+            <option value="">Ohne Phase</option><option th:each="section : ${plan.sections}" th:value="${section.id}" th:text="${section.title}"></option>
+        </select>
+        <label for="task-assignee">Zuständigkeit</label><select id="task-assignee" th:field="*{assigneeId}">
+            <option value="">Nicht zugewiesen</option><option th:each="member : ${plan.activeMembers}" th:value="${member.id}" th:text="${member.displayName}"></option>
+        </select>
+        <button type="submit">Aufgabe anlegen</button>
+    </form>
+</section>
+<section><h2>Neuer Meilenstein</h2>
+    <form th:if="${plan.editable}" th:action="@{/projects/{id}/milestones(id=${plan.project.id})}" th:object="${milestoneForm}" method="post">
+        <label for="new-milestone-title">Neuer Meilenstein</label><input id="new-milestone-title" th:field="*{title}" required maxlength="100">
+        <label for="milestone-section">Phase</label><select id="milestone-section" th:field="*{planSectionId}">
+            <option value="">Ohne Phase</option><option th:each="section : ${plan.sections}" th:value="${section.id}" th:text="${section.title}"></option>
+        </select>
+        <button type="submit">Meilenstein anlegen</button>
+    </form>
+</section>
+<section><h2>Abhängigkeiten</h2><ul>
+    <li th:each="dependency : ${plan.dependencies}">
+        <span th:text="${dependency.prerequisiteTitle + ' → ' + dependency.successorTitle}"></span>
+        <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/dependencies/{successorId}/{prerequisiteId}/delete(projectId=${plan.project.id},successorId=${dependency.successorTaskId},prerequisiteId=${dependency.prerequisiteTaskId})}" method="post"><button type="submit">Entfernen</button></form>
+    </li>
+</ul>
+    <form th:if="${plan.editable}" th:action="@{/projects/{id}/dependencies(id=${plan.project.id})}" th:object="${dependencyForm}" method="post">
+        <label for="prerequisite">Vorgänger</label><select id="prerequisite" th:field="*{prerequisiteTaskId}" required><option th:each="task : ${plan.tasks}" th:value="${task.id}" th:text="${task.title}"></option></select>
+        <label for="successor">Nachfolger</label><select id="successor" th:field="*{successorTaskId}" required><option th:each="task : ${plan.tasks}" th:value="${task.id}" th:text="${task.title}"></option></select>
+        <button type="submit">Abhängigkeit anlegen</button>
+    </form>
+</section>
+<section><h2>Mitglieder</h2><ul><li th:each="member : ${plan.activeMembers}">
+    <span th:text="${member.displayName}"></span>
+    <form th:if="${plan.owner and member.role.name() == 'MEMBER'}" th:action="@{/projects/{projectId}/members/{memberId}/remove(projectId=${plan.project.id},memberId=${member.id})}" method="post"><button type="submit">Entfernen</button></form>
+</li></ul>
+    <form th:if="${plan.owner and plan.editable}" th:action="@{/projects/{id}/members(id=${plan.project.id})}" th:object="${memberForm}" method="post">
+        <label for="member-email">Mitglied per E-Mail hinzufügen</label><input id="member-email" type="email" th:field="*{email}" required maxlength="254">
+        <button type="submit">Hinzufügen</button>
+    </form>
+</section>
+
+<div th:if="${plan.editable and plan.owner}">
+    <a th:href="@{/projects/{id}/edit(id=${plan.project.id})}">Projekt bearbeiten</a>
+    <form th:action="@{/projects/{id}/trash(id=${plan.project.id})}" method="post"><button type="submit">In den Papierkorb</button></form>
+</div>
+<div th:if="${plan.owner and (plan.project.location.name() == 'TRASH' or plan.project.location.name() == 'ARCHIVE')}">
+    <form th:action="@{/projects/{id}/reactivate(id=${plan.project.id})}" method="post"><button type="submit">Wiederherstellen</button></form>
+</div>
+<div th:if="${plan.owner and plan.project.location.name() == 'TRASH'}">
+    <form th:action="@{/projects/{id}/delete(id=${plan.project.id})}" method="post"><button type="submit">Endgültig löschen</button></form>
+</div>
+</main></body></html>

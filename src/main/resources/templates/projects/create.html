@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title>Projekt anlegen – ProjectFlow</title></head>
+<body><main>
+<h1>Projekt anlegen</h1>
+<form th:action="@{/projects}" th:object="${projectForm}" method="post">
+    <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
+    <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
+    <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
+    <label for="startDate">Start</label><input id="startDate" type="date" th:field="*{startDate}">
+    <label for="endDate">Ende</label><input id="endDate" type="date" th:field="*{endDate}">
+    <input type="hidden" th:field="*{creationType}" value="EMPTY">
+    <button type="submit">Projekt anlegen</button>
+</form>
+<a th:href="@{/projects}">Abbrechen</a>
+</main></body></html>

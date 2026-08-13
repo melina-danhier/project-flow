@@ -8,10 +8,20 @@
 <body>
 <main>
     <h1>Meine Projekte</h1>
-    <p th:if="${#lists.isEmpty(projects)}">Du hast derzeit keine aktiven Projekte.</p>
+    <nav aria-label="Projektbereiche">
+        <a th:href="@{/projects}">Aktiv</a>
+        <a th:href="@{/projects(location=ARCHIVE)}">Archiv</a>
+        <a th:href="@{/projects(location=TRASH)}">Papierkorb</a>
+    </nav>
+    <p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+    <p th:if="${#lists.isEmpty(projects)}">In diesem Bereich sind keine Projekte vorhanden.</p>
     <ul th:unless="${#lists.isEmpty(projects)}">
-        <li th:each="project : ${projects}" th:text="${project.title}"></li>
+        <li th:each="project : ${projects}">
+            <a th:href="@{/projects/{id}(id=${project.id})}" th:text="${project.title}"></a>
+        </li>
     </ul>
+    <a th:href="@{/projects/new}">Projekt anlegen</a>
+    <a th:href="@{/templates}">Vorlagen ansehen</a>
     <form th:action="@{/logout}" method="post">
         <button type="submit">Abmelden</button>
     </form>

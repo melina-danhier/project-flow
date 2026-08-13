@@ -12,7 +12,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.melina</groupId>
+    <groupId>de.melinadanhier</groupId>
     <artifactId>projectflow</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>ProjectFlow</name>
