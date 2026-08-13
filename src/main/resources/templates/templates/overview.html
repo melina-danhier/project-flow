@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><title>Vorlagen – ProjectFlow</title></head>
+<body><main><h1>Projektvorlagen</h1><ul>
+<li th:each="template : ${templates}"><a th:href="@{/templates/{id}(id=${template.id})}" th:text="${template.title}"></a></li>
+</ul><a th:href="@{/projects}">Zurück</a></main></body></html>
