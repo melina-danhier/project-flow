@@ -51,6 +51,9 @@ public class ProjectMember extends MutableEntity {
     @Column(name = "joined_at", nullable = false, updatable = false)
     private Instant joinedAt;
 
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
     @PrePersist
     protected void initializeJoinedAt() {
         if (joinedAt == null) {

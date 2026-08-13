@@ -12,3 +12,9 @@ spring:
 
   flyway:
     enabled: true
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true

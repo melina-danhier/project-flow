@@ -18,4 +18,5 @@ public class ProjectMemberDto {
     private String displayName;
     private ProjectMemberRole role;
     private Instant joinedAt;
+    private boolean active;
 }

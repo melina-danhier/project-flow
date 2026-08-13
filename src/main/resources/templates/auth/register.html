@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registrieren – ProjectFlow</title>
+</head>
+<body>
+<main>
+    <h1>Konto erstellen</h1>
+    <form th:action="@{/register}" th:object="${registrationForm}" method="post">
+        <label for="displayName">Anzeigename</label>
+        <input id="displayName" type="text" th:field="*{displayName}" required maxlength="100">
+        <p th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}" role="alert"></p>
+
+        <label for="email">E-Mail-Adresse</label>
+        <input id="email" type="email" th:field="*{email}" required maxlength="254">
+        <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" role="alert"></p>
+
+        <label for="password">Passwort</label>
+        <input id="password" type="password" th:field="*{password}" autocomplete="new-password" required minlength="8" maxlength="128">
+        <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}" role="alert"></p>
+
+        <label for="passwordConfirmation">Passwort wiederholen</label>
+        <input id="passwordConfirmation" type="password" th:field="*{passwordConfirmation}" autocomplete="new-password" required>
+        <p th:if="${#fields.hasErrors('passwordConfirmation')}" th:errors="*{passwordConfirmation}" role="alert"></p>
+
+        <button type="submit">Registrieren</button>
+    </form>
+    <a th:href="@{/login}">Zur Anmeldung</a>
+</main>
+</body>
+</html>
