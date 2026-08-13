@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Anmelden – ProjectFlow</title>
+</head>
+<body>
+<main>
+    <h1>Bei ProjectFlow anmelden</h1>
+    <p th:if="${param.error}" role="alert">E-Mail-Adresse oder Passwort ist nicht korrekt.</p>
+    <p th:if="${param.logout}">Du wurdest abgemeldet.</p>
+    <p th:if="${param.registered}">Dein Konto wurde erstellt. Du kannst dich jetzt anmelden.</p>
+    <form th:action="@{/login}" method="post">
+        <label for="email">E-Mail-Adresse</label>
+        <input id="email" name="email" type="email" autocomplete="username" required maxlength="254">
+        <label for="password">Passwort</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button type="submit">Anmelden</button>
+    </form>
+    <a th:href="@{/register}">Konto erstellen</a>
+</main>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.melina.projectflow.user.dto;
 
+import com.melina.projectflow.user.validation.PasswordsMatch;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -10,6 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@PasswordsMatch
 public class RegistrationForm {
 
     @NotBlank
@@ -18,9 +20,21 @@ public class RegistrationForm {
     private String email;
 
     @NotBlank
+    @Size(min = 8, max = 128)
     private String password;
 
     @NotBlank
-    @Size(max = 100)
+    private String passwordConfirmation;
+
+    @NotBlank
+    @Size(min = 1, max = 100)
     private String displayName;
+
+    public void setEmail(String email) {
+        this.email = email == null ? null : email.trim();
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName == null ? null : displayName.trim();
+    }
 }
