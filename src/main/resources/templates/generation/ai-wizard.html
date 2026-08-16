@@ -39,7 +39,6 @@
                th:required="*{otherCategory}"
                th:disabled="*{!otherCategory}">
         <p th:if="${#fields.hasErrors('otherProjectTypeDescription')}" th:errors="*{otherProjectTypeDescription}" role="alert"></p>
-        <p th:if="${#fields.hasErrors('projectTypeValid')}" th:errors="*{projectTypeValid}" role="alert"></p>
     </div>
 
     <fieldset>
@@ -55,11 +54,13 @@
         <label for="startDate">Startdatum</label>
         <input id="startDate" type="date" th:field="*{startDate}"
                th:disabled="*{!startDateInputActive}" th:required="*{startDateInputActive}">
+        <p th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" role="alert"></p>
     </div>
     <div id="end-date-field" th:hidden="*{!endDateInputActive}">
         <label for="endDate">Enddatum</label>
         <input id="endDate" type="date" th:field="*{endDate}"
                th:disabled="*{!endDateInputActive}" th:required="*{endDateInputActive}">
+        <p th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" role="alert"></p>
     </div>
     <div id="duration-field" th:hidden="*{!durationInputActive}">
         <label for="durationDays">Dauer in Tagen</label>
@@ -67,7 +68,6 @@
                th:disabled="*{!durationInputActive}" th:required="*{durationInputActive}">
         <p th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}" role="alert"></p>
     </div>
-    <p th:if="${#fields.hasErrors('timeFrameValid')}" th:errors="*{timeFrameValid}" role="alert"></p>
 
     <button type="submit">Weiter zu den KI-Angaben</button>
 </form>

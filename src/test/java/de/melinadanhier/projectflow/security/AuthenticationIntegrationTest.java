@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.user.repository.UserRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreationFlowState;
+import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectCreationFlowService;
 import de.melinadanhier.projectflow.generation.repository.PlanDraftRepository;
@@ -340,7 +341,8 @@ class AuthenticationIntegrationTest {
                         .param("timeFrameType", "NONE"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/ai-wizard"))
-                .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "projectTypeValid"));
+                .andExpect(model().attributeHasFieldErrors(
+                        "projectBasicsForm", "otherProjectTypeDescription"));
 
         mockMvc.perform(post("/projects/new/ai")
                         .session(session)
@@ -359,6 +361,53 @@ class AuthenticationIntegrationTest {
                     assertThat(saved.getCategory()).isEqualTo(TemplateCategory.OTHER);
                     assertThat(saved.getProjectType()).isEqualTo("Privaten Flohmarkt organisieren");
                 });
+        mockMvc.perform(get("/projects/new/ai").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Privaten Flohmarkt organisieren")));
+    }
+
+    @Test
+    void invalidAiBasicsStayOnTheStepAndKeepTheSubmittedValues() throws Exception {
+        String email = "ai-invalid-basics@example.org";
+        saveUser(email, "richtiges-passwort", true);
+        MockHttpSession session = login(email, "richtiges-passwort");
+        mockMvc.perform(post("/projects")
+                        .session(session)
+                        .with(csrf())
+                        .param("title", "Ursprünglicher Titel")
+                        .param("category", "EDUCATION")
+                        .param("collaborationMode", "INDIVIDUAL")
+                        .param("creationType", "AI"))
+                .andExpect(status().is3xxRedirection());
+
+        long projectsBefore = projectRepository.count();
+        MvcResult result = mockMvc.perform(post("/projects/new/ai")
+                        .session(session)
+                        .with(csrf())
+                        .param("title", "Eingegebener Titel")
+                        .param("category", "EDUCATION")
+                        .param("subcategory", "Präsentation")
+                        .param("timeFrameType", "START_AND_END")
+                        .param("startDate", "2026-09-20")
+                        .param("endDate", "2026-09-01"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/ai-wizard"))
+                .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "endDate"))
+                .andExpect(content().string(containsString(
+                        "Das Enddatum darf nicht vor dem Startdatum liegen.")))
+                .andReturn();
+
+        ProjectBasicsForm submitted = (ProjectBasicsForm) result.getModelAndView()
+                .getModel().get("projectBasicsForm");
+        assertThat(submitted.getTitle()).isEqualTo("Eingegebener Titel");
+        assertThat(submitted.getSubcategory()).isEqualTo("Präsentation");
+        assertThat(submitted.getStartDate()).hasToString("2026-09-20");
+        assertThat(submitted.getEndDate()).hasToString("2026-09-01");
+        assertThat(projectRepository.count()).isEqualTo(projectsBefore);
+
+        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectCreationFlowState.class, state ->
+                        assertThat(state.getTitle()).isEqualTo("Ursprünglicher Titel"));
     }
 
     @Test
@@ -389,8 +438,18 @@ class AuthenticationIntegrationTest {
     @Test
     void cancelRemovesOnlyTheTemporaryCreationState() throws Exception {
         String email = "cancel-flow@example.org";
-        saveUser(email, "richtiges-passwort", true);
+        User user = saveUser(email, "richtiges-passwort", true);
         MockHttpSession session = login(email, "richtiges-passwort");
+
+        mockMvc.perform(post("/projects")
+                        .session(session)
+                        .with(csrf())
+                        .param("title", "Bestehendes Projekt")
+                        .param("category", "HOME")
+                        .param("collaborationMode", "INDIVIDUAL")
+                        .param("creationType", "EMPTY"))
+                .andExpect(status().is3xxRedirection());
+
         mockMvc.perform(post("/projects")
                         .session(session)
                         .with(csrf())
@@ -400,6 +459,7 @@ class AuthenticationIntegrationTest {
                         .param("creationType", "AI"))
                 .andExpect(status().is3xxRedirection());
         assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE)).isNotNull();
+        session.setAttribute("unrelated-session-data", "bleibt erhalten");
 
         long projectsBefore = projectRepository.count();
         mockMvc.perform(post("/projects/new/cancel").session(session).with(csrf()))
@@ -407,7 +467,12 @@ class AuthenticationIntegrationTest {
                 .andExpect(redirectedUrl("/projects"));
 
         assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE)).isNull();
+        assertThat(session.getAttribute("unrelated-session-data")).isEqualTo("bleibt erhalten");
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
+        assertThat(projectRepository.findAllAccessibleByUserId(user.getId()))
+                .singleElement()
+                .extracting(Project::getTitle)
+                .isEqualTo("Bestehendes Projekt");
     }
 
     @Test
