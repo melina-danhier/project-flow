@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,9 @@ public class TaskDependencyService {
         }
         if (successor.getPrerequisites().stream().anyMatch(task -> task.getId().equals(prerequisite.getId()))) {
             throw new ConflictException("Diese Aufgabenabhängigkeit besteht bereits.");
+        }
+        if (dependsOn(prerequisite, successor.getId(), new HashSet<>())) {
+            throw new DomainValidationException("Diese Aufgabenabhängigkeit würde einen Zyklus erzeugen.");
         }
         successor.addPrerequisite(prerequisite);
         try {
@@ -63,5 +68,14 @@ public class TaskDependencyService {
     private Task requireTask(UUID projectId, UUID taskId) {
         return taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
+    }
+
+    private boolean dependsOn(Task task, UUID possiblePrerequisiteId, Set<UUID> visited) {
+        if (!visited.add(task.getId())) {
+            return false;
+        }
+        return task.getPrerequisites().stream().anyMatch(prerequisite ->
+                prerequisite.getId().equals(possiblePrerequisiteId)
+                        || dependsOn(prerequisite, possiblePrerequisiteId, visited));
     }
 }

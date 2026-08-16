@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.project;
 
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ForbiddenOperationException;
 import de.melinadanhier.projectflow.common.exception.ProjectNotEditableException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
@@ -134,6 +135,14 @@ class ProjectCrudIntegrationTest {
         assertThat(taskService.getTaskDetail(project.getId(), middle.getId(), owner.getId())
                 .getAffectedDependencyCount()).isEqualTo(2);
 
+        assertThatThrownBy(() -> createDependency(project, owner, last.getId(), first.getId()))
+                .isInstanceOf(DomainValidationException.class)
+                .hasMessageContaining("Zyklus");
+        assertThatThrownBy(() -> createDependency(project, owner, first.getId(), first.getId()))
+                .isInstanceOf(DomainValidationException.class);
+        assertThatThrownBy(() -> createDependency(project, owner, first.getId(), middle.getId()))
+                .isInstanceOf(ConflictException.class);
+
         Project otherProject = saveProject("Fremd", owner);
         TaskDetailsDto foreign = taskService.createTask(
                 otherProject.getId(), taskForm("Fremd", null), owner.getId());
@@ -208,9 +217,11 @@ class ProjectCrudIntegrationTest {
 
         SectionForm sectionCreate = sectionForm("Analyse");
         sectionCreate.setDescription("Ausführliche Phase");
-        sectionCreate.setStartDate(LocalDate.of(2026, 8, 14));
-        sectionCreate.setEndDate(LocalDate.of(2026, 8, 18));
         SectionDto section = sectionService.createSection(project.getId(), sectionCreate, owner.getId());
+        var sectionWithInternalDates = sectionRepository.findById(section.getId()).orElseThrow();
+        sectionWithInternalDates.setStartDate(LocalDate.of(2026, 8, 14));
+        sectionWithInternalDates.setEndDate(LocalDate.of(2026, 8, 18));
+        entityManager.flush();
 
         TaskForm taskCreate = taskForm("Recherche", section.getId());
         taskCreate.setDescription("Quellen sammeln");
@@ -268,6 +279,7 @@ class ProjectCrudIntegrationTest {
         assertThat(clearedMilestone.getRelativeDueDay()).isNull();
 
         SectionForm sectionUpdate = sectionFormFrom(section);
+        sectionUpdate.setLockVersion(sectionWithInternalDates.getLockVersion());
         sectionUpdate.setTitle("Analyse aktualisiert");
         SectionDto updatedSection = sectionService.updateSection(
                 project.getId(), section.getId(), sectionUpdate, owner.getId());
@@ -284,8 +296,8 @@ class ProjectCrudIntegrationTest {
         SectionDto clearedSection = sectionService.updateSection(
                 project.getId(), section.getId(), sectionClear, owner.getId());
         assertThat(clearedSection.getDescription()).isNull();
-        assertThat(clearedSection.getStartDate()).isNull();
-        assertThat(clearedSection.getEndDate()).isNull();
+        assertThat(clearedSection.getStartDate()).isEqualTo(LocalDate.of(2026, 8, 14));
+        assertThat(clearedSection.getEndDate()).isEqualTo(LocalDate.of(2026, 8, 18));
         assertThat(clearedSection.getRelativeStartDay()).isNull();
         assertThat(clearedSection.getRelativeEndDay()).isNull();
     }
@@ -430,8 +442,6 @@ class ProjectCrudIntegrationTest {
     private SectionForm sectionFormFrom(SectionDto section) {
         SectionForm form = sectionForm(section.getTitle());
         form.setDescription(section.getDescription());
-        form.setStartDate(section.getStartDate());
-        form.setEndDate(section.getEndDate());
         form.setSortOrder(section.getSortOrder());
         form.setLockVersion(section.getLockVersion());
         return form;

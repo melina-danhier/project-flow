@@ -57,6 +57,6 @@ public class TemplateController {
         }
         var project = projectService.createProjectFromTemplate(templateId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde aus der Vorlage angelegt.");
-        return "redirect:/projects/" + project.getId();
+        return "redirect:/projects/" + project.getId() + "/plan";
     }
 }

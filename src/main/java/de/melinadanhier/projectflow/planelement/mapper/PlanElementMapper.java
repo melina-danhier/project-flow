@@ -28,6 +28,7 @@ public interface PlanElementMapper {
     @Mapping(target = "prerequisiteIds", source = "prerequisites")
     @Mapping(target = "predecessors", ignore = true)
     @Mapping(target = "successors", ignore = true)
+    @Mapping(target = "availablePrerequisites", ignore = true)
     @Mapping(target = "availableAssignees", ignore = true)
     @Mapping(target = "affectedDependencyCount", ignore = true)
     @Mapping(target = "editable", ignore = true)

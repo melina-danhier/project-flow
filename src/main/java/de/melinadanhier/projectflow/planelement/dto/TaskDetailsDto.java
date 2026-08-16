@@ -41,6 +41,7 @@ public class TaskDetailsDto {
     private Set<UUID> prerequisiteIds = new LinkedHashSet<>();
     private List<TaskReferenceDto> predecessors = new ArrayList<>();
     private List<TaskReferenceDto> successors = new ArrayList<>();
+    private List<TaskReferenceDto> availablePrerequisites = new ArrayList<>();
     private List<ProjectMemberDto> availableAssignees = new ArrayList<>();
     private List<SectionDto> availableSections = new ArrayList<>();
     private int affectedDependencyCount;

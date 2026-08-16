@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title>Aufgabe – ProjectFlow</title></head>
+<body><main>
+<a th:href="@{/projects/{projectId}/plan(projectId=${task.planContainerId})}">Zum Projektplan</a>
+<h1 th:text="${task.title}">Aufgabe</h1>
+<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
+<dl>
+    <dt>Beschreibung</dt><dd th:text="${task.description ?: 'Keine Beschreibung'}"></dd>
+    <dt>Phase</dt><dd>
+        <span th:if="${task.planSectionId == null}">Ohne Phase</span>
+        <span th:each="section : ${task.availableSections}" th:if="${section.id == task.planSectionId}" th:text="${section.title}"></span>
+    </dd>
+    <dt>Status</dt><dd th:text="${task.status}"></dd>
+    <dt>Priorität</dt><dd th:text="${task.priority}"></dd>
+    <dt>Startdatum</dt><dd th:text="${task.startDate ?: 'Nicht festgelegt'}"></dd>
+    <dt>Fälligkeitsdatum</dt><dd th:text="${task.dueDate ?: 'Nicht festgelegt'}"></dd>
+    <dt>Zuständigkeit</dt><dd th:text="${task.assigneeDisplayName ?: 'Nicht zugewiesen'}"></dd>
+</dl>
+
+<section><h2>Voraussetzungen</h2>
+    <p th:if="${#lists.isEmpty(task.predecessors)}">Keine Voraussetzungen.</p>
+    <ul><li th:each="prerequisite : ${task.predecessors}">
+        <a th:href="@{/projects/{projectId}/tasks/{taskId}(projectId=${task.planContainerId},taskId=${prerequisite.id})}"
+           th:text="${prerequisite.title}"></a>
+        <form th:if="${task.editable}"
+              th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies/{prerequisiteId}/remove(projectId=${task.planContainerId},taskId=${task.id},prerequisiteId=${prerequisite.id})}"
+              method="post"><button type="submit">Entfernen</button></form>
+    </li></ul>
+    <form th:if="${task.editable and !#lists.isEmpty(task.availablePrerequisites)}"
+          th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies(projectId=${task.planContainerId},taskId=${task.id})}"
+          th:object="${dependencyForm}" method="post">
+        <label for="prerequisite">Voraussetzung hinzufügen</label>
+        <select id="prerequisite" th:field="*{prerequisiteTaskId}" required>
+            <option value="">Bitte wählen</option>
+            <option th:each="candidate : ${task.availablePrerequisites}" th:value="${candidate.id}" th:text="${candidate.title}"></option>
+        </select>
+        <p th:if="${#fields.hasErrors('prerequisiteTaskId')}" th:errors="*{prerequisiteTaskId}" role="alert"></p>
+        <button type="submit">Hinzufügen</button>
+    </form>
+</section>
+
+<p th:if="${task.affectedDependencyCount > 0}">Beim Löschen werden <span th:text="${task.affectedDependencyCount}"></span> Abhängigkeiten entfernt.</p>
+<a th:if="${task.editable}" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}">Aufgabe bearbeiten</a>
+<form th:if="${task.editable}" th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post">
+    <button type="submit">Aufgabe endgültig löschen</button>
+</form>
+</main></body></html>

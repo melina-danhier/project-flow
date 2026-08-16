@@ -32,7 +32,7 @@ public class ProjectController {
     private final ProjectMembershipService membershipService;
 
     @GetMapping("/projects")
-    public String projectOverview(
+    public String projects(
             @RequestParam(required = false) ProjectLocation location,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
@@ -43,23 +43,8 @@ public class ProjectController {
         return "projects/overview";
     }
 
-    @GetMapping("/projects/{projectId}")
-    public String projectPlan(
-            @PathVariable UUID projectId,
-            @AuthenticationPrincipal AuthenticatedUser currentUser,
-            Model model
-    ) {
-        model.addAttribute("plan", projectService.getProjectPlan(projectId, currentUser.userId()));
-        model.addAttribute("taskForm", new de.melinadanhier.projectflow.planelement.dto.TaskForm());
-        model.addAttribute("milestoneForm", new de.melinadanhier.projectflow.planelement.dto.MilestoneForm());
-        model.addAttribute("sectionForm", new de.melinadanhier.projectflow.planelement.dto.SectionForm());
-        model.addAttribute("dependencyForm", new de.melinadanhier.projectflow.planelement.dto.TaskDependencyForm());
-        model.addAttribute("memberForm", new AddProjectMemberForm());
-        return "projects/plan";
-    }
-
     @GetMapping("/projects/new")
-    public String createForm(Model model) {
+    public String createProjectForm(Model model) {
         ProjectCreateForm form = new ProjectCreateForm();
         form.setCreationType(CreationType.EMPTY);
         model.addAttribute("projectForm", form);
@@ -78,7 +63,7 @@ public class ProjectController {
         }
         ProjectDetailsDto created = projectService.createProject(form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde angelegt.");
-        return "redirect:/projects/" + created.getId();
+        return "redirect:/projects/" + created.getId() + "/plan";
     }
 
     @GetMapping("/projects/{projectId}/edit")
@@ -116,7 +101,7 @@ public class ProjectController {
         }
         projectService.updateProject(projectId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde aktualisiert.");
-        return "redirect:/projects/" + projectId;
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @PostMapping("/projects/{projectId}/trash")
@@ -138,7 +123,7 @@ public class ProjectController {
     ) {
         projectService.reactivateProject(projectId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde wiederhergestellt.");
-        return "redirect:/projects/" + projectId;
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @PostMapping("/projects/{projectId}/delete")

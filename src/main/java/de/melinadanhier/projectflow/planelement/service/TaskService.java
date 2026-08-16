@@ -26,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -62,6 +64,26 @@ public class TaskService {
     @Transactional(readOnly = true)
     public TaskDetailsDto getTaskDetail(UUID projectId, UUID taskId, UUID userId) {
         ProjectMember membership = authorizationService.requireMember(projectId, userId);
+        return buildTaskDetail(projectId, taskId, authorizationService.isEditable(membership));
+    }
+
+    @Transactional(readOnly = true)
+    public TaskDetailsDto getTaskForEditing(UUID projectId, UUID taskId, UUID userId) {
+        authorizationService.requireEditableMember(projectId, userId);
+        return buildTaskDetail(projectId, taskId, true);
+    }
+
+    @Transactional(readOnly = true)
+    public TaskDetailsDto getTaskCreationContext(UUID projectId, UUID userId) {
+        authorizationService.requireEditableMember(projectId, userId);
+        TaskDetailsDto dto = new TaskDetailsDto();
+        dto.setPlanContainerId(projectId);
+        dto.setEditable(true);
+        populateOptions(dto, projectId);
+        return dto;
+    }
+
+    private TaskDetailsDto buildTaskDetail(UUID projectId, UUID taskId, boolean editable) {
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
         List<Task> successors = taskRepository.findSuccessors(projectId, taskId);
@@ -73,14 +95,34 @@ public class TaskService {
                 .map(successor -> new TaskReferenceDto(successor.getId(), successor.getTitle()))
                 .toList());
         dto.setAffectedDependencyCount(dto.getPredecessors().size() + dto.getSuccessors().size());
+        populateOptions(dto, projectId);
+        dto.setAvailablePrerequisites(taskRepository.findPlanTasks(projectId).stream()
+                .filter(candidate -> !candidate.getId().equals(taskId))
+                .filter(candidate -> task.getPrerequisites().stream()
+                        .noneMatch(prerequisite -> prerequisite.getId().equals(candidate.getId())))
+                .filter(candidate -> !dependsOn(candidate, taskId, new HashSet<>()))
+                .map(candidate -> new TaskReferenceDto(candidate.getId(), candidate.getTitle()))
+                .toList());
+        dto.setEditable(editable);
+        return dto;
+    }
+
+    private void populateOptions(TaskDetailsDto dto, UUID projectId) {
         dto.setAvailableAssignees(projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
                 .map(projectMapper::toMemberDto)
                 .toList());
         dto.setAvailableSections(planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId).stream()
                 .map(planElementMapper::toDto)
                 .toList());
-        dto.setEditable(authorizationService.isEditable(membership));
-        return dto;
+    }
+
+    private boolean dependsOn(Task task, UUID possiblePrerequisiteId, Set<UUID> visited) {
+        if (!visited.add(task.getId())) {
+            return false;
+        }
+        return task.getPrerequisites().stream().anyMatch(prerequisite ->
+                prerequisite.getId().equals(possiblePrerequisiteId)
+                        || dependsOn(prerequisite, possiblePrerequisiteId, visited));
     }
 
     @Transactional
