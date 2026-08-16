@@ -2,11 +2,11 @@
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head><meta charset="utf-8"><title>Zusätzliche KI-Angaben – ProjectFlow</title></head>
 <body><main>
-<p>Schritt 2 von 2</p>
 <h1>Zusätzliche Angaben für die KI</h1>
-<p>Die Grundangaben für „<span th:text="${creationFlow.title}">Projekt</span>“ sind im Wizard gespeichert.</p>
+<p>Die Grundangaben für „<span th:text="${wizardState.title}">Projekt</span>“ wurden aus dem Wizard übernommen.</p>
 <p>Projektartspezifische Fragen werden in einer späteren Ausbaustufe ergänzt.</p>
-<a th:href="@{/projects/new/ai}">Grundangaben bearbeiten</a>
+<a th:href="@{/projects/new}">Grundangaben bearbeiten</a>
+<a th:href="@{/projects/new/method}">Erstellungsweg ändern</a>
 <form th:action="@{/projects/new/cancel}" method="post">
     <button type="submit">Projekterstellung abbrechen</button>
 </form>

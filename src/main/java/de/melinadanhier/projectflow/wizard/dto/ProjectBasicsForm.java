@@ -1,6 +1,8 @@
-package de.melinadanhier.projectflow.plancontainer.project.dto;
+package de.melinadanhier.projectflow.wizard.dto;
 
+import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -12,10 +14,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
-/**
- * Allgemeine Projektdaten des Wizards. Zusätzliche Angaben für die KI
- * werden bewusst nicht in diesem Formular geführt.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,6 +24,9 @@ public class ProjectBasicsForm {
     @Size(max = 100, message = "Der Titel darf höchstens 100 Zeichen lang sein.")
     private String title;
 
+    @Size(max = 2000, message = "Die Beschreibung darf höchstens 2000 Zeichen lang sein.")
+    private String description;
+
     @NotNull(message = "Bitte wähle eine Oberkategorie aus.")
     private TemplateCategory category = TemplateCategory.OTHER;
 
@@ -34,6 +35,9 @@ public class ProjectBasicsForm {
 
     @Size(max = 100, message = "Die Beschreibung darf höchstens 100 Zeichen lang sein.")
     private String otherProjectTypeDescription;
+
+    @NotNull(message = "Bitte wähle Einzel- oder Gruppenprojekt aus.")
+    private CollaborationMode collaborationMode;
 
     @NotNull(message = "Bitte wähle aus, welche Zeitangaben du machen möchtest.")
     private ProjectTimeFrameType timeFrameType = ProjectTimeFrameType.NONE;
@@ -47,18 +51,19 @@ public class ProjectBasicsForm {
     @Positive(message = "Die Dauer muss mindestens einen Tag betragen.")
     private Integer durationDays;
 
-    public static ProjectBasicsForm from(ProjectCreationFlowState state) {
+    public static ProjectBasicsForm from(ProjectWizardState state) {
         ProjectBasicsForm form = new ProjectBasicsForm();
         form.setTitle(state.getTitle());
+        form.setDescription(state.getDescription());
         form.setCategory(state.getCategory() == null ? TemplateCategory.OTHER : state.getCategory());
         if (form.getCategory() == TemplateCategory.OTHER) {
             form.setOtherProjectTypeDescription(state.getProjectType());
         } else {
             form.setSubcategory(state.getProjectType());
         }
+        form.setCollaborationMode(state.getCollaborationMode());
         form.setTimeFrameType(state.getTimeFrameType() == null
-                ? ProjectTimeFrameType.NONE
-                : state.getTimeFrameType());
+                ? ProjectTimeFrameType.NONE : state.getTimeFrameType());
         form.setDurationDays(state.getDurationDays());
         switch (form.getTimeFrameType()) {
             case START_AND_END -> {
@@ -67,9 +72,7 @@ public class ProjectBasicsForm {
             }
             case START_AND_DURATION -> form.setStartDate(state.getStartDate());
             case END_AND_DURATION -> form.setEndDate(state.getEndDate());
-            case NONE -> {
-                // Keine Datumsfelder anzeigen.
-            }
+            case NONE -> { }
         }
         return form;
     }
@@ -92,5 +95,4 @@ public class ProjectBasicsForm {
         return timeFrameType == ProjectTimeFrameType.START_AND_DURATION
                 || timeFrameType == ProjectTimeFrameType.END_AND_DURATION;
     }
-
 }

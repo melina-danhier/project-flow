@@ -11,11 +11,14 @@ import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
+import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -34,6 +37,23 @@ public class TemplateService {
         return templateRepository.findAllByActiveTrueOrderByTitleAsc().stream()
                 .map(templateMapper::toSummaryDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<TemplateSummaryDto> findRecommendation(
+            TemplateCategory category,
+            String projectType
+    ) {
+        if (category == null) {
+            return Optional.empty();
+        }
+        String normalizedProjectType = normalize(projectType);
+        return getTemplates().stream()
+                .filter(template -> template.getCategory() == category)
+                .sorted((left, right) -> Integer.compare(
+                        recommendationScore(right, normalizedProjectType),
+                        recommendationScore(left, normalizedProjectType)))
+                .findFirst();
     }
 
     @Transactional(readOnly = true)
@@ -56,5 +76,16 @@ public class TemplateService {
                                 successor.getId(), successor.getTitle())))
                 .toList());
         return dto;
+    }
+
+    private int recommendationScore(TemplateSummaryDto template, String normalizedProjectType) {
+        if (normalizedProjectType == null) {
+            return 1;
+        }
+        return normalizedProjectType.equals(normalize(template.getProjectType())) ? 2 : 1;
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.plancontainer.project.dto;
+package de.melinadanhier.projectflow.wizard.dto;
 
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import jakarta.validation.ConstraintValidator;
@@ -31,11 +31,8 @@ public class ProjectBasicsValidator implements ConstraintValidator<ValidProjectB
         if (form.getCategory() != TemplateCategory.OTHER || descriptionPresent) {
             return true;
         }
-        addViolation(
-                context,
-                "otherProjectTypeDescription",
-                "Bitte beschreibe kurz, um welche Art von Projekt es sich handelt."
-        );
+        addViolation(context, "otherProjectTypeDescription",
+                "Bitte beschreibe kurz, um welche Art von Projekt es sich handelt.");
         return false;
     }
 
@@ -53,8 +50,7 @@ public class ProjectBasicsValidator implements ConstraintValidator<ValidProjectB
             addViolation(context, "timeFrameType", "Zu Start und Ende darf keine Dauer angegeben werden.");
             valid = false;
         }
-        if (form.getStartDate() != null
-                && form.getEndDate() != null
+        if (form.getStartDate() != null && form.getEndDate() != null
                 && form.getEndDate().isBefore(form.getStartDate())) {
             addViolation(context, "endDate", "Das Enddatum darf nicht vor dem Startdatum liegen.");
             valid = false;

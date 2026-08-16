@@ -8,6 +8,7 @@ import de.melinadanhier.projectflow.plancontainer.template.model.Template;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
 import de.melinadanhier.projectflow.user.model.User;
+import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -35,6 +36,7 @@ class ApplicationStructureTest {
         assertThat(PlanSection.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.planelement.model");
         assertThat(PlanDraft.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.generation.model");
         assertThat(MutableEntity.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.common.model");
+        assertThat(ProjectWizardState.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.wizard.model");
     }
 
     @Test
@@ -54,6 +56,7 @@ class ApplicationStructureTest {
                 "generation", "generation/client", "generation/controller", "generation/dto", "generation/dto/request",
                 "generation/dto/response", "generation/mapper", "generation/model", "generation/parser",
                 "generation/prompt", "generation/repository", "generation/service", "generation/validation",
+                "wizard", "wizard/controller", "wizard/dto", "wizard/model", "wizard/service",
                 "security", "security/config", "security/handler", "security/service", "security/validation",
                 "common", "common/config", "common/exception", "common/model", "common/util"
         ));
@@ -65,7 +68,7 @@ class ApplicationStructureTest {
                 "ai", "ai/prompts", "ai/schema", "db", "db/migration", "static", "static/css", "static/images",
                 "static/js", "templates", "templates/auth", "templates/error", "templates/fragments",
                 "templates/generation", "templates/projects", "templates/projects/tasks",
-                "templates/projects/milestones", "templates/templates"
+                "templates/projects/milestones", "templates/templates", "templates/wizard"
         ));
         assertThat(RESOURCE_ROOT.resolve("application.yml")).isRegularFile();
         assertThat(RESOURCE_ROOT.resolve("application-dev.yml")).isRegularFile();
@@ -74,7 +77,7 @@ class ApplicationStructureTest {
 
         assertThat(relativeDirectories(TEST_ROOT)).containsExactlyInAnyOrderElementsOf(Set.of(
                 "user", "plancontainer", "plancontainer/project", "plancontainer/template", "planelement",
-                "generation", "security", "integration"
+                "generation", "security", "integration", "wizard"
         ));
     }
 
@@ -85,6 +88,17 @@ class ApplicationStructureTest {
                     .allSatisfy(path -> assertThat(read(path)).doesNotContain("com.melina.projectflow"));
         }
         assertThat(PROJECT_ROOT.resolve("src/main/java/com/melina/projectflow")).doesNotExist();
+    }
+
+    @Test
+    void featureAreasDoNotDependOnWizardInternals() throws IOException {
+        for (String feature : Set.of("plancontainer/project", "plancontainer/template", "generation")) {
+            try (var sources = Files.walk(JAVA_ROOT.resolve(feature))) {
+                assertThat(sources.filter(path -> path.toString().endsWith(".java")))
+                        .allSatisfy(path -> assertThat(read(path))
+                                .doesNotContain("de.melinadanhier.projectflow.wizard"));
+            }
+        }
     }
 
     private Set<String> relativeDirectories(Path root) throws IOException {

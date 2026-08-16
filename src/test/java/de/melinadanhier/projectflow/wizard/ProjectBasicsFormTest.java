@@ -1,12 +1,13 @@
-package de.melinadanhier.projectflow.plancontainer.project;
+package de.melinadanhier.projectflow.wizard;
 
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectBasicsForm;
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreationFlowState;
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
-import de.melinadanhier.projectflow.plancontainer.project.service.ProjectCreationFlowService;
-import de.melinadanhier.projectflow.plancontainer.project.service.ProjectTimeFrameCalculator;
+import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
+import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
+import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
+import de.melinadanhier.projectflow.wizard.service.ProjectTimeFrameCalculator;
+import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -135,11 +136,11 @@ class ProjectBasicsFormTest {
     @Test
     void keepsBasicsAndTimeSelectionInTheExistingSessionState() {
         UUID userId = UUID.randomUUID();
-        ProjectCreationFlowState state = new ProjectCreationFlowState();
+        ProjectWizardState state = new ProjectWizardState();
         state.setUserId(userId);
         state.setCreationType(CreationType.AI);
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE, state);
+        session.setAttribute(ProjectWizardService.SESSION_ATTRIBUTE, state);
 
         ProjectBasicsForm form = validForm();
         form.setTitle("  Präsentation vorbereiten  ");
@@ -148,9 +149,9 @@ class ProjectBasicsFormTest {
         form.setStartDate(LocalDate.of(2026, 9, 1));
         form.setDurationDays(3);
 
-        ProjectCreationFlowService service = new ProjectCreationFlowService(new ProjectTimeFrameCalculator());
-        service.updateBasics(form, userId, session);
-        ProjectCreationFlowState restored = service.requireOwned(userId, session);
+        ProjectWizardService service = new ProjectWizardService(new ProjectTimeFrameCalculator());
+        service.saveBasics(form, userId, session);
+        ProjectWizardState restored = service.requireOwned(userId, session);
         ProjectBasicsForm restoredForm = ProjectBasicsForm.from(restored);
 
         assertThat(restored.getTitle()).isEqualTo("Präsentation vorbereiten");
@@ -168,6 +169,7 @@ class ProjectBasicsFormTest {
         ProjectBasicsForm form = new ProjectBasicsForm();
         form.setTitle("Testprojekt");
         form.setCategory(TemplateCategory.EDUCATION);
+        form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         return form;
     }
 

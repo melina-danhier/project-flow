@@ -1,16 +1,17 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title>Grundangaben – ProjectFlow</title></head>
+<head><meta charset="utf-8"><title>Projekt anlegen – ProjectFlow</title></head>
 <body><main>
 <p>Schritt 1 von 2</p>
 <h1>Grundangaben zum Projekt</h1>
-<p>Diese Angaben gehören später zu deinem Projekt. Zusätzliche Angaben für die KI folgen getrennt.</p>
-
-<form th:action="@{/projects/new/ai}" th:object="${projectBasicsForm}" method="post">
+<p>Diese Angaben gelten unabhängig davon, wie du dein Projekt anschließend erstellst.</p>
+<form th:action="@{/projects/new}" th:object="${projectBasicsForm}" method="post">
     <label for="title">Projekttitel</label>
     <input id="title" th:field="*{title}" required maxlength="100">
     <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
-
+    <label for="description">Ziel oder kurze Beschreibung <span>(optional)</span></label>
+    <textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
+    <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
     <label for="category">Oberkategorie</label>
     <select id="category" th:field="*{category}" required>
         <option value="OTHER">Sonstiges</option>
@@ -24,23 +25,24 @@
         <option value="TRAVEL">Reise</option>
     </select>
     <p th:if="${#fields.hasErrors('category')}" th:errors="*{category}" role="alert"></p>
-
     <div id="subcategory-fields" th:hidden="*{otherCategory}">
         <label for="subcategory">Unterkategorie <span>(optional)</span></label>
-        <input id="subcategory" th:field="*{subcategory}" maxlength="100"
-               th:disabled="*{otherCategory}">
+        <input id="subcategory" th:field="*{subcategory}" maxlength="100" th:disabled="*{otherCategory}">
         <p th:if="${#fields.hasErrors('subcategory')}" th:errors="*{subcategory}" role="alert"></p>
     </div>
-
     <div id="other-project-type-fields" th:hidden="*{!otherCategory}">
         <label for="otherProjectTypeDescription">Was für ein Projekt ist es?</label>
         <input id="otherProjectTypeDescription" th:field="*{otherProjectTypeDescription}" maxlength="100"
-               placeholder="z. B. privater Flohmarkt"
-               th:required="*{otherCategory}"
-               th:disabled="*{!otherCategory}">
-        <p th:if="${#fields.hasErrors('otherProjectTypeDescription')}" th:errors="*{otherProjectTypeDescription}" role="alert"></p>
+               placeholder="z. B. privater Flohmarkt" th:required="*{otherCategory}" th:disabled="*{!otherCategory}">
+        <p th:if="${#fields.hasErrors('otherProjectTypeDescription')}"
+           th:errors="*{otherProjectTypeDescription}" role="alert"></p>
     </div>
-
+    <fieldset>
+        <legend>Wer arbeitet am Projekt?</legend>
+        <label><input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required> Nur ich</label>
+        <label><input type="radio" th:field="*{collaborationMode}" value="GROUP"> Eine kleine Gruppe</label>
+    </fieldset>
+    <p th:if="${#fields.hasErrors('collaborationMode')}" th:errors="*{collaborationMode}" role="alert"></p>
     <fieldset>
         <legend>Zeitlicher Rahmen</legend>
         <label><input type="radio" th:field="*{timeFrameType}" value="START_AND_END"> Start und Ende</label>
@@ -49,7 +51,6 @@
         <label><input type="radio" th:field="*{timeFrameType}" value="NONE"> Noch keine Zeitangaben</label>
     </fieldset>
     <p th:if="${#fields.hasErrors('timeFrameType')}" th:errors="*{timeFrameType}" role="alert"></p>
-
     <div id="start-date-field" th:hidden="*{!startDateInputActive}">
         <label for="startDate">Startdatum</label>
         <input id="startDate" type="date" th:field="*{startDate}"
@@ -68,14 +69,9 @@
                th:disabled="*{!durationInputActive}" th:required="*{durationInputActive}">
         <p th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}" role="alert"></p>
     </div>
-
-    <button type="submit">Weiter zu den KI-Angaben</button>
+    <button type="submit">Weiter</button>
 </form>
-
-<form th:action="@{/projects/new/cancel}" method="post">
-    <button type="submit">Projekterstellung abbrechen</button>
-</form>
-
+<form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Abbrechen</button></form>
 <script>
     (() => {
         const category = document.getElementById('category');
@@ -89,7 +85,6 @@
         const endInput = document.getElementById('endDate');
         const durationField = document.getElementById('duration-field');
         const durationInput = document.getElementById('durationDays');
-
         const updateCategoryFields = () => {
             const isOther = category.value === 'OTHER';
             subcategoryFields.hidden = isOther;
@@ -98,7 +93,6 @@
             otherDescription.disabled = !isOther;
             otherDescription.required = isOther;
         };
-
         const updateTimeFields = () => {
             const selected = document.querySelector('input[name="timeFrameType"]:checked')?.value ?? 'NONE';
             const needsStart = selected === 'START_AND_END' || selected === 'START_AND_DURATION';
@@ -114,7 +108,6 @@
             durationInput.disabled = !needsDuration;
             durationInput.required = needsDuration;
         };
-
         category.addEventListener('change', updateCategoryFields);
         document.querySelectorAll('input[name="timeFrameType"]')
             .forEach(input => input.addEventListener('change', updateTimeFields));
