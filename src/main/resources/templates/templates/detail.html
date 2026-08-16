@@ -6,11 +6,18 @@
 <h2>Projekt aus Vorlage anlegen</h2>
 <form th:action="@{/templates/{id}/projects(id=${template.id})}" th:object="${projectForm}" method="post">
     <input type="hidden" th:field="*{creationType}">
+    <input type="hidden" th:field="*{category}">
+    <input type="hidden" th:field="*{projectType}">
     <label for="title">Projekttitel</label><input id="title" th:field="*{title}" required maxlength="100">
     <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
     <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
     <label for="startDate">Start</label><input id="startDate" type="date" th:field="*{startDate}">
     <label for="endDate">Ende</label><input id="endDate" type="date" th:field="*{endDate}">
+    <label for="collaborationMode">Projektart</label>
+    <select id="collaborationMode" th:field="*{collaborationMode}" required>
+        <option value="INDIVIDUAL">Einzelprojekt</option>
+        <option value="GROUP">Gruppenprojekt</option>
+    </select>
     <button type="submit">Projekt anlegen</button>
 </form>
 </main></body></html>

@@ -10,6 +10,7 @@
     <h1>Meine Projekte</h1>
     <nav aria-label="Projektbereiche">
         <a th:href="@{/projects}">Aktiv</a>
+        <a th:href="@{/projects/drafts}">Entwürfe</a>
         <a th:href="@{/projects(location=ARCHIVE)}">Archiv</a>
         <a th:href="@{/projects(location=TRASH)}">Papierkorb</a>
     </nav>
@@ -17,7 +18,8 @@
     <p th:if="${#lists.isEmpty(projects)}">In diesem Bereich sind keine Projekte vorhanden.</p>
     <ul th:unless="${#lists.isEmpty(projects)}">
         <li th:each="project : ${projects}">
-            <a th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}"></a>
+            <a th:if="${selectedLocation.name() != 'DRAFT'}" th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}"></a>
+            <span th:if="${selectedLocation.name() == 'DRAFT'}" th:text="${project.title}"></span>
         </li>
     </ul>
     <a th:href="@{/projects/new}">Projekt anlegen</a>

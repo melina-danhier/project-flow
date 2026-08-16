@@ -10,6 +10,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
@@ -303,6 +304,7 @@ class JpaEntityModelTest {
         project.setTitle(title);
         project.setCreationType(creationType);
         project.setStatus(status);
+        project.setLocation(status == ProjectStatus.DRAFT ? ProjectLocation.DRAFT : ProjectLocation.OVERVIEW);
         return project;
     }
 

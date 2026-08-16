@@ -1,10 +1,15 @@
 package de.melinadanhier.projectflow.plancontainer.template.controller;
 
-import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
-import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
+import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreationFlowState;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectCreationFlowService;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
+import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -25,6 +30,7 @@ public class TemplateController {
 
     private final TemplateService templateService;
     private final ProjectService projectService;
+    private final ProjectCreationFlowService creationFlowService;
 
     @GetMapping("/templates")
     public String overview(Model model) {
@@ -32,11 +38,32 @@ public class TemplateController {
         return "templates/overview";
     }
 
+    @GetMapping("/projects/new/template")
+    public String creationEntry(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
+            Model model
+    ) {
+        ProjectCreationFlowState state = creationFlowService.requireOwned(currentUser.userId(), session);
+        if (state.getCreationType() != CreationType.TEMPLATE) {
+            throw new ResourceNotFoundException("Vorlagen-Erstellungsablauf wurde nicht gefunden.");
+        }
+        model.addAttribute("creationFlow", state);
+        model.addAttribute("templates", templateService.getTemplates());
+        return "templates/overview";
+    }
+
     @GetMapping("/templates/{templateId}")
     public String detail(@PathVariable UUID templateId, Model model) {
-        model.addAttribute("template", templateService.getTemplate(templateId));
+        var template = templateService.getTemplate(templateId);
+        model.addAttribute("template", template);
         ProjectCreateForm form = new ProjectCreateForm();
         form.setCreationType(CreationType.TEMPLATE);
+        form.setCategory(template.getCategory());
+        form.setProjectType(template.getProjectType());
+        form.setCollaborationMode(template.getCollaborationMode() == CollaborationMode.BOTH
+                ? CollaborationMode.INDIVIDUAL
+                : template.getCollaborationMode());
         model.addAttribute("projectForm", form);
         return "templates/detail";
     }

@@ -7,10 +7,62 @@
     <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
     <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
     <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
+    <label for="category">Oberkategorie</label>
+    <select id="category" th:field="*{category}" required>
+        <option value="">Bitte auswählen</option>
+        <option value="EDUCATION">Bildung und Studium</option>
+        <option value="SOFTWARE_TECHNOLOGY">Software und Technik</option>
+        <option value="EVENT">Veranstaltung</option>
+        <option value="HOME">Haushalt und Wohnen</option>
+        <option value="CREATIVE">Kreatives</option>
+        <option value="CAREER">Beruf und Karriere</option>
+        <option value="HEALTH_PERSONAL_DEVELOPMENT">Gesundheit und persönliche Entwicklung</option>
+        <option value="TRAVEL">Reise</option>
+        <option value="OTHER">Sonstiges</option>
+    </select>
+    <p th:if="${#fields.hasErrors('category')}" th:errors="*{category}" role="alert"></p>
+    <label for="projectType">Unterkategorie (optional)</label>
+    <input id="projectType" th:field="*{projectType}" maxlength="100">
+    <fieldset>
+        <legend>Projektart</legend>
+        <input id="collaboration-individual" type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required>
+        <label for="collaboration-individual">Einzelprojekt</label>
+        <input id="collaboration-group" type="radio" th:field="*{collaborationMode}" value="GROUP">
+        <label for="collaboration-group">Gruppenprojekt</label>
+    </fieldset>
+    <p th:if="${#fields.hasErrors('collaborationMode')}" th:errors="*{collaborationMode}" role="alert"></p>
     <label for="startDate">Start</label><input id="startDate" type="date" th:field="*{startDate}">
     <label for="endDate">Ende</label><input id="endDate" type="date" th:field="*{endDate}">
-    <input type="hidden" th:field="*{creationType}" value="EMPTY">
-    <button type="submit">Projekt anlegen</button>
+    <fieldset>
+        <legend>Wie möchtest du planen?</legend>
+        <input id="creation-empty" type="radio" th:field="*{creationType}" value="EMPTY">
+        <label for="creation-empty">Projekt ohne anfängliche Aufgaben</label>
+        <input id="creation-template" type="radio" th:field="*{creationType}" value="TEMPLATE">
+        <label for="creation-template">Mit Vorlage starten</label>
+        <input id="creation-ai" type="radio" th:field="*{creationType}" value="AI">
+        <label for="creation-ai">Mit KI planen</label>
+    </fieldset>
+    <p th:if="${#fields.hasErrors('creationType')}" th:errors="*{creationType}" role="alert"></p>
+    <button id="creation-submit" type="submit">Projekt erstellen</button>
 </form>
-<a th:href="@{/projects}">Abbrechen</a>
+<form th:action="@{/projects/new/cancel}" method="post">
+    <button type="submit">Abbrechen</button>
+</form>
+<script>
+    (() => {
+        const labels = {
+            EMPTY: 'Projekt erstellen',
+            TEMPLATE: 'Vorlage auswählen',
+            AI: 'Weiter zu den KI-Angaben'
+        };
+        const button = document.getElementById('creation-submit');
+        const updateLabel = () => {
+            const selected = document.querySelector('input[name="creationType"]:checked');
+            button.textContent = labels[selected?.value] ?? labels.EMPTY;
+        };
+        document.querySelectorAll('input[name="creationType"]')
+            .forEach(input => input.addEventListener('change', updateLabel));
+        updateLabel();
+    })();
+</script>
 </main></body></html>

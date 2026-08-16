@@ -19,6 +19,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
+import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
@@ -64,29 +65,41 @@ public class ProjectService {
     private final PlanElementMapper planElementMapper;
     private final PlanDraftRepository planDraftRepository;
     private final PlanElementRepository planElementRepository;
+    private final ProjectStateService projectStateService;
 
     @Transactional
     public ProjectDetailsDto createProject(ProjectCreateForm form, UUID ownerUserId) {
         if (form.getCreationType() != CreationType.EMPTY) {
             throw new DomainValidationException(
-                    "Über die reguläre Projekterstellung können derzeit nur leere Projekte angelegt werden."
+                    "Über diesen Schritt kann nur ein Projekt ohne anfängliche Aufgaben gespeichert werden."
             );
         }
-        validateDateRange(form.getStartDate(), form.getEndDate());
+        validateGeneralProjectData(form);
         User owner = userRepository.findById(ownerUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Nutzerkonto wurde nicht gefunden."));
-        Project project = initializeProject(form, owner, form.getCreationType());
+        Project project = initializeProject(form, owner, CreationType.EMPTY);
         return projectMapper.toDetailsDto(projectRepository.save(project));
     }
 
     @Transactional
     public ProjectDetailsDto createProjectFromTemplate(UUID templateId, ProjectCreateForm form, UUID ownerUserId) {
-        validateDateRange(form.getStartDate(), form.getEndDate());
         User owner = userRepository.findById(ownerUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Nutzerkonto wurde nicht gefunden."));
         Template template = templateRepository.findById(templateId)
                 .filter(Template::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("Vorlage wurde nicht gefunden."));
+        if (form.getCategory() == null) {
+            form.setCategory(template.getCategory());
+        }
+        if (form.getProjectType() == null) {
+            form.setProjectType(template.getProjectType());
+        }
+        if (form.getCollaborationMode() == null) {
+            form.setCollaborationMode(template.getCollaborationMode() == CollaborationMode.BOTH
+                    ? CollaborationMode.INDIVIDUAL
+                    : template.getCollaborationMode());
+        }
+        validateGeneralProjectData(form);
         Project project = initializeProject(form, owner, CreationType.TEMPLATE);
         if (form.getDescription() == null) {
             project.setDescription(template.getDescription());
@@ -107,8 +120,11 @@ public class ProjectService {
         project.setDescription(form.getDescription());
         project.setStartDate(form.getStartDate());
         project.setEndDate(form.getEndDate());
+        project.setCategory(form.getCategory());
+        project.setProjectType(normalizeOptionalText(form.getProjectType()));
+        project.setCollaborationMode(form.getCollaborationMode());
         project.setCreationType(creationType);
-        project.setStatus(creationType == CreationType.AI ? ProjectStatus.DRAFT : ProjectStatus.ACTIVE);
+        projectStateService.changeState(project, ProjectStatus.ACTIVE, ProjectLocation.OVERVIEW);
         if (form.getStructureMode() != null) {
             project.setStructureMode(form.getStructureMode());
         }
@@ -197,6 +213,13 @@ public class ProjectService {
     public List<ProjectSummaryDto> findAccessibleProjects(ProjectLocation location, UUID userId) {
         ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
         return projectRepository.findAllAccessibleByUserIdAndLocation(userId, selectedLocation).stream()
+                .map(projectMapper::toSummaryDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectSummaryDto> findDraftProjects(UUID userId) {
+        return projectRepository.findAllDraftsAccessibleByUserId(userId).stream()
                 .map(projectMapper::toSummaryDto)
                 .toList();
     }
@@ -302,7 +325,7 @@ public class ProjectService {
     @Transactional
     public void moveToTrash(UUID projectId, UUID userId) {
         ProjectMember owner = authorizationService.requireEditableOwner(projectId, userId);
-        owner.getProject().setLocation(ProjectLocation.TRASH);
+        projectStateService.changeState(owner.getProject(), ProjectStatus.ACTIVE, ProjectLocation.TRASH);
     }
 
     @Transactional
@@ -316,8 +339,7 @@ public class ProjectService {
         if (project.getStatus() == ProjectStatus.DRAFT) {
             throw new ConflictException("Ein KI-Entwurf muss über den vorgesehenen Prüf- und Bestätigungsfluss übernommen werden.");
         }
-        project.setStatus(ProjectStatus.ACTIVE);
-        project.setLocation(ProjectLocation.OVERVIEW);
+        projectStateService.changeState(project, ProjectStatus.ACTIVE, ProjectLocation.OVERVIEW);
     }
 
     @Transactional
@@ -352,6 +374,25 @@ public class ProjectService {
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new DomainValidationException("Das Projektende darf nicht vor dem Projektstart liegen.");
         }
+    }
+
+    private void validateGeneralProjectData(ProjectCreateForm form) {
+        validateDateRange(form.getStartDate(), form.getEndDate());
+        if (form.getCategory() == null) {
+            throw new DomainValidationException("Bitte wähle eine Oberkategorie aus.");
+        }
+        if (form.getCollaborationMode() == null
+                || form.getCollaborationMode()
+                == CollaborationMode.BOTH) {
+            throw new DomainValidationException("Bitte wähle Einzel- oder Gruppenprojekt aus.");
+        }
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {

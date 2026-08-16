@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title>KI-Planung – ProjectFlow</title></head>
+<body><main>
+<h1>KI-Planung vorbereiten</h1>
+<p>Die allgemeinen Angaben für „<span th:text="${creationFlow.title}">Projekt</span>“ sind nur temporär gespeichert.</p>
+<p>Die projektspezifischen KI-Fragen werden in einer späteren Ausbaustufe ergänzt.</p>
+<form th:action="@{/projects/new/cancel}" method="post">
+    <button type="submit">Projekterstellung abbrechen</button>
+</form>
+</main></body></html>

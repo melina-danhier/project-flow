@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ForbiddenOperationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
+import de.melinadanhier.projectflow.common.exception.ProjectNotEditableException;
 import de.melinadanhier.projectflow.generation.model.PlanDraft;
 import de.melinadanhier.projectflow.generation.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
@@ -13,12 +14,14 @@ import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectMembershipService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectStateService;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
@@ -29,6 +32,8 @@ import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
+import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
+import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
 import de.melinadanhier.projectflow.planelement.service.PlanElementService;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
@@ -54,6 +59,7 @@ import static org.assertj.core.api.Assertions.within;
         ProjectAuthorizationService.class,
         ProjectMembershipService.class,
         ProjectService.class,
+        ProjectStateService.class,
         ProjectMapperImpl.class,
         PlanElementService.class,
         PlanElementMapperImpl.class
@@ -73,6 +79,12 @@ class ProjectSecurityIntegrationTest {
     private TaskRepository taskRepository;
 
     @Autowired
+    private MilestoneRepository milestoneRepository;
+
+    @Autowired
+    private PlanSectionRepository planSectionRepository;
+
+    @Autowired
     private PlanDraftRepository planDraftRepository;
 
     @Autowired
@@ -88,6 +100,9 @@ class ProjectSecurityIntegrationTest {
     private ProjectService projectService;
 
     @Autowired
+    private ProjectStateService projectStateService;
+
+    @Autowired
     private PlanElementService planElementService;
 
     @Test
@@ -96,6 +111,9 @@ class ProjectSecurityIntegrationTest {
         ProjectCreateForm form = new ProjectCreateForm();
         form.setTitle(" Neues Projekt ");
         form.setCreationType(CreationType.EMPTY);
+        form.setCategory(TemplateCategory.HOME);
+        form.setProjectType("Umzug");
+        form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
 
         UUID projectId = projectService.createProject(form, owner.getId()).getId();
 
@@ -106,21 +124,89 @@ class ProjectSecurityIntegrationTest {
             assertThat(membership.getRole()).isEqualTo(ProjectMemberRole.OWNER);
             assertThat(membership.isActive()).isTrue();
         });
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        assertThat(project.getCreationType()).isEqualTo(CreationType.EMPTY);
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        assertThat(project.getCategory()).isEqualTo(TemplateCategory.HOME);
+        assertThat(project.getProjectType()).isEqualTo("Umzug");
+        assertThat(project.getCollaborationMode()).isEqualTo(CollaborationMode.INDIVIDUAL);
+        assertThat(planSectionRepository.count()).isZero();
+        assertThat(taskRepository.count()).isZero();
+        assertThat(milestoneRepository.count()).isZero();
     }
 
     @Test
-    void regularProjectCreationRejectsManipulatedAiAndTemplateTypes() {
+    void regularProjectCreationAcceptsOnlyEmptyCreationType() {
         User owner = saveUser("blocked-creation@example.org");
         ProjectCreateForm form = new ProjectCreateForm();
-        form.setTitle("Manipuliertes Projekt");
-
+        form.setTitle("Nicht direkt speichern");
         form.setCreationType(CreationType.AI);
+
         assertThatThrownBy(() -> projectService.createProject(form, owner.getId()))
                 .isInstanceOf(DomainValidationException.class);
         form.setCreationType(CreationType.TEMPLATE);
         assertThatThrownBy(() -> projectService.createProject(form, owner.getId()))
                 .isInstanceOf(DomainValidationException.class);
-        assertThat(projectRepository.findAllAccessibleByUserId(owner.getId())).isEmpty();
+        assertThat(projectRepository.findAll()).isEmpty();
+        assertThat(projectMemberRepository.count()).isZero();
+        assertThat(planDraftRepository.count()).isZero();
+    }
+
+    @Test
+    void creationAndLocationEnumsContainOnlyTheSpecifiedValues() {
+        assertThat(CreationType.values()).containsExactly(
+                CreationType.EMPTY, CreationType.TEMPLATE, CreationType.AI);
+        assertThat(ProjectStatus.values()).containsExactly(
+                ProjectStatus.DRAFT, ProjectStatus.ACTIVE, ProjectStatus.COMPLETED);
+        assertThat(ProjectLocation.values()).containsExactly(
+                ProjectLocation.OVERVIEW, ProjectLocation.DRAFT,
+                ProjectLocation.TRASH, ProjectLocation.ARCHIVE);
+    }
+
+    @Test
+    void draftStatusAndLocationAreChangedOnlyAsAConsistentPair() {
+        Project project = new Project();
+
+        projectStateService.changeState(project, ProjectStatus.DRAFT, ProjectLocation.DRAFT);
+        assertThat(project.isDraftStateConsistent()).isTrue();
+
+        assertThatThrownBy(() -> projectStateService.changeState(
+                project, ProjectStatus.DRAFT, ProjectLocation.OVERVIEW))
+                .isInstanceOf(DomainValidationException.class);
+        assertThatThrownBy(() -> projectStateService.changeState(
+                project, ProjectStatus.ACTIVE, ProjectLocation.DRAFT))
+                .isInstanceOf(DomainValidationException.class);
+    }
+
+    @Test
+    void overviewAndDraftQueriesUseOnlyTheirLocation() {
+        User owner = saveUser("location-owner@example.org");
+        Project overview = saveProject("Aktiv", owner);
+        Project draft = saveProject("Entwurf", owner);
+        projectStateService.changeState(draft, ProjectStatus.DRAFT, ProjectLocation.DRAFT);
+        projectRepository.flush();
+
+        assertThat(projectRepository.findAllAccessibleByUserId(owner.getId()))
+                .extracting(Project::getId).containsExactly(overview.getId());
+        assertThat(projectRepository.findAllDraftsAccessibleByUserId(owner.getId()))
+                .extracting(Project::getId).containsExactly(draft.getId());
+    }
+
+    @Test
+    void draftProjectsCannotUseActiveProjectManagementServices() {
+        User owner = saveUser("draft-block-owner@example.org");
+        User member = saveUser("draft-block-member@example.org");
+        Project draft = saveProject("Gesperrter Entwurf", owner);
+        projectStateService.changeState(draft, ProjectStatus.DRAFT, ProjectLocation.DRAFT);
+        projectRepository.flush();
+
+        assertThatThrownBy(() -> authorizationService.requireEditableOwner(draft.getId(), owner.getId()))
+                .isInstanceOf(ProjectNotEditableException.class);
+        assertThatThrownBy(() -> membershipService.addMember(draft.getId(), member.getEmail(), owner.getId()))
+                .isInstanceOf(ProjectNotEditableException.class);
+        assertThatThrownBy(() -> projectService.moveToTrash(draft.getId(), owner.getId()))
+                .isInstanceOf(ProjectNotEditableException.class);
     }
 
     @Test
