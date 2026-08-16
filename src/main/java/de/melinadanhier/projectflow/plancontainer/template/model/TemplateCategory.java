@@ -8,5 +8,6 @@ public enum TemplateCategory {
     CREATIVE,
     CAREER,
     HEALTH_PERSONAL_DEVELOPMENT,
-    TRAVEL
+    TRAVEL,
+    OTHER
 }

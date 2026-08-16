@@ -2,6 +2,8 @@ package de.melinadanhier.projectflow.plancontainer.project.model;
 
 import de.melinadanhier.projectflow.generation.model.PlanDraft;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
+import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
+import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +14,8 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,6 +38,18 @@ public class Project extends PlanContainer {
 
     @Column(name = "end_date")
     private LocalDate endDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", length = 50)
+    private TemplateCategory category;
+
+    @Size(max = 100)
+    @Column(name = "project_type", length = 100)
+    private String projectType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "collaboration_mode", length = 20)
+    private CollaborationMode collaborationMode;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -74,5 +90,10 @@ public class Project extends PlanContainer {
         if (draft != null) {
             draft.setProject(this);
         }
+    }
+
+    @AssertTrue(message = "Entwurfsstatus und Entwurfsbereich müssen gemeinsam gesetzt sein.")
+    public boolean isDraftStateConsistent() {
+        return (status == ProjectStatus.DRAFT) == (location == ProjectLocation.DRAFT);
     }
 }

@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectMembershipService;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectCreationFlowService;
 import de.melinadanhier.projectflow.plancontainer.project.dto.AddProjectMemberForm;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectDetailsDto;
@@ -12,6 +13,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -32,6 +34,7 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final ProjectMembershipService membershipService;
+    private final ProjectCreationFlowService creationFlowService;
 
     @GetMapping("/projects")
     public String projects(
@@ -39,9 +42,23 @@ public class ProjectController {
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
     ) {
-        ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
+        ProjectLocation selectedLocation = switch (location == null ? ProjectLocation.OVERVIEW : location) {
+            case ARCHIVE -> ProjectLocation.ARCHIVE;
+            case TRASH -> ProjectLocation.TRASH;
+            case OVERVIEW, DRAFT -> ProjectLocation.OVERVIEW;
+        };
         model.addAttribute("projects", projectService.findAccessibleProjects(selectedLocation, currentUser.userId()));
         model.addAttribute("selectedLocation", selectedLocation);
+        return "projects/overview";
+    }
+
+    @GetMapping("/projects/drafts")
+    public String drafts(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model
+    ) {
+        model.addAttribute("projects", projectService.findDraftProjects(currentUser.userId()));
+        model.addAttribute("selectedLocation", ProjectLocation.DRAFT);
         return "projects/overview";
     }
 
@@ -58,14 +75,34 @@ public class ProjectController {
             @Valid @ModelAttribute("projectForm") ProjectCreateForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
             RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
             return "projects/create";
         }
-        ProjectDetailsDto created = projectService.createProject(form, currentUser.userId());
-        redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde angelegt.");
-        return "redirect:/projects/" + created.getId() + "/plan";
+        return switch (form.getCreationType()) {
+            case EMPTY -> createEmptyProject(form, currentUser.userId(), session, redirectAttributes);
+            case TEMPLATE -> {
+                creationFlowService.store(form, currentUser.userId(), session);
+                yield "redirect:/projects/new/template";
+            }
+            case AI -> {
+                creationFlowService.store(form, currentUser.userId(), session);
+                yield "redirect:/projects/new/ai";
+            }
+        };
+    }
+
+    @PostMapping("/projects/new/cancel")
+    public String cancelCreation(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
+            RedirectAttributes redirectAttributes
+    ) {
+        creationFlowService.clearOwned(currentUser.userId(), session);
+        redirectAttributes.addFlashAttribute("successMessage", "Projekterstellung wurde abgebrochen.");
+        return "redirect:/projects";
     }
 
     @GetMapping("/projects/{projectId}/edit")
@@ -193,5 +230,17 @@ public class ProjectController {
 
     private String membersRedirect(UUID projectId) {
         return "redirect:/projects/" + projectId + "/members";
+    }
+
+    private String createEmptyProject(
+            ProjectCreateForm form,
+            UUID userId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes
+    ) {
+        ProjectDetailsDto created = projectService.createProject(form, userId);
+        creationFlowService.clearOwned(userId, session);
+        redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde angelegt.");
+        return "redirect:/projects/" + created.getId() + "/plan";
     }
 }

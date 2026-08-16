@@ -3,6 +3,18 @@ package de.melinadanhier.projectflow.security;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
+import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreationFlowState;
+import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectCreationFlowService;
+import de.melinadanhier.projectflow.generation.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
+import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.SectionDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionForm;
@@ -23,7 +35,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
@@ -54,6 +65,12 @@ class AuthenticationIntegrationTest {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private ProjectMemberRepository projectMemberRepository;
+
+    @Autowired
+    private PlanDraftRepository planDraftRepository;
 
     @Autowired
     private SectionService sectionService;
@@ -146,10 +163,16 @@ class AuthenticationIntegrationTest {
         String email = "crud-controller@example.org";
         User user = saveUser(email, "richtiges-passwort", true);
         MockHttpSession session = login(email, "richtiges-passwort");
+        ProjectCreationFlowState staleState = new ProjectCreationFlowState();
+        staleState.setUserId(user.getId());
+        staleState.setCreationType(CreationType.AI);
+        session.setAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE, staleState);
 
         mockMvc.perform(post("/projects")
                         .session(session)
                         .param("title", "Controller-Projekt")
+                        .param("category", "HOME")
+                        .param("collaborationMode", "INDIVIDUAL")
                         .param("creationType", "EMPTY"))
                 .andExpect(status().isForbidden());
 
@@ -157,9 +180,12 @@ class AuthenticationIntegrationTest {
                         .session(session)
                         .with(csrf())
                         .param("title", "Controller-Projekt")
+                        .param("category", "HOME")
+                        .param("collaborationMode", "INDIVIDUAL")
                         .param("creationType", "EMPTY"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrlPattern("/projects/*/plan"));
+        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE)).isNull();
         assertThat(projectRepository.findAllAccessibleByUserId(user.getId()))
                 .singleElement().extracting("title").isEqualTo("Controller-Projekt");
 
@@ -180,25 +206,140 @@ class AuthenticationIntegrationTest {
     }
 
     @Test
-    void regularCreateUiOnlyOffersEmptyProjectsAndRejectsManipulatedAiType() throws Exception {
-        String email = "blocked-ai-controller@example.org";
-        User user = saveUser(email, "richtiges-passwort", true);
-        MockHttpSession session = login(email, "richtiges-passwort");
+    void aiCreationStoresOnlyOwnedSessionDataAndUsesWizardWithoutProjectId() throws Exception {
+        String ownerEmail = "ai-controller-owner@example.org";
+        String outsiderEmail = "ai-controller-outsider@example.org";
+        saveUser(ownerEmail, "richtiges-passwort", true);
+        saveUser(outsiderEmail, "richtiges-passwort", true);
+        MockHttpSession ownerSession = login(ownerEmail, "richtiges-passwort");
+        MockHttpSession outsiderSession = login(outsiderEmail, "richtiges-passwort");
 
-        mockMvc.perform(get("/projects/new").session(session))
+        mockMvc.perform(get("/projects/new").session(ownerSession))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("name=\"creationType\"")))
                 .andExpect(content().string(containsString("value=\"EMPTY\"")))
-                .andExpect(content().string(not(containsString("value=\"AI\""))))
-                .andExpect(content().string(not(containsString("KI-Unterstützung"))));
+                .andExpect(content().string(containsString("value=\"TEMPLATE\"")))
+                .andExpect(content().string(containsString("value=\"AI\"")))
+                .andExpect(content().string(containsString("Projekt ohne anfängliche Aufgaben")))
+                .andExpect(content().string(containsString("Vorlage auswählen")))
+                .andExpect(content().string(containsString("Weiter zu den KI-Angaben")));
+
+        long projectsBefore = projectRepository.count();
+        long membersBefore = projectMemberRepository.count();
+        long draftsBefore = planDraftRepository.count();
+        mockMvc.perform(post("/projects")
+                        .session(ownerSession)
+                        .with(csrf())
+                        .param("title", "MVC KI-Projekt")
+                        .param("description", "Nur temporär")
+                        .param("category", "EDUCATION")
+                        .param("projectType", "Bachelorarbeit")
+                        .param("collaborationMode", "INDIVIDUAL")
+                        .param("creationType", "AI"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/ai"));
+
+        assertThat(projectRepository.count()).isEqualTo(projectsBefore);
+        assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
+        assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
+        assertThat(ownerSession.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectCreationFlowState.class, state -> {
+                    assertThat(state.getCreationType()).isEqualTo(CreationType.AI);
+                    assertThat(state.getTitle()).isEqualTo("MVC KI-Projekt");
+                    assertThat(state.getProjectType()).isEqualTo("Bachelorarbeit");
+                });
+
+        mockMvc.perform(get("/projects/new/ai").session(ownerSession))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/ai-wizard"))
+                .andExpect(content().string(containsString("nur temporär gespeichert")));
+        mockMvc.perform(get("/projects/new/ai").session(outsiderSession))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void templateCreationEntryStoresGeneralDataWithoutCreatingAProject() throws Exception {
+        String email = "template-flow@example.org";
+        saveUser(email, "richtiges-passwort", true);
+        MockHttpSession session = login(email, "richtiges-passwort");
+        long projectsBefore = projectRepository.count();
+        long membersBefore = projectMemberRepository.count();
 
         mockMvc.perform(post("/projects")
                         .session(session)
                         .with(csrf())
-                        .param("title", "Manipuliertes KI-Projekt")
+                        .param("title", "Vorlagenprojekt")
+                        .param("category", "EVENT")
+                        .param("collaborationMode", "GROUP")
+                        .param("creationType", "TEMPLATE"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/template"));
+
+        assertThat(projectRepository.count()).isEqualTo(projectsBefore);
+        assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
+        mockMvc.perform(get("/projects/new/template").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("templates/overview"));
+    }
+
+    @Test
+    void cancelRemovesOnlyTheTemporaryCreationState() throws Exception {
+        String email = "cancel-flow@example.org";
+        saveUser(email, "richtiges-passwort", true);
+        MockHttpSession session = login(email, "richtiges-passwort");
+        mockMvc.perform(post("/projects")
+                        .session(session)
+                        .with(csrf())
+                        .param("title", "Abbrechen")
+                        .param("category", "OTHER")
+                        .param("collaborationMode", "INDIVIDUAL")
                         .param("creationType", "AI"))
-                .andExpect(status().isBadRequest());
-        assertThat(projectRepository.findAllAccessibleByUserId(user.getId())).isEmpty();
+                .andExpect(status().is3xxRedirection());
+        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE)).isNotNull();
+
+        long projectsBefore = projectRepository.count();
+        mockMvc.perform(post("/projects/new/cancel").session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects"));
+
+        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE)).isNull();
+        assertThat(projectRepository.count()).isEqualTo(projectsBefore);
+    }
+
+    @Test
+    void draftProjectCannotBeManagedThroughDirectActiveProjectUrls() throws Exception {
+        String email = "draft-direct-url@example.org";
+        User owner = saveUser(email, "richtiges-passwort", true);
+        MockHttpSession session = login(email, "richtiges-passwort");
+        Project draft = saveDraftProject(owner);
+
+        mockMvc.perform(get("/projects/{projectId}/plan", draft.getId()).session(session))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/projects/{projectId}/members", draft.getId()).session(session))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/projects/{projectId}/edit", draft.getId())
+                        .session(session).with(csrf()).param("title", "Manipuliert"))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/projects/{projectId}/trash", draft.getId())
+                        .session(session).with(csrf()))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/projects/{projectId}/sections", draft.getId())
+                        .session(session).with(csrf()).param("title", "Manipulierte Phase"))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/projects/{projectId}/tasks", draft.getId())
+                        .session(session).with(csrf())
+                        .param("title", "Manipulierte Aufgabe")
+                        .param("priority", "MEDIUM"))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/projects/{projectId}/milestones", draft.getId())
+                        .session(session).with(csrf()).param("title", "Manipulierter Meilenstein"))
+                .andExpect(status().isConflict());
+
+        assertThat(projectRepository.findById(draft.getId())).get().satisfies(project -> {
+            assertThat(project.getStatus()).isEqualTo(ProjectStatus.DRAFT);
+            assertThat(project.getLocation()).isEqualTo(ProjectLocation.DRAFT);
+            assertThat(project.getTitle()).isEqualTo("Direkt gesperrter Entwurf");
+        });
     }
 
     @Test
@@ -210,6 +351,8 @@ class AuthenticationIntegrationTest {
                         .session(session)
                         .with(csrf())
                         .param("title", "Darstellungsprojekt")
+                        .param("category", "EDUCATION")
+                        .param("collaborationMode", "INDIVIDUAL")
                         .param("creationType", "EMPTY"))
                 .andExpect(status().is3xxRedirection());
         UUID projectId = projectRepository.findAllAccessibleByUserId(user.getId()).getFirst().getId();
@@ -267,5 +410,21 @@ class AuthenticationIntegrationTest {
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setEnabled(enabled);
         return userRepository.saveAndFlush(user);
+    }
+
+    private Project saveDraftProject(User owner) {
+        Project project = new Project();
+        project.setTitle("Direkt gesperrter Entwurf");
+        project.setCategory(TemplateCategory.EDUCATION);
+        project.setProjectType("Präsentation");
+        project.setCollaborationMode(CollaborationMode.INDIVIDUAL);
+        project.setCreationType(CreationType.AI);
+        project.setStatus(ProjectStatus.DRAFT);
+        project.setLocation(ProjectLocation.DRAFT);
+        ProjectMember membership = new ProjectMember();
+        membership.setUser(owner);
+        membership.setRole(ProjectMemberRole.OWNER);
+        project.addMembership(membership);
+        return projectRepository.saveAndFlush(project);
     }
 }

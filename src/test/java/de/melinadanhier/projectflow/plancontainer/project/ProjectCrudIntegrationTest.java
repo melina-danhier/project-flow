@@ -16,6 +16,7 @@ import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemb
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectStateService;
 import de.melinadanhier.projectflow.planelement.dto.DeleteSectionForm;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementType;
@@ -56,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Import({
         ProjectAuthorizationService.class,
         ProjectService.class,
+        ProjectStateService.class,
         ProjectMapperImpl.class,
         PlanElementMapperImpl.class,
         TaskService.class,

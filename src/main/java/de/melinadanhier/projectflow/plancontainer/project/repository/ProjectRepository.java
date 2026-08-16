@@ -18,9 +18,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
             join project.memberships membership
             where membership.user.id = :userId and membership.active = true
               and project.location = :location
-              and project.status <> de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus.DRAFT
-              and (:location <> de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation.OVERVIEW
-                   or project.status = de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus.ACTIVE)
             order by project.updatedAt desc
             """)
     List<Project> findAllAccessibleByUserIdAndLocation(
@@ -30,6 +27,10 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     default List<Project> findAllAccessibleByUserId(UUID userId) {
         return findAllAccessibleByUserIdAndLocation(userId, ProjectLocation.OVERVIEW);
+    }
+
+    default List<Project> findAllDraftsAccessibleByUserId(UUID userId) {
+        return findAllAccessibleByUserIdAndLocation(userId, ProjectLocation.DRAFT);
     }
 
     @EntityGraph(attributePaths = {"memberships", "memberships.user"})
