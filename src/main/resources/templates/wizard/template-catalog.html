@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title>Vorlage auswählen – ProjectFlow</title></head>
+<body><main>
+<h1>Vorlage auswählen</h1>
+<p>Deine Grundangaben bleiben erhalten. Du kannst jede Vorlage ansehen und verwenden.</p>
+<ul><li th:each="template : ${templates}">
+    <strong th:if="${recommendedTemplateId != null and recommendedTemplateId == template.id}">Empfohlen: </strong>
+    <a th:href="@{/projects/new/template/{id}(id=${template.id})}" th:text="${template.title}">Vorlage</a>
+    <form th:action="@{/projects/new/template/{id}(id=${template.id})}" method="post">
+        <button type="submit">Direkt benutzen</button>
+    </form>
+</li></ul>
+<a th:href="@{/projects/new/method}">Zurück</a>
+<form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Abbrechen</button></form>
+</main></body></html>

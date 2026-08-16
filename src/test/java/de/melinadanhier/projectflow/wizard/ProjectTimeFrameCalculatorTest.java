@@ -1,8 +1,8 @@
-package de.melinadanhier.projectflow.plancontainer.project;
+package de.melinadanhier.projectflow.wizard;
 
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectBasicsForm;
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectTimeFrameType;
-import de.melinadanhier.projectflow.plancontainer.project.service.ProjectTimeFrameCalculator;
+import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
+import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
+import de.melinadanhier.projectflow.wizard.service.ProjectTimeFrameCalculator;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;

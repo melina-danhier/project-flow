@@ -3,21 +3,5 @@
 <body><main><a th:href="@{/templates}">Zu den Vorlagen</a><h1 th:text="${template.title}">Vorlage</h1>
 <p th:text="${template.description}"></p><h2>Phasen</h2><ul><li th:each="section : ${template.sections}" th:text="${section.title}"></li></ul>
 <h2>Aufgaben</h2><ul><li th:each="task : ${template.tasks}" th:text="${task.title}"></li></ul>
-<h2>Projekt aus Vorlage anlegen</h2>
-<form th:action="@{/templates/{id}/projects(id=${template.id})}" th:object="${projectForm}" method="post">
-    <input type="hidden" th:field="*{creationType}">
-    <input type="hidden" th:field="*{category}">
-    <input type="hidden" th:field="*{projectType}">
-    <label for="title">Projekttitel</label><input id="title" th:field="*{title}" required maxlength="100">
-    <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
-    <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
-    <label for="startDate">Start</label><input id="startDate" type="date" th:field="*{startDate}">
-    <label for="endDate">Ende</label><input id="endDate" type="date" th:field="*{endDate}">
-    <label for="collaborationMode">Projektart</label>
-    <select id="collaborationMode" th:field="*{collaborationMode}" required>
-        <option value="INDIVIDUAL">Einzelprojekt</option>
-        <option value="GROUP">Gruppenprojekt</option>
-    </select>
-    <button type="submit">Projekt anlegen</button>
-</form>
+<p><a th:href="@{/projects/new}">Projekt mit dem Wizard anlegen</a></p>
 </main></body></html>

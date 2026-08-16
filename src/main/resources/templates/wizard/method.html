@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title>Erstellungsweg wählen – ProjectFlow</title></head>
+<body><main>
+<p>Schritt 2 von 2</p><h1>Wie möchtest du starten?</h1>
+<p>Die Grundangaben für „<span th:text="${wizardState.title}">Projekt</span>“ sind zwischengespeichert.</p>
+<form th:action="@{/projects/new/method}" th:object="${creationMethodForm}" method="post">
+    <fieldset><legend>Erstellungsweg</legend>
+        <label><input type="radio" th:field="*{creationType}" value="EMPTY"> Manuelles Projekt</label>
+        <label><input type="radio" th:field="*{creationType}" value="TEMPLATE"> Projekt aus Vorlage</label>
+        <label><input type="radio" th:field="*{creationType}" value="AI"> Mit KI planen</label>
+    </fieldset>
+    <p th:if="${#fields.hasErrors('creationType')}" th:errors="*{creationType}" role="alert"></p>
+    <button id="method-submit" type="submit">Weiter</button>
+</form>
+<a th:href="@{/projects/new}">Grundangaben bearbeiten</a>
+<form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Abbrechen</button></form>
+<script>
+    (() => {
+        const labels = {EMPTY: 'Projekt erstellen', TEMPLATE: 'Vorlage auswählen', AI: 'Weiter zu den KI-Angaben'};
+        const button = document.getElementById('method-submit');
+        const update = () => {
+            const selected = document.querySelector('input[name="creationType"]:checked');
+            button.textContent = labels[selected?.value] ?? 'Weiter';
+        };
+        document.querySelectorAll('input[name="creationType"]').forEach(input => input.addEventListener('change', update));
+        update();
+    })();
+</script>
+</main></body></html>

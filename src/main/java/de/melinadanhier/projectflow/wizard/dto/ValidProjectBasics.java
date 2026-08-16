@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.plancontainer.project.dto;
+package de.melinadanhier.projectflow.wizard.dto;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

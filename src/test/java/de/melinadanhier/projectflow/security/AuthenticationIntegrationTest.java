@@ -4,10 +4,7 @@ import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreationFlowState;
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
-import de.melinadanhier.projectflow.plancontainer.project.service.ProjectCreationFlowService;
 import de.melinadanhier.projectflow.generation.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
@@ -16,6 +13,9 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRol
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
+import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
+import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.SectionDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionForm;
@@ -171,29 +171,31 @@ class AuthenticationIntegrationTest {
         String email = "crud-controller@example.org";
         User user = saveUser(email, "richtiges-passwort", true);
         MockHttpSession session = login(email, "richtiges-passwort");
-        ProjectCreationFlowState staleState = new ProjectCreationFlowState();
-        staleState.setUserId(user.getId());
-        staleState.setCreationType(CreationType.AI);
-        session.setAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE, staleState);
 
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .param("title", "Controller-Projekt")
                         .param("category", "HOME")
                         .param("collaborationMode", "INDIVIDUAL")
-                        .param("creationType", "EMPTY"))
+                        .param("timeFrameType", "NONE"))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Controller-Projekt")
                         .param("category", "HOME")
                         .param("collaborationMode", "INDIVIDUAL")
+                        .param("timeFrameType", "NONE"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/method"));
+        mockMvc.perform(post("/projects/new/method")
+                        .session(session)
+                        .with(csrf())
                         .param("creationType", "EMPTY"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrlPattern("/projects/*/plan"));
-        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE)).isNull();
+        assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isNull();
         assertThat(projectRepository.findAllAccessibleByUserId(user.getId()))
                 .singleElement().extracting("title").isEqualTo("Controller-Projekt");
 
@@ -224,102 +226,83 @@ class AuthenticationIntegrationTest {
 
         mockMvc.perform(get("/projects/new").session(ownerSession))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("name=\"creationType\"")))
-                .andExpect(content().string(containsString("value=\"EMPTY\"")))
-                .andExpect(content().string(containsString("value=\"TEMPLATE\"")))
-                .andExpect(content().string(containsString("value=\"AI\"")))
-                .andExpect(content().string(containsString("Projekt ohne anfängliche Aufgaben")))
-                .andExpect(content().string(containsString("Vorlage auswählen")))
-                .andExpect(content().string(containsString("Weiter zu den KI-Angaben")));
+                .andExpect(view().name("wizard/basics"))
+                .andExpect(content().string(containsString("Grundangaben zum Projekt")));
 
         long projectsBefore = projectRepository.count();
         long membersBefore = projectMemberRepository.count();
         long draftsBefore = planDraftRepository.count();
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/projects/new")
                         .session(ownerSession)
                         .with(csrf())
                         .param("title", "MVC KI-Projekt")
                         .param("description", "Nur temporär")
                         .param("category", "EDUCATION")
-                        .param("projectType", "Bachelorarbeit")
+                        .param("subcategory", "Bachelorarbeit")
                         .param("collaborationMode", "INDIVIDUAL")
-                        .param("creationType", "AI"))
+                        .param("timeFrameType", "START_AND_DURATION")
+                        .param("startDate", "2026-09-01")
+                        .param("durationDays", "21"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/projects/new/ai"));
+                .andExpect(redirectedUrl("/projects/new/method"));
 
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
         assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
-        assertThat(ownerSession.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE))
-                .isInstanceOfSatisfying(ProjectCreationFlowState.class, state -> {
-                    assertThat(state.getCreationType()).isEqualTo(CreationType.AI);
+        assertThat(ownerSession.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectWizardState.class, state -> {
+                    assertThat(state.getCreationType()).isNull();
                     assertThat(state.getTitle()).isEqualTo("MVC KI-Projekt");
                     assertThat(state.getProjectType()).isEqualTo("Bachelorarbeit");
+                    assertThat(state.getEndDate()).hasToString("2026-09-21");
                 });
 
-        mockMvc.perform(get("/projects/new/ai").session(ownerSession))
+        mockMvc.perform(get("/projects/new/method").session(ownerSession))
                 .andExpect(status().isOk())
-                .andExpect(view().name("generation/ai-wizard"))
-                .andExpect(content().string(containsString("Grundangaben zum Projekt")))
-                .andExpect(content().string(containsString("Bachelorarbeit")));
+                .andExpect(view().name("wizard/method"))
+                .andExpect(content().string(containsString("value=\"EMPTY\"")))
+                .andExpect(content().string(containsString("value=\"TEMPLATE\"")))
+                .andExpect(content().string(containsString("value=\"AI\"")));
 
-        mockMvc.perform(post("/projects/new/ai")
+        mockMvc.perform(post("/projects/new/method")
+                        .session(ownerSession)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("wizard/method"))
+                .andExpect(model().attributeHasFieldErrors("creationMethodForm", "creationType"));
+
+        mockMvc.perform(post("/projects/new/method")
                         .session(ownerSession)
                         .with(csrf())
-                        .param("title", "Überarbeitete Präsentation")
-                        .param("category", "EDUCATION")
-                        .param("subcategory", "Präsentation")
-                        .param("timeFrameType", "START_AND_DURATION")
-                        .param("startDate", "2026-09-01")
-                        .param("durationDays", "21"))
+                        .param("creationType", "AI"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/ai/details"));
 
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
         assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
-        assertThat(ownerSession.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE))
-                .isInstanceOfSatisfying(ProjectCreationFlowState.class, state -> {
-                    assertThat(state.getTitle()).isEqualTo("Überarbeitete Präsentation");
-                    assertThat(state.getProjectType()).isEqualTo("Präsentation");
-                    assertThat(state.getStartDate()).hasToString("2026-09-01");
-                    assertThat(state.getEndDate()).hasToString("2026-09-21");
-                    assertThat(state.getDurationDays()).isEqualTo(21);
-                });
+        assertThat(ownerSession.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectWizardState.class,
+                        state -> assertThat(state.getCreationType()).isEqualTo(CreationType.AI));
 
         mockMvc.perform(get("/projects/new/ai/details").session(ownerSession))
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/ai-details"))
-                .andExpect(content().string(containsString("Überarbeitete Präsentation")));
-        mockMvc.perform(get("/projects/new/ai").session(ownerSession))
+                .andExpect(content().string(containsString("MVC KI-Projekt")));
+        mockMvc.perform(get("/projects/new").session(ownerSession))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("value=\"2026-09-01\"")))
                 .andExpect(content().string(containsString("value=\"21\"")));
-        mockMvc.perform(get("/projects/new/ai").session(outsiderSession))
-                .andExpect(status().isNotFound());
         mockMvc.perform(get("/projects/new/ai/details").session(outsiderSession))
-                .andExpect(status().isNotFound());
-        mockMvc.perform(post("/projects/new/ai")
-                        .session(outsiderSession)
-                        .with(csrf())
-                        .param("title", "Fremder Zugriff")
-                        .param("category", "EDUCATION")
-                        .param("timeFrameType", "NONE"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void aiWizardTreatsOtherAsDefaultAndRequiresItsDescription() throws Exception {
-        User user = saveUser("ai-other@example.org", "richtiges-passwort", true);
+        User user = saveUser("wizard-other@example.org", "richtiges-passwort", true);
         MockHttpSession session = login(user.getEmail(), "richtiges-passwort");
-        ProjectCreationFlowState state = new ProjectCreationFlowState();
-        state.setUserId(user.getId());
-        state.setTitle("Anderes Projekt");
-        state.setCreationType(CreationType.AI);
-        state.setCollaborationMode(CollaborationMode.INDIVIDUAL);
-        session.setAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE, state);
 
-        mockMvc.perform(get("/projects/new/ai").session(session))
+        mockMvc.perform(get("/projects/new").session(session))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(
                         "<option value=\"OTHER\" selected=\"selected\">Sonstiges</option>")))
@@ -333,35 +316,37 @@ class AuthenticationIntegrationTest {
                         "required=\"required\" name=\"otherProjectTypeDescription\"")));
 
         long projectsBefore = projectRepository.count();
-        mockMvc.perform(post("/projects/new/ai")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Anderes Projekt")
                         .param("category", "OTHER")
+                        .param("collaborationMode", "INDIVIDUAL")
                         .param("timeFrameType", "NONE"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("generation/ai-wizard"))
+                .andExpect(view().name("wizard/basics"))
                 .andExpect(model().attributeHasFieldErrors(
                         "projectBasicsForm", "otherProjectTypeDescription"));
 
-        mockMvc.perform(post("/projects/new/ai")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Anderes Projekt")
                         .param("category", "OTHER")
                         .param("subcategory", "Wird verworfen")
                         .param("otherProjectTypeDescription", "Privaten Flohmarkt organisieren")
+                        .param("collaborationMode", "INDIVIDUAL")
                         .param("timeFrameType", "NONE"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/projects/new/ai/details"));
+                .andExpect(redirectedUrl("/projects/new/method"));
 
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
-        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE))
-                .isInstanceOfSatisfying(ProjectCreationFlowState.class, saved -> {
+        assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectWizardState.class, saved -> {
                     assertThat(saved.getCategory()).isEqualTo(TemplateCategory.OTHER);
                     assertThat(saved.getProjectType()).isEqualTo("Privaten Flohmarkt organisieren");
                 });
-        mockMvc.perform(get("/projects/new/ai").session(session))
+        mockMvc.perform(get("/projects/new").session(session))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Privaten Flohmarkt organisieren")));
     }
@@ -371,27 +356,28 @@ class AuthenticationIntegrationTest {
         String email = "ai-invalid-basics@example.org";
         saveUser(email, "richtiges-passwort", true);
         MockHttpSession session = login(email, "richtiges-passwort");
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Ursprünglicher Titel")
                         .param("category", "EDUCATION")
                         .param("collaborationMode", "INDIVIDUAL")
-                        .param("creationType", "AI"))
+                        .param("timeFrameType", "NONE"))
                 .andExpect(status().is3xxRedirection());
 
         long projectsBefore = projectRepository.count();
-        MvcResult result = mockMvc.perform(post("/projects/new/ai")
+        MvcResult result = mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Eingegebener Titel")
                         .param("category", "EDUCATION")
                         .param("subcategory", "Präsentation")
+                        .param("collaborationMode", "INDIVIDUAL")
                         .param("timeFrameType", "START_AND_END")
                         .param("startDate", "2026-09-20")
                         .param("endDate", "2026-09-01"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("generation/ai-wizard"))
+                .andExpect(view().name("wizard/basics"))
                 .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "endDate"))
                 .andExpect(content().string(containsString(
                         "Das Enddatum darf nicht vor dem Startdatum liegen.")))
@@ -405,8 +391,8 @@ class AuthenticationIntegrationTest {
         assertThat(submitted.getEndDate()).hasToString("2026-09-01");
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
 
-        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE))
-                .isInstanceOfSatisfying(ProjectCreationFlowState.class, state ->
+        assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectWizardState.class, state ->
                         assertThat(state.getTitle()).isEqualTo("Ursprünglicher Titel"));
     }
 
@@ -418,21 +404,35 @@ class AuthenticationIntegrationTest {
         long projectsBefore = projectRepository.count();
         long membersBefore = projectMemberRepository.count();
 
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Vorlagenprojekt")
                         .param("category", "EVENT")
                         .param("collaborationMode", "GROUP")
+                        .param("timeFrameType", "NONE"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/method"));
+        mockMvc.perform(post("/projects/new/method")
+                        .session(session)
+                        .with(csrf())
                         .param("creationType", "TEMPLATE"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/template"));
 
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
+        assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectWizardState.class, state -> {
+                    assertThat(state.getTitle()).isEqualTo("Vorlagenprojekt");
+                    assertThat(state.getCategory()).isEqualTo(TemplateCategory.EVENT);
+                    assertThat(state.getCollaborationMode()).isEqualTo(CollaborationMode.GROUP);
+                    assertThat(state.getCreationType()).isEqualTo(CreationType.TEMPLATE);
+                });
         mockMvc.perform(get("/projects/new/template").session(session))
                 .andExpect(status().isOk())
-                .andExpect(view().name("templates/overview"));
+                .andExpect(view().name("wizard/template-catalog"))
+                .andExpect(model().attributeExists("templates", "wizardState"));
     }
 
     @Test
@@ -441,24 +441,30 @@ class AuthenticationIntegrationTest {
         User user = saveUser(email, "richtiges-passwort", true);
         MockHttpSession session = login(email, "richtiges-passwort");
 
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Bestehendes Projekt")
                         .param("category", "HOME")
                         .param("collaborationMode", "INDIVIDUAL")
+                        .param("timeFrameType", "NONE"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(post("/projects/new/method")
+                        .session(session)
+                        .with(csrf())
                         .param("creationType", "EMPTY"))
                 .andExpect(status().is3xxRedirection());
 
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Abbrechen")
                         .param("category", "OTHER")
+                        .param("otherProjectTypeDescription", "Privates Vorhaben")
                         .param("collaborationMode", "INDIVIDUAL")
-                        .param("creationType", "AI"))
+                        .param("timeFrameType", "NONE"))
                 .andExpect(status().is3xxRedirection());
-        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE)).isNotNull();
+        assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isNotNull();
         session.setAttribute("unrelated-session-data", "bleibt erhalten");
 
         long projectsBefore = projectRepository.count();
@@ -466,7 +472,7 @@ class AuthenticationIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects"));
 
-        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE)).isNull();
+        assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isNull();
         assertThat(session.getAttribute("unrelated-session-data")).isEqualTo("bleibt erhalten");
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(projectRepository.findAllAccessibleByUserId(user.getId()))
@@ -516,12 +522,17 @@ class AuthenticationIntegrationTest {
         String email = "render-order@example.org";
         User user = saveUser(email, "richtiges-passwort", true);
         MockHttpSession session = login(email, "richtiges-passwort");
-        mockMvc.perform(post("/projects")
+        mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Darstellungsprojekt")
                         .param("category", "EDUCATION")
                         .param("collaborationMode", "INDIVIDUAL")
+                        .param("timeFrameType", "NONE"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(post("/projects/new/method")
+                        .session(session)
+                        .with(csrf())
                         .param("creationType", "EMPTY"))
                 .andExpect(status().is3xxRedirection());
         UUID projectId = projectRepository.findAllAccessibleByUserId(user.getId()).getFirst().getId();
