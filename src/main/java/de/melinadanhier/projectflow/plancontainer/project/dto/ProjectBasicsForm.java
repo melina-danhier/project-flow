@@ -1,7 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project.dto;
 
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -20,6 +19,7 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
+@ValidProjectBasics
 public class ProjectBasicsForm {
 
     @NotBlank(message = "Bitte gib deinem Projekt einen Titel.")
@@ -74,13 +74,6 @@ public class ProjectBasicsForm {
         return form;
     }
 
-    @AssertTrue(message = "Bitte beschreibe kurz, um welche Art von Projekt es sich handelt.")
-    public boolean isProjectTypeValid() {
-        return category == null
-                || category != TemplateCategory.OTHER
-                || otherProjectTypeDescription != null && !otherProjectTypeDescription.isBlank();
-    }
-
     public boolean isOtherCategory() {
         return category == TemplateCategory.OTHER;
     }
@@ -100,25 +93,4 @@ public class ProjectBasicsForm {
                 || timeFrameType == ProjectTimeFrameType.END_AND_DURATION;
     }
 
-    @AssertTrue(message = "Bitte fülle genau die Zeitangaben der gewählten Variante aus.")
-    public boolean isTimeFrameValid() {
-        if (timeFrameType == null) {
-            return true;
-        }
-        return switch (timeFrameType) {
-            case START_AND_END -> startDate != null
-                    && endDate != null
-                    && durationDays == null
-                    && !endDate.isBefore(startDate);
-            case START_AND_DURATION -> startDate != null
-                    && endDate == null
-                    && durationDays != null
-                    && durationDays > 0;
-            case END_AND_DURATION -> startDate == null
-                    && endDate != null
-                    && durationDays != null
-                    && durationDays > 0;
-            case NONE -> startDate == null && endDate == null && durationDays == null;
-        };
-    }
 }

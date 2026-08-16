@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreationFlo
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectCreationFlowService;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectTimeFrameCalculator;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -50,7 +51,8 @@ class ProjectBasicsFormTest {
         ProjectBasicsForm form = validForm();
         form.setCategory(TemplateCategory.OTHER);
 
-        assertThat(violatedProperties(form)).contains("projectTypeValid");
+        form.setOtherProjectTypeDescription("   ");
+        assertThat(violatedProperties(form)).contains("otherProjectTypeDescription");
 
         form.setOtherProjectTypeDescription("Organisation eines privaten Flohmarkts");
         assertThat(validator.validate(form)).isEmpty();
@@ -96,7 +98,38 @@ class ProjectBasicsFormTest {
         ProjectBasicsForm form = validForm();
         form.setDurationDays(20);
 
-        assertThat(violatedProperties(form)).contains("timeFrameValid");
+        assertThat(violatedProperties(form)).contains("timeFrameType");
+    }
+
+    @Test
+    void rejectsAnEndDateBeforeTheStartDateAtTheEndDateField() {
+        ProjectBasicsForm form = validForm();
+        form.setTimeFrameType(ProjectTimeFrameType.START_AND_END);
+        form.setStartDate(LocalDate.of(2026, 9, 20));
+        form.setEndDate(LocalDate.of(2026, 9, 1));
+
+        assertThat(violatedProperties(form)).contains("endDate");
+    }
+
+    @Test
+    void rejectsANonPositiveDurationAtTheDurationField() {
+        ProjectBasicsForm form = validForm();
+        form.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);
+        form.setStartDate(LocalDate.of(2026, 9, 1));
+        form.setDurationDays(0);
+
+        assertThat(violatedProperties(form)).contains("durationDays");
+    }
+
+    @Test
+    void rejectsContradictoryTimeInformationAtTheSelectedMode() {
+        ProjectBasicsForm form = validForm();
+        form.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);
+        form.setStartDate(LocalDate.of(2026, 9, 1));
+        form.setEndDate(LocalDate.of(2026, 9, 20));
+        form.setDurationDays(20);
+
+        assertThat(violatedProperties(form)).contains("timeFrameType");
     }
 
     @Test
@@ -115,7 +148,7 @@ class ProjectBasicsFormTest {
         form.setStartDate(LocalDate.of(2026, 9, 1));
         form.setDurationDays(3);
 
-        ProjectCreationFlowService service = new ProjectCreationFlowService();
+        ProjectCreationFlowService service = new ProjectCreationFlowService(new ProjectTimeFrameCalculator());
         service.updateBasics(form, userId, session);
         ProjectCreationFlowState restored = service.requireOwned(userId, session);
         ProjectBasicsForm restoredForm = ProjectBasicsForm.from(restored);
