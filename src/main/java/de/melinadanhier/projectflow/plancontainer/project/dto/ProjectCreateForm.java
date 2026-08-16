@@ -31,7 +31,7 @@ public class ProjectCreateForm {
     private LocalDate endDate;
 
     @NotNull
-    private TemplateCategory category;
+    private TemplateCategory category = TemplateCategory.OTHER;
 
     @Size(max = 100)
     private String projectType;

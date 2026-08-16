@@ -46,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 
 import java.util.UUID;
 
@@ -84,6 +85,12 @@ class AuthenticationIntegrationTest {
     @Test
     void anonymousRequestIsRedirectedToLogin() throws Exception {
         mockMvc.perform(get("/projects"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+        mockMvc.perform(get("/projects/new/ai"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+        mockMvc.perform(get("/projects/new/ai/details"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login"));
     }
@@ -252,9 +259,106 @@ class AuthenticationIntegrationTest {
         mockMvc.perform(get("/projects/new/ai").session(ownerSession))
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/ai-wizard"))
-                .andExpect(content().string(containsString("nur temporär gespeichert")));
+                .andExpect(content().string(containsString("Grundangaben zum Projekt")))
+                .andExpect(content().string(containsString("Bachelorarbeit")));
+
+        mockMvc.perform(post("/projects/new/ai")
+                        .session(ownerSession)
+                        .with(csrf())
+                        .param("title", "Überarbeitete Präsentation")
+                        .param("category", "EDUCATION")
+                        .param("subcategory", "Präsentation")
+                        .param("timeFrameType", "START_AND_DURATION")
+                        .param("startDate", "2026-09-01")
+                        .param("durationDays", "21"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/ai/details"));
+
+        assertThat(projectRepository.count()).isEqualTo(projectsBefore);
+        assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
+        assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
+        assertThat(ownerSession.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectCreationFlowState.class, state -> {
+                    assertThat(state.getTitle()).isEqualTo("Überarbeitete Präsentation");
+                    assertThat(state.getProjectType()).isEqualTo("Präsentation");
+                    assertThat(state.getStartDate()).hasToString("2026-09-01");
+                    assertThat(state.getEndDate()).hasToString("2026-09-21");
+                    assertThat(state.getDurationDays()).isEqualTo(21);
+                });
+
+        mockMvc.perform(get("/projects/new/ai/details").session(ownerSession))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/ai-details"))
+                .andExpect(content().string(containsString("Überarbeitete Präsentation")));
+        mockMvc.perform(get("/projects/new/ai").session(ownerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("value=\"2026-09-01\"")))
+                .andExpect(content().string(containsString("value=\"21\"")));
         mockMvc.perform(get("/projects/new/ai").session(outsiderSession))
                 .andExpect(status().isNotFound());
+        mockMvc.perform(get("/projects/new/ai/details").session(outsiderSession))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/projects/new/ai")
+                        .session(outsiderSession)
+                        .with(csrf())
+                        .param("title", "Fremder Zugriff")
+                        .param("category", "EDUCATION")
+                        .param("timeFrameType", "NONE"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void aiWizardTreatsOtherAsDefaultAndRequiresItsDescription() throws Exception {
+        User user = saveUser("ai-other@example.org", "richtiges-passwort", true);
+        MockHttpSession session = login(user.getEmail(), "richtiges-passwort");
+        ProjectCreationFlowState state = new ProjectCreationFlowState();
+        state.setUserId(user.getId());
+        state.setTitle("Anderes Projekt");
+        state.setCreationType(CreationType.AI);
+        state.setCollaborationMode(CollaborationMode.INDIVIDUAL);
+        session.setAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE, state);
+
+        mockMvc.perform(get("/projects/new/ai").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "<option value=\"OTHER\" selected=\"selected\">Sonstiges</option>")))
+                .andExpect(content().string(containsString(
+                        "id=\"subcategory-fields\" hidden=\"hidden\"")))
+                .andExpect(content().string(containsString(
+                        "id=\"subcategory\" maxlength=\"100\" disabled=\"disabled\"")))
+                .andExpect(content().string(containsString(
+                        "placeholder=\"z. B. privater Flohmarkt\"")))
+                .andExpect(content().string(containsString(
+                        "required=\"required\" name=\"otherProjectTypeDescription\"")));
+
+        long projectsBefore = projectRepository.count();
+        mockMvc.perform(post("/projects/new/ai")
+                        .session(session)
+                        .with(csrf())
+                        .param("title", "Anderes Projekt")
+                        .param("category", "OTHER")
+                        .param("timeFrameType", "NONE"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/ai-wizard"))
+                .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "projectTypeValid"));
+
+        mockMvc.perform(post("/projects/new/ai")
+                        .session(session)
+                        .with(csrf())
+                        .param("title", "Anderes Projekt")
+                        .param("category", "OTHER")
+                        .param("subcategory", "Wird verworfen")
+                        .param("otherProjectTypeDescription", "Privaten Flohmarkt organisieren")
+                        .param("timeFrameType", "NONE"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/ai/details"));
+
+        assertThat(projectRepository.count()).isEqualTo(projectsBefore);
+        assertThat(session.getAttribute(ProjectCreationFlowService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectCreationFlowState.class, saved -> {
+                    assertThat(saved.getCategory()).isEqualTo(TemplateCategory.OTHER);
+                    assertThat(saved.getProjectType()).isEqualTo("Privaten Flohmarkt organisieren");
+                });
     }
 
     @Test

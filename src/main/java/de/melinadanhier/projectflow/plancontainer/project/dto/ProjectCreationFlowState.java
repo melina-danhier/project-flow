@@ -30,12 +30,14 @@ public class ProjectCreationFlowState implements Serializable {
     private UUID userId;
     private String title;
     private String description;
-    private TemplateCategory category;
+    private TemplateCategory category = TemplateCategory.OTHER;
     private String projectType;
     private CollaborationMode collaborationMode;
     private CreationType creationType;
     private LocalDate startDate;
     private LocalDate endDate;
+    private ProjectTimeFrameType timeFrameType = ProjectTimeFrameType.NONE;
+    private Integer durationDays;
     private StructureMode structureMode;
     private SortMode sortMode;
 
@@ -50,8 +52,22 @@ public class ProjectCreationFlowState implements Serializable {
         state.setCreationType(form.getCreationType());
         state.setStartDate(form.getStartDate());
         state.setEndDate(form.getEndDate());
+        state.setTimeFrameType(determineTimeFrameType(form));
         state.setStructureMode(form.getStructureMode());
         state.setSortMode(form.getSortMode());
         return state;
+    }
+
+    private static ProjectTimeFrameType determineTimeFrameType(ProjectCreateForm form) {
+        if (form.getStartDate() != null && form.getEndDate() != null) {
+            return ProjectTimeFrameType.START_AND_END;
+        }
+        if (form.getStartDate() != null) {
+            return ProjectTimeFrameType.START_AND_DURATION;
+        }
+        if (form.getEndDate() != null) {
+            return ProjectTimeFrameType.END_AND_DURATION;
+        }
+        return ProjectTimeFrameType.NONE;
     }
 }
