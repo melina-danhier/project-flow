@@ -54,8 +54,8 @@ class ApplicationStructureTest {
                 "generation", "generation/client", "generation/controller", "generation/dto", "generation/dto/request",
                 "generation/dto/response", "generation/mapper", "generation/model", "generation/parser",
                 "generation/prompt", "generation/repository", "generation/service", "generation/validation",
-                "security", "security/config", "security/handler", "security/service",
-                "common", "common/config", "common/exception", "common/model", "common/util", "common/validation"
+                "security", "security/config", "security/handler", "security/service", "security/validation",
+                "common", "common/config", "common/exception", "common/model", "common/util"
         ));
     }
 
@@ -64,7 +64,8 @@ class ApplicationStructureTest {
         assertThat(relativeDirectories(RESOURCE_ROOT)).containsExactlyInAnyOrderElementsOf(Set.of(
                 "ai", "ai/prompts", "ai/schema", "db", "db/migration", "static", "static/css", "static/images",
                 "static/js", "templates", "templates/auth", "templates/error", "templates/fragments",
-                "templates/generation", "templates/planelements", "templates/projects", "templates/templates"
+                "templates/generation", "templates/projects", "templates/projects/tasks",
+                "templates/projects/milestones", "templates/templates"
         ));
         assertThat(RESOURCE_ROOT.resolve("application.yml")).isRegularFile();
         assertThat(RESOURCE_ROOT.resolve("application-dev.yml")).isRegularFile();

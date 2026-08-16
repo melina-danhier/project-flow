@@ -159,20 +159,24 @@ class AuthenticationIntegrationTest {
                         .param("title", "Controller-Projekt")
                         .param("creationType", "EMPTY"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrlPattern("/projects/*"));
+                .andExpect(redirectedUrlPattern("/projects/*/plan"));
         assertThat(projectRepository.findAllAccessibleByUserId(user.getId()))
                 .singleElement().extracting("title").isEqualTo("Controller-Projekt");
 
         UUID projectId = projectRepository.findAllAccessibleByUserId(user.getId()).getFirst().getId();
-        mockMvc.perform(get("/projects/{projectId}", projectId).session(session))
+        mockMvc.perform(get("/projects/{projectId}/plan", projectId).session(session))
                 .andExpect(status().isOk())
-                .andExpect(view().name("projects/plan"));
+                .andExpect(view().name("projects/plan"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.model()
+                        .attributeDoesNotExist("taskForm", "milestoneForm", "dependencyForm", "memberForm"));
         mockMvc.perform(post("/projects/{projectId}/tasks", projectId)
                         .session(session)
                         .with(csrf())
                         .param("title", ""))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(flash().attributeExists("errorMessage"));
+                .andExpect(status().isOk())
+                .andExpect(view().name("projects/tasks/form"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.model()
+                        .attributeHasFieldErrors("taskForm", "title", "priority"));
     }
 
     @Test
@@ -221,7 +225,7 @@ class AuthenticationIntegrationTest {
         milestoneForm.setSortOrder(1);
         milestoneService.createMilestone(projectId, milestoneForm, user.getId());
 
-        String html = mockMvc.perform(get("/projects/{projectId}", projectId).session(session))
+        String html = mockMvc.perform(get("/projects/{projectId}/plan", projectId).session(session))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertThat(html.indexOf("Reihenfolge 1")).isLessThan(html.indexOf("Reihenfolge 2"));

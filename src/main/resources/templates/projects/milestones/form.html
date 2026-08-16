@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title th:text="${editing ? 'Meilenstein bearbeiten – ProjectFlow' : 'Meilenstein anlegen – ProjectFlow'}">Meilenstein</title></head>
+<body><main>
+<a th:href="@{/projects/{projectId}/plan(projectId=${projectId})}">Abbrechen</a>
+<h1 th:text="${editing ? 'Meilenstein bearbeiten' : 'Meilenstein anlegen'}">Meilenstein</h1>
+<form th:action="${editing} ? @{/projects/{projectId}/milestones/{milestoneId}(projectId=${projectId},milestoneId=${milestoneId})} : @{/projects/{projectId}/milestones(projectId=${projectId})}"
+      th:object="${milestoneForm}" method="post">
+    <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
+    <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
+    <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
+    <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
+    <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
+    <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
+    <label for="section">Phase</label><select id="section" th:field="*{planSectionId}">
+        <option value="">Ohne Phase</option><option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.title}"></option>
+    </select>
+    <label for="dueDate">Datum</label><input id="dueDate" type="date" th:field="*{dueDate}">
+    <label th:if="${editing}" for="completed">Erledigt</label><input th:if="${editing}" id="completed" type="checkbox" th:field="*{completed}">
+    <button type="submit" th:text="${editing ? 'Meilenstein speichern' : 'Meilenstein anlegen'}">Speichern</button>
+</form>
+<form th:if="${editing}" th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${projectId},milestoneId=${milestoneId})}" method="post">
+    <button type="submit">Meilenstein endgültig löschen</button>
+</form>
+</main></body></html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title th:text="${editing ? 'Aufgabe bearbeiten – ProjectFlow' : 'Aufgabe anlegen – ProjectFlow'}">Aufgabe</title></head>
+<body><main>
+<a th:href="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/plan(projectId=${projectId})}">Abbrechen</a>
+<h1 th:text="${editing ? 'Aufgabe bearbeiten' : 'Aufgabe anlegen'}">Aufgabe</h1>
+<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
+<form th:action="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/tasks(projectId=${projectId})}"
+      th:object="${taskForm}" method="post">
+    <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
+    <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
+    <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
+    <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
+    <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
+    <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
+    <label for="status">Status</label><select id="status" th:field="*{status}">
+        <option value="OPEN">Offen</option><option value="IN_PROGRESS">In Bearbeitung</option><option value="COMPLETED">Erledigt</option>
+    </select>
+    <label for="priority">Priorität</label><select id="priority" th:field="*{priority}" required>
+        <option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option>
+    </select>
+    <p th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" role="alert"></p>
+    <label for="section">Phase</label><select id="section" th:field="*{planSectionId}">
+        <option value="">Ohne Phase</option><option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.title}"></option>
+    </select>
+    <label for="startDate">Startdatum</label><input id="startDate" type="date" th:field="*{startDate}">
+    <label for="dueDate">Fälligkeitsdatum</label><input id="dueDate" type="date" th:field="*{dueDate}">
+    <label for="assignee">Zuständigkeit</label><select id="assignee" th:field="*{assigneeId}">
+        <option value="">Nicht zugewiesen</option><option th:each="member : ${assignees}" th:value="${member.id}" th:text="${member.displayName}"></option>
+    </select>
+    <button type="submit" th:text="${editing ? 'Aufgabe speichern' : 'Aufgabe anlegen'}">Speichern</button>
+</form>
+</main></body></html>

@@ -24,18 +24,15 @@ public class MilestoneController {
 
     private final MilestoneService milestoneService;
 
-    @GetMapping("/projects/{projectId}/milestones/{milestoneId}")
-    public String detail(
+    @GetMapping("/projects/{projectId}/milestones/new")
+    public String createForm(
             @PathVariable UUID projectId,
-            @PathVariable UUID milestoneId,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
     ) {
-        MilestoneDetailsDto milestone = milestoneService.getMilestoneDetail(
-                projectId, milestoneId, currentUser.userId());
-        model.addAttribute("milestone", milestone);
-        model.addAttribute("milestoneForm", toForm(milestone));
-        return "planelements/milestone-detail";
+        model.addAttribute("milestoneForm", new MilestoneForm());
+        populateFormModel(model, milestoneService.getMilestoneCreationContext(projectId, currentUser.userId()), false);
+        return "projects/milestones/form";
     }
 
     @PostMapping("/projects/{projectId}/milestones")
@@ -44,33 +41,54 @@ public class MilestoneController {
             @Valid @ModelAttribute("milestoneForm") MilestoneForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model,
             RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Der Meilenstein enthält ungültige Angaben.");
-            return projectRedirect(projectId);
+            populateFormModel(
+                    model, milestoneService.getMilestoneCreationContext(projectId, currentUser.userId()), false);
+            return "projects/milestones/form";
         }
         milestoneService.createMilestone(projectId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Meilenstein wurde angelegt.");
-        return projectRedirect(projectId);
+        return planRedirect(projectId);
     }
 
-    @PostMapping("/projects/{projectId}/milestones/{milestoneId}/edit")
+    @GetMapping("/projects/{projectId}/milestones/{milestoneId}/edit")
+    public String editForm(
+            @PathVariable UUID projectId,
+            @PathVariable UUID milestoneId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model
+    ) {
+        MilestoneDetailsDto milestone = milestoneService.getMilestoneForEditing(
+                projectId, milestoneId, currentUser.userId());
+        model.addAttribute("milestoneForm", toForm(milestone));
+        populateFormModel(model, milestone, true);
+        return "projects/milestones/form";
+    }
+
+    @PostMapping("/projects/{projectId}/milestones/{milestoneId}")
     public String update(
             @PathVariable UUID projectId,
             @PathVariable UUID milestoneId,
             @Valid @ModelAttribute("milestoneForm") MilestoneForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model,
             RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Der Meilenstein enthält ungültige Angaben.");
-            return "redirect:/projects/" + projectId + "/milestones/" + milestoneId;
+            populateFormModel(
+                    model,
+                    milestoneService.getMilestoneForEditing(projectId, milestoneId, currentUser.userId()),
+                    true
+            );
+            return "projects/milestones/form";
         }
         milestoneService.updateMilestone(projectId, milestoneId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Meilenstein wurde aktualisiert.");
-        return "redirect:/projects/" + projectId + "/milestones/" + milestoneId;
+        return planRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/milestones/{milestoneId}/delete")
@@ -82,11 +100,14 @@ public class MilestoneController {
     ) {
         milestoneService.deleteMilestone(projectId, milestoneId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Meilenstein wurde endgültig gelöscht.");
-        return projectRedirect(projectId);
+        return planRedirect(projectId);
     }
 
-    private String projectRedirect(UUID projectId) {
-        return "redirect:/projects/" + projectId;
+    private void populateFormModel(Model model, MilestoneDetailsDto context, boolean editing) {
+        model.addAttribute("projectId", context.getPlanContainerId());
+        model.addAttribute("milestoneId", context.getId());
+        model.addAttribute("sections", context.getAvailableSections());
+        model.addAttribute("editing", editing);
     }
 
     private MilestoneForm toForm(MilestoneDetailsDto milestone) {
@@ -99,5 +120,9 @@ public class MilestoneController {
         form.setCompleted(milestone.isCompleted());
         form.setLockVersion(milestone.getLockVersion());
         return form;
+    }
+
+    private String planRedirect(UUID projectId) {
+        return "redirect:/projects/" + projectId + "/plan";
     }
 }

@@ -15,6 +15,5 @@ public class TaskDependencyForm {
     @NotNull
     private UUID prerequisiteTaskId;
 
-    @NotNull
     private UUID successorTaskId;
 }

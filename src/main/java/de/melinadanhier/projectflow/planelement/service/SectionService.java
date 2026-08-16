@@ -38,7 +38,6 @@ public class SectionService {
     @Transactional
     public SectionDto createSection(UUID projectId, SectionForm form, UUID userId) {
         Project project = authorizationService.requireEditableMember(projectId, userId).getProject();
-        validateDates(form);
         PlanSection section = new PlanSection();
         section.setPlanContainer(project);
         section.setOrigin(ElementOrigin.USER);
@@ -55,7 +54,6 @@ public class SectionService {
     @Transactional
     public SectionDto updateSection(UUID projectId, UUID sectionId, SectionForm form, UUID userId) {
         authorizationService.requireEditableMember(projectId, userId);
-        validateDates(form);
         PlanSection section = requireSection(projectId, sectionId);
         requireCurrentVersion(section.getLockVersion(), form.getLockVersion());
         apply(section, form);
@@ -136,17 +134,6 @@ public class SectionService {
         section.setTitle(form.getTitle().trim());
         section.setDescription(form.getDescription() == null || form.getDescription().isBlank()
                 ? null : form.getDescription().trim());
-        section.setStartDate(form.getStartDate());
-        section.setEndDate(form.getEndDate());
-        section.setRelativeStartDay(null);
-        section.setRelativeEndDay(null);
-    }
-
-    private void validateDates(SectionForm form) {
-        if (form.getStartDate() != null && form.getEndDate() != null
-                && form.getEndDate().isBefore(form.getStartDate())) {
-            throw new DomainValidationException("Das Phasenende darf nicht vor dem Phasenstart liegen.");
-        }
     }
 
     private int boundedPosition(Integer requested, int size) {

@@ -52,13 +52,37 @@ public class MilestoneService {
     @Transactional(readOnly = true)
     public MilestoneDetailsDto getMilestoneDetail(UUID projectId, UUID milestoneId, UUID userId) {
         ProjectMember membership = authorizationService.requireMember(projectId, userId);
+        return buildMilestoneDetail(projectId, milestoneId, authorizationService.isEditable(membership));
+    }
+
+    @Transactional(readOnly = true)
+    public MilestoneDetailsDto getMilestoneForEditing(UUID projectId, UUID milestoneId, UUID userId) {
+        authorizationService.requireEditableMember(projectId, userId);
+        return buildMilestoneDetail(projectId, milestoneId, true);
+    }
+
+    @Transactional(readOnly = true)
+    public MilestoneDetailsDto getMilestoneCreationContext(UUID projectId, UUID userId) {
+        authorizationService.requireEditableMember(projectId, userId);
+        MilestoneDetailsDto dto = new MilestoneDetailsDto();
+        dto.setPlanContainerId(projectId);
+        dto.setEditable(true);
+        populateSections(dto, projectId);
+        return dto;
+    }
+
+    private MilestoneDetailsDto buildMilestoneDetail(UUID projectId, UUID milestoneId, boolean editable) {
         Milestone milestone = requireMilestone(projectId, milestoneId);
         MilestoneDetailsDto dto = planElementMapper.toDetailsDto(milestone);
-        dto.setEditable(authorizationService.isEditable(membership));
+        dto.setEditable(editable);
+        populateSections(dto, projectId);
+        return dto;
+    }
+
+    private void populateSections(MilestoneDetailsDto dto, UUID projectId) {
         dto.setAvailableSections(planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId).stream()
                 .map(planElementMapper::toDto)
                 .toList());
-        return dto;
     }
 
     @Transactional
