@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.user.dto;
 
-import de.melinadanhier.projectflow.common.validation.PasswordsMatch;
+import de.melinadanhier.projectflow.security.validation.PasswordsMatch;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

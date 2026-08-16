@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title>Mitglieder – ProjectFlow</title></head>
+<body><main>
+<a th:href="@{/projects/{projectId}/plan(projectId=${project.id})}">Zum Projektplan</a>
+<h1>Mitglieder verwalten</h1>
+<p th:text="${project.title}"></p>
+<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
+<ul>
+    <li th:each="member : ${members}">
+        <span th:text="${member.displayName}"></span>
+        <span th:text="${member.role.name() == 'OWNER' ? 'Owner' : 'Mitglied'}"></span>
+        <form th:if="${member.role.name() == 'MEMBER'}"
+              th:action="@{/projects/{projectId}/members/{memberId}/remove(projectId=${project.id},memberId=${member.id})}"
+              method="post">
+            <button type="submit">Entfernen</button>
+        </form>
+    </li>
+</ul>
+<form th:action="@{/projects/{projectId}/members(projectId=${project.id})}" th:object="${memberForm}" method="post">
+    <label for="member-email">Registrierten Nutzer per E-Mail hinzufügen</label>
+    <input id="member-email" type="email" th:field="*{email}" required maxlength="254">
+    <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" role="alert"></p>
+    <button type="submit">Hinzufügen</button>
+</form>
+</main></body></html>
