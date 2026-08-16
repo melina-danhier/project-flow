@@ -9,7 +9,7 @@
     <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
     <label for="category">Oberkategorie</label>
     <select id="category" th:field="*{category}" required>
-        <option value="">Bitte auswählen</option>
+        <option value="OTHER">Sonstiges</option>
         <option value="EDUCATION">Bildung und Studium</option>
         <option value="SOFTWARE_TECHNOLOGY">Software und Technik</option>
         <option value="EVENT">Veranstaltung</option>
@@ -18,7 +18,6 @@
         <option value="CAREER">Beruf und Karriere</option>
         <option value="HEALTH_PERSONAL_DEVELOPMENT">Gesundheit und persönliche Entwicklung</option>
         <option value="TRAVEL">Reise</option>
-        <option value="OTHER">Sonstiges</option>
     </select>
     <p th:if="${#fields.hasErrors('category')}" th:errors="*{category}" role="alert"></p>
     <label for="projectType">Unterkategorie (optional)</label>
