@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.common.validation;
+package de.melinadanhier.projectflow.security.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

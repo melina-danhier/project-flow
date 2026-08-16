@@ -11,6 +11,7 @@
 <nav th:if="${plan.editable}" aria-label="Planaktionen">
     <a th:href="@{/projects/{projectId}/tasks/new(projectId=${plan.project.id})}">Aufgabe hinzufügen</a>
     <a th:href="@{/projects/{projectId}/milestones/new(projectId=${plan.project.id})}">Meilenstein hinzufügen</a>
+    <a th:if="${plan.owner}" th:href="@{/projects/{projectId}/members(projectId=${plan.project.id})}">Mitglieder verwalten</a>
 </nav>
 
 <section><h2>Phasen</h2>

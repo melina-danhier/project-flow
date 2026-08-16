@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,6 +32,14 @@ public class ProjectMembershipService {
     private final TaskRepository taskRepository;
     private final ProjectAuthorizationService authorizationService;
     private final ProjectMapper projectMapper;
+
+    @Transactional(readOnly = true)
+    public List<ProjectMemberDto> getMembersForManagement(UUID projectId, UUID actingOwnerId) {
+        authorizationService.requireEditableOwner(projectId, actingOwnerId);
+        return projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
+                .map(projectMapper::toMemberDto)
+                .toList();
+    }
 
     @Transactional
     public ProjectMemberDto addMember(UUID projectId, AddProjectMemberForm form, UUID actingUserId) {

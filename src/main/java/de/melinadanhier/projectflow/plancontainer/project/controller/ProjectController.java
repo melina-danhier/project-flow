@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.project.controller;
 
+import de.melinadanhier.projectflow.common.exception.ConflictException;
+import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectMembershipService;
 import de.melinadanhier.projectflow.plancontainer.project.dto.AddProjectMemberForm;
@@ -137,21 +139,39 @@ public class ProjectController {
         return "redirect:/projects?location=TRASH";
     }
 
+    @GetMapping("/projects/{projectId}/members")
+    public String members(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model
+    ) {
+        model.addAttribute("memberForm", new AddProjectMemberForm());
+        populateMembers(model, projectId, currentUser.userId());
+        return "projects/members";
+    }
+
     @PostMapping("/projects/{projectId}/members")
     public String addMember(
             @PathVariable UUID projectId,
             @Valid @ModelAttribute("memberForm") AddProjectMemberForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model,
             RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Bitte gib eine gültige E-Mail-Adresse an.");
-            return "redirect:/projects/" + projectId;
+            populateMembers(model, projectId, currentUser.userId());
+            return "projects/members";
         }
-        membershipService.addMember(projectId, form, currentUser.userId());
+        try {
+            membershipService.addMember(projectId, form, currentUser.userId());
+        } catch (ConflictException | ResourceNotFoundException exception) {
+            model.addAttribute("errorMessage", exception.getMessage());
+            populateMembers(model, projectId, currentUser.userId());
+            return "projects/members";
+        }
         redirectAttributes.addFlashAttribute("successMessage", "Projektmitglied wurde hinzugefügt.");
-        return "redirect:/projects/" + projectId;
+        return membersRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/members/{memberId}/remove")
@@ -163,6 +183,15 @@ public class ProjectController {
     ) {
         membershipService.removeMember(projectId, memberId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projektmitglied wurde entfernt.");
-        return "redirect:/projects/" + projectId;
+        return membersRedirect(projectId);
+    }
+
+    private void populateMembers(Model model, UUID projectId, UUID userId) {
+        model.addAttribute("members", membershipService.getMembersForManagement(projectId, userId));
+        model.addAttribute("project", projectService.getProject(projectId, userId));
+    }
+
+    private String membersRedirect(UUID projectId) {
+        return "redirect:/projects/" + projectId + "/members";
     }
 }

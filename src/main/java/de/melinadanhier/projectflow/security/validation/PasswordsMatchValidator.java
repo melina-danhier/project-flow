@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.common.validation;
+package de.melinadanhier.projectflow.security.validation;
 
 import de.melinadanhier.projectflow.user.dto.RegistrationForm;
 import jakarta.validation.ConstraintValidator;
