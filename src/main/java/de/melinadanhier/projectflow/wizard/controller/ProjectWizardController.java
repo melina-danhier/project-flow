@@ -5,6 +5,8 @@ import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.wizard.dto.AiProcessingConsentForm;
+import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectCreationMethodForm;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
@@ -147,7 +149,55 @@ public class ProjectWizardController {
         ProjectWizardState state = wizardService.requireOwnedFor(
                 CreationType.AI, currentUser.userId(), session);
         model.addAttribute("wizardState", state);
+        model.addAttribute("aiProjectDetailsForm", AiProjectDetailsForm.from(state));
         return "generation/ai-details";
+    }
+
+    @PostMapping("/projects/new/ai/details")
+    public String saveAiDetails(
+            @Valid @ModelAttribute("aiProjectDetailsForm") AiProjectDetailsForm form,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
+            Model model
+    ) {
+        ProjectWizardState state = wizardService.requireOwnedFor(
+                CreationType.AI, currentUser.userId(), session);
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("wizardState", state);
+            return "generation/ai-details";
+        }
+        wizardService.saveAiDetails(form, currentUser.userId(), session);
+        return "redirect:/projects/new/ai/summary";
+    }
+
+    @GetMapping("/projects/new/ai/summary")
+    public String aiSummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
+            Model model
+    ) {
+        populateAiSummary(model, currentUser.userId(), session);
+        if (!model.containsAttribute("aiProcessingConsentForm")) {
+            model.addAttribute("aiProcessingConsentForm", new AiProcessingConsentForm());
+        }
+        return "generation/ai-summary";
+    }
+
+    @PostMapping("/projects/new/ai/confirm")
+    public String confirmAiProcessing(
+            @Valid @ModelAttribute("aiProcessingConsentForm") AiProcessingConsentForm form,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
+            Model model
+    ) {
+        if (bindingResult.hasErrors()) {
+            populateAiSummary(model, currentUser.userId(), session);
+            return "generation/ai-summary";
+        }
+        wizardService.confirmAiProcessing(currentUser.userId(), session);
+        return "redirect:/projects/new/ai/summary?confirmed";
     }
 
     @PostMapping("/projects/new/cancel")
@@ -170,5 +220,10 @@ public class ProjectWizardController {
         wizardService.clearOwned(userId, session);
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde angelegt.");
         return "redirect:/projects/" + project.getId() + "/plan";
+    }
+
+    private void populateAiSummary(Model model, UUID userId, HttpSession session) {
+        model.addAttribute("summary", wizardService.aiSummary(userId, session));
+        model.addAttribute("wizardState", wizardService.requireOwnedFor(CreationType.AI, userId, session));
     }
 }

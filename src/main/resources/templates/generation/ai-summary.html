@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Zusammenfassung – ProjectFlow</title></head>
+<body><main>
+<p>Letzter Schritt des KI-Wizards</p>
+<h1>Angaben prüfen und KI-Verarbeitung bestätigen</h1>
+
+<section aria-labelledby="general-project-data">
+    <h2 id="general-project-data">Allgemeine Projektdaten</h2>
+    <dl>
+        <dt>Titel</dt><dd th:text="${summary.title}">Projekt</dd>
+        <th:block th:if="${summary.description != null}"><dt>Beschreibung</dt><dd th:text="${summary.description}"></dd></th:block>
+        <dt>Zeitraum</dt>
+        <dd th:if="${summary.startDate == null and summary.endDate == null}">Noch nicht festgelegt</dd>
+        <dd th:if="${summary.startDate != null and summary.startDate == summary.endDate}"
+            th:text="${#temporals.format(summary.startDate, 'dd.MM.yyyy')}"></dd>
+        <dd th:if="${summary.startDate != null and summary.startDate != summary.endDate}"
+            th:text="|${#temporals.format(summary.startDate, 'dd.MM.yyyy')} bis ${#temporals.format(summary.endDate, 'dd.MM.yyyy')}|"></dd>
+        <dt>Gruppenprojekt</dt><dd th:text="${summary.groupProject ? 'Ja' : 'Nein'}"></dd>
+        <dt>Kategorie</dt><dd th:text="${summary.category}"></dd>
+    </dl>
+    <a th:href="@{/projects/new}">Allgemeine Projektdaten bearbeiten</a>
+</section>
+
+<section aria-labelledby="ai-only-data">
+    <h2 id="ai-only-data">Zusätzliche Angaben für die KI</h2>
+    <p><strong>Diese Angaben sind nur für die KI-Verarbeitung bestimmt und werden nicht als eigene Projektfelder übernommen.</strong></p>
+    <p th:if="${summary.projectGoal == null and summary.constraints == null and summary.additionalInformation == null}">Keine zusätzlichen Angaben gemacht.</p>
+    <dl>
+        <th:block th:if="${summary.projectGoal != null}"><dt>Projektziel</dt><dd th:text="${summary.projectGoal}"></dd></th:block>
+        <th:block th:if="${summary.constraints != null}"><dt>Rahmenbedingungen</dt><dd th:text="${summary.constraints}"></dd></th:block>
+        <th:block th:if="${summary.additionalInformation != null}"><dt>Weitere Hinweise</dt><dd th:text="${summary.additionalInformation}"></dd></th:block>
+    </dl>
+    <a th:href="@{/projects/new/ai/details}">KI-Angaben bearbeiten</a>
+</section>
+
+<section aria-labelledby="ai-processing-information">
+    <h2 id="ai-processing-information">Was als Nächstes passiert</h2>
+    <ul>
+        <li>Die KI prüft deine Angaben zuerst auf erkennbare Probleme und erstellt danach einen Projektplan, sofern fortgefahren werden kann.</li>
+        <li>Übermittelt werden die oben angezeigten Projektdaten und KI-Zusatzangaben. Mitgliederdaten werden nicht übermittelt.</li>
+        <li>Die KI kann Phasen, Aufgaben, Meilensteine und weitere Planinformationen vorschlagen. Das Ergebnis kann unvollständig, unpassend oder fehlerhaft sein.</li>
+        <li>Es entsteht zunächst nur ein überprüfbarer Entwurf und kein automatisch aktiver Projektplan.</li>
+    </ul>
+</section>
+
+<p th:if="${param.confirmed}" role="status">Deine Zustimmung wurde geprüft. Die KI-Prüfung kann im nächsten Verarbeitungsschritt gestartet werden.</p>
+<form th:unless="${wizardState.aiProcessingConfirmed}" id="ai-confirmation-form"
+      th:action="@{/projects/new/ai/confirm}" th:object="${aiProcessingConsentForm}" method="post">
+    <label for="consent">
+        <input id="consent" type="checkbox" th:field="*{consent}">
+        Ich stimme zu, dass die angezeigten Angaben wie beschrieben zur KI-Verarbeitung übermittelt werden.
+    </label>
+    <p th:if="${#fields.hasErrors('consent')}" th:errors="*{consent}" role="alert"></p>
+    <button id="ai-confirmation-submit" type="submit" disabled>KI-Prüfung und Planentwurf starten</button>
+</form>
+
+<a th:href="@{/projects/new/ai/details}">Zurück</a>
+<form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Projekterstellung abbrechen</button></form>
+<script>
+    (() => {
+        const form = document.getElementById('ai-confirmation-form');
+        if (!form) return;
+        const checkbox = document.getElementById('consent');
+        const button = document.getElementById('ai-confirmation-submit');
+        const update = () => button.disabled = !checkbox.checked;
+        checkbox.addEventListener('change', update);
+        form.addEventListener('submit', () => {
+            if (checkbox.checked) button.disabled = true;
+        });
+        update();
+    })();
+</script>
+</main></body></html>

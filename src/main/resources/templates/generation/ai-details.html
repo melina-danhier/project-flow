@@ -1,12 +1,27 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title>Zusätzliche KI-Angaben – ProjectFlow</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Zusätzliche KI-Angaben – ProjectFlow</title></head>
 <body><main>
+<p>KI-Wizard</p>
 <h1>Zusätzliche Angaben für die KI</h1>
-<p>Die Grundangaben für „<span th:text="${wizardState.title}">Projekt</span>“ wurden aus dem Wizard übernommen.</p>
-<p>Projektartspezifische Fragen werden in einer späteren Ausbaustufe ergänzt.</p>
-<a th:href="@{/projects/new}">Grundangaben bearbeiten</a>
-<a th:href="@{/projects/new/method}">Erstellungsweg ändern</a>
+<p>Diese optionalen Angaben helfen der KI, einen passenderen Plan für „<span th:text="${wizardState.title}">Projekt</span>“ vorzuschlagen.</p>
+<form th:action="@{/projects/new/ai/details}" th:object="${aiProjectDetailsForm}" method="post">
+    <label for="projectGoal">Projektziel <span>(optional)</span></label>
+    <textarea id="projectGoal" th:field="*{projectGoal}" maxlength="2000"></textarea>
+    <p th:if="${#fields.hasErrors('projectGoal')}" th:errors="*{projectGoal}" role="alert"></p>
+
+    <label for="constraints">Rahmenbedingungen <span>(optional)</span></label>
+    <textarea id="constraints" th:field="*{constraints}" maxlength="2000"
+              placeholder="z. B. Budget, feste Termine oder verfügbare Mittel"></textarea>
+    <p th:if="${#fields.hasErrors('constraints')}" th:errors="*{constraints}" role="alert"></p>
+
+    <label for="additionalInformation">Weitere Hinweise <span>(optional)</span></label>
+    <textarea id="additionalInformation" th:field="*{additionalInformation}" maxlength="2000"></textarea>
+    <p th:if="${#fields.hasErrors('additionalInformation')}" th:errors="*{additionalInformation}" role="alert"></p>
+
+    <button type="submit">Weiter zur Zusammenfassung</button>
+</form>
+<a th:href="@{/projects/new/method}">Zurück</a>
 <form th:action="@{/projects/new/cancel}" method="post">
     <button type="submit">Projekterstellung abbrechen</button>
 </form>
