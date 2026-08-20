@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta th:if="${workflow.processing}" http-equiv="refresh" content="3">
+    <title>KI-Prüfung – ProjectFlow</title>
+</head>
+<body><main>
+<h1>Deine Angaben werden geprüft …</h1>
+<h2 th:if="${workflow.status.name() == 'PRE_CHECK_PASSED'}">Die Prüfung ist abgeschlossen</h2>
+<h2 th:if="${workflow.status.name() == 'PRE_CHECK_NEEDS_REVIEW'}">Die KI hat Hinweise zu deinen Angaben</h2>
+<h2 th:if="${workflow.status.name() == 'TECHNICAL_FAILURE'}">Die KI-Prüfung konnte nicht abgeschlossen werden</h2>
+
+<p th:if="${workflow.processing}">Die KI prüft deine bestätigten Projektangaben. Diese Seite wird automatisch aktualisiert.</p>
+<p th:if="${workflow.status.name() == 'PRE_CHECK_PASSED'}">Die Prüfung ist abgeschlossen. Der nächste Schritt wird in der folgenden Ausbaustufe ergänzt.</p>
+<p th:if="${workflow.status.name() == 'PRE_CHECK_NEEDS_REVIEW'}">Die Hinweise können im nächsten Schritt überprüft werden.</p>
+<p th:if="${workflow.status.name() == 'TECHNICAL_FAILURE'}">Deine bestätigten Angaben bleiben erhalten. Ein erneuter Start kann später mit demselben Stand erfolgen.</p>
+
+<a th:href="@{/projects/drafts}">Zu den Entwürfen</a>
+</main></body></html>

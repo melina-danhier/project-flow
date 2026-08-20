@@ -1,6 +1,9 @@
 package de.melinadanhier.projectflow.wizard;
 
+import de.melinadanhier.projectflow.generation.client.AiGenerationClient;
+import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckResult;
 import de.melinadanhier.projectflow.generation.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -9,12 +12,16 @@ import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
+import de.melinadanhier.projectflow.user.model.User;
+import de.melinadanhier.projectflow.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -23,6 +30,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,6 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -46,6 +56,20 @@ class AiWizardSummaryIntegrationTest {
 
     @Autowired
     private PlanDraftRepository planDraftRepository;
+
+    @Autowired
+    private AiPlanGenerationWorkflowRepository workflowRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @MockitoBean
+    private AiGenerationClient aiGenerationClient;
+
+    @BeforeEach
+    void configureAiClient() {
+        when(aiGenerationClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+    }
 
     @Test
     void rendersSeparatedGeneralAndAiOnlyDataWithCalculatedAbsoluteDates() throws Exception {
@@ -126,6 +150,9 @@ class AiWizardSummaryIntegrationTest {
     @Test
     void rejectsMissingConsentOnTheServerAndDoesNotPersistAnything() throws Exception {
         WizardRequest request = wizardRequest(true);
+        mockMvc.perform(get("/projects/new/ai/summary")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk());
         long projectsBefore = projectRepository.count();
         long draftsBefore = planDraftRepository.count();
 
@@ -136,31 +163,22 @@ class AiWizardSummaryIntegrationTest {
                 .andExpect(model().attributeHasFieldErrors("aiProcessingConsentForm", "consent"))
                 .andExpect(content().string(containsString("Bitte stimme der beschriebenen KI-Verarbeitung zu")));
 
-        assertThat(request.state().isAiProcessingConfirmed()).isFalse();
+        assertThat(request.session().getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isSameAs(request.state());
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
     }
 
     @Test
-    void acceptsExplicitConsentOnceInTheUiWithoutCreatingAProjectOrDraft() throws Exception {
+    void summaryProvidesAServerGeneratedCompletionTokenAndClientSideSubmitGuard() throws Exception {
         WizardRequest request = wizardRequest(true);
-        long projectsBefore = projectRepository.count();
-        long draftsBefore = planDraftRepository.count();
 
-        mockMvc.perform(post("/projects/new/ai/confirm")
-                        .session(request.session()).with(user(request.user())).with(csrf())
-                        .param("consent", "true"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/projects/new/ai/summary?confirmed"));
-
-        assertThat(request.state().isAiProcessingConfirmed()).isTrue();
-        mockMvc.perform(get("/projects/new/ai/summary?confirmed")
+        mockMvc.perform(get("/projects/new/ai/summary")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Deine Zustimmung wurde geprüft")))
-                .andExpect(content().string(not(containsString("id=\"ai-confirmation-form\""))));
-        assertThat(projectRepository.count()).isEqualTo(projectsBefore);
-        assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
+                .andExpect(content().string(containsString("name=\"completionToken\"")))
+                .andExpect(content().string(containsString("id=\"ai-confirmation-submit\" type=\"submit\" disabled")));
+
+        assertThat(request.state().getCompletionToken()).isNotNull();
     }
 
     @Test
@@ -175,8 +193,73 @@ class AiWizardSummaryIntegrationTest {
         assertThat(request.session().getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isNull();
     }
 
+    @Test
+    void successfulConsentClearsSessionOnlyAfterPersistenceAndRedirectsToStatus() throws Exception {
+        User owner = saveUser("wizard-completion@example.org");
+        WizardRequest request = wizardRequest(owner.getId());
+        mockMvc.perform(get("/projects/new/ai/summary")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk());
+        UUID completionToken = request.state().getCompletionToken();
+        long projectsBefore = projectRepository.count();
+        long workflowsBefore = workflowRepository.count();
+
+        String statusUrl = mockMvc.perform(post("/projects/new/ai/confirm")
+                        .session(request.session()).with(user(request.user())).with(csrf())
+                        .param("consent", "true")
+                        .param("completionToken", completionToken.toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/projects/new/ai/status/*"))
+                .andReturn().getResponse().getRedirectedUrl();
+
+        assertThat(request.session().getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isNull();
+        assertThat(projectRepository.count()).isEqualTo(projectsBefore + 1);
+        assertThat(workflowRepository.count()).isEqualTo(workflowsBefore + 1);
+        mockMvc.perform(get(statusUrl).session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/ai-status"))
+                .andExpect(content().string(containsString("Deine Angaben werden geprüft")));
+        AuthenticatedUser outsider = new AuthenticatedUser(
+                UUID.randomUUID(), "outsider@example.org", "ignored", true);
+        mockMvc.perform(get(statusUrl).with(user(outsider)))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(post("/projects/new/ai/confirm")
+                        .session(request.session()).with(user(request.user())).with(csrf())
+                        .param("consent", "true")
+                        .param("completionToken", completionToken.toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(statusUrl));
+        assertThat(projectRepository.count()).isEqualTo(projectsBefore + 1);
+        assertThat(workflowRepository.count()).isEqualTo(workflowsBefore + 1);
+    }
+
+    @Test
+    void persistenceFailureKeepsTheWizardStateInTheSession() throws Exception {
+        WizardRequest request = wizardRequest(true);
+        mockMvc.perform(get("/projects/new/ai/summary")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/projects/new/ai/confirm")
+                        .session(request.session()).with(user(request.user())).with(csrf())
+                        .param("consent", "true")
+                        .param("completionToken", request.state().getCompletionToken().toString()))
+                .andExpect(status().isNotFound());
+
+        assertThat(request.session().getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .isSameAs(request.state());
+    }
+
     private WizardRequest wizardRequest(boolean groupProject) {
-        UUID userId = UUID.randomUUID();
+        return wizardRequest(UUID.randomUUID(), groupProject);
+    }
+
+    private WizardRequest wizardRequest(UUID userId) {
+        return wizardRequest(userId, true);
+    }
+
+    private WizardRequest wizardRequest(UUID userId, boolean groupProject) {
         AuthenticatedUser user = new AuthenticatedUser(userId, "wizard@example.org", "ignored", true);
         ProjectWizardState state = new ProjectWizardState();
         state.setUserId(userId);
@@ -197,6 +280,15 @@ class AiWizardSummaryIntegrationTest {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(ProjectWizardService.SESSION_ATTRIBUTE, state);
         return new WizardRequest(user, session, state);
+    }
+
+    private User saveUser(String email) {
+        User user = new User();
+        user.setEmail(email);
+        user.setDisplayName("Wizard Test");
+        user.setPasswordHash("$2a$12$test-hash");
+        user.setEnabled(true);
+        return userRepository.saveAndFlush(user);
     }
 
     private record WizardRequest(

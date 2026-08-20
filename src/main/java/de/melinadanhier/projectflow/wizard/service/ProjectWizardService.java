@@ -1,6 +1,8 @@
 package de.melinadanhier.projectflow.wizard.service;
 
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
+import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -38,7 +40,7 @@ public class ProjectWizardService {
         ProjectTimeFrameCalculator.ProjectTimeFrame timeFrame = timeFrameCalculator.calculate(form);
         state.setStartDate(timeFrame.startDate());
         state.setEndDate(timeFrame.endDate());
-        state.setAiProcessingConfirmed(false);
+        state.setCompletionToken(null);
         session.setAttribute(SESSION_ATTRIBUTE, state);
         return state;
     }
@@ -47,6 +49,7 @@ public class ProjectWizardService {
             CreationType creationType, UUID userId, HttpSession session) {
         ProjectWizardState state = requireOwned(userId, session);
         state.setCreationType(creationType);
+        state.setCompletionToken(null);
         session.setAttribute(SESSION_ATTRIBUTE, state);
         return state;
     }
@@ -58,7 +61,7 @@ public class ProjectWizardService {
         state.setConstraints(normalizeOptionalText(form.getConstraints()));
         state.setAdditionalInformation(normalizeOptionalText(form.getAdditionalInformation()));
         state.setAiDetailsCompleted(true);
-        state.setAiProcessingConfirmed(false);
+        state.setCompletionToken(null);
         session.setAttribute(SESSION_ATTRIBUTE, state);
         return state;
     }
@@ -75,13 +78,29 @@ public class ProjectWizardService {
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation());
     }
 
-    public void confirmAiProcessing(UUID userId, HttpSession session) {
+    public UUID completionToken(UUID userId, HttpSession session) {
         ProjectWizardState state = requireOwnedFor(CreationType.AI, userId, session);
         if (!state.isAiDetailsCompleted()) {
             throw new ResourceNotFoundException("Die KI-Angaben wurden noch nicht abgeschlossen.");
         }
-        state.setAiProcessingConfirmed(true);
+        if (state.getCompletionToken() == null) {
+            state.setCompletionToken(UUID.randomUUID());
+        }
         session.setAttribute(SESSION_ATTRIBUTE, state);
+        return state.getCompletionToken();
+    }
+
+    public AiWizardSnapshot confirmedSnapshot(
+            UUID completionToken, UUID userId, HttpSession session) {
+        ProjectWizardState state = requireOwnedFor(CreationType.AI, userId, session);
+        if (!state.isAiDetailsCompleted() || !completionToken.equals(state.getCompletionToken())) {
+            throw new ConflictException(
+                    "Diese Zusammenfassung ist nicht mehr aktuell. Bitte prüfe deine Angaben erneut.");
+        }
+        return new AiWizardSnapshot(
+                state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
+                state.getCollaborationMode(), state.getCategory(), state.getProjectType(),
+                state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation());
     }
 
     public ProjectWizardState requireOwned(UUID userId, HttpSession session) {
