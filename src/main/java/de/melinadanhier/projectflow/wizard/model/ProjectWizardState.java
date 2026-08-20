@@ -41,7 +41,7 @@ public class ProjectWizardState implements Serializable {
     private String constraints;
     private String additionalInformation;
     private boolean aiDetailsCompleted;
-    private boolean aiProcessingConfirmed;
+    private UUID completionToken;
 
     public ProjectCreateForm toProjectCreateForm() {
         ProjectCreateForm form = new ProjectCreateForm();

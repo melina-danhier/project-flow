@@ -4,6 +4,8 @@ import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectDetailsDto;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
+import de.melinadanhier.projectflow.generation.service.AiWizardCompletionService;
+import de.melinadanhier.projectflow.generation.service.AiWorkflowCompletion;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.wizard.dto.AiProcessingConsentForm;
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
@@ -33,6 +35,7 @@ public class ProjectWizardController {
     private final ProjectWizardService wizardService;
     private final ProjectService projectService;
     private final TemplateService templateService;
+    private final AiWizardCompletionService aiWizardCompletionService;
 
     @GetMapping("/projects/new")
     public String basics(
@@ -179,7 +182,9 @@ public class ProjectWizardController {
     ) {
         populateAiSummary(model, currentUser.userId(), session);
         if (!model.containsAttribute("aiProcessingConsentForm")) {
-            model.addAttribute("aiProcessingConsentForm", new AiProcessingConsentForm());
+            AiProcessingConsentForm form = new AiProcessingConsentForm();
+            form.setCompletionToken(wizardService.completionToken(currentUser.userId(), session));
+            model.addAttribute("aiProcessingConsentForm", form);
         }
         return "generation/ai-summary";
     }
@@ -196,8 +201,14 @@ public class ProjectWizardController {
             populateAiSummary(model, currentUser.userId(), session);
             return "generation/ai-summary";
         }
-        wizardService.confirmAiProcessing(currentUser.userId(), session);
-        return "redirect:/projects/new/ai/summary?confirmed";
+        AiWorkflowCompletion completion = aiWizardCompletionService.complete(
+                form.getCompletionToken(),
+                currentUser.userId(),
+                () -> wizardService.confirmedSnapshot(
+                        form.getCompletionToken(), currentUser.userId(), session)
+        );
+        wizardService.clearOwned(currentUser.userId(), session);
+        return "redirect:/projects/new/ai/status/" + completion.workflowId();
     }
 
     @PostMapping("/projects/new/cancel")

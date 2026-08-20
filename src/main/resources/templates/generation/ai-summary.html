@@ -44,9 +44,9 @@
     </ul>
 </section>
 
-<p th:if="${param.confirmed}" role="status">Deine Zustimmung wurde geprüft. Die KI-Prüfung kann im nächsten Verarbeitungsschritt gestartet werden.</p>
-<form th:unless="${wizardState.aiProcessingConfirmed}" id="ai-confirmation-form"
-      th:action="@{/projects/new/ai/confirm}" th:object="${aiProcessingConsentForm}" method="post">
+<form id="ai-confirmation-form" th:action="@{/projects/new/ai/confirm}"
+      th:object="${aiProcessingConsentForm}" method="post">
+    <input type="hidden" th:field="*{completionToken}">
     <label for="consent">
         <input id="consent" type="checkbox" th:field="*{consent}">
         Ich stimme zu, dass die angezeigten Angaben wie beschrieben zur KI-Verarbeitung übermittelt werden.

@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.integration;
 
 import de.melinadanhier.projectflow.common.model.MutableEntity;
 import de.melinadanhier.projectflow.generation.model.PlanDraft;
+import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
@@ -35,6 +36,8 @@ class ApplicationStructureTest {
         assertThat(PlanElement.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.planelement.model");
         assertThat(PlanSection.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.planelement.model");
         assertThat(PlanDraft.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.generation.model");
+        assertThat(AiPlanGenerationWorkflow.class.getPackageName())
+                .isEqualTo("de.melinadanhier.projectflow.generation.model");
         assertThat(MutableEntity.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.common.model");
         assertThat(ProjectWizardState.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.wizard.model");
     }
