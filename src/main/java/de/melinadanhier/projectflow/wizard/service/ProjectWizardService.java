@@ -3,7 +3,10 @@ package de.melinadanhier.projectflow.wizard.service;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
+import de.melinadanhier.projectflow.wizard.dto.AiWizardSummary;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import jakarta.servlet.http.HttpSession;
@@ -35,6 +38,7 @@ public class ProjectWizardService {
         ProjectTimeFrameCalculator.ProjectTimeFrame timeFrame = timeFrameCalculator.calculate(form);
         state.setStartDate(timeFrame.startDate());
         state.setEndDate(timeFrame.endDate());
+        state.setAiProcessingConfirmed(false);
         session.setAttribute(SESSION_ATTRIBUTE, state);
         return state;
     }
@@ -45,6 +49,39 @@ public class ProjectWizardService {
         state.setCreationType(creationType);
         session.setAttribute(SESSION_ATTRIBUTE, state);
         return state;
+    }
+
+    public ProjectWizardState saveAiDetails(
+            AiProjectDetailsForm form, UUID userId, HttpSession session) {
+        ProjectWizardState state = requireOwnedFor(CreationType.AI, userId, session);
+        state.setProjectGoal(normalizeOptionalText(form.getProjectGoal()));
+        state.setConstraints(normalizeOptionalText(form.getConstraints()));
+        state.setAdditionalInformation(normalizeOptionalText(form.getAdditionalInformation()));
+        state.setAiDetailsCompleted(true);
+        state.setAiProcessingConfirmed(false);
+        session.setAttribute(SESSION_ATTRIBUTE, state);
+        return state;
+    }
+
+    public AiWizardSummary aiSummary(UUID userId, HttpSession session) {
+        ProjectWizardState state = requireOwnedFor(CreationType.AI, userId, session);
+        if (!state.isAiDetailsCompleted()) {
+            throw new ResourceNotFoundException("Die KI-Angaben wurden noch nicht abgeschlossen.");
+        }
+        return new AiWizardSummary(
+                state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
+                state.getCollaborationMode() == CollaborationMode.GROUP,
+                categoryLabel(state.getCategory(), state.getProjectType()),
+                state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation());
+    }
+
+    public void confirmAiProcessing(UUID userId, HttpSession session) {
+        ProjectWizardState state = requireOwnedFor(CreationType.AI, userId, session);
+        if (!state.isAiDetailsCompleted()) {
+            throw new ResourceNotFoundException("Die KI-Angaben wurden noch nicht abgeschlossen.");
+        }
+        state.setAiProcessingConfirmed(true);
+        session.setAttribute(SESSION_ATTRIBUTE, state);
     }
 
     public ProjectWizardState requireOwned(UUID userId, HttpSession session) {
@@ -81,5 +118,20 @@ public class ProjectWizardService {
 
     private String normalizeOptionalText(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String categoryLabel(TemplateCategory category, String projectType) {
+        String label = switch (category) {
+            case EDUCATION -> "Bildung und Studium";
+            case SOFTWARE_TECHNOLOGY -> "Software und Technik";
+            case EVENT -> "Veranstaltung";
+            case HOME -> "Haushalt und Wohnen";
+            case CREATIVE -> "Kreatives";
+            case CAREER -> "Beruf und Karriere";
+            case HEALTH_PERSONAL_DEVELOPMENT -> "Gesundheit und persönliche Entwicklung";
+            case TRAVEL -> "Reise";
+            case OTHER -> "Sonstiges";
+        };
+        return projectType == null ? label : label + " – " + projectType;
     }
 }

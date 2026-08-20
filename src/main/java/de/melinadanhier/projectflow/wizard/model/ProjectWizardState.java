@@ -37,6 +37,11 @@ public class ProjectWizardState implements Serializable {
     private Integer durationDays;
     private StructureMode structureMode;
     private SortMode sortMode;
+    private String projectGoal;
+    private String constraints;
+    private String additionalInformation;
+    private boolean aiDetailsCompleted;
+    private boolean aiProcessingConfirmed;
 
     public ProjectCreateForm toProjectCreateForm() {
         ProjectCreateForm form = new ProjectCreateForm();
