@@ -1,8 +1,10 @@
 package de.melinadanhier.projectflow.generation.service;
 
-import de.melinadanhier.projectflow.generation.client.AiGenerationClient;
-import de.melinadanhier.projectflow.generation.client.AiPreCheckTechnicalException;
+import de.melinadanhier.projectflow.generation.client.AiClient;
+import de.melinadanhier.projectflow.generation.client.AiClientTechnicalException;
+import de.melinadanhier.projectflow.generation.client.AiOutputValidationException;
 import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
+import de.melinadanhier.projectflow.generation.dto.request.AiPreCheckRequest;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckResult;
 import de.melinadanhier.projectflow.generation.model.AiPreCheckErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +21,7 @@ public class AiPreCheckProcessor {
 
     static final int MAX_AUTOMATIC_RETRIES = 2;
 
-    private final AiGenerationClient aiGenerationClient;
+    private final AiClient aiClient;
     private final AiWorkflowStateService workflowStateService;
     private final AiPreCheckBackoff backoff;
 
@@ -43,22 +45,26 @@ public class AiPreCheckProcessor {
     }
 
     private void executePreCheck(AiPreCheckRequestedEvent event, AiWizardSnapshot snapshot) {
+        AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
         int retries = 0;
         while (true) {
             try {
-                AiPreCheckResult result = aiGenerationClient.preCheck(snapshot);
+                AiPreCheckResult result = aiClient.preCheck(request);
                 workflowStateService.recordResult(event.workflowId(), result);
                 return;
-            } catch (AiPreCheckTechnicalException exception) {
+            } catch (AiClientTechnicalException exception) {
+                AiPreCheckErrorCode errorCode = exception instanceof AiOutputValidationException
+                        ? AiPreCheckErrorCode.AI_OUTPUT_INVALID
+                        : AiPreCheckErrorCode.AI_PROVIDER_UNAVAILABLE;
                 log.warn("Technischer KI-Pre-Check-Fehler für Workflow {} bei Versuch {} ({}).",
                         event.workflowId(), retries + 1, exception.getClass().getSimpleName());
                 if (retries >= MAX_AUTOMATIC_RETRIES) {
                     finishWithTechnicalFailure(
-                            event.workflowId(), AiPreCheckErrorCode.AI_PROVIDER_UNAVAILABLE, exception);
+                            event.workflowId(), errorCode, exception);
                     return;
                 }
                 retries = workflowStateService.recordAutomaticRetry(
-                        event.workflowId(), AiPreCheckErrorCode.AI_PROVIDER_UNAVAILABLE);
+                        event.workflowId(), errorCode);
                 try {
                     backoff.waitBeforeRetry(retries);
                 } catch (InterruptedException interruptedException) {

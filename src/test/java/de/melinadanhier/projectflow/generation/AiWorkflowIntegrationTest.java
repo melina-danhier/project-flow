@@ -1,9 +1,12 @@
 package de.melinadanhier.projectflow.generation;
 
-import de.melinadanhier.projectflow.generation.client.AiGenerationClient;
-import de.melinadanhier.projectflow.generation.client.AiPreCheckTechnicalException;
+import de.melinadanhier.projectflow.generation.client.AiClient;
+import de.melinadanhier.projectflow.generation.client.AiProviderUnavailableException;
 import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
+import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckProblem;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckResult;
+import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckSeverity;
+import de.melinadanhier.projectflow.generation.prompt.AiSchemaVersions;
 import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.model.AiPreCheckErrorCode;
@@ -36,7 +39,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
@@ -83,7 +85,7 @@ class AiWorkflowIntegrationTest {
     private AiSnapshotCodec snapshotCodec;
 
     @MockitoBean
-    private AiGenerationClient aiGenerationClient;
+    private AiClient aiClient;
 
     @MockitoBean
     private AiPreCheckBackoff backoff;
@@ -96,7 +98,7 @@ class AiWorkflowIntegrationTest {
         AtomicBoolean transactionActiveDuringAiCall = new AtomicBoolean(true);
         AtomicBoolean committedWorkflowVisibleDuringAiCall = new AtomicBoolean(false);
         long workflowsBefore = workflowRepository.count();
-        when(aiGenerationClient.preCheck(any())).thenAnswer(invocation -> {
+        when(aiClient.preCheck(any())).thenAnswer(invocation -> {
             transactionActiveDuringAiCall.set(
                     TransactionSynchronizationManager.isActualTransactionActive());
             committedWorkflowVisibleDuringAiCall.set(workflowRepository.count() == workflowsBefore + 1);
@@ -149,7 +151,7 @@ class AiWorkflowIntegrationTest {
     void repeatedCompletionTokenReturnsTheExistingWorkflowWithoutDuplicates() throws Exception {
         User owner = saveUser("ai-idempotency@example.org");
         UUID token = UUID.randomUUID();
-        when(aiGenerationClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
         long projectsBefore = projectRepository.count();
         long workflowsBefore = workflowRepository.count();
 
@@ -164,7 +166,7 @@ class AiWorkflowIntegrationTest {
         assertThat(second).isEqualTo(first);
         assertThat(projectRepository.count()).isEqualTo(projectsBefore + 1);
         assertThat(workflowRepository.count()).isEqualTo(workflowsBefore + 1);
-        verify(aiGenerationClient, times(1)).preCheck(any());
+        verify(aiClient, times(1)).preCheck(any());
     }
 
     @Test
@@ -185,14 +187,14 @@ class AiWorkflowIntegrationTest {
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
         assertThat(workflowRepository.count()).isEqualTo(workflowsBefore);
-        verify(aiGenerationClient, times(0)).preCheck(any());
+        verify(aiClient, times(0)).preCheck(any());
     }
 
     @Test
     void technicalFailuresUseOnlyLimitedRetriesAndKeepProjectDraft() throws Exception {
         User owner = saveUser("ai-retry@example.org");
-        when(aiGenerationClient.preCheck(any()))
-                .thenThrow(new AiPreCheckTechnicalException("Provider nicht erreichbar"));
+        when(aiClient.preCheck(any()))
+                .thenThrow(new AiProviderUnavailableException("Provider nicht erreichbar"));
 
         AiWorkflowCompletion completion = completionService.complete(
                 UUID.randomUUID(), owner.getId(), this::snapshot);
@@ -207,7 +209,7 @@ class AiWorkflowIntegrationTest {
                 .isEqualTo(AiPreCheckErrorCode.AI_PROVIDER_UNAVAILABLE.name());
         assertThat(projectRepository.findById(completion.projectId())).get()
                 .extracting("status").isEqualTo(ProjectStatus.DRAFT);
-        verify(aiGenerationClient, times(3)).preCheck(any());
+        verify(aiClient, times(3)).preCheck(any());
         try {
             verify(backoff).waitBeforeRetry(1);
             verify(backoff).waitBeforeRetry(2);
@@ -219,8 +221,12 @@ class AiWorkflowIntegrationTest {
     @Test
     void plausibilityIssuesAreStoredWithoutRetryOrTechnicalFailure() throws Exception {
         User owner = saveUser("ai-plausibility@example.org");
-        when(aiGenerationClient.preCheck(any())).thenReturn(
-                new AiPreCheckResult(true, List.of("Der Zeitraum wirkt sehr knapp.")));
+        when(aiClient.preCheck(any())).thenReturn(new AiPreCheckResult(
+                AiSchemaVersions.PRE_CHECK,
+                java.util.List.of(new AiPreCheckProblem(
+                        AiPreCheckSeverity.WARNING,
+                        "Der Zeitraum wirkt sehr knapp.",
+                        "Plane mehr Zeit ein."))));
 
         AiWorkflowCompletion completion = completionService.complete(
                 UUID.randomUUID(), owner.getId(), this::snapshot);
@@ -232,7 +238,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getRetryCount()).isZero();
         assertThat(workflow.getLastTechnicalError()).isNull();
         assertThat(workflow.getPreCheckResult()).contains("Der Zeitraum wirkt sehr knapp.");
-        verify(aiGenerationClient, times(1)).preCheck(any());
+        verify(aiClient, times(1)).preCheck(any());
     }
 
     private AiWizardSnapshot snapshot() {

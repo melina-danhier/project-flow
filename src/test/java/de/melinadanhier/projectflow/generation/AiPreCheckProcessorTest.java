@@ -1,11 +1,16 @@
 package de.melinadanhier.projectflow.generation;
 
 import de.melinadanhier.projectflow.common.exception.GenerationException;
-import de.melinadanhier.projectflow.generation.client.AiGenerationClient;
-import de.melinadanhier.projectflow.generation.client.AiPreCheckTechnicalException;
+import de.melinadanhier.projectflow.generation.client.AiClient;
+import de.melinadanhier.projectflow.generation.client.AiOutputValidationException;
+import de.melinadanhier.projectflow.generation.client.AiProviderUnavailableException;
 import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
+import de.melinadanhier.projectflow.generation.dto.request.AiPreCheckRequest;
+import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckProblem;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckResult;
+import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.generation.model.AiPreCheckErrorCode;
+import de.melinadanhier.projectflow.generation.prompt.AiSchemaVersions;
 import de.melinadanhier.projectflow.generation.service.AiPreCheckBackoff;
 import de.melinadanhier.projectflow.generation.service.AiPreCheckProcessor;
 import de.melinadanhier.projectflow.generation.service.AiPreCheckRequestedEvent;
@@ -32,7 +37,7 @@ import static org.mockito.Mockito.when;
 class AiPreCheckProcessorTest {
 
     @Mock
-    private AiGenerationClient aiGenerationClient;
+    private AiClient aiClient;
 
     @Mock
     private AiWorkflowStateService workflowStateService;
@@ -53,23 +58,24 @@ class AiPreCheckProcessorTest {
 
         verify(workflowStateService).recordTechnicalFailure(
                 workflowId, AiPreCheckErrorCode.PRE_CHECK_INITIALIZATION_FAILED);
-        verifyNoInteractions(aiGenerationClient, backoff);
+        verifyNoInteractions(aiClient, backoff);
     }
 
     @Test
     void technicalProviderFailuresUseLimitedRetriesAndBackoff() throws Exception {
         UUID workflowId = UUID.randomUUID();
         AiWizardSnapshot snapshot = snapshot();
+        AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
         when(workflowStateService.markRunningAndReadSnapshot(workflowId)).thenReturn(snapshot);
         when(workflowStateService.recordAutomaticRetry(
                 workflowId, AiPreCheckErrorCode.AI_PROVIDER_UNAVAILABLE))
                 .thenReturn(1, 2);
-        when(aiGenerationClient.preCheck(snapshot))
-                .thenThrow(new AiPreCheckTechnicalException("Provider nicht erreichbar"));
+        when(aiClient.preCheck(request))
+                .thenThrow(new AiProviderUnavailableException("Provider nicht erreichbar"));
 
         processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
 
-        verify(aiGenerationClient, times(3)).preCheck(snapshot);
+        verify(aiClient, times(3)).preCheck(request);
         verify(workflowStateService, times(2)).recordAutomaticRetry(
                 workflowId, AiPreCheckErrorCode.AI_PROVIDER_UNAVAILABLE);
         verify(backoff).waitBeforeRetry(1);
@@ -82,9 +88,11 @@ class AiPreCheckProcessorTest {
     void plausibilityIssuesAreStoredWithoutRetryOrBackoff() throws Exception {
         UUID workflowId = UUID.randomUUID();
         AiWizardSnapshot snapshot = snapshot();
-        AiPreCheckResult result = new AiPreCheckResult(true, List.of("Zeitraum ist knapp"));
+        AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
+        AiPreCheckResult result = new AiPreCheckResult(AiSchemaVersions.PRE_CHECK, List.of(
+                new AiPreCheckProblem(AiPreCheckSeverity.WARNING, "Zeitraum ist knapp", "Mehr Zeit einplanen")));
         when(workflowStateService.markRunningAndReadSnapshot(workflowId)).thenReturn(snapshot);
-        when(aiGenerationClient.preCheck(snapshot)).thenReturn(result);
+        when(aiClient.preCheck(request)).thenReturn(result);
 
         processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
 
@@ -94,16 +102,39 @@ class AiPreCheckProcessorTest {
         verify(workflowStateService, never()).recordTechnicalFailure(
                 workflowId, AiPreCheckErrorCode.PRE_CHECK_PROCESSING_FAILED);
         verifyNoInteractions(backoff);
-        verify(aiGenerationClient).preCheck(snapshot);
+        verify(aiClient).preCheck(request);
+    }
+
+    @Test
+    void invalidAiOutputUsesLimitedTechnicalRetriesAndIsNeverStoredAsBusinessError() throws Exception {
+        UUID workflowId = UUID.randomUUID();
+        AiWizardSnapshot snapshot = snapshot();
+        AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
+        when(workflowStateService.markRunningAndReadSnapshot(workflowId)).thenReturn(snapshot);
+        when(aiClient.preCheck(request))
+                .thenThrow(new AiOutputValidationException("Ungültiger Output"));
+        when(workflowStateService.recordAutomaticRetry(workflowId, AiPreCheckErrorCode.AI_OUTPUT_INVALID))
+                .thenReturn(1, 2);
+
+        processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
+
+        verify(aiClient, times(3)).preCheck(request);
+        verify(workflowStateService, times(2)).recordAutomaticRetry(
+                workflowId, AiPreCheckErrorCode.AI_OUTPUT_INVALID);
+        verify(workflowStateService).recordTechnicalFailure(
+                workflowId, AiPreCheckErrorCode.AI_OUTPUT_INVALID);
+        verify(workflowStateService, never()).recordResult(
+                org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
     void unexpectedStatusUpdateFailureEndsInDefinedTechnicalState() {
         UUID workflowId = UUID.randomUUID();
         AiWizardSnapshot snapshot = snapshot();
+        AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
         AiPreCheckResult result = AiPreCheckResult.withoutIssues();
         when(workflowStateService.markRunningAndReadSnapshot(workflowId)).thenReturn(snapshot);
-        when(aiGenerationClient.preCheck(snapshot)).thenReturn(result);
+        when(aiClient.preCheck(request)).thenReturn(result);
         doThrow(new IllegalStateException("Status konnte nicht gespeichert werden"))
                 .when(workflowStateService).recordResult(workflowId, result);
 

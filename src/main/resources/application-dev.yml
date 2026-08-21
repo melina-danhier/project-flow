@@ -18,3 +18,10 @@ spring:
 
   flyway:
     enabled: true
+
+projectflow:
+  ai:
+    provider: stub
+    stub:
+      pre-check-scenario: no-problems
+      generation-scenario: with-dates
