@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.wizard;
 
-import de.melinadanhier.projectflow.generation.client.AiGenerationClient;
+import de.melinadanhier.projectflow.generation.client.AiClient;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckResult;
 import de.melinadanhier.projectflow.generation.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
@@ -64,11 +64,11 @@ class AiWizardSummaryIntegrationTest {
     private UserRepository userRepository;
 
     @MockitoBean
-    private AiGenerationClient aiGenerationClient;
+    private AiClient aiClient;
 
     @BeforeEach
     void configureAiClient() {
-        when(aiGenerationClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
     }
 
     @Test
