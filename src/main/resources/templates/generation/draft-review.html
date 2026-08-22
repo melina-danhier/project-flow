@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title>KI-Entwurf prüfen – ProjectFlow</title></head>
+<body><main>
+<a th:href="@{/projects/drafts}">Zurück zu den Entwürfen</a>
+<h1>KI-Entwurf prüfen</h1>
+<p th:if="${draft.summary}" th:text="${draft.summary}"></p>
+<section th:if="${draft.assumptions}">
+    <h2>Annahmen der KI</h2><p th:text="${draft.assumptions}"></p>
+</section>
+<section th:each="section : ${draft.sections}">
+    <h2 th:text="${section.title}"></h2>
+    <p th:if="${section.description}" th:text="${section.description}"></p>
+    <ul><li th:each="element : ${section.elements}">
+        <strong th:text="${element.title}"></strong>
+        <span th:text="${element.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span>
+        <span th:if="${element.dueDate}" th:text="${element.dueDate}"></span>
+        <span th:if="${element.estimatedHours}" th:text="${element.estimatedHours + ' Std.'}"></span>
+        <p th:if="${element.description}" th:text="${element.description}"></p>
+        <p th:if="${element.criticalAssumption}" th:text="${'Annahme: ' + element.criticalAssumption}"></p>
+    </li></ul>
+</section>
+<form th:if="${draft.status.name() != 'APPLIED'}"
+      th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
+    <button type="submit">Entwurf ausdrücklich übernehmen</button>
+</form>
+</main></body></html>

@@ -23,6 +23,8 @@ public class DraftReviewDto {
     private String promptVersion;
     private String schemaVersion;
     private Instant generatedAt;
+    private String summary;
+    private String assumptions;
     private List<DraftSectionDto> sections = new ArrayList<>();
     private List<DraftPlanElementDto> elements = new ArrayList<>();
 }

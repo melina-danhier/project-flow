@@ -19,7 +19,8 @@
     <ul th:unless="${#lists.isEmpty(projects)}">
         <li th:each="project : ${projects}">
             <a th:if="${selectedLocation.name() != 'DRAFT'}" th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}"></a>
-            <span th:if="${selectedLocation.name() == 'DRAFT'}" th:text="${project.title}"></span>
+            <a th:if="${selectedLocation.name() == 'DRAFT'}"
+               th:href="@{/projects/{id}/draft(id=${project.id})}" th:text="${project.title}"></a>
         </li>
     </ul>
     <a th:href="@{/projects/new}">Projekt anlegen</a>

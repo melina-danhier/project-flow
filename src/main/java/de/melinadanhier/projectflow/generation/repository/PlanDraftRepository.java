@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface PlanDraftRepository extends JpaRepository<PlanDraft, UUID> {
 
     Optional<PlanDraft> findByIdAndProjectId(UUID draftId, UUID projectId);
+
+    Optional<PlanDraft> findByProjectId(UUID projectId);
 }

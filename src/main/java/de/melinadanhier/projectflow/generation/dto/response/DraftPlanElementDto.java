@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.UUID;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -20,4 +21,9 @@ public class DraftPlanElementDto {
     private ReviewStatus reviewStatus;
     private boolean userModified;
     private boolean hasCriticalAssumption;
+    private String criticalAssumption;
+    private String type;
+    private LocalDate startDate;
+    private LocalDate dueDate;
+    private Integer estimatedHours;
 }

@@ -51,6 +51,10 @@ public class Task extends PlanElement {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
+    @jakarta.validation.constraints.Positive
+    @Column(name = "estimated_hours")
+    private Integer estimatedHours;
+
     @PositiveOrZero
     @Column(name = "relative_start_day")
     private Integer relativeStartDay;

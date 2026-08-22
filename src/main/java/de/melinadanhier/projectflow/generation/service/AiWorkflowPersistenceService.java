@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflow;
+import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
@@ -27,7 +28,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class AiWorkflowPersistenceService {
 
-    public static final String SNAPSHOT_VERSION = "ai-wizard-v1";
+    public static final String SNAPSHOT_VERSION = "ai-wizard-v2";
     public static final String CONSENT_VERSION = "v1";
 
     private final ProjectRepository projectRepository;
@@ -74,6 +75,43 @@ public class AiWorkflowPersistenceService {
                 CONSENT_VERSION
         );
         workflowRepository.saveAndFlush(workflow);
+        eventPublisher.publishEvent(new AiPreCheckRequestedEvent(workflow.getId()));
+        return new AiWorkflowCompletion(workflow.getId(), project.getId());
+    }
+
+    @Transactional
+    public AiWorkflowCompletion restart(
+            UUID workflowId,
+            AiWizardSnapshot snapshot,
+            UUID completionToken,
+            UUID ownerUserId
+    ) {
+        validate(snapshot);
+        AiPlanGenerationWorkflow workflow = workflowRepository.findOwnedById(workflowId, ownerUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW) {
+            throw new DomainValidationException("Nur ein Workflow mit aktuellen Hinweisen kann erneut geprüft werden.");
+        }
+
+        Project project = workflow.getProject();
+        project.setTitle(snapshot.title().trim());
+        project.setDescription(snapshot.description());
+        project.setStartDate(snapshot.startDate());
+        project.setEndDate(snapshot.endDate());
+        project.setCategory(snapshot.category());
+        project.setProjectType(snapshot.projectType());
+        project.setCollaborationMode(snapshot.collaborationMode());
+
+        workflow.setConfirmedSnapshot(snapshotCodec.writeSnapshot(snapshot));
+        workflow.setCompletionToken(completionToken);
+        workflow.setConsentConfirmedAt(Instant.now());
+        workflow.setConsentVersion(CONSENT_VERSION);
+        workflow.setStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING);
+        workflow.setRetryCount(0);
+        workflow.setLastTechnicalError(null);
+        workflow.setPreCheckResult(null);
+        workflow.setGeneratedPlan(null);
+        workflowRepository.flush();
         eventPublisher.publishEvent(new AiPreCheckRequestedEvent(workflow.getId()));
         return new AiWorkflowCompletion(workflow.getId(), project.getId());
     }
