@@ -3,6 +3,7 @@ package de.melinadanhier.projectflow.generation.service;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
 import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckResult;
+import de.melinadanhier.projectflow.generation.dto.response.GeneratedPlanResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -31,6 +32,26 @@ public class AiSnapshotCodec {
 
     public String writePreCheckResult(AiPreCheckResult result) {
         return write(result, "Das Ergebnis der KI-Prüfung konnte nicht serialisiert werden.");
+    }
+
+    public AiPreCheckResult readPreCheckResult(String json) {
+        return read(json, AiPreCheckResult.class,
+                "Das Ergebnis der KI-Prüfung konnte nicht gelesen werden.");
+    }
+
+    public String writeGeneratedPlan(GeneratedPlanResponse result) {
+        return write(result, "Der generierte Plan konnte nicht serialisiert werden.");
+    }
+
+    private <T> T read(String json, Class<T> type, String errorMessage) {
+        try {
+            String normalized = json != null && json.startsWith("\"")
+                    ? objectMapper.readValue(json, String.class)
+                    : json;
+            return objectMapper.readValue(normalized, type);
+        } catch (JacksonException exception) {
+            throw new GenerationException(errorMessage, exception);
+        }
     }
 
     private String write(Object value, String errorMessage) {

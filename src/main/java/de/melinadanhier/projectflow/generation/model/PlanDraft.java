@@ -68,6 +68,14 @@ public class PlanDraft extends MutableEntity {
     @Column(name = "generated_at")
     private Instant generatedAt;
 
+    @Size(max = 1000)
+    @Column(name = "summary", length = 1000)
+    private String summary;
+
+    @Column(name = "assumptions", columnDefinition = "jsonb")
+    @org.hibernate.annotations.ColumnTransformer(write = "CAST(? AS JSONB)")
+    private String assumptions;
+
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "planDraft", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")

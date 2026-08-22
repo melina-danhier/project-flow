@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -37,6 +38,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+@DynamicUpdate
 public class AiPlanGenerationWorkflow extends MutableEntity {
 
     @NotNull
@@ -46,8 +48,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     private Project project;
 
     @NotBlank
-    @Setter(AccessLevel.NONE)
-    @Column(name = "confirmed_snapshot", nullable = false, updatable = false, columnDefinition = "jsonb")
+    @Column(name = "confirmed_snapshot", nullable = false, columnDefinition = "jsonb")
     @ColumnTransformer(write = "CAST(? AS JSONB)")
     private String confirmedSnapshot;
 
@@ -58,19 +59,16 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     private String snapshotVersion;
 
     @NotNull
-    @Setter(AccessLevel.NONE)
-    @Column(name = "completion_token", nullable = false, updatable = false, unique = true)
+    @Column(name = "completion_token", nullable = false, unique = true)
     private UUID completionToken;
 
     @NotNull
-    @Setter(AccessLevel.NONE)
-    @Column(name = "consent_confirmed_at", nullable = false, updatable = false)
+    @Column(name = "consent_confirmed_at", nullable = false)
     private Instant consentConfirmedAt;
 
     @NotBlank
     @Size(max = 20)
-    @Setter(AccessLevel.NONE)
-    @Column(name = "consent_version", nullable = false, updatable = false, length = 20)
+    @Column(name = "consent_version", nullable = false, length = 20)
     private String consentVersion;
 
     @NotNull
@@ -82,13 +80,17 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     @Column(name = "retry_count", nullable = false)
     private int retryCount;
 
-    @Size(max = 2000)
-    @Column(name = "last_technical_error", length = 2000)
-    private String lastTechnicalError;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "last_technical_error", length = 50)
+    private AiTechnicalErrorCode lastTechnicalError;
 
     @Column(name = "pre_check_result", columnDefinition = "jsonb")
     @ColumnTransformer(write = "CAST(? AS JSONB)")
     private String preCheckResult;
+
+    @Column(name = "generated_plan", columnDefinition = "jsonb")
+    @ColumnTransformer(write = "CAST(? AS JSONB)")
+    private String generatedPlan;
 
     public static AiPlanGenerationWorkflow create(
             Project project,

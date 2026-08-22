@@ -13,6 +13,8 @@ public record AiWorkflowStatusDto(
     public boolean isProcessing() {
         return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING
                 || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
-                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING;
+                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING
+                || status == AiPlanGenerationWorkflowStatus.GENERATION_PENDING
+                || status == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING;
     }
 }

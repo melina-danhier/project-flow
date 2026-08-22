@@ -3,6 +3,7 @@ package de.melinadanhier.projectflow.wizard.service;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
+import de.melinadanhier.projectflow.generation.dto.request.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -10,6 +11,7 @@ import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategor
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.AiWizardSummary;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
+import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -100,7 +102,8 @@ public class ProjectWizardService {
         return new AiWizardSnapshot(
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
                 state.getCollaborationMode(), state.getCategory(), state.getProjectType(),
-                state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation());
+                state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(),
+                AiProjectTimeFrameType.valueOf(state.getTimeFrameType().name()), state.getDurationDays());
     }
 
     public ProjectWizardState requireOwned(UUID userId, HttpSession session) {
@@ -135,8 +138,52 @@ public class ProjectWizardService {
         }
     }
 
+    public ProjectWizardState restoreFromSnapshot(
+            AiWizardSnapshot snapshot,
+            UUID workflowId,
+            UUID userId,
+            HttpSession session
+    ) {
+        ProjectWizardState state = new ProjectWizardState();
+        state.setUserId(userId);
+        state.setTitle(snapshot.title());
+        state.setDescription(snapshot.description());
+        state.setCategory(snapshot.category());
+        state.setProjectType(snapshot.projectType());
+        state.setCollaborationMode(snapshot.collaborationMode());
+        state.setCreationType(CreationType.AI);
+        state.setStartDate(snapshot.startDate());
+        state.setEndDate(snapshot.endDate());
+        state.setTimeFrameType(resolveTimeFrameType(snapshot));
+        state.setDurationDays(snapshot.durationDays());
+        state.setProjectGoal(snapshot.projectGoal());
+        state.setConstraints(snapshot.constraints());
+        state.setAdditionalInformation(snapshot.additionalInformation());
+        state.setAiDetailsCompleted(true);
+        state.setCompletionToken(null);
+        state.setEditingAiWorkflowId(workflowId);
+        session.setAttribute(SESSION_ATTRIBUTE, state);
+        return state;
+    }
+
+    public UUID editingAiWorkflowId(UUID userId, HttpSession session) {
+        return findOwned(userId, session)
+                .filter(state -> state.getCreationType() == CreationType.AI)
+                .map(ProjectWizardState::getEditingAiWorkflowId)
+                .orElse(null);
+    }
+
     private String normalizeOptionalText(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private ProjectTimeFrameType resolveTimeFrameType(AiWizardSnapshot snapshot) {
+        if (snapshot.timeFrameType() != null) {
+            return ProjectTimeFrameType.valueOf(snapshot.timeFrameType().name());
+        }
+        return snapshot.startDate() == null && snapshot.endDate() == null
+                ? ProjectTimeFrameType.NONE
+                : ProjectTimeFrameType.START_AND_END;
     }
 
     private String categoryLabel(TemplateCategory category, String projectType) {

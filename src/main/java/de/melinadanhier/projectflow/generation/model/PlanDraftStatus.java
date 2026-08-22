@@ -5,5 +5,6 @@ public enum PlanDraftStatus {
     FAILED,
     READY_FOR_REVIEW,
     IN_REVIEW,
-    APPLYING
+    APPLYING,
+    APPLIED
 }

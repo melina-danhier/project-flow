@@ -6,6 +6,8 @@ import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService
 import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
 import de.melinadanhier.projectflow.generation.service.AiWizardCompletionService;
 import de.melinadanhier.projectflow.generation.service.AiWorkflowCompletion;
+import de.melinadanhier.projectflow.generation.service.AiPreCheckReviewService;
+import de.melinadanhier.projectflow.generation.service.AiPreCheckReviewSession;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.wizard.dto.AiProcessingConsentForm;
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
@@ -36,6 +38,8 @@ public class ProjectWizardController {
     private final ProjectService projectService;
     private final TemplateService templateService;
     private final AiWizardCompletionService aiWizardCompletionService;
+    private final AiPreCheckReviewService aiPreCheckReviewService;
+    private final AiPreCheckReviewSession aiPreCheckReviewSession;
 
     @GetMapping("/projects/new")
     public String basics(
@@ -205,7 +209,8 @@ public class ProjectWizardController {
                 form.getCompletionToken(),
                 currentUser.userId(),
                 () -> wizardService.confirmedSnapshot(
-                        form.getCompletionToken(), currentUser.userId(), session)
+                        form.getCompletionToken(), currentUser.userId(), session),
+                wizardService.editingAiWorkflowId(currentUser.userId(), session)
         );
         wizardService.clearOwned(currentUser.userId(), session);
         return "redirect:/projects/new/ai/status/" + completion.workflowId();
@@ -220,6 +225,18 @@ public class ProjectWizardController {
         wizardService.clearOwned(currentUser.userId(), session);
         redirectAttributes.addFlashAttribute("successMessage", "Projekterstellung wurde abgebrochen.");
         return "redirect:/projects";
+    }
+
+    @PostMapping("/projects/new/ai/problems/{workflowId}/edit")
+    public String editAiInputsAfterPreCheck(
+            @PathVariable UUID workflowId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session
+    ) {
+        var snapshot = aiPreCheckReviewService.returnToWizard(workflowId, currentUser.userId());
+        aiPreCheckReviewSession.clear(workflowId, session);
+        wizardService.restoreFromSnapshot(snapshot, workflowId, currentUser.userId(), session);
+        return "redirect:/projects/new/ai/summary";
     }
 
     private String createManualProject(

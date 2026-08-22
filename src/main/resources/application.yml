@@ -16,3 +16,15 @@ server:
         http-only: true
         same-site: lax
         secure: false
+
+projectflow:
+  ai:
+    recovery-delay: ${AI_RECOVERY_DELAY:30s}
+    stale-workflow-timeout: ${AI_STALE_WORKFLOW_TIMEOUT:5m}
+    provider: ${PROJECTFLOW_AI_PROVIDER:stub}
+    max-automatic-retries: ${PROJECTFLOW_AI_MAX_AUTOMATIC_RETRIES:2}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      pre-check-model: ${OPENAI_PRE_CHECK_MODEL:gpt-5-mini}
+      generation-model: ${OPENAI_GENERATION_MODEL:gpt-5-mini}
+      timeout: ${OPENAI_TIMEOUT:60s}

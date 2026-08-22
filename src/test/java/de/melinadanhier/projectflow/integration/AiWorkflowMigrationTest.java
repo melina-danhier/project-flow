@@ -41,19 +41,28 @@ class AiWorkflowMigrationTest {
 
                 ScriptUtils.executeSqlScript(connection, new ClassPathResource(
                         "db/migration/V5__add_ai_workflow_consent_audit.sql"));
+                ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                        "db/migration/V6__add_ai_generation_result.sql"));
+                statement.execute("""
+                        UPDATE ai_plan_generation_workflows
+                        SET status = 'GENERATION_COMPLETED',
+                            generated_plan = '{"schemaVersion":"1.0"}'
+                        WHERE id = '%s'
+                        """.formatted(workflowId));
                 try (var result = statement.executeQuery("""
                         SELECT confirmed_snapshot, snapshot_version, status, retry_count,
-                               consent_confirmed_at, consent_version
+                               consent_confirmed_at, consent_version, generated_plan
                         FROM ai_plan_generation_workflows
                         WHERE id = '%s'
                         """.formatted(workflowId))) {
                     assertThat(result.next()).isTrue();
                     assertThat(result.getString("confirmed_snapshot")).contains("Test");
                     assertThat(result.getString("snapshot_version")).isEqualTo("ai-wizard-v1");
-                    assertThat(result.getString("status")).isEqualTo("PRE_CHECK_PENDING");
+                    assertThat(result.getString("status")).isEqualTo("GENERATION_COMPLETED");
                     assertThat(result.getInt("retry_count")).isZero();
                     assertThat(result.getTimestamp("consent_confirmed_at")).isNotNull();
                     assertThat(result.getString("consent_version")).isEqualTo("v1");
+                    assertThat(result.getString("generated_plan")).contains("schemaVersion");
                 }
 
                 assertThatThrownBy(() -> statement.execute("""

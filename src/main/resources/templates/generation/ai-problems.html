@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hinweise zur Projektplanung – ProjectFlow</title>
+</head>
+<body><main>
+<p>KI-Prüfung der Projektangaben</p>
+<h1>Bitte prüfe diese Hinweise</h1>
+
+<p th:if="${review.hasErrors()}" role="alert">
+    Mindestens ein schwerwiegender Widerspruch blockiert die Plangenerierung. Passe deine Eingaben an und starte die Prüfung erneut.
+</p>
+<p th:unless="${review.hasErrors()}">
+    Du kannst Warnungen einzeln ignorieren. Nach der letzten Warnung startet die Plangenerierung automatisch.
+</p>
+
+<section th:each="problem : ${review.problems}"
+         th:attr="aria-label=${problem.severity.name() == 'ERROR' ? 'Fehler' : 'Warnung'}">
+    <h2 th:text="${problem.severity.name() == 'ERROR' ? 'Fehler' : 'Warnung'}">Hinweis</h2>
+    <p><strong>Hinweis:</strong> <span th:text="${problem.message}"></span></p>
+    <p><strong>Vorschlag:</strong> <span th:text="${problem.suggestion}"></span></p>
+    <form th:if="${problem.warning}"
+          th:action="@{/projects/new/ai/problems/{workflowId}/warnings/{problemIndex}/ignore(workflowId=${review.workflowId},problemIndex=${problem.index})}"
+          method="post">
+        <button type="submit">Ignorieren</button>
+    </form>
+    <p th:unless="${problem.warning}"><strong>Dieser Fehler kann nicht ignoriert werden.</strong></p>
+</section>
+
+<form th:action="@{/projects/new/ai/problems/{workflowId}/edit(workflowId=${review.workflowId})}" method="post">
+    <button type="submit">Eingaben ändern</button>
+</form>
+</main></body></html>

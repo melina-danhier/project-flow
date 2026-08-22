@@ -41,6 +41,10 @@ public class DraftTask extends DraftPlanElement {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
+    @jakarta.validation.constraints.Positive
+    @Column(name = "estimated_hours")
+    private Integer estimatedHours;
+
     @Setter(AccessLevel.NONE)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
