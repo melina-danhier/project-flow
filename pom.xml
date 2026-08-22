@@ -21,6 +21,7 @@
     <properties>
         <java.version>21</java.version>
         <mapstruct.version>1.6.3</mapstruct.version>
+        <openai-java.version>4.39.1</openai-java.version>
     </properties>
 
     <dependencies>
@@ -58,6 +59,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- OpenAI Responses API + Structured Outputs -->
+        <dependency>
+            <groupId>com.openai</groupId>
+            <artifactId>openai-java</artifactId>
+            <version>${openai-java.version}</version>
         </dependency>
 
         <!-- PostgreSQL -->

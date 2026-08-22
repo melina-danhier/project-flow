@@ -4,7 +4,6 @@ import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckProblem;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.generation.prompt.AiPromptVersions;
-import de.melinadanhier.projectflow.generation.prompt.AiSchemaVersions;
 import de.melinadanhier.projectflow.generation.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.generation.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -38,9 +37,8 @@ class AiPromptBuilderTest {
                 .contains(
                         "noch keinen Projektplan",
                         "WARNING",
-                        "ERROR",
-                        "Schemas " + AiSchemaVersions.PRE_CHECK,
-                        "\"schemaVersion\":\"" + AiSchemaVersions.PRE_CHECK + "\"")
+                        "ERROR")
+                .doesNotContain("schemaVersion")
                 .doesNotContain("Umzug planen");
         assertThat(prompt.confirmedUserData()).contains("Umzug planen", "Kartons sind vorhanden");
     }
@@ -62,9 +60,8 @@ class AiPromptBuilderTest {
                         "tempId",
                         "USER_INPUT",
                         "AI_INFERRED",
-                        "ungeprüft",
-                        "Schemas " + AiSchemaVersions.GENERATION,
-                        "\"schemaVersion\":\"" + AiSchemaVersions.GENERATION + "\"");
+                        "ungeprüft")
+                .doesNotContain("schemaVersion");
         assertThat(prompt.confirmedUserData())
                 .contains("confirmedWizardData", "explicitlyIgnoredWarnings", "Zeitraum knapp")
                 .doesNotContain("Unmöglich");

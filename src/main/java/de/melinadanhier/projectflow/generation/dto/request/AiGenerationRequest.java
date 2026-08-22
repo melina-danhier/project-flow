@@ -9,12 +9,23 @@ import java.util.Objects;
 
 public record AiGenerationRequest(
         @NotNull AiWizardSnapshot confirmedWizardData,
-        @NotNull List<@Valid AiPreCheckProblem> explicitlyIgnoredWarnings
+        @NotNull List<@Valid AiPreCheckProblem> explicitlyIgnoredWarnings,
+        @NotNull List<String> previousValidationIssues
 ) {
     public AiGenerationRequest {
         Objects.requireNonNull(confirmedWizardData, "confirmedWizardData darf nicht null sein");
         explicitlyIgnoredWarnings = explicitlyIgnoredWarnings == null
                 ? List.of()
                 : List.copyOf(explicitlyIgnoredWarnings);
+        previousValidationIssues = previousValidationIssues == null
+                ? List.of()
+                : List.copyOf(previousValidationIssues);
+    }
+
+    public AiGenerationRequest(
+            AiWizardSnapshot confirmedWizardData,
+            List<AiPreCheckProblem> explicitlyIgnoredWarnings
+    ) {
+        this(confirmedWizardData, explicitlyIgnoredWarnings, List.of());
     }
 }
