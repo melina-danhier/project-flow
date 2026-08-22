@@ -2,8 +2,8 @@ package de.melinadanhier.projectflow.wizard.service;
 
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
-import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
-import de.melinadanhier.projectflow.generation.dto.request.AiProjectTimeFrameType;
+import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
+import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;

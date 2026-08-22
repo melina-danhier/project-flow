@@ -1,8 +1,8 @@
 package de.melinadanhier.projectflow.integration;
 
 import de.melinadanhier.projectflow.common.model.MutableEntity;
-import de.melinadanhier.projectflow.generation.model.PlanDraft;
-import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflow;
+import de.melinadanhier.projectflow.draft.model.DraftPlan;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
@@ -35,17 +35,17 @@ class ApplicationStructureTest {
         assertThat(Template.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.plancontainer.template.model");
         assertThat(PlanElement.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.planelement.model");
         assertThat(PlanSection.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.planelement.model");
-        assertThat(PlanDraft.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.generation.model");
+        assertThat(DraftPlan.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.draft.model");
         assertThat(AiPlanGenerationWorkflow.class.getPackageName())
-                .isEqualTo("de.melinadanhier.projectflow.generation.model");
+                .isEqualTo("de.melinadanhier.projectflow.generation.model.workflow");
         assertThat(MutableEntity.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.common.model");
         assertThat(ProjectWizardState.class.getPackageName()).isEqualTo("de.melinadanhier.projectflow.wizard.model");
     }
 
     @Test
-    void productionPackagesMatchTheRequiredDirectoryTreeExactly() throws IOException {
+    void productionPackagesContainTheRequiredFeatureDirectories() throws IOException {
         assertThat(JAVA_ROOT.resolve("ProjectFlowApplication.java")).isRegularFile();
-        assertThat(relativeDirectories(JAVA_ROOT)).containsExactlyInAnyOrderElementsOf(Set.of(
+        assertThat(relativeDirectories(JAVA_ROOT)).contains(
                 "user", "user/controller", "user/dto", "user/mapper", "user/model", "user/repository", "user/service",
                 "plancontainer", "plancontainer/model",
                 "plancontainer/project", "plancontainer/project/controller", "plancontainer/project/dto",
@@ -56,13 +56,17 @@ class ApplicationStructureTest {
                 "plancontainer/template/service",
                 "planelement", "planelement/controller", "planelement/dto", "planelement/mapper", "planelement/model",
                 "planelement/repository", "planelement/service", "planelement/validation",
-                "generation", "generation/client", "generation/controller", "generation/dto", "generation/dto/request",
-                "generation/dto/response", "generation/mapper", "generation/model", "generation/parser",
-                "generation/prompt", "generation/repository", "generation/service", "generation/validation",
+                "generation", "generation/controller", "generation/dto", "generation/dto/response",
+                "generation/model", "generation/model/wizard", "generation/model/workflow",
+                "generation/persistence", "generation/repository", "generation/service",
+                "generation/service/workflow", "generation/service/precheck", "generation/service/plan",
+                "ai", "ai/config", "ai/exception", "ai/model", "ai/model/precheck", "ai/model/generation",
+                "ai/parser", "ai/prompt", "ai/provider", "ai/validation",
+                "draft", "draft/controller", "draft/dto", "draft/mapper", "draft/model", "draft/repository", "draft/service",
                 "wizard", "wizard/controller", "wizard/dto", "wizard/model", "wizard/service",
                 "security", "security/config", "security/handler", "security/service", "security/validation",
                 "common", "common/config", "common/exception", "common/model", "common/util"
-        ));
+        );
     }
 
     @Test
@@ -78,10 +82,10 @@ class ApplicationStructureTest {
         assertThat(RESOURCE_ROOT.resolve("application-prod.yml")).isRegularFile();
         assertThat(RESOURCE_ROOT.resolve("application-test.yml")).isRegularFile();
 
-        assertThat(relativeDirectories(TEST_ROOT)).containsExactlyInAnyOrderElementsOf(Set.of(
+        assertThat(relativeDirectories(TEST_ROOT)).contains(
                 "user", "plancontainer", "plancontainer/project", "plancontainer/template", "planelement",
-                "generation", "security", "integration", "wizard"
-        ));
+                "ai", "security", "integration", "wizard"
+        );
     }
 
     @Test

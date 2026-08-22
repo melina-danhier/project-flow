@@ -14,6 +14,60 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AiWorkflowMigrationTest {
 
     @Test
+    void migratesLegacyStatusRetryColumnAndCompletionTokenHistory() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:ai-workflow-cleanup;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            UUID workflowId = UUID.randomUUID();
+            UUID completionToken = UUID.randomUUID();
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        CREATE TABLE ai_plan_generation_workflows (
+                            id UUID PRIMARY KEY,
+                            created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+                            updated_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+                            lock_version BIGINT NOT NULL DEFAULT 0,
+                            completion_token UUID NOT NULL,
+                            status VARCHAR(40) NOT NULL,
+                            retry_count INTEGER NOT NULL DEFAULT 0,
+                            CONSTRAINT ck_ai_workflows_status CHECK (status IN (
+                                'PRE_CHECK_PASSED', 'GENERATION_PENDING')),
+                            CONSTRAINT ck_ai_workflows_retry_count CHECK (retry_count >= 0)
+                        )
+                        """);
+                statement.execute("""
+                        INSERT INTO ai_plan_generation_workflows (
+                            id, created_at, updated_at, completion_token, status, retry_count
+                        ) VALUES ('%s', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, '%s', 'PRE_CHECK_PASSED', 2)
+                        """.formatted(workflowId, completionToken));
+            }
+
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V9__clean_ai_workflow_state.sql"));
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V10__preserve_ai_completion_tokens.sql"));
+
+            try (var statement = connection.createStatement();
+                 var workflow = statement.executeQuery("""
+                         SELECT status, pre_check_retry_count
+                         FROM ai_plan_generation_workflows
+                         WHERE id = '%s'
+                         """.formatted(workflowId))) {
+                assertThat(workflow.next()).isTrue();
+                assertThat(workflow.getString("status")).isEqualTo("GENERATION_PENDING");
+                assertThat(workflow.getInt("pre_check_retry_count")).isEqualTo(2);
+            }
+            try (var statement = connection.createStatement();
+                 var token = statement.executeQuery("""
+                         SELECT workflow_id FROM ai_workflow_completion_tokens
+                         WHERE completion_token = '%s'
+                         """.formatted(completionToken))) {
+                assertThat(token.next()).isTrue();
+                assertThat(token.getObject("workflow_id", UUID.class)).isEqualTo(workflowId);
+            }
+        }
+    }
+
+    @Test
     void createsJsonWorkflowStorageWithUniqueProjectAndCompletionToken() throws Exception {
         try (var connection = DriverManager.getConnection(
                 "jdbc:h2:mem:ai-workflow-migration;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {

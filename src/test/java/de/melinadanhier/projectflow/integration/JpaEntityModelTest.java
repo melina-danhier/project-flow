@@ -1,9 +1,9 @@
 package de.melinadanhier.projectflow.integration;
 
-import de.melinadanhier.projectflow.generation.model.DraftMilestone;
-import de.melinadanhier.projectflow.generation.model.DraftSection;
-import de.melinadanhier.projectflow.generation.model.DraftTask;
-import de.melinadanhier.projectflow.generation.model.PlanDraft;
+import de.melinadanhier.projectflow.draft.model.DraftMilestone;
+import de.melinadanhier.projectflow.draft.model.DraftSection;
+import de.melinadanhier.projectflow.draft.model.DraftTask;
+import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
@@ -167,7 +167,7 @@ class JpaEntityModelTest {
     void persistsPlanDraftAndItsContentsAsSeparateAggregate() {
         Project project = newProject("KI-Projekt", CreationType.AI, ProjectStatus.DRAFT);
         entityManager.persist(project);
-        PlanDraft draft = newDraft(project);
+        DraftPlan draft = newDraft(project);
         DraftSection section = new DraftSection();
         section.setTitle("Entwurfsphase");
         DraftTask task = new DraftTask();
@@ -185,7 +185,7 @@ class JpaEntityModelTest {
         UUID id = draft.getId();
         entityManager.clear();
 
-        PlanDraft loaded = entityManager.find(PlanDraft.class, id);
+        DraftPlan loaded = entityManager.find(DraftPlan.class, id);
         assertThat(loaded.getSections()).hasSize(1);
         assertThat(loaded.getElements())
                 .hasExactlyElementsOfTypes(DraftTask.class, DraftMilestone.class);
@@ -214,7 +214,7 @@ class JpaEntityModelTest {
     void persistsAndReloadsDraftTaskPrerequisites() {
         Project project = newProject("Draft-Abhängigkeiten", CreationType.AI, ProjectStatus.DRAFT);
         entityManager.persist(project);
-        PlanDraft draft = newDraft(project);
+        DraftPlan draft = newDraft(project);
         DraftTask predecessor = new DraftTask();
         predecessor.setTitle("Entwurf Konzept");
         DraftTask successor = new DraftTask();
@@ -343,8 +343,8 @@ class JpaEntityModelTest {
         return membership;
     }
 
-    private PlanDraft newDraft(Project project) {
-        PlanDraft draft = new PlanDraft();
+    private DraftPlan newDraft(Project project) {
+        DraftPlan draft = new DraftPlan();
         draft.setProject(project);
         draft.setPromptVersion("prompt-v1");
         draft.setSchemaVersion("plan-draft-v1");
