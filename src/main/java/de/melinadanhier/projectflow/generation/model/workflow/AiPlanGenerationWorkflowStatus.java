@@ -1,0 +1,14 @@
+package de.melinadanhier.projectflow.generation.model.workflow;
+
+public enum AiPlanGenerationWorkflowStatus {
+    PRE_CHECK_PENDING,
+    PRE_CHECK_RUNNING,
+    PRE_CHECK_RETRY_PENDING,
+    PRE_CHECK_NEEDS_REVIEW,
+    GENERATION_PENDING,
+    GENERATION_RUNNING,
+    GENERATION_COMPLETED,
+    GENERATION_FAILED,
+    DRAFT_APPLIED,
+    TECHNICAL_FAILURE
+}

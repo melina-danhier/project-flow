@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.generation.dto.response;
 
-import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 
 import java.util.UUID;
 
@@ -8,7 +8,7 @@ public record AiWorkflowStatusDto(
         UUID workflowId,
         UUID projectId,
         AiPlanGenerationWorkflowStatus status,
-        int retryCount
+        int preCheckRetryCount
 ) {
     public boolean isProcessing() {
         return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING

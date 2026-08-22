@@ -1,7 +1,7 @@
 package de.melinadanhier.projectflow.wizard;
 
-import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
-import de.melinadanhier.projectflow.generation.dto.request.AiProjectTimeFrameType;
+import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
+import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;

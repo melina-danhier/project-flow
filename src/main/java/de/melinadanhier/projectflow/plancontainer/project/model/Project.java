@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project.model;
 
-import de.melinadanhier.projectflow.generation.model.PlanDraft;
+import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
@@ -71,7 +71,7 @@ public class Project extends PlanContainer {
     private Set<ProjectMember> memberships = new LinkedHashSet<>();
 
     @OneToOne(mappedBy = "project", fetch = jakarta.persistence.FetchType.LAZY)
-    private PlanDraft currentDraft;
+    private DraftPlan currentDraft;
 
     public void addMembership(ProjectMember membership) {
         memberships.add(membership);
@@ -85,7 +85,7 @@ public class Project extends PlanContainer {
         }
     }
 
-    public void attachDraft(PlanDraft draft) {
+    public void attachDraft(DraftPlan draft) {
         currentDraft = draft;
         if (draft != null) {
             draft.setProject(this);

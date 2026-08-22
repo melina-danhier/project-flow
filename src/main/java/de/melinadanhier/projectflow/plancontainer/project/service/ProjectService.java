@@ -3,7 +3,7 @@ package de.melinadanhier.projectflow.plancontainer.project.service;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.generation.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectDetailsDto;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectSummaryDto;
@@ -47,7 +47,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 
 @Service

@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.generation.repository;
 
-import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflow;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,24 +11,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 import java.time.Instant;
-import de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus;
+
 import org.springframework.transaction.annotation.Transactional;
 
 public interface AiPlanGenerationWorkflowRepository
         extends JpaRepository<AiPlanGenerationWorkflow, UUID> {
-
-    @Query("""
-            select workflow
-            from AiPlanGenerationWorkflow workflow
-            join workflow.project.memberships membership
-            where workflow.completionToken = :completionToken
-              and membership.user.id = :userId
-              and membership.active = true
-            """)
-    Optional<AiPlanGenerationWorkflow> findOwnedByCompletionToken(
-            @Param("completionToken") UUID completionToken,
-            @Param("userId") UUID userId
-    );
 
     @Query("""
             select workflow
@@ -46,10 +34,12 @@ public interface AiPlanGenerationWorkflowRepository
     @Transactional
     @Query("""
             update AiPlanGenerationWorkflow workflow
-            set workflow.status = de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING,
+            set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING,
                 workflow.updatedAt = :now
             where workflow.id = :workflowId
-              and workflow.status = de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING
+              and workflow.status in (
+                de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING,
+                de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING)
             """)
     int claimPreCheck(@Param("workflowId") UUID workflowId, @Param("now") Instant now);
 
@@ -57,10 +47,10 @@ public interface AiPlanGenerationWorkflowRepository
     @Transactional
     @Query("""
             update AiPlanGenerationWorkflow workflow
-            set workflow.status = de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.GENERATION_RUNNING,
+            set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_RUNNING,
                 workflow.updatedAt = :now
             where workflow.id = :workflowId
-              and workflow.status = de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.GENERATION_PENDING
+              and workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING
             """)
     int claimGeneration(@Param("workflowId") UUID workflowId, @Param("now") Instant now);
 
@@ -73,12 +63,10 @@ public interface AiPlanGenerationWorkflowRepository
     @Transactional
     @Query("""
             update AiPlanGenerationWorkflow workflow
-            set workflow.status = de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING,
+            set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING,
                 workflow.updatedAt = :now
             where workflow.updatedAt < :cutoff
-              and workflow.status in (
-                de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING,
-                de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING)
+              and workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
             """)
     int releaseStalePreChecks(@Param("cutoff") Instant cutoff, @Param("now") Instant now);
 
@@ -86,10 +74,10 @@ public interface AiPlanGenerationWorkflowRepository
     @Transactional
     @Query("""
             update AiPlanGenerationWorkflow workflow
-            set workflow.status = de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
+            set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
                 workflow.updatedAt = :now
             where workflow.updatedAt < :cutoff
-              and workflow.status = de.melinadanhier.projectflow.generation.model.AiPlanGenerationWorkflowStatus.GENERATION_RUNNING
+              and workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_RUNNING
             """)
     int releaseStaleGenerations(@Param("cutoff") Instant cutoff, @Param("now") Instant now);
 }
