@@ -2,7 +2,6 @@ package de.melinadanhier.projectflow.generation.parser;
 
 import de.melinadanhier.projectflow.generation.client.AiOutputValidationException;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckResult;
-import de.melinadanhier.projectflow.generation.prompt.AiSchemaVersions;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +28,6 @@ public class PreCheckResponseParser {
             throw new AiOutputValidationException("Der KI-Pre-Check ist kein gültiger JSON-Output.", exception);
         }
         validate(result);
-        if (!AiSchemaVersions.PRE_CHECK.equals(result.schemaVersion())) {
-            throw new AiOutputValidationException(
-                    "Nicht unterstützte Pre-Check-Schemaversion: " + result.schemaVersion());
-        }
         return result;
     }
 

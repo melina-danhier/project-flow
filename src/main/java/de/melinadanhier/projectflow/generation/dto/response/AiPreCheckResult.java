@@ -1,13 +1,11 @@
 package de.melinadanhier.projectflow.generation.dto.response;
 
-import de.melinadanhier.projectflow.generation.prompt.AiSchemaVersions;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
 public record AiPreCheckResult(
-        @NotNull String schemaVersion,
         @NotNull List<@Valid AiPreCheckProblem> problems
 ) {
 
@@ -16,7 +14,7 @@ public record AiPreCheckResult(
     }
 
     public static AiPreCheckResult withoutIssues() {
-        return new AiPreCheckResult(AiSchemaVersions.PRE_CHECK, List.of());
+        return new AiPreCheckResult(List.of());
     }
 
     public boolean hasPlausibilityIssues() {

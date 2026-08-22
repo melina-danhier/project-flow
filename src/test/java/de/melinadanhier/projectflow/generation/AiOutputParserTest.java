@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.generation.dto.response.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.generation.parser.GenerationResponseParser;
 import de.melinadanhier.projectflow.generation.parser.PreCheckResponseParser;
+import de.melinadanhier.projectflow.generation.service.AiSnapshotCodec;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,9 +24,12 @@ class AiOutputParserTest {
     @Autowired
     private GenerationResponseParser generationParser;
 
+    @Autowired
+    private AiSnapshotCodec snapshotCodec;
+
     @Test
     void parsesPreCheckWithoutProblems() {
-        var result = preCheckParser.parse("{\"schemaVersion\":\"1.0\",\"problems\":[]}");
+        var result = preCheckParser.parse("{\"problems\":[]}");
 
         assertThat(result.problems()).isEmpty();
         assertThat(result.hasPlausibilityIssues()).isFalse();
@@ -56,7 +60,7 @@ class AiOutputParserTest {
     @Test
     void parsesMultipleProblems() {
         var result = preCheckParser.parse("""
-                {"schemaVersion":"1.0","problems":[
+                {"problems":[
                   {"severity":"WARNING","message":"Knapp.","suggestion":"Mehr Zeit einplanen."},
                   {"severity":"ERROR","message":"Ziel widerspricht der Frist.","suggestion":"Ziel reduzieren."}
                 ]}
@@ -74,10 +78,9 @@ class AiOutputParserTest {
     }
 
     @Test
-    void rejectsUnsupportedPreCheckSchemaVersion() {
+    void rejectsSchemaVersionSuppliedByModel() {
         assertThatThrownBy(() -> preCheckParser.parse("{\"schemaVersion\":\"2.0\",\"problems\":[]}"))
-                .isInstanceOf(AiOutputValidationException.class)
-                .hasMessageContaining("Schemaversion");
+                .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
@@ -85,7 +88,7 @@ class AiOutputParserTest {
         assertThatThrownBy(() -> preCheckParser.parse("{not-json"))
                 .isInstanceOf(AiOutputValidationException.class);
         assertThatThrownBy(() -> preCheckParser.parse("""
-                {"schemaVersion":"1.0","problems":[{"severity":"ERROR","message":"Fehler"}]}
+                {"problems":[{"severity":"ERROR","message":"Fehler"}]}
                 """))
                 .isInstanceOf(AiOutputValidationException.class);
     }
@@ -94,7 +97,6 @@ class AiOutputParserTest {
     void parsesGenerationWithTemporaryIdsAndBothOrigins() {
         var result = generationParser.parse(validGenerationJson());
 
-        assertThat(result.schemaVersion()).isEqualTo("1.0");
         assertThat(result.phases()).singleElement().satisfies(phase -> {
             assertThat(phase.tempId()).isEqualTo("phase-1");
             assertThat(phase.tasks()).extracting("tempId")
@@ -104,6 +106,15 @@ class AiOutputParserTest {
             assertThat(phase.milestones()).singleElement()
                     .extracting("tempId").isEqualTo("milestone-1");
         });
+    }
+
+    @Test
+    void persistedProviderResultsDoNotTreatSchemaVersionAsGeneratedContent() {
+        var result = generationParser.parse(validGenerationJson());
+
+        assertThat(snapshotCodec.writeGeneratedPlan(result)).doesNotContain("schemaVersion");
+        assertThat(snapshotCodec.writePreCheckResult(preCheckParser.parse("{\"problems\":[]}")))
+                .doesNotContain("schemaVersion");
     }
 
     @Test
@@ -127,8 +138,8 @@ class AiOutputParserTest {
     @Test
     void rejectsApplicationManagedReviewStateAndExistingProjectData() {
         assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
-                "\"schemaVersion\":\"1.0\",",
-                "\"schemaVersion\":\"1.0\",\"projectTitle\":\"Nicht übernehmen\",")))
+                "\"metadata\":",
+                "\"projectTitle\":\"Nicht übernehmen\",\"metadata\":")))
                 .isInstanceOf(AiOutputValidationException.class);
         assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
                 "\"origin\":\"USER_INPUT\",",
@@ -138,7 +149,7 @@ class AiOutputParserTest {
 
     private String problemJson(String severity, String message) {
         return """
-                {"schemaVersion":"1.0","problems":[{
+                {"problems":[{
                   "severity":"%s","message":"%s","suggestion":"Plane mehr Zeit ein."
                 }]}
                 """.formatted(severity, message);
@@ -147,10 +158,10 @@ class AiOutputParserTest {
     private String validGenerationJson() {
         return """
                 {
-                  "schemaVersion":"1.0",
                   "metadata":{"summary":"Beispielplan","assumptions":[]},
                   "phases":[{
-                    "tempId":"phase-1","title":"Vorbereitung","description":"Alles vorbereiten","order":1,
+                    "tempId":"phase-1","title":"Vorbereitung","description":"Alles vorbereiten",
+                    "startDate":"2026-08-25","endDate":"2026-08-27","order":1,
                     "tasks":[
                       {"tempId":"task-1","title":"Umzugskartons packen","description":"Zimmerweise packen",
                        "estimatedHours":4,"startDate":"2026-08-25","dueDate":"2026-08-26",

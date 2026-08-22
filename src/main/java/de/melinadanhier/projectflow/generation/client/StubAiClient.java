@@ -11,7 +11,6 @@ import de.melinadanhier.projectflow.generation.dto.response.GeneratedPhase;
 import de.melinadanhier.projectflow.generation.dto.response.GeneratedPlanMetadata;
 import de.melinadanhier.projectflow.generation.dto.response.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.generation.dto.response.GeneratedTask;
-import de.melinadanhier.projectflow.generation.prompt.AiSchemaVersions;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -42,7 +41,6 @@ public class StubAiClient implements AiClient {
                 && projectStart != null
                 && (projectEnd == null || !projectEnd.isBefore(projectStart));
         return new GeneratedPlanResponse(
-                AiSchemaVersions.GENERATION,
                 new GeneratedPlanMetadata(
                         "Beispielentwurf mit Vorbereitung und Umsetzung.",
                         List.of("Benötigte Hilfsmittel sind rechtzeitig verfügbar.")),
@@ -78,7 +76,7 @@ public class StubAiClient implements AiClient {
     }
 
     private AiPreCheckResult response(AiPreCheckProblem... problems) {
-        return new AiPreCheckResult(AiSchemaVersions.PRE_CHECK, List.of(problems));
+        return new AiPreCheckResult(List.of(problems));
     }
 
     private AiPreCheckProblem warning() {

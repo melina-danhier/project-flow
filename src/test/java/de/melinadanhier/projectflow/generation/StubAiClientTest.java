@@ -8,7 +8,6 @@ import de.melinadanhier.projectflow.generation.dto.request.AiGenerationRequest;
 import de.melinadanhier.projectflow.generation.dto.request.AiPreCheckRequest;
 import de.melinadanhier.projectflow.generation.dto.request.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.dto.response.AiPreCheckSeverity;
-import de.melinadanhier.projectflow.generation.prompt.AiSchemaVersions;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import org.junit.jupiter.api.Test;
@@ -38,7 +37,6 @@ class StubAiClientTest {
 
         properties.setPreCheckScenario(StubPreCheckScenario.MULTIPLE_ISSUES);
         var multiple = client.preCheck(preCheckRequest());
-        assertThat(multiple.schemaVersion()).isEqualTo(AiSchemaVersions.PRE_CHECK);
         assertThat(multiple.problems()).extracting("severity")
                 .containsExactly(AiPreCheckSeverity.WARNING, AiPreCheckSeverity.ERROR);
     }
@@ -49,7 +47,6 @@ class StubAiClientTest {
 
         var response = client.generatePlan(generationRequest());
 
-        assertThat(response.schemaVersion()).isEqualTo(AiSchemaVersions.GENERATION);
         assertThat(response.metadata().summary()).isNotBlank();
         assertThat(response.phases()).hasSize(2);
         assertThat(response.phases()).allSatisfy(phase -> {

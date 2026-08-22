@@ -18,13 +18,13 @@ public class PreCheckPromptBuilder {
             Regeln:
             - Erzeuge noch keinen Projektplan und verändere oder korrigiere keine Nutzereingabe.
             - Melde nur planungsrelevante fachliche Probleme, keine technischen Validierungsfehler.
+            - Melde insbesondere keine fehlenden Pflichtfelder, ungültigen Wertebereiche oder eine
+              deterministisch erkennbare falsche Datumsreihenfolge; diese werden serverseitig geprüft.
             - Verwende ausschließlich WARNING oder ERROR. WARNING ist ignorierbar, wenn eine Planung
               trotz eines unrealistischen, riskanten oder problematischen Aspekts sinnvoll möglich ist.
               ERROR ist nur zulässig, wenn eine sinnvolle Generierung fachlich nicht oder kaum möglich ist.
             - Formuliere message verständlich und suggestion als konkrete Änderungsempfehlung.
             - Erfinde keine fehlenden Nutzerinformationen.
-            - Antworte ausschließlich mit einem JSON-Objekt des Schemas %s, ohne Markdown oder Freitext:
-              {"schemaVersion":"%s","problems":[{"severity":"WARNING|ERROR","message":"...","suggestion":"..."}]}
             - Gib bei keinen Problemen eine leere problems-Liste zurück.
             """;
 
@@ -33,9 +33,7 @@ public class PreCheckPromptBuilder {
     public AiPrompt build(AiWizardSnapshot confirmedSnapshot) {
         return new AiPrompt(
                 AiPromptVersions.PRE_CHECK_PROMPT,
-                SYSTEM_INSTRUCTIONS_TEMPLATE.formatted(
-                        AiSchemaVersions.PRE_CHECK,
-                        AiSchemaVersions.PRE_CHECK),
+                SYSTEM_INSTRUCTIONS_TEMPLATE,
                 serialize(confirmedSnapshot));
     }
 

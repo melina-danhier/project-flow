@@ -2,7 +2,6 @@ package de.melinadanhier.projectflow.generation.parser;
 
 import de.melinadanhier.projectflow.generation.client.AiOutputValidationException;
 import de.melinadanhier.projectflow.generation.dto.response.GeneratedPlanResponse;
-import de.melinadanhier.projectflow.generation.prompt.AiSchemaVersions;
 import de.melinadanhier.projectflow.generation.validation.GeneratedPlanValidator;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -33,10 +32,6 @@ public class GenerationResponseParser {
         Set<ConstraintViolation<GeneratedPlanResponse>> violations = validator.validate(result);
         if (!violations.isEmpty()) {
             throw new AiOutputValidationException("Der generierte Plan verletzt das erwartete Output-Schema.");
-        }
-        if (!AiSchemaVersions.GENERATION.equals(result.schemaVersion())) {
-            throw new AiOutputValidationException(
-                    "Nicht unterstützte Generierungs-Schemaversion: " + result.schemaVersion());
         }
         generatedPlanValidator.validate(result);
         return result;
