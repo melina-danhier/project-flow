@@ -6,7 +6,8 @@ public record AiPreCheckProblemDto(
         int index,
         AiPreCheckSeverity severity,
         String message,
-        String suggestion
+        String suggestion,
+        boolean acknowledged
 ) {
     public boolean isWarning() {
         return severity == AiPreCheckSeverity.WARNING;

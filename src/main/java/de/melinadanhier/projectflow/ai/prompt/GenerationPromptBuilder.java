@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
+import de.melinadanhier.projectflow.ai.exception.AiProviderConfigurationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -37,7 +38,7 @@ public class GenerationPromptBuilder {
             - Plane Termine konsistent: entweder nachvollziehbar mit Terminen oder vollständig ohne
               konkrete Termine. Wenn die Eingaben keine belastbare Terminplanung erlauben, lasse alle
               Datumsfelder weg. Mische datierte und undatierte vergleichbare Elemente nicht zufällig.
-            - Berücksichtige bewusst ignorierte Warnungen nur als Kontext; ändere deswegen keine Eingabe.
+            - Berücksichtige bestätigte Pre-Check-Warnungen als fachlichen Kontext; ändere deswegen keine Eingabe.
             """;
 
     private final ObjectMapper objectMapper;
@@ -46,26 +47,30 @@ public class GenerationPromptBuilder {
         return build(confirmedSnapshot, List.of());
     }
 
-    public AiPrompt build(AiWizardSnapshot confirmedSnapshot, List<AiPreCheckProblem> ignoredWarnings) {
+    public AiPrompt build(AiWizardSnapshot confirmedSnapshot, List<AiPreCheckProblem> acknowledgedWarnings) {
         return build(new AiGenerationRequest(
-                confirmedSnapshot, ignoredWarnings));
+                confirmedSnapshot, acknowledgedWarnings));
     }
 
     public AiPrompt build(AiGenerationRequest request) {
+        if (!AiPromptVersions.GENERATION_PROMPT.equals(request.promptVersion())) {
+            throw new AiProviderConfigurationException(
+                    "Die gespeicherte Generation-Prompt-Version wird serverseitig nicht unterstützt.");
+        }
         AiWizardSnapshot confirmedSnapshot = request.confirmedWizardData();
-        List<AiPreCheckProblem> ignoredWarnings = request.explicitlyIgnoredWarnings();
-        List<AiPreCheckProblem> warnings = ignoredWarnings == null ? List.of() : ignoredWarnings.stream()
+        List<AiPreCheckProblem> acknowledgedWarnings = request.acknowledgedWarnings();
+        List<AiPreCheckProblem> warnings = acknowledgedWarnings == null ? List.of() : acknowledgedWarnings.stream()
                 .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
                 .toList();
         Map<String, Object> context = new LinkedHashMap<>();
         context.put("confirmedWizardData", confirmedSnapshot);
-        context.put("explicitlyIgnoredWarnings", warnings);
+        context.put("acknowledgedPreCheckWarnings", warnings);
         if (!request.previousValidationIssues().isEmpty()) {
             context.put("previousOutputValidationIssues", request.previousValidationIssues());
         }
         try {
             return new AiPrompt(
-                    AiPromptVersions.GENERATION_PROMPT,
+                    request.promptVersion(),
                     SYSTEM_INSTRUCTIONS_TEMPLATE,
                     objectMapper.writeValueAsString(context));
         } catch (JacksonException exception) {

@@ -37,7 +37,7 @@ class ProjectWizardSnapshotTimeFrameTest {
                 state.getDurationDays());
 
         MockHttpSession restoredSession = new MockHttpSession();
-        service.restoreFromSnapshot(snapshot, UUID.randomUUID(), userId, restoredSession);
+        service.restoreFromSnapshot(snapshot, userId, restoredSession);
         ProjectBasicsForm restored = ProjectBasicsForm.from(service.requireOwned(userId, restoredSession));
 
         assertThat(restored.getTimeFrameType()).isEqualTo(mode);
@@ -55,7 +55,7 @@ class ProjectWizardSnapshotTimeFrameTest {
                 CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Sonstiges",
                 null, null, null);
 
-        service.restoreFromSnapshot(legacy, UUID.randomUUID(), userId, session);
+        service.restoreFromSnapshot(legacy, userId, session);
 
         assertThat(service.requireOwned(userId, session).getTimeFrameType())
                 .isEqualTo(ProjectTimeFrameType.START_AND_END);

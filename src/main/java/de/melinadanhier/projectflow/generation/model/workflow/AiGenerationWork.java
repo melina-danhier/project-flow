@@ -9,5 +9,7 @@ import java.util.UUID;
 public record AiGenerationWork(
         UUID workflowId,
         AiWizardSnapshot snapshot,
-        List<AiPreCheckProblem> ignoredWarnings
+        List<AiPreCheckProblem> acknowledgedWarnings,
+        int roundAttemptCount,
+        String promptVersion
 ) { }

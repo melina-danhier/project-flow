@@ -63,7 +63,7 @@ class AiPromptBuilderTest {
                         "ungeprüft")
                 .doesNotContain("schemaVersion");
         assertThat(prompt.confirmedUserData())
-                .contains("confirmedWizardData", "explicitlyIgnoredWarnings", "Zeitraum knapp")
+                .contains("confirmedWizardData", "acknowledgedPreCheckWarnings", "Zeitraum knapp")
                 .doesNotContain("Unmöglich");
     }
 

@@ -28,8 +28,8 @@ class AiClientRequestTest {
     void missingIgnoredWarningsAreNormalizedToAnEmptyImmutableList() {
         AiGenerationRequest request = new AiGenerationRequest(snapshot(), null);
 
-        assertThat(request.explicitlyIgnoredWarnings()).isEmpty();
-        assertThatThrownBy(() -> request.explicitlyIgnoredWarnings().add(null))
+        assertThat(request.acknowledgedWarnings()).isEmpty();
+        assertThatThrownBy(() -> request.acknowledgedWarnings().add(null))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

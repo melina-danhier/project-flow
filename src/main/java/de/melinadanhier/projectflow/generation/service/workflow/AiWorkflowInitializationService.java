@@ -6,11 +6,11 @@ import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.generation.event.AiPreCheckRequestedEvent;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
-import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletionToken;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.repository.AiWorkflowCompletionTokenRepository;
+import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
@@ -80,44 +80,11 @@ public class AiWorkflowInitializationService {
                 SNAPSHOT_VERSION,
                 completionToken,
                 Instant.now(clock),
-                CONSENT_VERSION
+                CONSENT_VERSION,
+                AiPromptVersions.GENERATION_PROMPT
         );
         workflowRepository.saveAndFlush(workflow);
         completionTokenRepository.saveAndFlush(AiWorkflowCompletionToken.create(completionToken, workflow));
-        eventPublisher.publishEvent(new AiPreCheckRequestedEvent(workflow.getId()));
-        return new AiWorkflowCompletion(workflow.getId(), project.getId());
-    }
-
-    @Transactional
-    public AiWorkflowCompletion restart(
-            UUID workflowId,
-            AiWizardSnapshot snapshot,
-            UUID completionToken,
-            UUID ownerUserId
-    ) {
-        validate(snapshot);
-        AiPlanGenerationWorkflow workflow = workflowRepository.findOwnedById(workflowId, ownerUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW) {
-            throw new DomainValidationException("Nur ein Workflow mit aktuellen Hinweisen kann erneut geprüft werden.");
-        }
-
-        Project project = workflow.getProject();
-        project.setTitle(snapshot.title().trim());
-        project.setDescription(snapshot.description());
-        project.setStartDate(snapshot.startDate());
-        project.setEndDate(snapshot.endDate());
-        project.setCategory(snapshot.category());
-        project.setProjectType(snapshot.projectType());
-        project.setCollaborationMode(snapshot.collaborationMode());
-
-        workflow.restart(
-                snapshotCodec.writeSnapshot(snapshot),
-                completionToken,
-                Instant.now(clock),
-                CONSENT_VERSION);
-        completionTokenRepository.saveAndFlush(AiWorkflowCompletionToken.create(completionToken, workflow));
-        workflowRepository.flush();
         eventPublisher.publishEvent(new AiPreCheckRequestedEvent(workflow.getId()));
         return new AiWorkflowCompletion(workflow.getId(), project.getId());
     }

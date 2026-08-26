@@ -45,16 +45,32 @@ class AiWorkflowMigrationTest {
                     "db/migration/V9__clean_ai_workflow_state.sql"));
             ScriptUtils.executeSqlScript(connection, new ClassPathResource(
                     "db/migration/V10__preserve_ai_completion_tokens.sql"));
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V11__add_controlled_generation_retries.sql"));
 
             try (var statement = connection.createStatement();
                  var workflow = statement.executeQuery("""
-                         SELECT status, pre_check_retry_count
+                         SELECT status, pre_check_retry_count, generation_prompt_version,
+                                generation_round_attempt_count, generation_total_attempt_count
                          FROM ai_plan_generation_workflows
                          WHERE id = '%s'
                          """.formatted(workflowId))) {
                 assertThat(workflow.next()).isTrue();
                 assertThat(workflow.getString("status")).isEqualTo("GENERATION_PENDING");
                 assertThat(workflow.getInt("pre_check_retry_count")).isEqualTo(2);
+                assertThat(workflow.getString("generation_prompt_version")).isEqualTo("generation-v1");
+                assertThat(workflow.getInt("generation_round_attempt_count")).isZero();
+                assertThat(workflow.getInt("generation_total_attempt_count")).isZero();
+            }
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        INSERT INTO ai_workflow_acknowledged_warnings (workflow_id, problem_index)
+                        VALUES ('%s', 0)
+                        """.formatted(workflowId));
+                assertThatThrownBy(() -> statement.execute("""
+                        INSERT INTO ai_workflow_acknowledged_warnings (workflow_id, problem_index)
+                        VALUES ('%s', 0)
+                        """.formatted(workflowId))).isInstanceOf(SQLException.class);
             }
             try (var statement = connection.createStatement();
                  var token = statement.executeQuery("""

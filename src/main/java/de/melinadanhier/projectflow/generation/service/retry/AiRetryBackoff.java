@@ -1,14 +1,19 @@
 package de.melinadanhier.projectflow.generation.service.retry;
 
+import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class AiRetryBackoff {
 
-    private static final long INITIAL_DELAY_MILLIS = 250;
+    private final AiExecutionProperties properties;
 
     public void waitBeforeRetry(int retryNumber) throws InterruptedException {
-        long delayMillis = INITIAL_DELAY_MILLIS * (1L << Math.max(0, retryNumber - 1));
+        long initialDelayMillis = properties.getRetryInitialDelay().toMillis();
+        long multiplier = 1L << Math.min(20, Math.max(0, retryNumber - 1));
+        long delayMillis = Math.multiplyExact(initialDelayMillis, multiplier);
         Thread.sleep(delayMillis);
     }
 }

@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.ai.AiClient;
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import de.melinadanhier.projectflow.ai.exception.AiClientTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
+import de.melinadanhier.projectflow.ai.exception.AiIncompleteResponseException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
@@ -14,6 +15,7 @@ import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidatio
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationResult;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
+import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,37 +32,66 @@ public class AiPlanGenerationService {
 
     public GeneratedPlanResponse generatePlan(
             AiWizardSnapshot confirmedSnapshot,
-            List<AiPreCheckProblem> explicitlyIgnoredWarnings
+            List<AiPreCheckProblem> acknowledgedWarnings
     ) {
-        List<AiPreCheckProblem> warnings = explicitlyIgnoredWarnings == null ? List.of()
-                : explicitlyIgnoredWarnings.stream()
+        return generatePlan(confirmedSnapshot, acknowledgedWarnings, 0,
+                AiPromptVersions.GENERATION_PROMPT, () -> { });
+    }
+
+    public GeneratedPlanResponse generatePlan(
+            AiWizardSnapshot confirmedSnapshot,
+            List<AiPreCheckProblem> acknowledgedWarnings,
+            int alreadyUsedAttempts,
+            String promptVersion,
+            Runnable beforeProviderCall
+    ) {
+        List<AiPreCheckProblem> warnings = acknowledgedWarnings == null ? List.of()
+                : acknowledgedWarnings.stream()
                         .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
                         .toList();
-        AiGenerationRequest request = new AiGenerationRequest(confirmedSnapshot, warnings);
-        int retries = 0;
+        AiGenerationRequest request = new AiGenerationRequest(
+                confirmedSnapshot, warnings, List.of(), promptVersion);
+        int attempts = alreadyUsedAttempts;
+        int maxAttempts = executionProperties.getMaxAutomaticRetries() + 1;
         while (true) {
+            if (attempts >= maxAttempts) {
+                throw new AiClientTechnicalException(
+                        AiTechnicalErrorCode.UNKNOWN_AI_ERROR,
+                        "Das Versuchslimit dieser Generierungsrunde ist bereits ausgeschöpft.",
+                        null,
+                        false);
+            }
             try {
+                beforeProviderCall.run();
+                attempts++;
                 GeneratedPlanResponse response = aiClient.generatePlan(request);
                 GenerationValidationResult validation = responseValidator.validate(response, request);
                 if (validation.isValid()) {
                     return response;
                 }
-                if (retries >= executionProperties.getMaxAutomaticRetries()) {
+                if (attempts >= maxAttempts) {
                     throw exhaustedValidationRetries(validation);
                 }
-                retries++;
                 request = new AiGenerationRequest(
                         confirmedSnapshot,
                         warnings,
-                        validation.issues().stream().map(this::formatIssue).toList());
-                waitBeforeRetry(retries);
-            } catch (AiClientTechnicalException exception) {
-                if (!exception.isRetryable()
-                        || retries >= executionProperties.getMaxAutomaticRetries()) {
+                        validation.issues().stream().map(this::formatIssue).toList(),
+                        promptVersion);
+            } catch (AiIncompleteResponseException exception) {
+                if (!exception.isRetryable() || attempts >= maxAttempts) {
                     throw exception;
                 }
-                retries++;
-                waitBeforeRetry(retries);
+                waitBeforeRetry(attempts);
+            } catch (AiOutputValidationException exception) {
+                if (!exception.isRetryable() || attempts >= maxAttempts) {
+                    throw exception;
+                }
+            } catch (AiClientTechnicalException exception) {
+                if (!exception.isRetryable()
+                        || attempts >= maxAttempts) {
+                    throw exception;
+                }
+                waitBeforeRetry(attempts);
             }
         }
     }

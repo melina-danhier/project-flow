@@ -26,15 +26,6 @@ public class AiWizardCompletionService {
             UUID userId,
             Supplier<AiWizardSnapshot> snapshotSupplier
     ) {
-        return complete(completionToken, userId, snapshotSupplier, null);
-    }
-
-    public AiWorkflowCompletion complete(
-            UUID completionToken,
-            UUID userId,
-            Supplier<AiWizardSnapshot> snapshotSupplier,
-            UUID editingWorkflowId
-    ) {
         return findExisting(completionToken, userId).orElseGet(() -> {
             AiWizardSnapshot snapshot;
             try {
@@ -43,10 +34,7 @@ public class AiWizardCompletionService {
                 return findExisting(completionToken, userId).orElseThrow(() -> exception);
             }
             try {
-                return editingWorkflowId == null
-                        ? persistenceService.create(snapshot, completionToken, userId)
-                        : persistenceService.restart(
-                                editingWorkflowId, snapshot, completionToken, userId);
+                return persistenceService.create(snapshot, completionToken, userId);
             } catch (DataIntegrityViolationException exception) {
                 return findExisting(completionToken, userId).orElseThrow(() -> exception);
             }

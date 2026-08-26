@@ -7,7 +7,6 @@ import de.melinadanhier.projectflow.plancontainer.template.service.TemplateServi
 import de.melinadanhier.projectflow.wizard.service.AiWizardCompletionService;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
-import de.melinadanhier.projectflow.generation.model.AiPreCheckReviewSession;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.wizard.dto.AiProcessingConsentForm;
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
@@ -39,7 +38,6 @@ public class ProjectWizardController {
     private final TemplateService templateService;
     private final AiWizardCompletionService aiWizardCompletionService;
     private final AiPreCheckReviewService aiPreCheckReviewService;
-    private final AiPreCheckReviewSession aiPreCheckReviewSession;
 
     @GetMapping("/projects/new")
     public String basics(
@@ -209,8 +207,7 @@ public class ProjectWizardController {
                 form.getCompletionToken(),
                 currentUser.userId(),
                 () -> wizardService.confirmedSnapshot(
-                        form.getCompletionToken(), currentUser.userId(), session),
-                wizardService.editingAiWorkflowId(currentUser.userId(), session)
+                        form.getCompletionToken(), currentUser.userId(), session)
         );
         wizardService.clearOwned(currentUser.userId(), session);
         return "redirect:/projects/new/ai/status/" + completion.workflowId();
@@ -234,8 +231,9 @@ public class ProjectWizardController {
             HttpSession session
     ) {
         var snapshot = aiPreCheckReviewService.returnToWizard(workflowId, currentUser.userId());
-        aiPreCheckReviewSession.clear(workflowId, session);
-        wizardService.restoreFromSnapshot(snapshot, workflowId, currentUser.userId(), session);
+        // Geänderte Wizard-Daten erhalten bei der nächsten Bestätigung einen neuen,
+        // unveränderlichen Workflow statt den vorhandenen Snapshot umzuschreiben.
+        wizardService.restoreFromSnapshot(snapshot, currentUser.userId(), session);
         return "redirect:/projects/new/ai/summary";
     }
 

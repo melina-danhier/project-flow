@@ -140,7 +140,6 @@ public class ProjectWizardService {
 
     public ProjectWizardState restoreFromSnapshot(
             AiWizardSnapshot snapshot,
-            UUID workflowId,
             UUID userId,
             HttpSession session
     ) {
@@ -161,16 +160,8 @@ public class ProjectWizardService {
         state.setAdditionalInformation(snapshot.additionalInformation());
         state.setAiDetailsCompleted(true);
         state.setCompletionToken(null);
-        state.setEditingAiWorkflowId(workflowId);
         session.setAttribute(SESSION_ATTRIBUTE, state);
         return state;
-    }
-
-    public UUID editingAiWorkflowId(UUID userId, HttpSession session) {
-        return findOwned(userId, session)
-                .filter(state -> state.getCreationType() == CreationType.AI)
-                .map(ProjectWizardState::getEditingAiWorkflowId)
-                .orElse(null);
     }
 
     private String normalizeOptionalText(String value) {

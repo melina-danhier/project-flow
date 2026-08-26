@@ -1,7 +1,6 @@
 package de.melinadanhier.projectflow.generation.service.precheck;
 
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
-import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
@@ -10,7 +9,6 @@ import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.generation.dto.AiPreCheckProblemDto;
 import de.melinadanhier.projectflow.generation.dto.AiPreCheckReviewDto;
 import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
-import de.melinadanhier.projectflow.generation.model.AiGenerationPreparation;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
@@ -21,7 +19,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -33,65 +30,64 @@ public class AiPreCheckReviewService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
-    public AiPreCheckReviewDto getReview(UUID workflowId, UUID userId, Set<Integer> ignoredWarnings) {
+    public AiPreCheckReviewDto getReview(UUID workflowId, UUID userId) {
         AiPlanGenerationWorkflow workflow = requireOwned(workflowId, userId);
         requireReviewable(workflow);
         AiPreCheckResult result = readResult(workflow);
-        List<AiPreCheckProblemDto> visibleProblems = new ArrayList<>();
+        List<AiPreCheckProblemDto> problems = new ArrayList<>();
         for (int index = 0; index < result.problems().size(); index++) {
             AiPreCheckProblem problem = result.problems().get(index);
-            if (problem.severity() == AiPreCheckSeverity.WARNING && ignoredWarnings.contains(index)) {
-                continue;
-            }
-            visibleProblems.add(new AiPreCheckProblemDto(
-                    index, problem.severity(), problem.message(), problem.suggestion()));
+            problems.add(new AiPreCheckProblemDto(
+                    index, problem.severity(), problem.message(), problem.suggestion(),
+                    workflow.getAcknowledgedWarningIndices().contains(index)));
         }
-        return new AiPreCheckReviewDto(workflowId, workflow.getProject().getId(), visibleProblems);
+        return new AiPreCheckReviewDto(workflowId, workflow.getProject().getId(), problems);
     }
 
-    @Transactional(readOnly = true)
-    public void requireIgnorableWarning(UUID workflowId, UUID userId, int problemIndex) {
-        AiPlanGenerationWorkflow workflow = requireOwned(workflowId, userId);
+    @Transactional
+    public boolean acknowledgeWarning(UUID workflowId, UUID userId, int problemIndex) {
+        AiPlanGenerationWorkflow workflow = workflowRepository.findOwnedByIdForUpdate(workflowId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW) {
+            boolean alreadyAccepted = workflow.getAcknowledgedWarningIndices().contains(problemIndex);
+            boolean generationStarted = workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_PENDING
+                    || workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING
+                    || workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
+            if (alreadyAccepted && generationStarted) {
+                return true;
+            }
+        }
         requireReviewable(workflow);
-        List<AiPreCheckProblem> problems = readResult(workflow).problems();
+        AiPreCheckResult result = readResult(workflow);
+        List<AiPreCheckProblem> problems = result.problems();
         if (problemIndex < 0 || problemIndex >= problems.size()
                 || problems.get(problemIndex).severity() != AiPreCheckSeverity.WARNING) {
             throw new ResourceNotFoundException("Die Warnung wurde nicht gefunden.");
         }
-    }
-
-    @Transactional
-    public AiGenerationPreparation prepareGeneration(
-            UUID workflowId,
-            UUID userId,
-            Set<Integer> ignoredWarningIndices
-    ) {
-        AiPlanGenerationWorkflow workflow = requireOwned(workflowId, userId);
-        requireReviewable(workflow);
-        AiPreCheckResult result = readResult(workflow);
+        workflow.acknowledgeWarning(problemIndex);
         if (result.hasErrors()) {
-            throw new ConflictException("Solange Fehler vorliegen, kann kein Plan generiert werden.");
+            return false;
         }
-        List<AiPreCheckProblem> warnings = new ArrayList<>();
+        boolean allAcknowledged = true;
         for (int index = 0; index < result.problems().size(); index++) {
             AiPreCheckProblem problem = result.problems().get(index);
-            if (problem.severity() == AiPreCheckSeverity.WARNING) {
-                if (!ignoredWarningIndices.contains(index)) {
-                    throw new ConflictException("Bitte prüfe zuerst alle Warnungen.");
-                }
-                warnings.add(problem);
+            if (problem.severity() == AiPreCheckSeverity.WARNING
+                    && !workflow.getAcknowledgedWarningIndices().contains(index)) {
+                allAcknowledged = false;
+                break;
             }
+        }
+        if (!allAcknowledged) {
+            return false;
         }
         workflow.approvePreCheck();
         eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId));
-        return new AiGenerationPreparation(
-                workflowId,
-                snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot()),
-                List.copyOf(warnings));
+        return true;
     }
 
     @Transactional
-    public AiWizardSnapshot returnToWizard(UUID workflowId, UUID userId) {
+    public de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot returnToWizard(
+            UUID workflowId, UUID userId) {
         AiPlanGenerationWorkflow workflow = requireOwned(workflowId, userId);
         requireReviewable(workflow);
         return snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot());
