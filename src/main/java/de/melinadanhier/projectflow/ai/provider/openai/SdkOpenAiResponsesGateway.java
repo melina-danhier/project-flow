@@ -13,7 +13,9 @@ import com.openai.errors.UnauthorizedException;
 import com.openai.errors.UnprocessableEntityException;
 import com.openai.models.responses.StructuredResponse;
 import com.openai.models.responses.StructuredResponseCreateParams;
-import de.melinadanhier.projectflow.ai.exception.*;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
+import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 
 public class SdkOpenAiResponsesGateway implements OpenAiResponsesGateway {
@@ -37,24 +39,52 @@ public class SdkOpenAiResponsesGateway implements OpenAiResponsesGateway {
             return extract(client.responses().create(params));
         } catch (UnauthorizedException | PermissionDeniedException | BadRequestException
                  | NotFoundException | UnprocessableEntityException exception) {
-            throw new AiProviderConfigurationException(
-                    "Die OpenAI-Konfiguration oder der angeforderte Request wurde abgelehnt.");
-        } catch (RateLimitException | InternalServerException | OpenAIIoException
-                 | OpenAIRetryableException exception) {
-            throw new AiProviderUnavailableException("OpenAI ist vorübergehend nicht erreichbar.");
+            throw new AiTechnicalException(
+                    AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
+                    "Die OpenAI-Konfiguration oder der angeforderte Request wurde abgelehnt.", exception);
+        } catch (RateLimitException exception) {
+            throw new AiTechnicalException(
+                    AiTechnicalErrorCode.RATE_LIMIT_EXCEEDED,
+                    "Das OpenAI-Aufruflimit wurde vorübergehend erreicht.", exception);
+        } catch (InternalServerException exception) {
+            throw new AiTechnicalException(
+                    AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
+                    "OpenAI ist vorübergehend nicht erreichbar.", exception);
+        } catch (OpenAIIoException | OpenAIRetryableException exception) {
+            if (hasTimeoutCause(exception)) {
+                throw new AiTechnicalException(
+                        AiTechnicalErrorCode.PROVIDER_TIMEOUT,
+                        "Der OpenAI-Aufruf hat das Zeitlimit überschritten.", exception);
+            }
+            throw new AiTechnicalException(
+                    AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
+                    "OpenAI ist vorübergehend nicht erreichbar.", exception);
         } catch (OpenAIInvalidDataException exception) {
-            // SDK-Exceptions können die Rohantwort enthalten und werden deshalb nicht weitergereicht.
             throw new AiOutputValidationException(
-                    "OpenAI lieferte keine deserialisierbare strukturierte Antwort.");
+                    "OpenAI lieferte keine deserialisierbare strukturierte Antwort.", exception);
         }
+    }
+
+    private boolean hasTimeoutCause(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof java.net.SocketTimeoutException
+                    || current instanceof java.net.http.HttpTimeoutException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private <T> T extract(StructuredResponse<T> response) {
         if (response.error().isPresent()) {
-            throw new AiProviderUnavailableException("OpenAI konnte die Antwort nicht erzeugen.");
+            throw new AiTechnicalException(
+                    AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
+                    "OpenAI konnte die Antwort nicht erzeugen.");
         }
         if (response.incompleteDetails().isPresent()) {
-            throw new AiIncompleteResponseException("OpenAI lieferte eine unvollständige Antwort.");
+            throw new AiOutputValidationException("OpenAI lieferte eine unvollständige Antwort.");
         }
         for (var outputItem : response.output()) {
             if (!outputItem.isMessage()) {
@@ -62,14 +92,15 @@ public class SdkOpenAiResponsesGateway implements OpenAiResponsesGateway {
             }
             for (var content : outputItem.asMessage().content()) {
                 if (content.isRefusal()) {
-                    throw new AiRequestRefusedException("OpenAI hat die Anfrage abgelehnt.");
+                    throw new AiTechnicalException(
+                            AiTechnicalErrorCode.AI_REFUSAL,
+                            "OpenAI hat die Anfrage abgelehnt.");
                 }
                 if (content.isOutputText()) {
                     return content.asOutputText();
                 }
             }
         }
-        throw new AiIncompleteResponseException(
-                "OpenAI lieferte keine vollständige strukturierte Antwort.");
+        throw new AiOutputValidationException("OpenAI lieferte keine vollständige strukturierte Antwort.");
     }
 }

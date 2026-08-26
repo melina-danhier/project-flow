@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.generation.dto.response;
 
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ public record AiWorkflowStatusDto(
         int generationRoundAttemptCount,
         int generationTotalAttemptCount,
         AiTechnicalErrorCode errorCode,
+        AiOperation errorOperation,
         Boolean errorRetryable,
         String errorDiagnosis
 ) {
@@ -26,6 +28,7 @@ public record AiWorkflowStatusDto(
 
     public boolean canRetry() {
         return Boolean.TRUE.equals(errorRetryable)
+                && errorOperation == AiOperation.PLAN_GENERATION
                 && (status == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
                 || status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
     }

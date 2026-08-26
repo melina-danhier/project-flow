@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.generation.service.workflow;
 
-import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
@@ -44,12 +44,12 @@ public class AiPreCheckWorkflowService {
     }
 
     @Transactional
-    public OptionalInt recordRetry(UUID workflowId, AiTechnicalErrorCode errorCode) {
+    public OptionalInt recordRetry(UUID workflowId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = require(workflowId);
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING) {
             return OptionalInt.empty();
         }
-        return OptionalInt.of(workflow.recordPreCheckRetry(errorCode));
+        return OptionalInt.of(workflow.recordPreCheckRetry(error));
     }
 
     @Transactional
@@ -67,12 +67,12 @@ public class AiPreCheckWorkflowService {
     }
 
     @Transactional
-    public boolean recordFailure(UUID workflowId, AiTechnicalErrorCode errorCode) {
+    public boolean recordFailure(UUID workflowId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = require(workflowId);
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING) {
             return false;
         }
-        workflow.recordPreCheckFailure(errorCode);
+        workflow.recordPreCheckFailure(error);
         return true;
     }
 

@@ -1,11 +1,11 @@
 package de.melinadanhier.projectflow.ai;
 
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
-import de.melinadanhier.projectflow.ai.exception.AiClientTechnicalException;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
-import de.melinadanhier.projectflow.ai.exception.AiProviderConfigurationException;
-import de.melinadanhier.projectflow.ai.exception.AiRequestRefusedException;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationResponseValidator;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
@@ -37,48 +37,50 @@ class AiPlanGenerationServiceTest {
         AiRetryBackoff backoff = mock(AiRetryBackoff.class);
         when(client.generatePlan(any())).thenReturn(validPlan());
 
-        assertThat(service(client, backoff, 2).generatePlan(snapshot(), List.of())).isEqualTo(validPlan());
+        assertThat(service(client, backoff, 3).generatePlan(snapshot(), List.of())).isEqualTo(validPlan());
 
         verify(client).generatePlan(any());
         verifyNoInteractions(backoff);
     }
 
     @Test
-    void invalidOutputIsRetriedWithCodesAndMessages() throws Exception {
+    void invalidOutputIsNotRetried() throws Exception {
         AiClient client = mock(AiClient.class);
         AiRetryBackoff backoff = mock(AiRetryBackoff.class);
         when(client.generatePlan(any())).thenReturn(emptyPlan(), validPlan());
 
-        assertThat(service(client, backoff, 2).generatePlan(snapshot(), List.of()).phases()).hasSize(1);
+        assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of()))
+                .isInstanceOf(AiOutputValidationException.class);
 
         ArgumentCaptor<AiGenerationRequest> requests = ArgumentCaptor.forClass(AiGenerationRequest.class);
-        verify(client, times(2)).generatePlan(requests.capture());
+        verify(client).generatePlan(requests.capture());
         assertThat(requests.getAllValues().get(0).previousValidationIssues()).isEmpty();
-        assertThat(requests.getAllValues().get(1).previousValidationIssues())
-                .contains("PHASE_MISSING | $ | Es wurde keine Phase erzeugt.",
-                        "TASK_MISSING | $ | Es wurde keine Aufgabe erzeugt.");
         verifyNoInteractions(backoff);
     }
 
     @Test
-    void outputRetryLimitMeansInitialAttemptPlusConfiguredRetries() {
+    void configuredAttemptLimitIncludesInitialCall() {
         AiClient client = mock(AiClient.class);
-        when(client.generatePlan(any())).thenReturn(emptyPlan());
+        when(client.generatePlan(any())).thenThrow(
+                technical(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
+                        "vorübergehend nicht erreichbar"));
 
-        assertThatThrownBy(() -> service(client, mock(AiRetryBackoff.class), 2)
+        assertThatThrownBy(() -> service(client, mock(AiRetryBackoff.class), 3)
                 .generatePlan(snapshot(), List.of()))
-                .isInstanceOf(AiOutputValidationException.class);
+                .isInstanceOfSatisfying(AiTechnicalException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE));
         verify(client, times(3)).generatePlan(any());
     }
 
     @Test
-    void permanentConfigurationFailureIsNotRetried() throws Exception {
+    void nonRetryableConfigurationFailureIsNotRetried() throws Exception {
         AiClient client = mock(AiClient.class);
         AiRetryBackoff backoff = mock(AiRetryBackoff.class);
-        when(client.generatePlan(any())).thenThrow(new AiProviderConfigurationException("API-Key falsch"));
+        when(client.generatePlan(any())).thenThrow(
+                technical(AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR, "API-Key falsch"));
 
-        assertThatThrownBy(() -> service(client, backoff, 2).generatePlan(snapshot(), List.of()))
-                .isInstanceOf(AiProviderConfigurationException.class);
+        assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of()))
+                .isInstanceOf(AiTechnicalException.class);
         verify(client).generatePlan(any());
         verifyNoInteractions(backoff);
     }
@@ -87,10 +89,11 @@ class AiPlanGenerationServiceTest {
     void refusalIsNotRetried() throws Exception {
         AiClient client = mock(AiClient.class);
         AiRetryBackoff backoff = mock(AiRetryBackoff.class);
-        when(client.generatePlan(any())).thenThrow(new AiRequestRefusedException("Anfrage abgelehnt"));
+        when(client.generatePlan(any())).thenThrow(
+                technical(AiTechnicalErrorCode.AI_REFUSAL, "Anfrage abgelehnt"));
 
-        assertThatThrownBy(() -> service(client, backoff, 2).generatePlan(snapshot(), List.of()))
-                .isInstanceOf(AiRequestRefusedException.class);
+        assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of()))
+                .isInstanceOf(AiTechnicalException.class);
         verify(client).generatePlan(any());
         verifyNoInteractions(backoff);
     }
@@ -100,11 +103,11 @@ class AiPlanGenerationServiceTest {
         AiClient client = mock(AiClient.class);
         AiRetryBackoff backoff = mock(AiRetryBackoff.class);
         when(client.generatePlan(any()))
-                .thenThrow(new de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException(
+                .thenThrow(technical(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
                         "vorübergehend nicht erreichbar"))
                 .thenReturn(validPlan());
 
-        assertThat(service(client, backoff, 2).generatePlan(snapshot(), List.of()))
+        assertThat(service(client, backoff, 3).generatePlan(snapshot(), List.of()))
                 .isEqualTo(validPlan());
 
         verify(client, times(2)).generatePlan(any());
@@ -112,21 +115,20 @@ class AiPlanGenerationServiceTest {
     }
 
     @Test
-    void technicalAndValidationErrorsShareOneAttemptBudget() throws Exception {
+    void validationFailureStopsBeforeAnyLaterTechnicalRetry() throws Exception {
         AiClient client = mock(AiClient.class);
         AiRetryBackoff backoff = mock(AiRetryBackoff.class);
         when(client.generatePlan(any()))
                 .thenReturn(emptyPlan())
-                .thenThrow(new de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException(
+                .thenThrow(technical(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
                         "vorübergehend nicht erreichbar"))
                 .thenReturn(emptyPlan());
 
-        assertThatThrownBy(() -> service(client, backoff, 2).generatePlan(snapshot(), List.of()))
+        assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of()))
                 .isInstanceOf(AiOutputValidationException.class);
 
-        verify(client, times(3)).generatePlan(any());
-        verify(backoff).waitBeforeRetry(2);
-        verifyNoMoreInteractions(backoff);
+        verify(client).generatePlan(any());
+        verifyNoInteractions(backoff);
     }
 
     @Test
@@ -134,24 +136,29 @@ class AiPlanGenerationServiceTest {
         AiClient client = mock(AiClient.class);
         AiRetryBackoff backoff = mock(AiRetryBackoff.class);
         when(client.generatePlan(any())).thenThrow(
-                new de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException(
+                technical(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
                         "vorübergehend nicht erreichbar"));
         doThrow(new InterruptedException("unterbrochen")).when(backoff).waitBeforeRetry(1);
 
-        assertThatThrownBy(() -> service(client, backoff, 2).generatePlan(snapshot(), List.of()))
-                .isInstanceOfSatisfying(AiClientTechnicalException.class, exception -> {
+        assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of()))
+                .isInstanceOfSatisfying(AiTechnicalException.class, exception -> {
                     assertThat(exception.getErrorCode()).isEqualTo(AiTechnicalErrorCode.RETRY_INTERRUPTED);
-                    assertThat(exception.isRetryable()).isFalse();
+                    assertThat(AiTechnicalError
+                            .from(exception, AiOperation.PLAN_GENERATION).isRetryable()).isFalse();
                 });
         assertThat(Thread.currentThread().isInterrupted()).isTrue();
         verify(client).generatePlan(any());
     }
 
-    private AiPlanGenerationService service(AiClient client, AiRetryBackoff backoff, int retries) {
+    private AiPlanGenerationService service(AiClient client, AiRetryBackoff backoff, int maxAttempts) {
         AiExecutionProperties properties = new AiExecutionProperties();
-        properties.setMaxAutomaticRetries(retries);
+        properties.setMaxAttempts(maxAttempts);
         return new AiPlanGenerationService(client, new GenerationResponseValidator(
                 jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator()), properties, backoff);
+    }
+
+    private AiTechnicalException technical(AiTechnicalErrorCode code, String message) {
+        return new AiTechnicalException(code, message);
     }
 
     private GeneratedPlanResponse emptyPlan() {

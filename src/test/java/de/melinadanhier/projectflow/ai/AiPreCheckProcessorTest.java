@@ -2,10 +2,10 @@ package de.melinadanhier.projectflow.ai;
 
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
-import de.melinadanhier.projectflow.ai.exception.AiProviderConfigurationException;
-import de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException;
-import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorClassifier;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -59,9 +58,6 @@ class AiPreCheckProcessorTest {
     @Mock
     private PreCheckResultValidator resultValidator;
 
-    @Spy
-    private AiTechnicalErrorClassifier errorClassifier = new AiTechnicalErrorClassifier();
-
     @InjectMocks
     private AiPreCheckProcessor processor;
 
@@ -74,7 +70,7 @@ class AiPreCheckProcessorTest {
         processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
 
         verify(workflowService).recordFailure(
-                workflowId, AiTechnicalErrorCode.PRE_CHECK_INITIALIZATION_FAILED);
+                org.mockito.ArgumentMatchers.eq(workflowId), error(AiTechnicalErrorCode.UNKNOWN_AI_ERROR));
         verifyNoInteractions(aiClient, backoff);
     }
 
@@ -84,22 +80,23 @@ class AiPreCheckProcessorTest {
         AiWizardSnapshot snapshot = snapshot();
         AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
         when(workflowService.claimAndReadSnapshot(workflowId)).thenReturn(Optional.of(snapshot));
-        when(executionProperties.getMaxAutomaticRetries()).thenReturn(2);
+        when(executionProperties.getMaxAttempts()).thenReturn(3);
         when(workflowService.recordRetry(
-                workflowId, AiTechnicalErrorCode.PROVIDER_UNAVAILABLE))
+                org.mockito.ArgumentMatchers.eq(workflowId), error(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE)))
                 .thenReturn(java.util.OptionalInt.of(1), java.util.OptionalInt.of(2));
         when(aiClient.preCheck(request))
-                .thenThrow(new AiProviderUnavailableException("Provider nicht erreichbar"));
+                .thenThrow(new AiTechnicalException(
+                        AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, "Provider nicht erreichbar"));
 
         processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
 
         verify(aiClient, times(3)).preCheck(request);
         verify(workflowService, times(2)).recordRetry(
-                workflowId, AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
+                org.mockito.ArgumentMatchers.eq(workflowId), error(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE));
         verify(backoff).waitBeforeRetry(1);
         verify(backoff).waitBeforeRetry(2);
         verify(workflowService).recordFailure(
-                workflowId, AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
+                org.mockito.ArgumentMatchers.eq(workflowId), error(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE));
     }
 
     @Test
@@ -117,9 +114,9 @@ class AiPreCheckProcessorTest {
         verify(resultValidator).validate(result);
         verify(workflowService).recordResult(workflowId, result);
         verify(workflowService, never()).recordRetry(
-                workflowId, AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
+                org.mockito.ArgumentMatchers.eq(workflowId), error(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE));
         verify(workflowService, never()).recordFailure(
-                workflowId, AiTechnicalErrorCode.PRE_CHECK_PROCESSING_FAILED);
+                org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.any());
         verifyNoInteractions(backoff);
         verify(aiClient).preCheck(request);
         verifyNoInteractions(generationCoordinator);
@@ -140,27 +137,23 @@ class AiPreCheckProcessorTest {
     }
 
     @Test
-    void invalidAiOutputUsesLimitedTechnicalRetriesAndIsNeverStoredAsBusinessError() throws Exception {
+    void invalidAiOutputIsNotRetriedAndIsNeverStoredAsBusinessError() throws Exception {
         UUID workflowId = UUID.randomUUID();
         AiWizardSnapshot snapshot = snapshot();
         AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
         when(workflowService.claimAndReadSnapshot(workflowId)).thenReturn(Optional.of(snapshot));
-        when(executionProperties.getMaxAutomaticRetries()).thenReturn(2);
         when(aiClient.preCheck(org.mockito.ArgumentMatchers.any(AiPreCheckRequest.class)))
                 .thenThrow(new AiOutputValidationException("Ungültiger Output"));
-        when(workflowService.recordRetry(workflowId, AiTechnicalErrorCode.INVALID_AI_RESPONSE))
-                .thenReturn(java.util.OptionalInt.of(1), java.util.OptionalInt.of(2));
-
         processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
 
         var requestCaptor = org.mockito.ArgumentCaptor.forClass(AiPreCheckRequest.class);
-        verify(aiClient, times(3)).preCheck(requestCaptor.capture());
-        org.assertj.core.api.Assertions.assertThat(requestCaptor.getAllValues().get(1).previousValidationIssues())
-                .containsExactly("INVALID_AI_RESPONSE | $ | Die Antwort war nicht vollständig deserialisierbar.");
-        verify(workflowService, times(2)).recordRetry(
-                workflowId, AiTechnicalErrorCode.INVALID_AI_RESPONSE);
+        verify(aiClient).preCheck(requestCaptor.capture());
+        org.assertj.core.api.Assertions.assertThat(requestCaptor.getValue().previousValidationIssues()).isEmpty();
+        verify(workflowService, never()).recordRetry(
+                org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.any());
         verify(workflowService).recordFailure(
-                workflowId, AiTechnicalErrorCode.INVALID_AI_RESPONSE);
+                org.mockito.ArgumentMatchers.eq(workflowId), error(AiTechnicalErrorCode.INVALID_AI_RESPONSE));
+        verifyNoInteractions(backoff);
         verify(workflowService, never()).recordResult(
                 org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.any());
     }
@@ -179,23 +172,24 @@ class AiPreCheckProcessorTest {
         processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
 
         verify(workflowService).recordFailure(
-                workflowId, AiTechnicalErrorCode.PRE_CHECK_PROCESSING_FAILED);
+                org.mockito.ArgumentMatchers.eq(workflowId), error(AiTechnicalErrorCode.UNKNOWN_AI_ERROR));
     }
 
     @Test
-    void permanentProviderConfigurationFailureIsNotRetried() {
+    void nonRetryableClientConfigurationFailureIsNotRetried() {
         UUID workflowId = UUID.randomUUID();
         AiWizardSnapshot snapshot = snapshot();
         when(workflowService.claimAndReadSnapshot(workflowId)).thenReturn(Optional.of(snapshot));
         when(aiClient.preCheck(new AiPreCheckRequest(snapshot)))
-                .thenThrow(new AiProviderConfigurationException("API-Key ungültig"));
+                .thenThrow(new AiTechnicalException(
+                        AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR, "API-Key ungültig"));
 
         processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
 
         verify(aiClient).preCheck(new AiPreCheckRequest(snapshot));
         verifyNoInteractions(backoff);
         verify(workflowService).recordFailure(
-                workflowId, AiTechnicalErrorCode.PROVIDER_CONFIGURATION_ERROR);
+                org.mockito.ArgumentMatchers.eq(workflowId), error(AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR));
     }
 
     private AiWizardSnapshot snapshot() {
@@ -203,5 +197,10 @@ class AiPreCheckProcessorTest {
                 "Testprojekt", null, null, null,
                 CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test",
                 null, null, null);
+    }
+
+    private AiTechnicalError error(AiTechnicalErrorCode errorCode) {
+        return org.mockito.ArgumentMatchers.argThat(error ->
+                error.errorCode() == errorCode && error.operation() == AiOperation.PRE_CHECK);
     }
 }

@@ -1,8 +1,8 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.*;
-import de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
@@ -256,7 +256,8 @@ class AiWorkflowIntegrationTest {
     void technicalFailuresUseOnlyLimitedRetriesAndKeepProjectDraft() throws Exception {
         User owner = saveUser("ai-retry@example.org");
         when(aiClient.preCheck(any()))
-                .thenThrow(new AiProviderUnavailableException("Provider nicht erreichbar"));
+                .thenThrow(new AiTechnicalException(
+                        AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, "Provider nicht erreichbar"));
 
         AiWorkflowCompletion completion = completionService.complete(
                 UUID.randomUUID(), owner.getId(), this::snapshot);
@@ -269,6 +270,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getConfirmedSnapshot()).isNotBlank();
         assertThat(workflow.getLastTechnicalError())
                 .isEqualTo(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
+        assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PRE_CHECK);
         assertThat(projectRepository.findById(completion.projectId())).get()
                 .extracting("status").isEqualTo(ProjectStatus.DRAFT);
         verify(aiClient, times(3)).preCheck(any());
@@ -303,7 +305,7 @@ class AiWorkflowIntegrationTest {
     }
 
     @Test
-    void exhaustedInvalidOutputsBecomeRetryableGenerationFailure() throws Exception {
+    void invalidOutputStopsImmediatelyAsNonRetryableGenerationFailure() throws Exception {
         User owner = saveUser("ai-invalid-output@example.org");
         when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
         org.mockito.Mockito.doReturn(new GeneratedPlanResponse(
@@ -317,21 +319,22 @@ class AiWorkflowIntegrationTest {
                 .orElse(false));
 
         AiPlanGenerationWorkflow workflow = workflowRepository.findById(completion.workflowId()).orElseThrow();
-        assertThat(workflow.getGenerationRoundAttemptCount()).isEqualTo(3);
-        assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(3);
+        assertThat(workflow.getGenerationRoundAttemptCount()).isEqualTo(1);
+        assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(1);
         assertThat(workflow.getLastTechnicalError()).isEqualTo(AiTechnicalErrorCode.INVALID_AI_RESPONSE);
-        assertThat(workflow.getLastErrorRetryable()).isTrue();
+        assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
+        assertThat(workflow.getLastErrorRetryable()).isFalse();
         assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(projectRepository.findById(completion.projectId())).get()
                 .extracting("status").isEqualTo(ProjectStatus.DRAFT);
     }
 
     @Test
-    void nonRetryableProviderFailureStopsAfterFirstCall() throws Exception {
+    void nonRetryableClientConfigurationFailureStopsAfterFirstCall() throws Exception {
         User owner = saveUser("ai-configuration-failure@example.org");
         when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
-        org.mockito.Mockito.doThrow(new de.melinadanhier.projectflow.ai.exception.AiProviderConfigurationException(
-                        "Konfiguration ungültig"))
+        org.mockito.Mockito.doThrow(new AiTechnicalException(
+                        AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR, "Konfiguration ungültig"))
                 .when(aiClient).generatePlan(any());
 
         AiWorkflowCompletion completion = completionService.complete(
@@ -344,7 +347,8 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getGenerationRoundAttemptCount()).isEqualTo(1);
         assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(1);
         assertThat(workflow.getLastTechnicalError())
-                .isEqualTo(AiTechnicalErrorCode.PROVIDER_CONFIGURATION_ERROR);
+                .isEqualTo(AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR);
+        assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(workflow.getLastErrorRetryable()).isFalse();
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
 
@@ -364,7 +368,9 @@ class AiWorkflowIntegrationTest {
         User outsider = saveUser("ai-manual-retry-outsider@example.org");
         when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
         when(aiClient.generatePlan(any()))
-                .thenThrow(new AiProviderUnavailableException("Provider vorübergehend nicht erreichbar"));
+                .thenThrow(new AiTechnicalException(
+                        AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
+                        "Provider vorübergehend nicht erreichbar"));
 
         AiWorkflowCompletion completion = completionService.complete(
                 UUID.randomUUID(), owner.getId(), this::snapshot);
@@ -376,6 +382,7 @@ class AiWorkflowIntegrationTest {
         assertThat(failed.getGenerationRoundAttemptCount()).isEqualTo(3);
         assertThat(failed.getGenerationTotalAttemptCount()).isEqualTo(3);
         assertThat(failed.getLastTechnicalError()).isEqualTo(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
+        assertThat(failed.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(failed.getLastErrorRetryable()).isTrue();
         assertThat(generationWorkflowService.retry(completion.workflowId(), outsider.getId())).isFalse();
 
