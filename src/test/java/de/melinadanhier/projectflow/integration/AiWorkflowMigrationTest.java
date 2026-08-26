@@ -14,6 +14,81 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AiWorkflowMigrationTest {
 
     @Test
+    void migratesLegacyErrorCodesAndSeparatesOperation() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:ai-error-operation;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            UUID preCheckFailure = UUID.randomUUID();
+            UUID incompleteGeneration = UUID.randomUUID();
+            UUID unavailableGeneration = UUID.randomUUID();
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        CREATE TABLE ai_plan_generation_workflows (
+                            id UUID PRIMARY KEY,
+                            pre_check_result VARCHAR(1000),
+                            last_technical_error VARCHAR(50),
+                            last_error_retryable BOOLEAN,
+                            last_error_diagnosis VARCHAR(500),
+                            CONSTRAINT ck_ai_workflows_technical_error CHECK (
+                                last_technical_error IS NULL OR last_technical_error IN (
+                                    'PROVIDER_UNAVAILABLE', 'CLIENT_CONFIGURATION_ERROR',
+                                    'INVALID_AI_RESPONSE', 'AI_REFUSAL', 'INCOMPLETE_AI_RESPONSE',
+                                    'PRE_CHECK_INITIALIZATION_FAILED', 'PRE_CHECK_PROCESSING_FAILED',
+                                    'RETRY_INTERRUPTED', 'UNKNOWN_AI_ERROR'))
+                        )
+                        """);
+                statement.execute("""
+                        INSERT INTO ai_plan_generation_workflows (
+                            id, pre_check_result, last_technical_error,
+                            last_error_retryable, last_error_diagnosis
+                        )
+                        VALUES
+                            ('%s', NULL, 'PRE_CHECK_PROCESSING_FAILED', NULL, 'Veraltet'),
+                            ('%s', '{}', 'INCOMPLETE_AI_RESPONSE', TRUE, 'Veraltet'),
+                            ('%s', '{}', 'PROVIDER_UNAVAILABLE', FALSE, 'Veraltet')
+                        """.formatted(preCheckFailure, incompleteGeneration, unavailableGeneration));
+            }
+
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V14__separate_ai_error_operation.sql"));
+
+            try (var statement = connection.createStatement();
+                 var results = statement.executeQuery("""
+                         SELECT id, last_technical_error, last_ai_operation,
+                                last_error_retryable, last_error_diagnosis
+                         FROM ai_plan_generation_workflows
+                         ORDER BY id
+                         """)) {
+                java.util.Map<UUID, String> codes = new java.util.HashMap<>();
+                java.util.Map<UUID, String> operations = new java.util.HashMap<>();
+                java.util.Map<UUID, Boolean> retryable = new java.util.HashMap<>();
+                java.util.Map<UUID, String> diagnoses = new java.util.HashMap<>();
+                while (results.next()) {
+                    UUID id = results.getObject("id", UUID.class);
+                    codes.put(id, results.getString("last_technical_error"));
+                    operations.put(id, results.getString("last_ai_operation"));
+                    retryable.put(id, results.getBoolean("last_error_retryable"));
+                    diagnoses.put(id, results.getString("last_error_diagnosis"));
+                }
+                assertThat(codes.get(preCheckFailure)).isEqualTo("UNKNOWN_AI_ERROR");
+                assertThat(operations.get(preCheckFailure)).isEqualTo("PRE_CHECK");
+                assertThat(retryable.get(preCheckFailure)).isFalse();
+                assertThat(diagnoses.get(preCheckFailure))
+                        .isEqualTo("Die KI-Verarbeitung ist an einem internen technischen Fehler gescheitert.");
+                assertThat(codes.get(incompleteGeneration)).isEqualTo("INVALID_AI_RESPONSE");
+                assertThat(operations.get(incompleteGeneration)).isEqualTo("PLAN_GENERATION");
+                assertThat(retryable.get(incompleteGeneration)).isFalse();
+                assertThat(diagnoses.get(incompleteGeneration))
+                        .isEqualTo("Die KI-Antwort entsprach nicht den erwarteten Planungsregeln.");
+                assertThat(codes.get(unavailableGeneration)).isEqualTo("PROVIDER_UNAVAILABLE");
+                assertThat(operations.get(unavailableGeneration)).isEqualTo("PLAN_GENERATION");
+                assertThat(retryable.get(unavailableGeneration)).isTrue();
+                assertThat(diagnoses.get(unavailableGeneration))
+                        .isEqualTo("Der KI-Anbieter war vorübergehend nicht erreichbar.");
+            }
+        }
+    }
+
+    @Test
     void migratesLegacyStatusRetryColumnAndCompletionTokenHistory() throws Exception {
         try (var connection = DriverManager.getConnection(
                 "jdbc:h2:mem:ai-workflow-cleanup;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {

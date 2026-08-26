@@ -1,14 +1,41 @@
 package de.melinadanhier.projectflow.ai.exception;
 
-/** Stabiler Code für technische Fehler im KI-Workflow. */
+import lombok.Getter;
+
+/** Stabiler Code samt providerneutralen Metadaten für technische Fehler bei der KI-Ausführung. */
+@Getter
 public enum AiTechnicalErrorCode {
-    PROVIDER_UNAVAILABLE,
-    PROVIDER_CONFIGURATION_ERROR,
-    INVALID_AI_RESPONSE,
-    AI_REFUSAL,
-    INCOMPLETE_AI_RESPONSE,
-    PRE_CHECK_INITIALIZATION_FAILED,
-    PRE_CHECK_PROCESSING_FAILED,
-    RETRY_INTERRUPTED,
-    UNKNOWN_AI_ERROR
+    PROVIDER_UNAVAILABLE(true,
+            "Der KI-Anbieter war vorübergehend nicht erreichbar."
+    ),
+    PROVIDER_TIMEOUT(true,
+            "Der KI-Anbieter hat nicht rechtzeitig geantwortet."
+    ),
+    RATE_LIMIT_EXCEEDED(true,
+            "Das Aufruflimit des KI-Anbieters wurde vorübergehend erreicht."
+    ),
+    CLIENT_CONFIGURATION_ERROR(false,
+            "Der KI-Zugriff ist serverseitig nicht korrekt konfiguriert."
+    ),
+    INVALID_AI_RESPONSE(false,
+            "Die KI-Antwort entsprach nicht den erwarteten Planungsregeln."
+    ),
+    AI_REFUSAL(false,
+            "Der KI-Anbieter hat die unveränderte Anfrage abgelehnt."
+    ),
+    RETRY_INTERRUPTED(false,
+            "Die Wartezeit vor einem erneuten KI-Aufruf wurde unterbrochen."
+    ),
+    UNKNOWN_AI_ERROR(false,
+            "Die KI-Verarbeitung ist an einem internen technischen Fehler gescheitert."
+    );
+
+    private final boolean retryable;
+    private final String diagnosis;
+
+    AiTechnicalErrorCode(boolean retryable, String diagnosis) {
+        this.retryable = retryable;
+        this.diagnosis = diagnosis;
+    }
+
 }

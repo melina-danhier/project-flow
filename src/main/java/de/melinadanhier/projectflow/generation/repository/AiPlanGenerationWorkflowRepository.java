@@ -79,11 +79,13 @@ public interface AiPlanGenerationWorkflowRepository
             set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
                 workflow.generationRoundAttemptCount = 0,
                 workflow.lastTechnicalError = null,
+                workflow.lastAiOperation = null,
                 workflow.lastErrorRetryable = null,
                 workflow.lastErrorDiagnosis = null,
                 workflow.updatedAt = :now
             where workflow.id = :workflowId
               and workflow.lastErrorRetryable = true
+              and workflow.lastAiOperation = de.melinadanhier.projectflow.ai.model.AiOperation.PLAN_GENERATION
               and workflow.status in (
                 de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_FAILED,
                 de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
@@ -108,14 +110,16 @@ public interface AiPlanGenerationWorkflowRepository
             set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
                 workflow.generationRoundAttemptCount = 0,
                 workflow.lastTechnicalError = null,
+                workflow.lastAiOperation = null,
                 workflow.lastErrorRetryable = null,
                 workflow.lastErrorDiagnosis = null,
                 workflow.updatedAt = :now
             where workflow.id = :workflowId
               and workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
-              and workflow.lastTechnicalError = de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode.PROVIDER_CONFIGURATION_ERROR
+              and workflow.lastTechnicalError = de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR
+              and workflow.lastAiOperation = de.melinadanhier.projectflow.ai.model.AiOperation.PLAN_GENERATION
             """)
-    int retryGenerationAfterAdministrativeFix(
+    int retryGenerationAfterClientConfigurationFix(
             @Param("workflowId") UUID workflowId,
             @Param("now") Instant now
     );

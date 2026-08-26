@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.generation.service.workflow;
 
-import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
@@ -82,27 +82,22 @@ public class AiGenerationWorkflowService {
     }
 
     @Transactional
-    public boolean recordGenerationFailure(UUID workflowId, String diagnosis) {
+    public boolean recordGenerationFailure(UUID workflowId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = require(workflowId);
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
             return false;
         }
-        workflow.recordGenerationFailure(diagnosis);
+        workflow.recordGenerationFailure(error);
         return true;
     }
 
     @Transactional
-    public boolean recordTechnicalFailure(
-            UUID workflowId,
-            AiTechnicalErrorCode errorCode,
-            boolean retryable,
-            String diagnosis
-    ) {
+    public boolean recordTechnicalFailure(UUID workflowId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = require(workflowId);
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
             return false;
         }
-        workflow.recordTechnicalFailure(errorCode, retryable, diagnosis);
+        workflow.recordTechnicalFailure(error);
         return true;
     }
 
@@ -115,10 +110,10 @@ public class AiGenerationWorkflowService {
         return true;
     }
 
-    /** Technical entry point for an operator after repairing provider configuration; not exposed in the user UI. */
+    /** Technical entry point after repairing the server-side AI client configuration; not exposed in the user UI. */
     @Transactional
     public boolean retryAfterAdministrativeFix(UUID workflowId) {
-        if (workflowRepository.retryGenerationAfterAdministrativeFix(
+        if (workflowRepository.retryGenerationAfterClientConfigurationFix(
                 workflowId, Instant.now(clock)) != 1) {
             return false;
         }

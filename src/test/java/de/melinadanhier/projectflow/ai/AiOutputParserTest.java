@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.*;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;

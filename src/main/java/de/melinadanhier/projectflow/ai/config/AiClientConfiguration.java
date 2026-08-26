@@ -3,7 +3,8 @@ package de.melinadanhier.projectflow.ai.config;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import de.melinadanhier.projectflow.ai.AiClient;
-import de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
@@ -53,12 +54,16 @@ public class AiClientConfiguration {
         else return new AiClient() {
             @Override
             public AiPreCheckResult preCheck(AiPreCheckRequest request) {
-                throw new AiProviderUnavailableException("Es ist noch kein AI-Provider konfiguriert.");
+                throw new AiTechnicalException(
+                        AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
+                        "Es ist noch kein AI-Provider konfiguriert.");
             }
 
             @Override
             public GeneratedPlanResponse generatePlan(AiGenerationRequest request) {
-                throw new AiProviderUnavailableException("Es ist noch kein AI-Provider konfiguriert.");
+                throw new AiTechnicalException(
+                        AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
+                        "Es ist noch kein AI-Provider konfiguriert.");
             }
         };
     }
@@ -74,8 +79,7 @@ public class AiClientConfiguration {
                 .maxRetries(0) // Retry wird durch das Backend gesteuert
                 .build();
 
-        OpenAiResponsesGateway responsesGateway =
-                new SdkOpenAiResponsesGateway(sdkClient);
+        OpenAiResponsesGateway responsesGateway = new SdkOpenAiResponsesGateway(sdkClient);
 
         return new OpenAiProjectFlowAIClient(
                 responsesGateway,

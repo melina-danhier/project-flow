@@ -2,10 +2,11 @@ package de.melinadanhier.projectflow.generation.service.plan;
 
 import de.melinadanhier.projectflow.ai.AiClient;
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
-import de.melinadanhier.projectflow.ai.exception.AiClientTechnicalException;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
-import de.melinadanhier.projectflow.ai.exception.AiIncompleteResponseException;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
@@ -52,14 +53,13 @@ public class AiPlanGenerationService {
         AiGenerationRequest request = new AiGenerationRequest(
                 confirmedSnapshot, warnings, List.of(), promptVersion);
         int attempts = alreadyUsedAttempts;
-        int maxAttempts = executionProperties.getMaxAutomaticRetries() + 1;
+        int maxAttempts = executionProperties.getMaxAttempts();
         while (true) {
             if (attempts >= maxAttempts) {
-                throw new AiClientTechnicalException(
+                throw new AiTechnicalException(
                         AiTechnicalErrorCode.UNKNOWN_AI_ERROR,
                         "Das Versuchslimit dieser Generierungsrunde ist bereits ausgeschöpft.",
-                        null,
-                        false);
+                        null);
             }
             try {
                 beforeProviderCall.run();
@@ -69,28 +69,10 @@ public class AiPlanGenerationService {
                 if (validation.isValid()) {
                     return response;
                 }
-                if (attempts >= maxAttempts) {
-                    throw exhaustedValidationRetries(validation);
-                }
-                request = new AiGenerationRequest(
-                        confirmedSnapshot,
-                        warnings,
-                        validation.issues().stream().map(this::formatIssue).toList(),
-                        promptVersion);
-            } catch (AiIncompleteResponseException exception) {
-                if (!exception.isRetryable() || attempts >= maxAttempts) {
-                    throw exception;
-                }
-                waitBeforeRetry(attempts);
-            } catch (AiOutputValidationException exception) {
-                if (!exception.isRetryable() || attempts >= maxAttempts) {
-                    throw exception;
-                }
-                request = new AiGenerationRequest(
-                        confirmedSnapshot, warnings, exception.getValidationIssues(), promptVersion);
-            } catch (AiClientTechnicalException exception) {
-                if (!exception.isRetryable()
-                        || attempts >= maxAttempts) {
+                throw invalidResponse(validation);
+            } catch (AiTechnicalException exception) {
+                var error = AiTechnicalError.from(exception, AiOperation.PLAN_GENERATION);
+                if (!error.isRetryable() || attempts >= maxAttempts) {
                     throw exception;
                 }
                 waitBeforeRetry(attempts);
@@ -98,12 +80,12 @@ public class AiPlanGenerationService {
         }
     }
 
-    private AiOutputValidationException exhaustedValidationRetries(
+    private AiOutputValidationException invalidResponse(
             GenerationValidationResult validation
     ) {
         return new AiOutputValidationException(
-                "Der generierte Plan verletzt auch nach den Output-Retries deterministische Bedingungen: "
-                        + validation.issues().stream().map(this::formatIssue).toList());
+                "Der generierte Plan verletzt deterministische Ausgabebedingungen.",
+                validation.issues().stream().map(this::formatIssue).toList());
     }
 
     private String formatIssue(GenerationValidationIssue issue) {
@@ -115,11 +97,9 @@ public class AiPlanGenerationService {
             retryBackoff.waitBeforeRetry(retryNumber);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new AiClientTechnicalException(
+            throw new AiTechnicalException(
                     AiTechnicalErrorCode.RETRY_INTERRUPTED,
-                    "Der KI-Retry wurde unterbrochen.",
-                    exception,
-                    false);
+                    "Der KI-Retry wurde unterbrochen.", exception);
         }
     }
 }

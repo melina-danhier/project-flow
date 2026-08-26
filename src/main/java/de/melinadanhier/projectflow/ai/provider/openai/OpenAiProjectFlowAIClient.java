@@ -5,12 +5,13 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import de.melinadanhier.projectflow.ai.AiClient;
-import de.melinadanhier.projectflow.ai.exception.AiClientTechnicalException;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ public class OpenAiProjectFlowAIClient implements AiClient {
     public AiPreCheckResult preCheck(AiPreCheckRequest request) {
         var prompt = preCheckPromptBuilder.build(request);
         OpenAiPreCheckOutput output = invoke(
-                "PRE_CHECK", properties.getPreCheckModel(), prompt.version(),
+                AiOperation.PRE_CHECK, properties.getPreCheckModel(), prompt.version(),
                 () -> gateway.execute(properties.getPreCheckModel(), prompt, OpenAiPreCheckOutput.class));
         return output == null ? null : new AiPreCheckResult(output.problems());
     }
@@ -49,28 +50,28 @@ public class OpenAiProjectFlowAIClient implements AiClient {
     public GeneratedPlanResponse generatePlan(AiGenerationRequest request) {
         var prompt = generationPromptBuilder.build(request);
         OpenAiGenerationOutput output = invoke(
-                "GENERATION", properties.getGenerationModel(), prompt.version(),
+                AiOperation.PLAN_GENERATION, properties.getGenerationModel(), prompt.version(),
                 () -> gateway.execute(properties.getGenerationModel(), prompt, OpenAiGenerationOutput.class));
         return map(output);
     }
 
-    private <T> T invoke(String callType, String model, String promptVersion, Supplier<T> invocation) {
+    private <T> T invoke(AiOperation operation, String model, String promptVersion, Supplier<T> invocation) {
         long startedAt = System.nanoTime();
         try {
             T result = invocation.get();
             log.info("KI-Aufruf provider=openai model={} promptVersion={} schemaVersion={} type={} durationMs={} result=success",
-                    model, promptVersion, schemaVersion(callType), callType, elapsedMillis(startedAt));
+                    model, promptVersion, schemaVersion(operation), operation, elapsedMillis(startedAt));
             return result;
-        } catch (AiClientTechnicalException exception) {
+        } catch (AiTechnicalException exception) {
             log.warn("KI-Aufruf provider=openai model={} promptVersion={} schemaVersion={} type={} durationMs={} errorCode={}",
-                    model, promptVersion, schemaVersion(callType), callType, elapsedMillis(startedAt),
+                    model, promptVersion, schemaVersion(operation), operation, elapsedMillis(startedAt),
                     exception.getErrorCode());
             throw exception;
         }
     }
 
-    private String schemaVersion(String callType) {
-        return "PRE_CHECK".equals(callType) ? AiSchemaVersions.PRE_CHECK : AiSchemaVersions.GENERATION;
+    private String schemaVersion(AiOperation operation) {
+        return operation == AiOperation.PRE_CHECK ? AiSchemaVersions.PRE_CHECK : AiSchemaVersions.GENERATION;
     }
 
     private long elapsedMillis(long startedAt) {

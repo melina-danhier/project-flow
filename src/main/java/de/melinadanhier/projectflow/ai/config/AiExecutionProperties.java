@@ -15,9 +15,9 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "projectflow.ai")
 public class AiExecutionProperties {
 
-    @Min(0)
+    @Min(1)
     @Max(10)
-    private int maxAutomaticRetries = 2;
+    private int maxAttempts = 3;
 
     @NotNull
     private Duration staleWorkflowTimeout = Duration.ofMinutes(5);

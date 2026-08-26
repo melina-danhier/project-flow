@@ -1,6 +1,8 @@
 package de.melinadanhier.projectflow.generation.model.workflow;
 
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
 import de.melinadanhier.projectflow.common.model.MutableEntity;
@@ -86,6 +88,10 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "last_technical_error", length = 50)
     private AiTechnicalErrorCode lastTechnicalError;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "last_ai_operation", length = 30)
+    private AiOperation lastAiOperation;
 
     @Column(name = "pre_check_result", columnDefinition = "jsonb")
     @ColumnTransformer(write = "CAST(? AS JSONB)")
@@ -175,11 +181,12 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         clearError();
     }
 
-    public int recordPreCheckRetry(AiTechnicalErrorCode errorCode) {
+    public int recordPreCheckRetry(AiTechnicalError error) {
         requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
+        requireOperation(error, AiOperation.PRE_CHECK);
         preCheckRetryCount++;
         status = AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING;
-        lastTechnicalError = errorCode;
+        recordError(error);
         return preCheckRetryCount;
     }
 
@@ -193,10 +200,11 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
                 : AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
     }
 
-    public void recordPreCheckFailure(AiTechnicalErrorCode errorCode) {
+    public void recordPreCheckFailure(AiTechnicalError error) {
         requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
+        requireOperation(error, AiOperation.PRE_CHECK);
         status = AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE;
-        lastTechnicalError = errorCode;
+        recordError(error);
     }
 
     public void approvePreCheck() {
@@ -222,24 +230,18 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         status = AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
     }
 
-    public void recordGenerationFailure(String diagnosis) {
+    public void recordGenerationFailure(AiTechnicalError error) {
         requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
+        requireOperation(error, AiOperation.PLAN_GENERATION);
         status = AiPlanGenerationWorkflowStatus.GENERATION_FAILED;
-        lastTechnicalError = AiTechnicalErrorCode.INVALID_AI_RESPONSE;
-        lastErrorRetryable = true;
-        lastErrorDiagnosis = sanitizeDiagnosis(diagnosis);
+        recordError(error);
     }
 
-    public void recordTechnicalFailure(
-            AiTechnicalErrorCode errorCode,
-            boolean retryable,
-            String diagnosis
-    ) {
+    public void recordTechnicalFailure(AiTechnicalError error) {
         requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
+        requireOperation(error, AiOperation.PLAN_GENERATION);
         status = AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE;
-        lastTechnicalError = errorCode;
-        lastErrorRetryable = retryable;
-        lastErrorDiagnosis = sanitizeDiagnosis(diagnosis);
+        recordError(error);
     }
 
     public void prepareManualGenerationRetry() {
@@ -259,8 +261,23 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
 
     private void clearError() {
         lastTechnicalError = null;
+        lastAiOperation = null;
         lastErrorRetryable = null;
         lastErrorDiagnosis = null;
+    }
+
+    private void recordError(AiTechnicalError error) {
+        lastTechnicalError = error.errorCode();
+        lastAiOperation = error.operation();
+        lastErrorRetryable = error.isRetryable();
+        lastErrorDiagnosis = sanitizeDiagnosis(error.diagnosis());
+    }
+
+    private void requireOperation(AiTechnicalError error, AiOperation expected) {
+        if (error.operation() != expected) {
+            throw new IllegalArgumentException(
+                    "Ungültige KI-Operation " + error.operation() + "; erwartet wurde " + expected + ".");
+        }
     }
 
     private String sanitizeDiagnosis(String diagnosis) {
