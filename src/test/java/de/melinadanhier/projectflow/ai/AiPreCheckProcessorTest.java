@@ -146,14 +146,17 @@ class AiPreCheckProcessorTest {
         AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
         when(workflowService.claimAndReadSnapshot(workflowId)).thenReturn(Optional.of(snapshot));
         when(executionProperties.getMaxAutomaticRetries()).thenReturn(2);
-        when(aiClient.preCheck(request))
+        when(aiClient.preCheck(org.mockito.ArgumentMatchers.any(AiPreCheckRequest.class)))
                 .thenThrow(new AiOutputValidationException("Ungültiger Output"));
         when(workflowService.recordRetry(workflowId, AiTechnicalErrorCode.INVALID_AI_RESPONSE))
                 .thenReturn(java.util.OptionalInt.of(1), java.util.OptionalInt.of(2));
 
         processor.startAfterCommit(new AiPreCheckRequestedEvent(workflowId));
 
-        verify(aiClient, times(3)).preCheck(request);
+        var requestCaptor = org.mockito.ArgumentCaptor.forClass(AiPreCheckRequest.class);
+        verify(aiClient, times(3)).preCheck(requestCaptor.capture());
+        org.assertj.core.api.Assertions.assertThat(requestCaptor.getAllValues().get(1).previousValidationIssues())
+                .containsExactly("INVALID_AI_RESPONSE | $ | Die Antwort war nicht vollständig deserialisierbar.");
         verify(workflowService, times(2)).recordRetry(
                 workflowId, AiTechnicalErrorCode.INVALID_AI_RESPONSE);
         verify(workflowService).recordFailure(

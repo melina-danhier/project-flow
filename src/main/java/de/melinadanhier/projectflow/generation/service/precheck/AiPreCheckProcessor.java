@@ -65,8 +65,9 @@ public class AiPreCheckProcessor {
                 return;
             } catch (AiClientTechnicalException exception) {
                 AiTechnicalErrorCode errorCode = errorClassifier.classify(exception);
-                log.warn("Technischer KI-Pre-Check-Fehler für Workflow {} bei Versuch {} ({}).",
-                        event.workflowId(), retries + 1, exception.getClass().getSimpleName());
+                log.warn("Technischer KI-Pre-Check-Fehler workflowId={} attempt={} schemaVersion={} errorCode={}.",
+                        event.workflowId(), retries + 1,
+                        de.melinadanhier.projectflow.ai.model.AiSchemaVersions.PRE_CHECK, errorCode);
                 if (!exception.isRetryable()
                         || retries >= executionProperties.getMaxAutomaticRetries()) {
                     finishWithTechnicalFailure(
@@ -78,6 +79,10 @@ public class AiPreCheckProcessor {
                     return;
                 }
                 retries = recordedRetry.getAsInt();
+                if (exception instanceof de.melinadanhier.projectflow.ai.exception.AiOutputValidationException
+                        validationException) {
+                    request = new AiPreCheckRequest(snapshot, validationException.getValidationIssues());
+                }
                 try {
                     backoff.waitBeforeRetry(retries);
                 } catch (InterruptedException interruptedException) {
@@ -102,13 +107,13 @@ public class AiPreCheckProcessor {
             AiTechnicalErrorCode errorCode,
             Exception exception
     ) {
-        log.error("KI-Pre-Check für Workflow {} wurde mit Fehlercode {} beendet (Fehlertyp {}).",
-                workflowId, errorCode, exception.getClass().getSimpleName());
+        log.error("KI-Pre-Check beendet workflowId={} schemaVersion={} errorCode={}.",
+                workflowId, de.melinadanhier.projectflow.ai.model.AiSchemaVersions.PRE_CHECK, errorCode);
         try {
             workflowService.recordFailure(workflowId, errorCode);
         } catch (RuntimeException persistenceException) {
-            log.error("Technischer Fehlerstatus für Workflow {} konnte nicht gespeichert werden (Fehlertyp {}).",
-                    workflowId, persistenceException.getClass().getSimpleName());
+            log.error("Technischer KI-Fehlerstatus konnte nicht gespeichert werden workflowId={} errorCode={}.",
+                    workflowId, errorCode);
         }
     }
 }

@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.generation.model.workflow;
 
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
+import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
 import de.melinadanhier.projectflow.common.model.MutableEntity;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import jakarta.persistence.Column;
@@ -99,6 +100,16 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     @Column(name = "generation_prompt_version", nullable = false, updatable = false, length = 100)
     private String generationPromptVersion;
 
+    @NotBlank
+    @Size(max = 20)
+    @Column(name = "pre_check_schema_version", nullable = false, updatable = false, length = 20)
+    private String preCheckSchemaVersion;
+
+    @NotBlank
+    @Size(max = 20)
+    @Column(name = "generation_schema_version", nullable = false, updatable = false, length = 20)
+    private String generationSchemaVersion;
+
     @PositiveOrZero
     @Column(name = "generation_round_attempt_count", nullable = false)
     private int generationRoundAttemptCount;
@@ -139,6 +150,8 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         workflow.consentConfirmedAt = consentConfirmedAt;
         workflow.consentVersion = consentVersion;
         workflow.generationPromptVersion = generationPromptVersion;
+        workflow.preCheckSchemaVersion = AiSchemaVersions.PRE_CHECK;
+        workflow.generationSchemaVersion = AiSchemaVersions.GENERATION;
         return workflow;
     }
 

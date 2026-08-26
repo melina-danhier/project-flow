@@ -1,16 +1,20 @@
 package de.melinadanhier.projectflow.ai.provider.openai;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import de.melinadanhier.projectflow.ai.AiClient;
 import de.melinadanhier.projectflow.ai.exception.AiClientTechnicalException;
+import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
+import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import lombok.extern.slf4j.Slf4j;
+import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 
 @Slf4j
 public class OpenAiProjectFlowAIClient implements AiClient {
@@ -34,11 +38,11 @@ public class OpenAiProjectFlowAIClient implements AiClient {
 
     @Override
     public AiPreCheckResult preCheck(AiPreCheckRequest request) {
-        var prompt = preCheckPromptBuilder.build(request.confirmedWizardData());
+        var prompt = preCheckPromptBuilder.build(request);
         OpenAiPreCheckOutput output = invoke(
                 "PRE_CHECK", properties.getPreCheckModel(), prompt.version(),
                 () -> gateway.execute(properties.getPreCheckModel(), prompt, OpenAiPreCheckOutput.class));
-        return new AiPreCheckResult(output.problems());
+        return output == null ? null : new AiPreCheckResult(output.problems());
     }
 
     @Override
@@ -54,15 +58,19 @@ public class OpenAiProjectFlowAIClient implements AiClient {
         long startedAt = System.nanoTime();
         try {
             T result = invocation.get();
-            log.info("KI-Aufruf provider=openai model={} promptVersion={} type={} durationMs={} result=success",
-                    model, promptVersion, callType, elapsedMillis(startedAt));
+            log.info("KI-Aufruf provider=openai model={} promptVersion={} schemaVersion={} type={} durationMs={} result=success",
+                    model, promptVersion, schemaVersion(callType), callType, elapsedMillis(startedAt));
             return result;
         } catch (AiClientTechnicalException exception) {
-            log.warn("KI-Aufruf provider=openai model={} promptVersion={} type={} durationMs={} result={}",
-                    model, promptVersion, callType, elapsedMillis(startedAt),
-                    exception.getClass().getSimpleName());
+            log.warn("KI-Aufruf provider=openai model={} promptVersion={} schemaVersion={} type={} durationMs={} errorCode={}",
+                    model, promptVersion, schemaVersion(callType), callType, elapsedMillis(startedAt),
+                    exception.getErrorCode());
             throw exception;
         }
+    }
+
+    private String schemaVersion(String callType) {
+        return "PRE_CHECK".equals(callType) ? AiSchemaVersions.PRE_CHECK : AiSchemaVersions.GENERATION;
     }
 
     private long elapsedMillis(long startedAt) {
@@ -70,29 +78,55 @@ public class OpenAiProjectFlowAIClient implements AiClient {
     }
 
     private GeneratedPlanResponse map(OpenAiGenerationOutput output) {
+        if (output == null) {
+            return null;
+        }
+        if (output.metadata() == null || output.phases() == null) {
+            return new GeneratedPlanResponse(null, null);
+        }
         var metadata = new GeneratedPlanMetadata(output.metadata().summary(), output.metadata().assumptions());
-        List<GeneratedPhase> phases = output.phases().stream().map(this::map).toList();
+        List<GeneratedPhase> phases = output.phases().stream()
+                .map(phase -> phase == null ? null : map(phase)).toList();
         return new GeneratedPlanResponse(metadata, phases);
     }
 
     private GeneratedPhase map(OpenAiGenerationOutput.Phase phase) {
         return new GeneratedPhase(
-                phase.tempId(), phase.title(), phase.description().orElse(null),
-                phase.startDate().orElse(null), phase.endDate().orElse(null), phase.order(),
-                phase.tasks().stream().map(this::map).toList(),
-                phase.milestones().stream().map(this::map).toList());
+                nullable(phase.tempId()), phase.title(), nullable(phase.description()),
+                nullable(phase.startDate()), nullable(phase.endDate()), phase.order(),
+                phase.tasks() == null ? null : phase.tasks().stream()
+                        .map(task -> task == null ? null : map(task)).toList(),
+                phase.milestones() == null ? null : phase.milestones().stream()
+                        .map(milestone -> milestone == null ? null : map(milestone)).toList());
     }
 
     private GeneratedTask map(OpenAiGenerationOutput.Task task) {
         return new GeneratedTask(
-                task.tempId(), task.title(), task.description().orElse(null),
-                task.estimatedHours().orElse(null), task.startDate().orElse(null),
-                task.dueDate().orElse(null), task.criticalAssumption().orElse(null),
-                task.origin(), task.order());
+                task.tempId(), task.title(), nullable(task.description()),
+                nullable(task.estimatedHours()), nullable(task.startDate()),
+                nullable(task.dueDate()), nullable(task.criticalAssumption()),
+                task.origin(), task.order(), task.prerequisiteTaskTempIds(), mapPriority(task.priority()));
     }
 
     private GeneratedMilestone map(OpenAiGenerationOutput.Milestone milestone) {
         return new GeneratedMilestone(
-                milestone.tempId(), milestone.title(), milestone.date().orElse(null), milestone.order());
+                nullable(milestone.tempId()), milestone.title(), nullable(milestone.date()), milestone.order());
+    }
+
+    private <T> T nullable(Optional<T> value) {
+        return value == null ? null : value.orElse(null);
+    }
+
+    private TaskPriority mapPriority(Optional<String> priority) {
+        String value = nullable(priority);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return TaskPriority.valueOf(value);
+        } catch (IllegalArgumentException exception) {
+            throw new AiOutputValidationException(
+                    "OpenAI lieferte eine unbekannte Aufgabenprioritaet: " + value);
+        }
     }
 }

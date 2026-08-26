@@ -17,6 +17,8 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +43,7 @@ public class PlanDraftMaterializationService {
         draft.setSummary(response.metadata().summary());
         draft.setAssumptions(objectMapper.writeValueAsString(response.metadata().assumptions()));
 
+        Map<String, DraftTask> draftTasksByTempId = new LinkedHashMap<>();
         response.phases().forEach(phase -> {
             DraftSection section = new DraftSection();
             section.setTitle(phase.title());
@@ -57,12 +60,16 @@ public class PlanDraftMaterializationService {
                 task.setStartDate(generated.startDate());
                 task.setDueDate(generated.dueDate());
                 task.setEstimatedHours(generated.estimatedHours());
+                task.setPriority(generated.priority() == null
+                        ? de.melinadanhier.projectflow.planelement.model.TaskPriority.MEDIUM
+                        : generated.priority());
                 task.setSortOrder(generated.order());
                 task.setCriticalAssumption(generated.criticalAssumption());
                 task.setHasCriticalAssumption(generated.criticalAssumption() != null);
                 task.setAiOrigin(generated.origin());
                 draft.addElement(task);
                 section.addElement(task);
+                draftTasksByTempId.put(generated.tempId(), task);
             });
 
             phase.milestones().forEach(generated -> {
@@ -74,6 +81,12 @@ public class PlanDraftMaterializationService {
                 draft.addElement(milestone);
                 section.addElement(milestone);
             });
+        });
+
+        response.phases().stream().flatMap(phase -> phase.tasks().stream()).forEach(generated -> {
+            DraftTask successor = draftTasksByTempId.get(generated.tempId());
+            generated.prerequisiteTaskTempIds().forEach(prerequisiteId ->
+                    successor.addPrerequisite(draftTasksByTempId.get(prerequisiteId)));
         });
 
         draft.setGeneratedAt(Instant.now());

@@ -9,18 +9,27 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.time.LocalDate;
 
+import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.*;
+
 public record GeneratedPhase(
-        @NotBlank @Size(max = 100) String tempId,
-        @NotBlank @Size(max = 100) String title,
-        @Size(max = 2000) String description,
+        @Size(max = 100) String tempId,
+        @NotBlank @Size(max = MAX_TITLE_LENGTH) String title,
+        @Size(max = MAX_DESCRIPTION_LENGTH) String description,
         LocalDate startDate,
         LocalDate endDate,
         @Positive int order,
-        @NotNull List<@Valid GeneratedTask> tasks,
-        @NotNull List<@Valid GeneratedMilestone> milestones
+        @NotNull @Size(max = MAX_TASKS) List<@Valid GeneratedTask> tasks,
+        @NotNull @Size(max = MAX_MILESTONES) List<@Valid GeneratedMilestone> milestones
 ) {
     public GeneratedPhase {
+        tempId = trim(tempId);
+        title = trim(title);
+        description = trim(description);
         tasks = tasks == null ? null : List.copyOf(tasks);
         milestones = milestones == null ? null : List.copyOf(milestones);
+    }
+
+    private static String trim(String value) {
+        return value == null ? null : value.trim();
     }
 }

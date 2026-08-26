@@ -25,6 +25,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.Task;
+import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -112,7 +113,7 @@ class DraftServicesIntegrationTest {
                 "select count(*) from draft_plan_elements where id = ?", Integer.class, oldTaskId)).isZero();
         DraftPlan reloaded = draftRepository.findById(result.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
-        assertThat(reloaded.getSchemaVersion()).isEqualTo("generated-plan-v1");
+        assertThat(reloaded.getSchemaVersion()).isEqualTo("1.0");
         assertThat(reloaded.getSections()).singleElement().satisfies(section -> {
             assertThat(section.getTitle()).isEqualTo("Neue Phase");
             assertThat(section.getDescription()).isEqualTo("Phasenbeschreibung");
@@ -128,6 +129,7 @@ class DraftServicesIntegrationTest {
         assertThat(task.getEstimatedHours()).isEqualTo(4);
         assertThat(task.getCriticalAssumption()).isEqualTo("Material ist verfügbar");
         assertThat(task.getAiOrigin()).isEqualTo(GeneratedElementOrigin.USER_INPUT);
+        assertThat(task.getPriority()).isEqualTo(TaskPriority.MEDIUM);
     }
 
     @Test
