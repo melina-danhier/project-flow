@@ -56,7 +56,7 @@ class AiPlanGenerationServiceTest {
         assertThat(requests.getAllValues().get(1).previousValidationIssues())
                 .contains("PHASE_MISSING: Es wurde keine Phase erzeugt.",
                         "TASK_MISSING: Es wurde keine Aufgabe erzeugt.");
-        verify(backoff).waitBeforeRetry(1);
+        verifyNoInteractions(backoff);
     }
 
     @Test
@@ -83,10 +83,46 @@ class AiPlanGenerationServiceTest {
     }
 
     @Test
+    void temporaryTechnicalFailureThenSuccessUsesBackoff() throws Exception {
+        AiClient client = mock(AiClient.class);
+        AiRetryBackoff backoff = mock(AiRetryBackoff.class);
+        when(client.generatePlan(any()))
+                .thenThrow(new de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException(
+                        "vorübergehend nicht erreichbar"))
+                .thenReturn(validPlan());
+
+        assertThat(service(client, backoff, 2).generatePlan(snapshot(), List.of()))
+                .isEqualTo(validPlan());
+
+        verify(client, times(2)).generatePlan(any());
+        verify(backoff).waitBeforeRetry(1);
+    }
+
+    @Test
+    void technicalAndValidationErrorsShareOneAttemptBudget() throws Exception {
+        AiClient client = mock(AiClient.class);
+        AiRetryBackoff backoff = mock(AiRetryBackoff.class);
+        when(client.generatePlan(any()))
+                .thenReturn(emptyPlan())
+                .thenThrow(new de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException(
+                        "vorübergehend nicht erreichbar"))
+                .thenReturn(emptyPlan());
+
+        assertThatThrownBy(() -> service(client, backoff, 2).generatePlan(snapshot(), List.of()))
+                .isInstanceOf(AiOutputValidationException.class);
+
+        verify(client, times(3)).generatePlan(any());
+        verify(backoff).waitBeforeRetry(2);
+        verifyNoMoreInteractions(backoff);
+    }
+
+    @Test
     void interruptedBackoffRestoresInterruptAndUsesStableErrorCode() throws Exception {
         AiClient client = mock(AiClient.class);
         AiRetryBackoff backoff = mock(AiRetryBackoff.class);
-        when(client.generatePlan(any())).thenReturn(emptyPlan());
+        when(client.generatePlan(any())).thenThrow(
+                new de.melinadanhier.projectflow.ai.exception.AiProviderUnavailableException(
+                        "vorübergehend nicht erreichbar"));
         doThrow(new InterruptedException("unterbrochen")).when(backoff).waitBeforeRetry(1);
 
         assertThatThrownBy(() -> service(client, backoff, 2).generatePlan(snapshot(), List.of()))

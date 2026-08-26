@@ -26,6 +26,8 @@ public class AiWorkflowRecoveryService {
     @Scheduled(fixedDelayString = "${projectflow.ai.recovery-delay:30s}")
     @Transactional
     public void recover() {
+        // Gegenüber dem externen Provider ist keine echte Exactly-once-Garantie möglich:
+        // Nach einem Prozessabsturz kann ein veralteter Claim erneut ausgeführt werden.
         Instant now = Instant.now(clock);
         Instant cutoff = now.minus(properties.getStaleWorkflowTimeout());
         workflowRepository.releaseStalePreChecks(cutoff, now);

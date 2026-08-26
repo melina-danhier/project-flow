@@ -23,6 +23,7 @@ projectflow:
     stale-workflow-timeout: ${AI_STALE_WORKFLOW_TIMEOUT:5m}
     provider: ${PROJECTFLOW_AI_PROVIDER:stub}
     max-automatic-retries: ${PROJECTFLOW_AI_MAX_AUTOMATIC_RETRIES:2}
+    retry-initial-delay: ${PROJECTFLOW_AI_RETRY_INITIAL_DELAY:1s}
     openai:
       api-key: ${OPENAI_API_KEY:}
       pre-check-model: ${OPENAI_PRE_CHECK_MODEL:gpt-5-mini}

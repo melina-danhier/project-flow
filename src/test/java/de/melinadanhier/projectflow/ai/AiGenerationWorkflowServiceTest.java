@@ -65,6 +65,6 @@ class AiGenerationWorkflowServiceTest {
 
     private AiGenerationWorkflowService service() {
         return new AiGenerationWorkflowService(
-                workflowRepository, payloadCodec, materializationService, Clock.systemUTC());
+                workflowRepository, payloadCodec, materializationService, Clock.systemUTC(), eventPublisher);
     }
 }

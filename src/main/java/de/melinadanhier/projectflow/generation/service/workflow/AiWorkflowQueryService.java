@@ -22,6 +22,11 @@ public class AiWorkflowQueryService {
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
         return new AiWorkflowStatusDto(
                 workflow.getId(), workflow.getProject().getId(),
-                workflow.getStatus(), workflow.getPreCheckRetryCount());
+                workflow.getStatus(), workflow.getPreCheckRetryCount(),
+                workflow.getGenerationRoundAttemptCount(),
+                workflow.getGenerationTotalAttemptCount(),
+                workflow.getLastTechnicalError(),
+                workflow.getLastErrorRetryable(),
+                workflow.getLastErrorDiagnosis());
     }
 }

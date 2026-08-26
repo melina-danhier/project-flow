@@ -1,13 +1,12 @@
 package de.melinadanhier.projectflow.generation.controller;
 
 import de.melinadanhier.projectflow.generation.dto.response.AiWorkflowStatusDto;
-import de.melinadanhier.projectflow.generation.model.AiGenerationPreparation;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
-import de.melinadanhier.projectflow.generation.model.AiPreCheckReviewSession;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowQueryService;
+import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -26,7 +25,7 @@ public class AiWorkflowController {
 
     private final AiWorkflowQueryService workflowQueryService;
     private final AiPreCheckReviewService reviewService;
-    private final AiPreCheckReviewSession reviewSession;
+    private final AiGenerationWorkflowService generationWorkflowService;
 
     @GetMapping("/status/{workflowId}")
     public String status(
@@ -48,33 +47,35 @@ public class AiWorkflowController {
     public String problems(
             @PathVariable UUID workflowId,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
-            HttpSession session,
             Model model
     ) {
-        var ignoredWarnings = reviewSession.ignoredWarnings(workflowId, session);
-        var review = reviewService.getReview(workflowId, currentUser.userId(), ignoredWarnings);
+        var review = reviewService.getReview(workflowId, currentUser.userId());
         model.addAttribute("review", review);
         return "generation/ai-problems";
     }
 
-    @PostMapping("/problems/{workflowId}/warnings/{problemIndex}/ignore")
-    public String ignoreWarning(
+    @PostMapping("/problems/{workflowId}/warnings/{problemIndex}/acknowledge")
+    public String acknowledgeWarning(
             @PathVariable UUID workflowId,
             @PathVariable int problemIndex,
-            @AuthenticationPrincipal AuthenticatedUser currentUser,
-            HttpSession session
+            @AuthenticationPrincipal AuthenticatedUser currentUser
     ) {
-        reviewService.requireIgnorableWarning(workflowId, currentUser.userId(), problemIndex);
-        var ignoredWarnings = reviewSession.ignore(workflowId, problemIndex, session);
-        var review = reviewService.getReview(workflowId, currentUser.userId(), ignoredWarnings);
-        if (!review.hasWarnings() && !review.hasErrors()) {
-            AiGenerationPreparation preparation = reviewService.prepareGeneration(
-                    workflowId, currentUser.userId(), ignoredWarnings
-            );
-            reviewSession.clear(workflowId, session);
+        if (reviewService.acknowledgeWarning(workflowId, currentUser.userId(), problemIndex)) {
             return "redirect:/projects/new/ai/status/" + workflowId;
         }
         return "redirect:/projects/new/ai/problems/" + workflowId;
+    }
+
+    @PostMapping("/status/{workflowId}/retry")
+    public String retryGeneration(
+            @PathVariable UUID workflowId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser
+    ) {
+        workflowQueryService.getOwnedStatus(workflowId, currentUser.userId());
+        if (!generationWorkflowService.retry(workflowId, currentUser.userId())) {
+            throw new ConflictException("Die Generierung kann in diesem Zustand nicht erneut gestartet werden.");
+        }
+        return "redirect:/projects/new/ai/status/" + workflowId;
     }
 
 }

@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.generation.service.workflow;
 
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
@@ -13,6 +14,8 @@ import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCode
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
+import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -27,6 +30,7 @@ public class AiGenerationWorkflowService {
     private final AiWorkflowPayloadCodec payloadCodec;
     private final PlanDraftMaterializationService draftMaterializationService;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Optional<AiGenerationWork> claimWork(UUID workflowId) {
@@ -35,12 +39,34 @@ public class AiGenerationWorkflowService {
         }
         AiPlanGenerationWorkflow workflow = require(workflowId);
         AiPreCheckResult result = payloadCodec.readPreCheckResult(workflow.getPreCheckResult());
+        var acknowledgedIndices = workflow.getAcknowledgedWarningIndices();
+        if (result.hasErrors()) {
+            throw new IllegalStateException("Ein Workflow mit Pre-Check-Fehlern darf nicht generiert werden.");
+        }
+        for (int index = 0; index < result.problems().size(); index++) {
+            if (result.problems().get(index).severity() == AiPreCheckSeverity.WARNING
+                    && !acknowledgedIndices.contains(index)) {
+                throw new IllegalStateException(
+                        "Ein Workflow mit nicht akzeptierten Warnungen darf nicht generiert werden.");
+            }
+        }
         return Optional.of(new AiGenerationWork(
                 workflowId,
                 payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()),
                 result.problems().stream()
                         .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
-                        .toList()));
+                        .toList(),
+                workflow.getGenerationRoundAttemptCount(),
+                workflow.getGenerationPromptVersion()));
+    }
+
+    @Transactional
+    public void recordProviderCall(UUID workflowId) {
+        AiPlanGenerationWorkflow workflow = require(workflowId);
+        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
+            throw new ConflictException("Die Generierung ist nicht mehr aktiv.");
+        }
+        workflow.recordGenerationAttempt();
     }
 
     @Transactional
@@ -56,12 +82,47 @@ public class AiGenerationWorkflowService {
     }
 
     @Transactional
-    public boolean recordFailure(UUID workflowId, AiTechnicalErrorCode errorCode) {
+    public boolean recordGenerationFailure(UUID workflowId, String diagnosis) {
         AiPlanGenerationWorkflow workflow = require(workflowId);
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
             return false;
         }
-        workflow.recordGenerationFailure(errorCode);
+        workflow.recordGenerationFailure(diagnosis);
+        return true;
+    }
+
+    @Transactional
+    public boolean recordTechnicalFailure(
+            UUID workflowId,
+            AiTechnicalErrorCode errorCode,
+            boolean retryable,
+            String diagnosis
+    ) {
+        AiPlanGenerationWorkflow workflow = require(workflowId);
+        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
+            return false;
+        }
+        workflow.recordTechnicalFailure(errorCode, retryable, diagnosis);
+        return true;
+    }
+
+    @Transactional
+    public boolean retry(UUID workflowId, UUID userId) {
+        if (workflowRepository.retryGeneration(workflowId, userId, Instant.now(clock)) != 1) {
+            return false;
+        }
+        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId));
+        return true;
+    }
+
+    /** Technical entry point for an operator after repairing provider configuration; not exposed in the user UI. */
+    @Transactional
+    public boolean retryAfterAdministrativeFix(UUID workflowId) {
+        if (workflowRepository.retryGenerationAfterAdministrativeFix(
+                workflowId, Instant.now(clock)) != 1) {
+            return false;
+        }
+        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId));
         return true;
     }
 

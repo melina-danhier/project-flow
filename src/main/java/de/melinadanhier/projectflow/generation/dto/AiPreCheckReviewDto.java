@@ -17,6 +17,6 @@ public record AiPreCheckReviewDto(
 
     public boolean hasWarnings() {
         return problems.stream()
-                .anyMatch(AiPreCheckProblemDto::isWarning);
+                .anyMatch(problem -> problem.isWarning() && !problem.acknowledged());
     }
 }

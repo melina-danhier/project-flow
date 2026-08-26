@@ -19,6 +19,7 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowInitializationService;
+import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
@@ -47,6 +48,8 @@ import java.time.LocalDate;
 import java.util.UUID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,6 +99,9 @@ class AiWorkflowIntegrationTest {
     @Autowired
     private DraftApplicationService draftApplicationService;
 
+    @Autowired
+    private AiGenerationWorkflowService generationWorkflowService;
+
     @MockitoBean
     private AiClient aiClient;
 
@@ -113,6 +119,7 @@ class AiWorkflowIntegrationTest {
         AiWizardSnapshot snapshot = snapshot();
         UUID token = UUID.randomUUID();
         AtomicBoolean transactionActiveDuringAiCall = new AtomicBoolean(true);
+        AtomicBoolean transactionActiveDuringGenerationCall = new AtomicBoolean(true);
         AtomicBoolean committedWorkflowVisibleDuringAiCall = new AtomicBoolean(false);
         long workflowsBefore = workflowRepository.count();
         when(aiClient.preCheck(any())).thenAnswer(invocation -> {
@@ -121,6 +128,11 @@ class AiWorkflowIntegrationTest {
             committedWorkflowVisibleDuringAiCall.set(workflowRepository.count() == workflowsBefore + 1);
             return AiPreCheckResult.withoutIssues();
         });
+        org.mockito.Mockito.doAnswer(invocation -> {
+            transactionActiveDuringGenerationCall.set(
+                    TransactionSynchronizationManager.isActualTransactionActive());
+            return generatedPlan();
+        }).when(aiClient).generatePlan(any());
 
         long sectionsBefore = planSectionRepository.count();
         long tasksBefore = taskRepository.count();
@@ -140,6 +152,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getPreCheckRetryCount()).isZero();
         assertThat(workflow.getGeneratedPlan()).contains("Erster Schritt");
         assertThat(transactionActiveDuringAiCall).isFalse();
+        assertThat(transactionActiveDuringGenerationCall).isFalse();
         assertThat(committedWorkflowVisibleDuringAiCall).isTrue();
 
         assertThat(projectRepository.findById(completion.projectId())).get().satisfies(project -> {
@@ -182,6 +195,7 @@ class AiWorkflowIntegrationTest {
                 .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(workflowRepository.findById(completion.workflowId())).get()
                 .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.DRAFT_APPLIED);
+        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
         assertThat(projectRepository.findById(completion.projectId())).get().satisfies(project -> {
             assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
             assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
@@ -283,6 +297,109 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getLastTechnicalError()).isNull();
         assertThat(workflow.getPreCheckResult()).contains("Der Zeitraum wirkt sehr knapp.");
         verify(aiClient, times(1)).preCheck(any());
+    }
+
+    @Test
+    void exhaustedInvalidOutputsBecomeRetryableGenerationFailure() throws Exception {
+        User owner = saveUser("ai-invalid-output@example.org");
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        org.mockito.Mockito.doReturn(new GeneratedPlanResponse(
+                        new GeneratedPlanMetadata("Leer", List.of()), List.of()))
+                .when(aiClient).generatePlan(any());
+
+        AiWorkflowCompletion completion = completionService.complete(
+                UUID.randomUUID(), owner.getId(), this::snapshot);
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_FAILED)
+                .orElse(false));
+
+        AiPlanGenerationWorkflow workflow = workflowRepository.findById(completion.workflowId()).orElseThrow();
+        assertThat(workflow.getGenerationRoundAttemptCount()).isEqualTo(3);
+        assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(3);
+        assertThat(workflow.getLastTechnicalError()).isEqualTo(AiTechnicalErrorCode.INVALID_AI_RESPONSE);
+        assertThat(workflow.getLastErrorRetryable()).isTrue();
+        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
+        assertThat(projectRepository.findById(completion.projectId())).get()
+                .extracting("status").isEqualTo(ProjectStatus.DRAFT);
+    }
+
+    @Test
+    void nonRetryableProviderFailureStopsAfterFirstCall() throws Exception {
+        User owner = saveUser("ai-configuration-failure@example.org");
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        org.mockito.Mockito.doThrow(new de.melinadanhier.projectflow.ai.exception.AiProviderConfigurationException(
+                        "Konfiguration ungültig"))
+                .when(aiClient).generatePlan(any());
+
+        AiWorkflowCompletion completion = completionService.complete(
+                UUID.randomUUID(), owner.getId(), this::snapshot);
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
+                .orElse(false));
+
+        AiPlanGenerationWorkflow workflow = workflowRepository.findById(completion.workflowId()).orElseThrow();
+        assertThat(workflow.getGenerationRoundAttemptCount()).isEqualTo(1);
+        assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(1);
+        assertThat(workflow.getLastTechnicalError())
+                .isEqualTo(AiTechnicalErrorCode.PROVIDER_CONFIGURATION_ERROR);
+        assertThat(workflow.getLastErrorRetryable()).isFalse();
+        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
+
+        org.mockito.Mockito.doReturn(generatedPlan()).when(aiClient).generatePlan(any());
+        assertThat(generationWorkflowService.retryAfterAdministrativeFix(completion.workflowId())).isTrue();
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(current -> current.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
+                .orElse(false));
+        AiPlanGenerationWorkflow recovered = workflowRepository.findById(completion.workflowId()).orElseThrow();
+        assertThat(recovered.getGenerationRoundAttemptCount()).isEqualTo(1);
+        assertThat(recovered.getGenerationTotalAttemptCount()).isEqualTo(2);
+    }
+
+    @Test
+    void manualRetryResetsRoundCounterKeepsTotalAndIsAtomic() throws Exception {
+        User owner = saveUser("ai-manual-retry@example.org");
+        User outsider = saveUser("ai-manual-retry-outsider@example.org");
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        when(aiClient.generatePlan(any()))
+                .thenThrow(new AiProviderUnavailableException("Provider vorübergehend nicht erreichbar"));
+
+        AiWorkflowCompletion completion = completionService.complete(
+                UUID.randomUUID(), owner.getId(), this::snapshot);
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
+                .orElse(false));
+
+        AiPlanGenerationWorkflow failed = workflowRepository.findById(completion.workflowId()).orElseThrow();
+        assertThat(failed.getGenerationRoundAttemptCount()).isEqualTo(3);
+        assertThat(failed.getGenerationTotalAttemptCount()).isEqualTo(3);
+        assertThat(failed.getLastTechnicalError()).isEqualTo(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
+        assertThat(failed.getLastErrorRetryable()).isTrue();
+        assertThat(generationWorkflowService.retry(completion.workflowId(), outsider.getId())).isFalse();
+
+        CountDownLatch generationStarted = new CountDownLatch(1);
+        CountDownLatch releaseGeneration = new CountDownLatch(1);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            generationStarted.countDown();
+            if (!releaseGeneration.await(5, TimeUnit.SECONDS)) {
+                throw new AssertionError("Manueller Retry wurde im Test nicht freigegeben.");
+            }
+            return generatedPlan();
+        }).when(aiClient).generatePlan(any());
+
+        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isTrue();
+        assertThat(generationStarted.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
+        releaseGeneration.countDown();
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
+                .orElse(false));
+
+        AiPlanGenerationWorkflow completed = workflowRepository.findById(completion.workflowId()).orElseThrow();
+        assertThat(completed.getGenerationRoundAttemptCount()).isEqualTo(1);
+        assertThat(completed.getGenerationTotalAttemptCount()).isEqualTo(4);
+        assertThat(completed.getLastTechnicalError()).isNull();
+        assertThat(completed.getLastErrorRetryable()).isNull();
+        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
     }
 
     private AiWizardSnapshot snapshot() {

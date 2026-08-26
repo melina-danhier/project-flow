@@ -20,7 +20,7 @@ public class PreCheckPromptBuilder {
             - Melde nur planungsrelevante fachliche Probleme, keine technischen Validierungsfehler.
             - Melde insbesondere keine fehlenden Pflichtfelder, ungültigen Wertebereiche oder eine
               deterministisch erkennbare falsche Datumsreihenfolge; diese werden serverseitig geprüft.
-            - Verwende ausschließlich WARNING oder ERROR. WARNING ist ignorierbar, wenn eine Planung
+            - Verwende ausschließlich WARNING oder ERROR. WARNING ist akzeptierbar, wenn eine Planung
               trotz eines unrealistischen, riskanten oder problematischen Aspekts sinnvoll möglich ist.
               ERROR ist nur zulässig, wenn eine sinnvolle Generierung fachlich nicht oder kaum möglich ist.
             - Formuliere message verständlich und suggestion als konkrete Änderungsempfehlung.

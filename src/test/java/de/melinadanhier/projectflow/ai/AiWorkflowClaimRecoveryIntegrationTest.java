@@ -47,6 +47,12 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         jdbcTemplate.update("update ai_plan_generation_workflows set updated_at = ? where id = ?", old, stale.getId());
 
         var completed = pendingWorkflow();
+        workflowRepository.claimPreCheck(completed.getId(), Instant.now());
+        completed = workflowRepository.findById(completed.getId()).orElseThrow();
+        completed.recordPreCheckResult("{}", false);
+        workflowRepository.saveAndFlush(completed);
+        workflowRepository.claimGeneration(completed.getId(), Instant.now());
+        completed = workflowRepository.findById(completed.getId()).orElseThrow();
         completed.recordGeneratedPlan("{}");
         workflowRepository.saveAndFlush(completed);
         jdbcTemplate.update("update ai_plan_generation_workflows set updated_at = ? where id = ?", old, completed.getId());
@@ -64,10 +70,60 @@ class AiWorkflowClaimRecoveryIntegrationTest {
     @Test
     void generationClaimIsAtomic() {
         var workflow = pendingWorkflow();
+        workflowRepository.claimPreCheck(workflow.getId(), Instant.now());
+        workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
         workflow.recordPreCheckResult("{}", false);
         workflowRepository.saveAndFlush(workflow);
         assertThat(workflowRepository.claimGeneration(workflow.getId(), Instant.now())).isEqualTo(1);
         assertThat(workflowRepository.claimGeneration(workflow.getId(), Instant.now())).isZero();
+    }
+
+    @Test
+    void newPreCheckResultClearsPersistedWarningAcknowledgements() {
+        var workflow = pendingWorkflow();
+        workflowRepository.claimPreCheck(workflow.getId(), Instant.now());
+        workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
+        workflow.recordPreCheckResult("{}", true);
+        workflow.acknowledgeWarning(0);
+        workflowRepository.saveAndFlush(workflow);
+        assertThat(workflowRepository.findById(workflow.getId()).orElseThrow()
+                .getAcknowledgedWarningIndices()).containsExactly(0);
+
+        jdbcTemplate.update("update ai_plan_generation_workflows set status = 'PRE_CHECK_RUNNING' where id = ?",
+                workflow.getId());
+        workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
+        workflow.recordPreCheckResult("{}", true);
+        workflowRepository.saveAndFlush(workflow);
+
+        assertThat(workflowRepository.findById(workflow.getId()).orElseThrow()
+                .getAcknowledgedWarningIndices()).isEmpty();
+    }
+
+    @Test
+    void releasesOnlyStaleRunningGenerations() {
+        var stale = generationRunningWorkflow();
+        var recent = generationRunningWorkflow();
+        Instant old = Instant.now().minus(10, ChronoUnit.MINUTES);
+        jdbcTemplate.update("update ai_plan_generation_workflows set updated_at = ? where id = ?", old, stale.getId());
+
+        int released = workflowRepository.releaseStaleGenerations(
+                Instant.now().minus(5, ChronoUnit.MINUTES), Instant.now());
+
+        assertThat(released).isEqualTo(1);
+        assertThat(workflowRepository.findById(stale.getId())).get()
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_PENDING);
+        assertThat(workflowRepository.findById(recent.getId())).get()
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
+    }
+
+    private AiPlanGenerationWorkflow generationRunningWorkflow() {
+        var workflow = pendingWorkflow();
+        workflowRepository.claimPreCheck(workflow.getId(), Instant.now());
+        workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
+        workflow.recordPreCheckResult("{}", false);
+        workflowRepository.saveAndFlush(workflow);
+        workflowRepository.claimGeneration(workflow.getId(), Instant.now());
+        return workflowRepository.findById(workflow.getId()).orElseThrow();
     }
 
     private AiPlanGenerationWorkflow pendingWorkflow() {
