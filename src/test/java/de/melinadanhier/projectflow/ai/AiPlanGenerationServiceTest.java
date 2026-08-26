@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import de.melinadanhier.projectflow.ai.exception.AiClientTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.exception.AiProviderConfigurationException;
+import de.melinadanhier.projectflow.ai.exception.AiRequestRefusedException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationResponseValidator;
@@ -54,8 +55,8 @@ class AiPlanGenerationServiceTest {
         verify(client, times(2)).generatePlan(requests.capture());
         assertThat(requests.getAllValues().get(0).previousValidationIssues()).isEmpty();
         assertThat(requests.getAllValues().get(1).previousValidationIssues())
-                .contains("PHASE_MISSING: Es wurde keine Phase erzeugt.",
-                        "TASK_MISSING: Es wurde keine Aufgabe erzeugt.");
+                .contains("PHASE_MISSING | $ | Es wurde keine Phase erzeugt.",
+                        "TASK_MISSING | $ | Es wurde keine Aufgabe erzeugt.");
         verifyNoInteractions(backoff);
     }
 
@@ -78,6 +79,18 @@ class AiPlanGenerationServiceTest {
 
         assertThatThrownBy(() -> service(client, backoff, 2).generatePlan(snapshot(), List.of()))
                 .isInstanceOf(AiProviderConfigurationException.class);
+        verify(client).generatePlan(any());
+        verifyNoInteractions(backoff);
+    }
+
+    @Test
+    void refusalIsNotRetried() throws Exception {
+        AiClient client = mock(AiClient.class);
+        AiRetryBackoff backoff = mock(AiRetryBackoff.class);
+        when(client.generatePlan(any())).thenThrow(new AiRequestRefusedException("Anfrage abgelehnt"));
+
+        assertThatThrownBy(() -> service(client, backoff, 2).generatePlan(snapshot(), List.of()))
+                .isInstanceOf(AiRequestRefusedException.class);
         verify(client).generatePlan(any());
         verifyNoInteractions(backoff);
     }
@@ -150,9 +163,14 @@ class AiPlanGenerationServiceTest {
                 new GeneratedPlanMetadata("Plan", List.of()),
                 List.of(new GeneratedPhase(
                         "phase-1", "Phase", null, null, null, 1,
-                        List.of(new GeneratedTask(
-                                "task-1", "Aufgabe", null, 1, null, null, null,
-                                GeneratedElementOrigin.AI_INFERRED, 1)), List.of())));
+                        List.of(
+                                task("task-1", 1), task("task-2", 2), task("task-3", 3)),
+                        List.of())));
+    }
+
+    private GeneratedTask task(String id, int order) {
+        return new GeneratedTask(id, "Aufgabe " + order, null, 1, null, null, null,
+                GeneratedElementOrigin.AI_INFERRED, order);
     }
 
     private AiWizardSnapshot snapshot() {

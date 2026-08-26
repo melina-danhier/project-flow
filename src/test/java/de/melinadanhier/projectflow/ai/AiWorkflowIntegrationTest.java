@@ -148,6 +148,8 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getCompletionToken()).isEqualTo(token);
         assertThat(workflow.getConsentConfirmedAt()).isNotNull();
         assertThat(workflow.getConsentVersion()).isEqualTo(AiWorkflowInitializationService.CONSENT_VERSION);
+        assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo("1.0");
+        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("1.0");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
         assertThat(workflow.getPreCheckRetryCount()).isZero();
         assertThat(workflow.getGeneratedPlan()).contains("Erster Schritt");
@@ -184,12 +186,13 @@ class AiWorkflowIntegrationTest {
         assertThat(jdbcTemplate.queryForList(
                 "select title from draft_plan_elements where plan_draft_id = ? order by sort_order",
                 String.class, draft.getId()))
-                .containsExactlyInAnyOrder("Erster Schritt", "Vorbereitung abgeschlossen");
+                .containsExactlyInAnyOrder("Erster Schritt", "Zweiter Schritt", "Dritter Schritt",
+                        "Vorbereitung abgeschlossen");
 
         draftApplicationService.apply(completion.projectId(), owner.getId());
 
         assertThat(planSectionRepository.count()).isEqualTo(sectionsBefore + 1);
-        assertThat(taskRepository.count()).isEqualTo(tasksBefore + 1);
+        assertThat(taskRepository.count()).isEqualTo(tasksBefore + 3);
         assertThat(milestoneRepository.count()).isEqualTo(milestonesBefore + 1);
         assertThat(planDraftRepository.findById(draft.getId())).get()
                 .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
@@ -202,7 +205,7 @@ class AiWorkflowIntegrationTest {
         });
 
         draftApplicationService.apply(completion.projectId(), owner.getId());
-        assertThat(taskRepository.count()).isEqualTo(tasksBefore + 1);
+        assertThat(taskRepository.count()).isEqualTo(tasksBefore + 3);
     }
 
     @Test
@@ -425,13 +428,19 @@ class AiWorkflowIntegrationTest {
                 List.of(new GeneratedPhase(
                         "phase-1", "Vorbereitung", null,
                         LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21), 1,
-                        List.of(new GeneratedTask(
-                                "task-1", "Erster Schritt", null, 1,
-                                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20),
-                                null, GeneratedElementOrigin.AI_INFERRED, 1)),
+                        List.of(
+                                generatedTask("task-1", "Erster Schritt", 1),
+                                generatedTask("task-2", "Zweiter Schritt", 2),
+                                generatedTask("task-3", "Dritter Schritt", 3)),
                         List.of(new GeneratedMilestone(
                                 "milestone-1", "Vorbereitung abgeschlossen",
                                 LocalDate.of(2026, 9, 21), 2)))));
+    }
+
+    private GeneratedTask generatedTask(String id, String title, int order) {
+        return new GeneratedTask(id, title, null, 1,
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20),
+                null, GeneratedElementOrigin.AI_INFERRED, order);
     }
 
     private User saveUser(String email) {

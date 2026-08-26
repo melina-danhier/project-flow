@@ -12,6 +12,7 @@ import de.melinadanhier.projectflow.common.exception.GenerationException;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -91,17 +92,16 @@ class AiOutputParserTest {
     }
 
     @Test
-    void rejectsSchemaVersionSuppliedByModel() {
-        assertThatThrownBy(() -> preCheckParser.parse("{\"schemaVersion\":\"2.0\",\"problems\":[]}"))
-                .isInstanceOf(AiOutputValidationException.class);
+    void ignoresSchemaVersionSuppliedByModelBecauseVersionIsBackendManaged() {
+        assertThat(preCheckParser.parse("{\"schemaVersion\":\"2.0\",\"problems\":[]}").problems())
+                .isEmpty();
     }
 
     @Test
-    void rejectsMalformedUnknownAndNullPreCheckJsonAsTechnicalOutputFailures() {
+    void rejectsMalformedAndNullButIgnoresUnknownPreCheckJsonFields() {
         assertThatThrownBy(() -> preCheckParser.parse("{not-json"))
                 .isInstanceOf(AiOutputValidationException.class);
-        assertThatThrownBy(() -> preCheckParser.parse("{\"problems\":[],\"unknown\":true}"))
-                .isInstanceOf(AiOutputValidationException.class);
+        assertThat(preCheckParser.parse("{\"problems\":[],\"unknown\":true}").problems()).isEmpty();
         assertThatThrownBy(() -> preCheckParser.parse("null"))
                 .isInstanceOf(AiOutputValidationException.class);
     }
@@ -184,30 +184,58 @@ class AiOutputParserTest {
     }
 
     @Test
+    void parsesValidPriorityAndRejectsUnknownPriority() {
+        var parsed = generationParser.parse(validGenerationJson().replace(
+                "\"origin\":\"USER_INPUT\"",
+                "\"priority\":\"HIGH\",\"origin\":\"USER_INPUT\""));
+        assertThat(parsed.phases().getFirst().tasks().getFirst().priority())
+                .isEqualTo(TaskPriority.HIGH);
+
+        assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
+                "\"origin\":\"USER_INPUT\"",
+                "\"priority\":\"URGENT\",\"origin\":\"USER_INPUT\"")))
+                .isInstanceOf(AiOutputValidationException.class);
+    }
+
+    @Test
+    void rejectsWrongJsonTypesDuringDeserialization() {
+        assertThatThrownBy(() -> preCheckParser.parse("{\"problems\":{}}"))
+                .isInstanceOf(AiOutputValidationException.class);
+        assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
+                "\"startDate\":\"2026-08-25\"", "\"startDate\":false")))
+                .isInstanceOf(AiOutputValidationException.class);
+    }
+
+    @Test
+    void trimsHarmlessSurroundingWhitespace() {
+        var result = generationParser.parse(validGenerationJson().replace(
+                "\"title\":\"Vorbereitung\"", "\"title\":\"  Vorbereitung  \""));
+
+        assertThat(result.phases().getFirst().title()).isEqualTo("Vorbereitung");
+    }
+
+    @Test
     void acceptsDuplicateTemporaryIdsForSubsequentDomainValidation() {
         assertThat(generationParser.parse(validGenerationJson().replace(
                 "\"tempId\":\"task-2\"", "\"tempId\":\"task-1\""))).isNotNull();
     }
 
     @Test
-    void rejectsApplicationManagedReviewStateAndExistingProjectData() {
-        assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
+    void ignoresUnknownApplicationManagedFields() {
+        assertThat(generationParser.parse(validGenerationJson().replace(
                 "\"metadata\":",
-                "\"projectTitle\":\"Nicht übernehmen\",\"metadata\":")))
-                .isInstanceOf(AiOutputValidationException.class);
-        assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
+                "\"projectTitle\":\"Nicht übernehmen\",\"metadata\":"))).isNotNull();
+        assertThat(generationParser.parse(validGenerationJson().replace(
                 "\"origin\":\"USER_INPUT\",",
-                "\"origin\":\"USER_INPUT\",\"reviewed\":true,")))
-                .isInstanceOf(AiOutputValidationException.class);
+                "\"origin\":\"USER_INPUT\",\"reviewed\":true,"))).isNotNull();
     }
 
     @Test
-    void rejectsMalformedUnknownAndNullGenerationJson() {
+    void rejectsMalformedAndNullButIgnoresUnknownGenerationFields() {
         assertThatThrownBy(() -> generationParser.parse("{not-json"))
                 .isInstanceOf(AiOutputValidationException.class);
-        assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
-                "\"metadata\":", "\"unknown\":true,\"metadata\":")))
-                .isInstanceOf(AiOutputValidationException.class);
+        assertThat(generationParser.parse(validGenerationJson().replace(
+                "\"metadata\":", "\"unknown\":true,\"metadata\":"))).isNotNull();
         assertThatThrownBy(() -> generationParser.parse("null"))
                 .isInstanceOf(AiOutputValidationException.class);
     }

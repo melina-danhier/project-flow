@@ -3,6 +3,7 @@ package de.melinadanhier.projectflow.ai;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
+import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +52,7 @@ class OpenAiProjectFlowAIClientTest {
         AiPrompt generationPrompt = new AiPrompt("generation-v1", "generation", "data");
         AiWizardSnapshot snapshot = snapshot();
         AiGenerationRequest generationRequest = new AiGenerationRequest(snapshot, List.of());
-        when(preCheckPrompts.build(snapshot)).thenReturn(preCheckPrompt);
+        when(preCheckPrompts.build(new AiPreCheckRequest(snapshot))).thenReturn(preCheckPrompt);
         when(generationPrompts.build(generationRequest)).thenReturn(generationPrompt);
         RecordingGateway gateway = new RecordingGateway();
         OpenAiProjectFlowAIClient client = new OpenAiProjectFlowAIClient(gateway, properties, preCheckPrompts, generationPrompts);
@@ -71,6 +73,23 @@ class OpenAiProjectFlowAIClientTest {
                 "generation-model:generation-v1:OpenAiGenerationOutput");
     }
 
+    @Test
+    void rejectsUnknownPriorityFromStructuredProviderOutput() {
+        OpenAiProperties properties = new OpenAiProperties();
+        properties.setGenerationModel("generation-model");
+        GenerationPromptBuilder generationPrompts = mock(GenerationPromptBuilder.class);
+        AiGenerationRequest request = new AiGenerationRequest(snapshot(), List.of());
+        when(generationPrompts.build(request))
+                .thenReturn(new AiPrompt("generation-v1", "generation", "data"));
+        OpenAiProjectFlowAIClient client = new OpenAiProjectFlowAIClient(
+                new RecordingGateway(Optional.of("URGENT")), properties,
+                mock(PreCheckPromptBuilder.class), generationPrompts);
+
+        assertThatThrownBy(() -> client.generatePlan(request))
+                .isInstanceOf(AiOutputValidationException.class)
+                .hasMessageContaining("unbekannte Aufgabenprioritaet");
+    }
+
     private AiWizardSnapshot snapshot() {
         return new AiWizardSnapshot(
                 "Projekt", null, null, null,
@@ -80,6 +99,15 @@ class OpenAiProjectFlowAIClientTest {
 
     private static class RecordingGateway implements OpenAiResponsesGateway {
         private final java.util.ArrayList<String> calls = new java.util.ArrayList<>();
+        private final Optional<String> priority;
+
+        private RecordingGateway() {
+            this(Optional.empty());
+        }
+
+        private RecordingGateway(Optional<String> priority) {
+            this.priority = priority;
+        }
 
         @Override
         public <T> T execute(String model, AiPrompt prompt, Class<T> responseType) {
@@ -96,7 +124,7 @@ class OpenAiProjectFlowAIClientTest {
                                 List.of(new OpenAiGenerationOutput.Task(
                                         "task-1", "Aufgabe", Optional.empty(), Optional.of(1),
                                         Optional.empty(), Optional.empty(), Optional.empty(),
-                                        GeneratedElementOrigin.AI_INFERRED, 1)),
+                                        GeneratedElementOrigin.AI_INFERRED, 1, List.of(), priority)),
                                 List.of())));
             }
             return responseType.cast(output);

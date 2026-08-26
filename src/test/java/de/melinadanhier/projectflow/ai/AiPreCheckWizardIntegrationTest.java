@@ -170,7 +170,8 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(jdbcTemplate.queryForList(
                 "select title from draft_plan_elements where plan_draft_id = ? order by sort_order",
                 String.class, draft.getId()))
-                .containsExactlyInAnyOrder("Generierter Schritt", "Phasenziel");
+                .containsExactlyInAnyOrder("Generierter Schritt", "Zweiter Schritt", "Dritter Schritt",
+                        "Phasenziel");
         assertThat(planSectionRepository.count()).isEqualTo(activeSectionsBefore);
         assertThat(taskRepository.count()).isEqualTo(activeTasksBefore);
         assertThat(milestoneRepository.count()).isEqualTo(activeMilestonesBefore);
@@ -184,7 +185,7 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(redirectedUrl("/projects/" + projectId + "/plan"));
 
         assertThat(planSectionRepository.count()).isEqualTo(activeSectionsBefore + 1);
-        assertThat(taskRepository.count()).isEqualTo(activeTasksBefore + 1);
+        assertThat(taskRepository.count()).isEqualTo(activeTasksBefore + 3);
         assertThat(milestoneRepository.count()).isEqualTo(activeMilestonesBefore + 1);
         assertThat(projectRepository.findById(projectId)).get()
                 .extracting("status").isEqualTo(ProjectStatus.ACTIVE);
@@ -195,7 +196,7 @@ class AiPreCheckWizardIntegrationTest {
 
         mockMvc.perform(post("/projects/" + projectId + "/draft/apply").with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection());
-        assertThat(taskRepository.count()).isEqualTo(activeTasksBefore + 1);
+        assertThat(taskRepository.count()).isEqualTo(activeTasksBefore + 3);
     }
 
     @Test
@@ -339,12 +340,18 @@ class AiPreCheckWizardIntegrationTest {
                 List.of(new GeneratedPhase(
                         "phase-1", "Phase", null,
                         LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21), 1,
-                        List.of(new GeneratedTask(
-                                "task-1", "Generierter Schritt", null, 1,
-                                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20),
-                                null, GeneratedElementOrigin.AI_INFERRED, 1)),
+                        List.of(
+                                generatedTask("task-1", "Generierter Schritt", 1),
+                                generatedTask("task-2", "Zweiter Schritt", 2),
+                                generatedTask("task-3", "Dritter Schritt", 3)),
                         List.of(new GeneratedMilestone(
                                 "milestone-1", "Phasenziel", LocalDate.of(2026, 9, 21), 2)))));
+    }
+
+    private GeneratedTask generatedTask(String id, String title, int order) {
+        return new GeneratedTask(id, title, null, 1,
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20),
+                null, GeneratedElementOrigin.AI_INFERRED, order);
     }
 
     private AiWizardSnapshot snapshot() {

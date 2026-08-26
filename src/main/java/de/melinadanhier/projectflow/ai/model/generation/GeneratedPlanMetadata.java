@@ -6,11 +6,20 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
+import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_ASSUMPTIONS;
+
 public record GeneratedPlanMetadata(
         @NotBlank @Size(max = 1000) String summary,
-        @NotNull List<@Size(max = 1000) String> assumptions
+        @NotNull @Size(max = MAX_ASSUMPTIONS) List<@Size(max = 1000) String> assumptions
 ) {
     public GeneratedPlanMetadata {
-        assumptions = assumptions == null ? null : List.copyOf(assumptions);
+        summary = trim(summary);
+        assumptions = assumptions == null ? null : assumptions.stream()
+                .map(GeneratedPlanMetadata::trim)
+                .toList();
+    }
+
+    private static String trim(String value) {
+        return value == null ? null : value.trim();
     }
 }

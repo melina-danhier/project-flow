@@ -4,7 +4,7 @@ public final class AiSchemaVersions {
 
     public static final String PRE_CHECK = "1.0";
     public static final String GENERATION = "1.0";
-    public static final String GENERATED_PLAN = "generated-plan-v1";
+    public static final String GENERATED_PLAN = GENERATION;
 
     private AiSchemaVersions() {
     }

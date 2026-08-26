@@ -86,6 +86,8 @@ public class AiPlanGenerationService {
                 if (!exception.isRetryable() || attempts >= maxAttempts) {
                     throw exception;
                 }
+                request = new AiGenerationRequest(
+                        confirmedSnapshot, warnings, exception.getValidationIssues(), promptVersion);
             } catch (AiClientTechnicalException exception) {
                 if (!exception.isRetryable()
                         || attempts >= maxAttempts) {
@@ -105,7 +107,7 @@ public class AiPlanGenerationService {
     }
 
     private String formatIssue(GenerationValidationIssue issue) {
-        return issue.code() + ": " + issue.message();
+        return issue.code() + " | " + issue.fieldPath() + " | " + issue.message();
     }
 
     private void waitBeforeRetry(int retryNumber) {
