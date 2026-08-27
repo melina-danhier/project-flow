@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.draft.dto;
 
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
+import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,4 +29,5 @@ public class DraftPlanElementDto {
     private LocalDate startDate;
     private LocalDate dueDate;
     private Integer estimatedHours;
+    private TaskPriority priority;
 }

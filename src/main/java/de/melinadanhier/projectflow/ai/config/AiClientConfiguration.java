@@ -56,14 +56,16 @@ public class AiClientConfiguration {
             public AiPreCheckResult preCheck(AiPreCheckRequest request) {
                 throw new AiTechnicalException(
                         AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
-                        "Es ist noch kein AI-Provider konfiguriert.");
+                        "Es ist noch kein AI-Provider konfiguriert."
+                );
             }
 
             @Override
             public GeneratedPlanResponse generatePlan(AiGenerationRequest request) {
                 throw new AiTechnicalException(
                         AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
-                        "Es ist noch kein AI-Provider konfiguriert.");
+                        "Es ist noch kein AI-Provider konfiguriert."
+                );
             }
         };
     }

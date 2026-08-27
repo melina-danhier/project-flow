@@ -222,8 +222,8 @@ class AiOutputParserTest {
     @Test
     void ignoresUnknownApplicationManagedFields() {
         assertThat(generationParser.parse(validGenerationJson().replace(
-                "\"metadata\":",
-                "\"projectTitle\":\"Nicht übernehmen\",\"metadata\":"))).isNotNull();
+                "\"phases\":",
+                "\"projectTitle\":\"Nicht übernehmen\",\"phases\":"))).isNotNull();
         assertThat(generationParser.parse(validGenerationJson().replace(
                 "\"origin\":\"USER_INPUT\",",
                 "\"origin\":\"USER_INPUT\",\"reviewed\":true,"))).isNotNull();
@@ -234,7 +234,7 @@ class AiOutputParserTest {
         assertThatThrownBy(() -> generationParser.parse("{not-json"))
                 .isInstanceOf(AiOutputValidationException.class);
         assertThat(generationParser.parse(validGenerationJson().replace(
-                "\"metadata\":", "\"unknown\":true,\"metadata\":"))).isNotNull();
+                "\"phases\":", "\"unknown\":true,\"phases\":"))).isNotNull();
         assertThatThrownBy(() -> generationParser.parse("null"))
                 .isInstanceOf(AiOutputValidationException.class);
     }
@@ -250,7 +250,6 @@ class AiOutputParserTest {
     private String validGenerationJson() {
         return """
                 {
-                  "metadata":{"summary":"Beispielplan","assumptions":[]},
                   "phases":[{
                     "tempId":"phase-1","title":"Vorbereitung","description":"Alles vorbereiten",
                     "startDate":"2026-08-25","endDate":"2026-08-27","order":1,

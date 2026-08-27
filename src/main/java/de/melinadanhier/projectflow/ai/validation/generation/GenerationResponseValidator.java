@@ -33,6 +33,14 @@ public class GenerationResponseValidator {
             GeneratedPlanResponse response,
             AiGenerationRequest request
     ) {
+        List<GenerationValidationIssue> requestIssues = new ArrayList<>();
+        AiWizardSnapshot snapshot = wizardSnapshot(request, requestIssues);
+        requestIssues.addAll(validatePlan(response, snapshot).issues());
+        return new GenerationValidationResult(requestIssues);
+    }
+
+    /** Shared deterministic rules for generated responses and the current, edited draft. */
+    public GenerationValidationResult validatePlan(GeneratedPlanResponse response, AiWizardSnapshot snapshot) {
         List<GenerationValidationIssue> issues = new ArrayList<>();
         if (response == null) {
             add(issues, "RESPONSE_MISSING", "Es wurde kein Projektplan erzeugt.");
@@ -46,17 +54,10 @@ public class GenerationResponseValidator {
                         violation.getPropertyPath() + ": " + violation.getMessage()))
                 .forEach(issues::add);
 
-        AiWizardSnapshot snapshot = wizardSnapshot(request, issues);
         LocalDate projectStart = snapshot == null ? null : snapshot.startDate();
         LocalDate projectEnd = snapshot == null ? null : snapshot.endDate();
         Boolean planUsesDates = snapshot == null ? null : planUsesDates(snapshot);
 
-        if (response.metadata() == null || blank(response.metadata().summary())) {
-            add(issues, "SUMMARY_MISSING", "Die Zusammenfassung des Projektplans fehlt.");
-        }
-        if (response.metadata() != null && response.metadata().assumptions() == null) {
-            add(issues, "ASSUMPTIONS_MISSING", "Die Annahmen-Liste fehlt.");
-        }
         if (response.phases() == null || response.phases().isEmpty()) {
             add(issues, "PHASE_MISSING", "Es wurde keine Phase erzeugt.");
             add(issues, "TASK_MISSING", "Es wurde keine Aufgabe erzeugt.");

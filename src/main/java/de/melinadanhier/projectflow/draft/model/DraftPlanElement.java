@@ -69,4 +69,13 @@ public abstract class DraftPlanElement extends MutableEntity {
     @Size(max = 2000)
     @Column(name = "critical_assumption", length = 2000)
     private String criticalAssumption;
+
+    public void setCriticalAssumption(String value) {
+        criticalAssumption = value == null || value.isBlank() ? null : value.strip();
+        hasCriticalAssumption = criticalAssumption != null;
+    }
+
+    public boolean isHasCriticalAssumption() {
+        return criticalAssumption != null && !criticalAssumption.isBlank();
+    }
 }

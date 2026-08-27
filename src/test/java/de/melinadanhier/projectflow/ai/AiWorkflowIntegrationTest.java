@@ -308,8 +308,7 @@ class AiWorkflowIntegrationTest {
     void invalidOutputStopsImmediatelyAsNonRetryableGenerationFailure() throws Exception {
         User owner = saveUser("ai-invalid-output@example.org");
         when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
-        org.mockito.Mockito.doReturn(new GeneratedPlanResponse(
-                        new GeneratedPlanMetadata("Leer", List.of()), List.of()))
+        org.mockito.Mockito.doReturn(new GeneratedPlanResponse(List.of()))
                 .when(aiClient).generatePlan(any());
 
         AiWorkflowCompletion completion = completionService.complete(
@@ -431,7 +430,6 @@ class AiWorkflowIntegrationTest {
 
     private GeneratedPlanResponse generatedPlan() {
         return new GeneratedPlanResponse(
-                new GeneratedPlanMetadata("Testentwurf", List.of()),
                 List.of(new GeneratedPhase(
                         "phase-1", "Vorbereitung", null,
                         LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21), 1,

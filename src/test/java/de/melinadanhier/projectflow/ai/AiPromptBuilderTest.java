@@ -56,12 +56,11 @@ class AiPromptBuilderTest {
         assertThat(prompt.systemInstructions())
                 .contains(
                         "keinen\n  Projekttitel",
-                        "metadata",
                         "tempId",
                         "USER_INPUT",
                         "AI_INFERRED",
                         "ungeprüft")
-                .doesNotContain("schemaVersion");
+                .doesNotContain("schemaVersion", "metadata", "summary", "assumptions");
         assertThat(prompt.confirmedUserData())
                 .contains("confirmedWizardData", "acknowledgedPreCheckWarnings", "Zeitraum knapp")
                 .doesNotContain("Unmöglich");

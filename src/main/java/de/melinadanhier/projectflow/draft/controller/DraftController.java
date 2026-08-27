@@ -10,8 +10,19 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import de.melinadanhier.projectflow.draft.dto.DraftTaskForm;
+import de.melinadanhier.projectflow.draft.service.CriticalAssumptionsConfirmationRequiredException;
+import de.melinadanhier.projectflow.common.exception.DomainValidationException;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.validation.BindingResult;
+import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -24,8 +35,10 @@ public class DraftController {
     @GetMapping("/projects/{projectId}/draft")
     public String review(@PathVariable UUID projectId,
                          @AuthenticationPrincipal AuthenticatedUser currentUser,
+                         @RequestParam(defaultValue = "false") boolean pendingOnly,
                          Model model) {
         model.addAttribute("draft", draftReviewService.review(projectId, currentUser.userId()));
+        model.addAttribute("pendingOnly", pendingOnly);
         return "generation/draft-review";
     }
 
@@ -36,5 +49,65 @@ public class DraftController {
         draftApplicationService.apply(projectId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Der KI-Entwurf wurde übernommen.");
         return "redirect:/projects/" + projectId + "/plan";
+    }
+
+    @PostMapping("/projects/{projectId}/draft/confirm-and-apply")
+    public String confirmAndApply(@PathVariable UUID projectId, @RequestParam long lockVersion,
+                                  @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                  RedirectAttributes redirectAttributes) {
+        draftApplicationService.confirmAndApply(projectId, currentUser.userId(), lockVersion);
+        redirectAttributes.addFlashAttribute("successMessage", "Der KI-Entwurf wurde übernommen.");
+        return "redirect:/projects/" + projectId + "/plan";
+    }
+
+    @PostMapping("/projects/{projectId}/draft/elements/{elementId}/accept")
+    public String acceptElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
+                                @RequestParam long lockVersion,
+                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        draftReviewService.acceptElement(projectId, elementId, currentUser.userId(), lockVersion);
+        return "redirect:/projects/" + projectId + "/draft";
+    }
+
+    @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/accept")
+    public String acceptSection(@PathVariable UUID projectId, @PathVariable UUID sectionId,
+                                @RequestParam long lockVersion,
+                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        draftReviewService.acceptSection(projectId, sectionId, currentUser.userId(), lockVersion);
+        return "redirect:/projects/" + projectId + "/draft";
+    }
+
+    @PostMapping("/projects/{projectId}/draft/tasks/{taskId}")
+    public String updateTask(@PathVariable UUID projectId, @PathVariable UUID taskId,
+                             @ModelAttribute DraftTaskForm taskForm,
+                             BindingResult bindingResult,
+                             @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        if (bindingResult.hasErrors()) {
+            throw new DomainValidationException("Bitte prüfe die Aufgabenangaben, insbesondere Datums- und Zahlenfelder.");
+        }
+        draftReviewService.updateTask(projectId, taskId, currentUser.userId(), taskForm);
+        return "redirect:/projects/" + projectId + "/draft";
+    }
+
+    @PostMapping("/projects/{projectId}/draft/tasks/{taskId}/delete")
+    public String deleteTask(@PathVariable UUID projectId, @PathVariable UUID taskId,
+                             @RequestParam long lockVersion,
+                             @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        draftReviewService.deleteTask(projectId, taskId, currentUser.userId(), lockVersion);
+        return "redirect:/projects/" + projectId + "/draft";
+    }
+
+    @ExceptionHandler(CriticalAssumptionsConfirmationRequiredException.class)
+    public String confirmation(CriticalAssumptionsConfirmationRequiredException exception, Model model) {
+        model.addAttribute("draft", exception.getDraft());
+        return "generation/draft-confirmation";
+    }
+
+    @ExceptionHandler({DomainValidationException.class, ConflictException.class})
+    public String invalidDraft(RuntimeException exception,
+                              RedirectAttributes attributes,
+                              HttpServletRequest request) {
+        var variables = (Map<?, ?>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        attributes.addFlashAttribute("errorMessage", exception.getMessage());
+        return "redirect:/projects/" + variables.get("projectId") + "/draft";
     }
 }

@@ -162,12 +162,11 @@ class AiPlanGenerationServiceTest {
     }
 
     private GeneratedPlanResponse emptyPlan() {
-        return new GeneratedPlanResponse(new GeneratedPlanMetadata("Plan", List.of()), List.of());
+        return new GeneratedPlanResponse(List.of());
     }
 
     private GeneratedPlanResponse validPlan() {
         return new GeneratedPlanResponse(
-                new GeneratedPlanMetadata("Plan", List.of()),
                 List.of(new GeneratedPhase(
                         "phase-1", "Phase", null, null, null, 1,
                         List.of(

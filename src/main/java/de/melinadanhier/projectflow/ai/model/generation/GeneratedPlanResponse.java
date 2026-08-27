@@ -10,7 +10,6 @@ import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_PH
 import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MIN_PHASES;
 
 public record GeneratedPlanResponse(
-        @NotNull @Valid GeneratedPlanMetadata metadata,
         @NotNull @Size(min = MIN_PHASES, max = MAX_PHASES) List<@Valid GeneratedPhase> phases
 ) {
     public GeneratedPlanResponse {

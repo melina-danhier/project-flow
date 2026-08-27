@@ -118,7 +118,6 @@ class OpenAiProjectFlowAIClientTest {
                         AiPreCheckSeverity.WARNING, "Knapp", "Mehr Zeit einplanen")));
             } else {
                 output = new OpenAiGenerationOutput(
-                        new OpenAiGenerationOutput.Metadata("Plan", List.of()),
                         List.of(new OpenAiGenerationOutput.Phase(
                                 "phase-1", "Phase", Optional.empty(), Optional.empty(), Optional.empty(), 1,
                                 List.of(new OpenAiGenerationOutput.Task(

@@ -29,8 +29,6 @@ public class GenerationPromptBuilder {
               Projekttitel, keine Kategorie, Unterkategorie oder Projektart.
             - Erzeuge ausschließlich Phasen mit Aufgaben und Meilensteinen.
             - Erzeuge insgesamt mindestens drei Aufgaben.
-            - Fasse den Entwurf knapp in metadata.summary zusammen und führe nur tatsächlich
-              getroffene Planungsannahmen in metadata.assumptions auf.
             - Vergib für jede Aufgabe einen im gesamten Entwurf eindeutigen, stabilen tempId-Wert.
               Er ist eine Referenz im Entwurf und keine Datenbank-ID. Phasen und Meilensteine
               benötigen keine tempId.

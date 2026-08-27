@@ -3,6 +3,7 @@ package de.melinadanhier.projectflow.draft.service;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.draft.model.DraftMilestone;
+import de.melinadanhier.projectflow.draft.mapper.DraftMapper;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.draft.model.DraftPlanElement;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
@@ -38,10 +39,22 @@ public class DraftApplicationService {
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final ProjectAuthorizationService authorizationService;
     private final ProjectStateService projectStateService;
+    private final DraftValidationService validationService;
+    private final DraftMapper draftMapper;
 
     @Transactional
     public UUID apply(UUID projectId, UUID userId) {
-        DraftPlan draft = planDraftRepository.findByProjectId(projectId)
+        return apply(projectId, userId, null);
+    }
+
+    @Transactional
+    public UUID confirmAndApply(UUID projectId, UUID userId, long lockVersion) {
+        return apply(projectId, userId, lockVersion);
+    }
+
+    private UUID apply(UUID projectId, UUID userId, Long confirmedVersion) {
+        authorizationService.requireOwner(projectId, userId);
+        DraftPlan draft = planDraftRepository.findForUpdateByProjectId(projectId)
                 .orElseThrow(() -> new ConflictException(
                         "Für dieses Projekt ist kein Planentwurf vorhanden."));
         UUID draftId = draft.getId();
@@ -49,7 +62,6 @@ public class DraftApplicationService {
         if (draftId == null || project == null || !projectId.equals(project.getId())) {
             throw new ConflictException("Der Planentwurf gehört nicht zu diesem Projekt.");
         }
-        authorizationService.requireOwner(projectId, userId);
 
         if (draft.getStatus() == DraftPlanStatus.APPLIED) {
             return projectId;
@@ -62,6 +74,15 @@ public class DraftApplicationService {
             throw new ConflictException("Der aktive Projektplan enthält bereits Inhalte.");
         }
 
+        if (confirmedVersion != null && confirmedVersion != draft.getLockVersion()) {
+            throw new ConflictException("Der Entwurf wurde zwischenzeitlich geändert. Bitte prüfe ihn erneut.");
+        }
+        var review = draftMapper.toReviewDto(draft);
+        if (confirmedVersion == null && !review.getUncheckedCriticalTasks().isEmpty()) {
+            throw new CriticalAssumptionsConfirmationRequiredException(review);
+        }
+        validationService.validate(draft);
+
         draft.setStatus(DraftPlanStatus.APPLYING);
         Map<DraftSection, PlanSection> sections = new HashMap<>();
         draft.getSections().forEach(source -> {
@@ -72,7 +93,6 @@ public class DraftApplicationService {
             target.setEndDate(source.getEndDate());
             target.setSortOrder(source.getSortOrder());
             target.setOrigin(ElementOrigin.AI);
-            target.setHasCriticalAssumption(source.isHasCriticalAssumption());
             project.addSection(target);
             sections.put(source, target);
             source.setReviewStatus(DraftReviewStatus.ACCEPTED);
@@ -114,8 +134,6 @@ public class DraftApplicationService {
         target.setSortOrder(source.getSortOrder());
         target.setOrigin(source.getAiOrigin() == GeneratedElementOrigin.USER_INPUT
                 ? ElementOrigin.USER : ElementOrigin.AI);
-        target.setHasCriticalAssumption(source.isHasCriticalAssumption());
-        target.setCriticalAssumption(source.getCriticalAssumption());
         return target;
     }
 }
