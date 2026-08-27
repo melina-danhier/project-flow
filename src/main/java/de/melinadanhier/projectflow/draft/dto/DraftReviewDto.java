@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.draft.dto;
 
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
+import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,14 +18,22 @@ public class DraftReviewDto {
 
     private UUID id;
     private UUID projectId;
+    private long lockVersion;
     private DraftPlanStatus status;
     private int attemptCount;
     private String modelName;
     private String promptVersion;
     private String schemaVersion;
     private Instant generatedAt;
-    private String summary;
-    private String assumptions;
     private List<DraftSectionDto> sections = new ArrayList<>();
     private List<DraftPlanElementDto> elements = new ArrayList<>();
+
+    public List<DraftPlanElementDto> getUncheckedCriticalTasks() {
+        return elements.stream()
+                .filter(element -> "TASK".equals(element.getType()))
+                .filter(element -> element.getReviewStatus() != DraftReviewStatus.ACCEPTED)
+                .filter(element -> element.getCriticalAssumption() != null
+                        && !element.getCriticalAssumption().isBlank())
+                .toList();
+    }
 }

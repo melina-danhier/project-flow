@@ -47,7 +47,6 @@ class StubAiClientTest {
 
         var response = client.generatePlan(generationRequest());
 
-        assertThat(response.metadata().summary()).isNotBlank();
         assertThat(response.phases()).hasSize(2);
         assertThat(response.phases()).allSatisfy(phase -> {
             assertThat(phase.startDate()).isNotNull();

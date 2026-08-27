@@ -17,9 +17,11 @@ public record AiGenerationRequest(
 ) {
     public AiGenerationRequest {
         Objects.requireNonNull(confirmedWizardData, "confirmedWizardData darf nicht null sein");
-        acknowledgedWarnings = acknowledgedWarnings == null ? List.of()
+        acknowledgedWarnings = acknowledgedWarnings == null
+                ? List.of()
                 : List.copyOf(acknowledgedWarnings);
-        previousValidationIssues = previousValidationIssues == null ? List.of()
+        previousValidationIssues = previousValidationIssues == null
+                ? List.of()
                 : List.copyOf(previousValidationIssues);
         promptVersion = Objects.requireNonNull(promptVersion, "promptVersion darf nicht null sein");
     }
@@ -36,7 +38,6 @@ public record AiGenerationRequest(
             List<AiPreCheckProblem> acknowledgedWarnings,
             List<String> previousValidationIssues
     ) {
-        this(confirmedWizardData, acknowledgedWarnings, previousValidationIssues,
-                AiPromptVersions.GENERATION_PROMPT);
+        this(confirmedWizardData, acknowledgedWarnings, previousValidationIssues, AiPromptVersions.GENERATION_PROMPT);
     }
 }

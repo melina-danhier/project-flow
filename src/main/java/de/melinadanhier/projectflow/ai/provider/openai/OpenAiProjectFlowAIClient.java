@@ -82,13 +82,12 @@ public class OpenAiProjectFlowAIClient implements AiClient {
         if (output == null) {
             return null;
         }
-        if (output.metadata() == null || output.phases() == null) {
-            return new GeneratedPlanResponse(null, null);
+        if (output.phases() == null) {
+            return new GeneratedPlanResponse(null);
         }
-        var metadata = new GeneratedPlanMetadata(output.metadata().summary(), output.metadata().assumptions());
         List<GeneratedPhase> phases = output.phases().stream()
                 .map(phase -> phase == null ? null : map(phase)).toList();
-        return new GeneratedPlanResponse(metadata, phases);
+        return new GeneratedPlanResponse(phases);
     }
 
     private GeneratedPhase map(OpenAiGenerationOutput.Phase phase) {

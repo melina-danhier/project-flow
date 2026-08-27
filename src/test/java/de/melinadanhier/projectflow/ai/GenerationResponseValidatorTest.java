@@ -38,7 +38,7 @@ class GenerationResponseValidatorTest {
     @Test
     void rejectsMissingPhasesAndTasks() {
         assertCodes(validator.validate(
-                new GeneratedPlanResponse(new GeneratedPlanMetadata("Plan", List.of()), List.of()),
+                new GeneratedPlanResponse(List.of()),
                 scheduledRequest()), "PHASE_MISSING", "TASK_MISSING");
         assertCodes(validator.validate(plan(phase("phase-1", 1, PROJECT_START, PROJECT_END,
                 List.of(), List.of())), scheduledRequest()), "PHASE_TASK_MISSING", "TASK_MISSING");
@@ -245,8 +245,7 @@ class GenerationResponseValidatorTest {
                 .mapToObj(index -> phase("phase-" + index, index, null, null,
                         List.of(task("phase-task-" + index, "Aufgabe", 1, null, null)), List.of()))
                 .toList();
-        assertCodes(validator.validate(new GeneratedPlanResponse(
-                new GeneratedPlanMetadata("Plan", List.of()), tooManyPhases), undatedRequest()),
+        assertCodes(validator.validate(new GeneratedPlanResponse(tooManyPhases), undatedRequest()),
                 "PHASE_LIMIT_EXCEEDED");
 
         List<GeneratedTask> tooManyTasks = IntStream.rangeClosed(1, 201)
@@ -290,7 +289,7 @@ class GenerationResponseValidatorTest {
     }
 
     private GeneratedPlanResponse plan(GeneratedPhase... phases) {
-        return new GeneratedPlanResponse(new GeneratedPlanMetadata("Plan", List.of()), List.of(phases));
+        return new GeneratedPlanResponse(List.of(phases));
     }
 
     private GeneratedPhase phase(String id, int order, LocalDate start, LocalDate end,

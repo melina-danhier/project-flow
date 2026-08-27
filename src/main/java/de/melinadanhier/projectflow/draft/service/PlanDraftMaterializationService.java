@@ -13,7 +13,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,8 +24,6 @@ import java.util.Map;
 public class PlanDraftMaterializationService {
 
     private final PlanDraftRepository planDraftRepository;
-    private final ObjectMapper objectMapper;
-
     @Transactional
     public DraftPlan materialize(Project project, GeneratedPlanResponse response) {
         DraftPlan draft = planDraftRepository.findByProjectId(project.getId()).orElseGet(DraftPlan::new);
@@ -40,9 +37,6 @@ public class PlanDraftMaterializationService {
         draft.setAttemptCount(draft.getAttemptCount() + 1);
         draft.setPromptVersion(AiPromptVersions.GENERATION_PROMPT);
         draft.setSchemaVersion(AiSchemaVersions.GENERATED_PLAN);
-        draft.setSummary(response.metadata().summary());
-        draft.setAssumptions(objectMapper.writeValueAsString(response.metadata().assumptions()));
-
         Map<String, DraftTask> draftTasksByTempId = new LinkedHashMap<>();
         response.phases().forEach(phase -> {
             DraftSection section = new DraftSection();

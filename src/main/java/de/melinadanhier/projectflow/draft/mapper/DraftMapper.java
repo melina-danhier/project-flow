@@ -33,6 +33,7 @@ public interface DraftMapper {
         target.setHasCriticalAssumption(source.isHasCriticalAssumption());
         target.setCriticalAssumption(source.getCriticalAssumption());
         if (source instanceof DraftTask task) {
+            target.setPriority(task.getPriority());
             target.setType("TASK");
             target.setStartDate(task.getStartDate());
             target.setDueDate(task.getDueDate());

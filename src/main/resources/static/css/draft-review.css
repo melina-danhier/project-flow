@@ -1,0 +1,11 @@
+main { max-width: 65rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+li { margin-block: 1rem; }
+nav, form { margin-block: .75rem; }
+nav a { margin-inline-end: 1rem; }
+label { display: block; margin-block: .5rem; }
+input, textarea, select { max-width: 100%; box-sizing: border-box; }
+.critical-assumption { position: relative; display: inline-block; }
+.assumption-toggle { border: 2px solid #735000; border-radius: 50%; background: #fff3cd; color: #533b00; font-weight: bold; width: 2rem; height: 2rem; cursor: pointer; }
+.assumption-toggle:focus-visible { outline: 3px solid #1456b8; outline-offset: 3px; }
+.assumption-text { position: absolute; z-index: 1; inset-block-start: 100%; inset-inline-start: 0; width: min(25rem, 65vw); max-height: 60vh; overflow: auto; padding: .75rem; border: 1px solid #735000; border-radius: .3rem; background: #fff9e8; color: #302600; box-shadow: 0 2px 6px #0003; white-space: pre-wrap; overflow-wrap: anywhere; }
+.full-assumption { white-space: pre-wrap; overflow-wrap: anywhere; }

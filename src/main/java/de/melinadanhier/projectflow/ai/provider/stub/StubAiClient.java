@@ -36,9 +36,6 @@ public class StubAiClient implements AiClient {
                 && projectStart != null
                 && (projectEnd == null || !projectEnd.isBefore(projectStart));
         return new GeneratedPlanResponse(
-                new GeneratedPlanMetadata(
-                        "Beispielentwurf mit Vorbereitung und Umsetzung.",
-                        List.of("Benötigte Hilfsmittel sind rechtzeitig verfügbar.")),
                 List.of(
                         new GeneratedPhase(
                                 "phase-1", "Vorbereitung", "Grundlagen und Organisation",

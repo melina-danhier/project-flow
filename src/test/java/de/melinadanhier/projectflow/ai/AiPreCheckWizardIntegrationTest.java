@@ -336,7 +336,6 @@ class AiPreCheckWizardIntegrationTest {
 
     private GeneratedPlanResponse generatedPlan() {
         return new GeneratedPlanResponse(
-                new GeneratedPlanMetadata("Entwurf", List.of()),
                 List.of(new GeneratedPhase(
                         "phase-1", "Phase", null,
                         LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21), 1,

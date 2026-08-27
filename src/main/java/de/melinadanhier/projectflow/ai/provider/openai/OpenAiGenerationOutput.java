@@ -6,15 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 public record OpenAiGenerationOutput(
-        Metadata metadata,
         List<Phase> phases
 ) {
-
-    public record Metadata(
-            String summary,
-            List<String> assumptions
-    ) {}
-
     public record Phase(
             Optional<String> tempId,
             String title,

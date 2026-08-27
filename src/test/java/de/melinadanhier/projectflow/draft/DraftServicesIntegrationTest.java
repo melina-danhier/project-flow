@@ -3,7 +3,6 @@ package de.melinadanhier.projectflow.draft;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedMilestone;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPhase;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanMetadata;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedTask;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
@@ -199,7 +198,6 @@ class DraftServicesIntegrationTest {
 
     private GeneratedPlanResponse generatedPlan() {
         return new GeneratedPlanResponse(
-                new GeneratedPlanMetadata("Neuer Entwurf", List.of("Eine Annahme")),
                 List.of(new GeneratedPhase(
                         "phase-new", "Neue Phase", "Phasenbeschreibung",
                         LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20), 3,
