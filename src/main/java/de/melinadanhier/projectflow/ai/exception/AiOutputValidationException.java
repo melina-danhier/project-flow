@@ -2,7 +2,7 @@ package de.melinadanhier.projectflow.ai.exception;
 
 import lombok.Getter;
 
-/** Syntax-, Struktur- oder Versionsfehler einer externen KI-Antwort. */
+/** Syntax-, Struktur-, Versions- oder fachliche Validierungsfehler einer externen KI-Antwort. */
 @Getter
 public class AiOutputValidationException extends AiTechnicalException {
 

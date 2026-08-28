@@ -3,9 +3,7 @@ package de.melinadanhier.projectflow.ai.model;
 public final class AiSchemaVersions {
 
     public static final String PRE_CHECK = "1.0";
-    public static final String GENERATION = "1.0";
-    public static final String GENERATED_PLAN = GENERATION;
+    public static final String GENERATING_PLAN = "1.0";
 
-    private AiSchemaVersions() {
-    }
+    private AiSchemaVersions() { }
 }

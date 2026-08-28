@@ -40,19 +40,17 @@ public class OpenAiProjectFlowAIClient implements AiClient {
     @Override
     public AiPreCheckResult preCheck(AiPreCheckRequest request) {
         var prompt = preCheckPromptBuilder.build(request);
-        OpenAiPreCheckOutput output = invoke(
+        return invoke(
                 AiOperation.PRE_CHECK, properties.getPreCheckModel(), prompt.version(),
-                () -> gateway.execute(properties.getPreCheckModel(), prompt, OpenAiPreCheckOutput.class));
-        return output == null ? null : new AiPreCheckResult(output.problems());
+                () -> requireOutput(gateway.execute(properties.getPreCheckModel(), prompt, AiPreCheckResult.class)));
     }
 
     @Override
     public GeneratedPlanResponse generatePlan(AiGenerationRequest request) {
         var prompt = generationPromptBuilder.build(request);
-        OpenAiGenerationOutput output = invoke(
+        return invoke(
                 AiOperation.PLAN_GENERATION, properties.getGenerationModel(), prompt.version(),
-                () -> gateway.execute(properties.getGenerationModel(), prompt, OpenAiGenerationOutput.class));
-        return map(output);
+                () -> map(requireOutput(gateway.execute(properties.getGenerationModel(), prompt, OpenAiGenerationOutput.class))));
     }
 
     private <T> T invoke(AiOperation operation, String model, String promptVersion, Supplier<T> invocation) {
@@ -71,7 +69,7 @@ public class OpenAiProjectFlowAIClient implements AiClient {
     }
 
     private String schemaVersion(AiOperation operation) {
-        return operation == AiOperation.PRE_CHECK ? AiSchemaVersions.PRE_CHECK : AiSchemaVersions.GENERATION;
+        return operation == AiOperation.PRE_CHECK ? AiSchemaVersions.PRE_CHECK : AiSchemaVersions.GENERATING_PLAN;
     }
 
     private long elapsedMillis(long startedAt) {
@@ -79,25 +77,14 @@ public class OpenAiProjectFlowAIClient implements AiClient {
     }
 
     private GeneratedPlanResponse map(OpenAiGenerationOutput output) {
-        if (output == null) {
-            return null;
-        }
-        if (output.phases() == null) {
-            return new GeneratedPlanResponse(null);
-        }
-        List<GeneratedPhase> phases = output.phases().stream()
-                .map(phase -> phase == null ? null : map(phase)).toList();
-        return new GeneratedPlanResponse(phases);
+        return new GeneratedPlanResponse(mapList(output.phases(), this::map));
     }
 
     private GeneratedPhase map(OpenAiGenerationOutput.Phase phase) {
         return new GeneratedPhase(
                 nullable(phase.tempId()), phase.title(), nullable(phase.description()),
                 nullable(phase.startDate()), nullable(phase.endDate()), phase.order(),
-                phase.tasks() == null ? null : phase.tasks().stream()
-                        .map(task -> task == null ? null : map(task)).toList(),
-                phase.milestones() == null ? null : phase.milestones().stream()
-                        .map(milestone -> milestone == null ? null : map(milestone)).toList());
+                mapList(phase.tasks(), this::map), mapList(phase.milestones(), this::map));
     }
 
     private GeneratedTask map(OpenAiGenerationOutput.Task task) {
@@ -115,6 +102,15 @@ public class OpenAiProjectFlowAIClient implements AiClient {
 
     private <T> T nullable(Optional<T> value) {
         return value == null ? null : value.orElse(null);
+    }
+
+    private <T> T requireOutput(T output) {
+        if (output == null) throw new AiOutputValidationException("OpenAI lieferte einen leeren Ausgabewert.");
+        return output;
+    }
+
+    private <T, R> List<R> mapList(List<T> values, java.util.function.Function<T, R> mapper) {
+        return values == null ? null : values.stream().map(this::requireOutput).map(mapper).toList();
     }
 
     private TaskPriority mapPriority(Optional<String> priority) {

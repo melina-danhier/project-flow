@@ -29,8 +29,8 @@ public record GeneratedTask(
         tempId = trim(tempId);
         title = trim(title);
         description = trim(description);
-        criticalAssumption = criticalAssumption == null || criticalAssumption.isBlank()
-                ? null : criticalAssumption.strip();
+        criticalAssumption = criticalAssumption == null || criticalAssumption.isBlank() ? null
+                : criticalAssumption.strip();
         prerequisiteTaskTempIds = prerequisiteTaskTempIds == null ? null
                 : prerequisiteTaskTempIds.stream().map(GeneratedTask::trim).toList();
     }

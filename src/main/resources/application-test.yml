@@ -12,3 +12,7 @@ spring:
 
   flyway:
     enabled: false
+
+projectflow:
+  ai:
+    provider: stub

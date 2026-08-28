@@ -21,7 +21,7 @@ spring:
 
 projectflow:
   ai:
-    provider: stub
+    provider: ${PROJECTFLOW_AI_PROVIDER:stub}
     stub:
       pre-check-scenario: no-problems
       generation-scenario: with-dates
