@@ -3,8 +3,11 @@ package de.melinadanhier.projectflow.ai.provider.openai;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
+/** Provider-DTO für die automatische Schema-Erzeugung des OpenAI-SDKs. */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public record OpenAiGenerationOutput(
         List<Phase> phases
 ) {
@@ -18,6 +21,13 @@ public record OpenAiGenerationOutput(
             List<Task> tasks,
             List<Milestone> milestones
     ) {
+        public Phase {
+            tempId = emptyIfNull(tempId);
+            description = emptyIfNull(description);
+            startDate = emptyIfNull(startDate);
+            endDate = emptyIfNull(endDate);
+        }
+
         public Phase(String tempId, String title, Optional<String> description,
                      Optional<LocalDate> startDate, Optional<LocalDate> endDate, int order,
                      List<Task> tasks, List<Milestone> milestones) {
@@ -39,6 +49,15 @@ public record OpenAiGenerationOutput(
             List<String> prerequisiteTaskTempIds,
             Optional<String> priority
     ) {
+        public Task {
+            description = emptyIfNull(description);
+            estimatedHours = emptyIfNull(estimatedHours);
+            startDate = emptyIfNull(startDate);
+            dueDate = emptyIfNull(dueDate);
+            criticalAssumption = emptyIfNull(criticalAssumption);
+            priority = emptyIfNull(priority);
+        }
+
         public Task(String tempId, String title, Optional<String> description,
                     Optional<Integer> estimatedHours, Optional<LocalDate> startDate,
                     Optional<LocalDate> dueDate, Optional<String> criticalAssumption,
@@ -54,8 +73,17 @@ public record OpenAiGenerationOutput(
             Optional<LocalDate> date,
             int order
     ) {
+        public Milestone {
+            tempId = emptyIfNull(tempId);
+            date = emptyIfNull(date);
+        }
+
         public Milestone(String tempId, String title, Optional<LocalDate> date, int order) {
             this(Optional.ofNullable(tempId), title, date, order);
         }
+    }
+
+    private static <T> Optional<T> emptyIfNull(Optional<T> value) {
+        return Objects.requireNonNullElse(value, Optional.empty());
     }
 }

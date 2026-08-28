@@ -29,13 +29,15 @@ public class GenerationPromptBuilder {
               Projekttitel, keine Kategorie, Unterkategorie oder Projektart.
             - Erzeuge ausschließlich Phasen mit Aufgaben und Meilensteinen.
             - Erzeuge insgesamt mindestens drei Aufgaben.
+            - Gib alle im Ausgabeschema definierten Felder zurück. Nutze für nicht belegte optionale
+              Werte null statt das Feld wegzulassen.
             - Vergib für jede Aufgabe einen im gesamten Entwurf eindeutigen, stabilen tempId-Wert.
-              Er ist eine Referenz im Entwurf und keine Datenbank-ID. Phasen und Meilensteine
-              benötigen keine tempId.
+              Er ist eine Referenz im Entwurf und keine Datenbank-ID. Bei Phasen und Meilensteinen
+              darf tempId null sein.
             - Gib für jede Aufgabe prerequisiteTaskTempIds als Liste vorhandener Aufgaben-tempId-Werte
               zurück. Nutze eine leere Liste, wenn keine Abhängigkeiten bestehen. Erzeuge weder
               Selbstabhängigkeiten noch Zyklen.
-            - priority ist optional und darf nur LOW, MEDIUM oder HIGH sein. Lasse das Feld weg,
+            - priority ist optional und darf nur LOW, MEDIUM oder HIGH sein. Setze den Wert auf null,
               wenn keine begründete Priorität ableitbar ist.
             - origin ist genau USER_INPUT, wenn der Inhalt unmittelbar aus einer Nutzereingabe folgt,
               andernfalls AI_INFERRED.
@@ -44,7 +46,7 @@ public class GenerationPromptBuilder {
             - Richte die Terminierung nach dem bestätigten Zeitraum-Modus aus. Bei terminierter Planung
               benötigt jede Aufgabe dueDate und jeder Meilenstein date; Aufgaben-startDate sowie
               Phasen-startDate und -endDate bleiben optional. Ohne terminierte Planung dürfen alle
-              Datumsfelder fehlen. Ergänze keine fehlenden Datumswerte durch bloße technische Annahmen.
+              Datumsfelder null sein. Ergänze keine fehlenden Datumswerte durch bloße technische Annahmen.
             - Berücksichtige bestätigte Pre-Check-Warnungen als fachlichen Kontext; ändere deswegen keine Eingabe.
             """;
 

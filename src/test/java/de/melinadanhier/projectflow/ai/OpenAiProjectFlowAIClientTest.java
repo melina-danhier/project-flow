@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
 
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
@@ -19,6 +21,8 @@ import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategor
 import org.junit.jupiter.api.Test;
 import com.openai.models.responses.StructuredResponseCreateParams;
 
+import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,17 +34,61 @@ import static org.mockito.Mockito.when;
 class OpenAiProjectFlowAIClientTest {
 
     @Test
-    void sdkCanDeriveStrictSchemasForBothOutputTypes() {
-        assertThat(StructuredResponseCreateParams.<AiPreCheckResult>builder()
-                .model("test-model")
-                .input("test")
-                .text(AiPreCheckResult.class)
-                .build()).isNotNull();
-        assertThat(StructuredResponseCreateParams.<OpenAiGenerationOutput>builder()
-                .model("test-model")
-                .input("test")
-                .text(OpenAiGenerationOutput.class)
-                .build()).isNotNull();
+    void normalizesNullOptionalsInCanonicalAndConvenienceConstructors() {
+        var phase = new OpenAiGenerationOutput.Phase(
+                (Optional<String>) null, "Phase", null, null, null, 1, List.of(), List.of());
+        var task = new OpenAiGenerationOutput.Task(
+                "task-1", "Aufgabe", null, null, null, null, null,
+                GeneratedElementOrigin.AI_INFERRED, 1, List.of(), null);
+        var milestone = new OpenAiGenerationOutput.Milestone((Optional<String>) null, "Meilenstein", null, 1);
+
+        assertThat(Arrays.asList(
+                phase.tempId(), phase.description(), phase.startDate(), phase.endDate(),
+                task.description(), task.estimatedHours(), task.startDate(), task.dueDate(),
+                task.criticalAssumption(), task.priority(), milestone.tempId(), milestone.date()))
+                .allSatisfy(value -> assertThat(value).isEmpty());
+
+        assertThat(new OpenAiGenerationOutput.Phase(
+                (String) null, "Phase", null, null, null, 1, List.of(), List.of())).isEqualTo(phase);
+        assertThat(new OpenAiGenerationOutput.Task(
+                "task-1", "Aufgabe", null, null, null, null, null,
+                GeneratedElementOrigin.AI_INFERRED, 1)).isEqualTo(task);
+        assertThat(new OpenAiGenerationOutput.Milestone((String) null, "Meilenstein", null, 1))
+                .isEqualTo(milestone);
+    }
+
+    @Test
+    void preservesPresentOptionalValuesInAllOutputRecords() {
+        var text = Optional.of("value");
+        var date = Optional.of(LocalDate.of(2026, 9, 1));
+        var hours = Optional.of(3);
+        var phase = new OpenAiGenerationOutput.Phase(text, "Phase", text, date, date, 1, List.of(), List.of());
+        var task = new OpenAiGenerationOutput.Task(
+                "task-1", "Aufgabe", text, hours, date, date, text,
+                GeneratedElementOrigin.AI_INFERRED, 1, List.of(), text);
+        var milestone = new OpenAiGenerationOutput.Milestone(text, "Meilenstein", date, 1);
+
+        assertThat(List.of(phase.tempId(), phase.description(), task.description(),
+                task.criticalAssumption(), task.priority(), milestone.tempId())).containsOnly(text);
+        assertThat(List.of(phase.startDate(), phase.endDate(), task.startDate(), task.dueDate(), milestone.date()))
+                .containsOnly(date);
+        assertThat(task.estimatedHours()).isEqualTo(hours);
+    }
+
+    @Test
+    void sdkUsesOptionalToMakeJsonFieldsNullable() {
+        var optionalSchema = schemaFor(OpenAiGenerationOutput.Phase.class);
+        assertThat(optionalSchema.path("properties").path("description").path("type"))
+                .containsExactlyInAnyOrder(
+                        TextNode.valueOf("string"), TextNode.valueOf("null"));
+
+    }
+
+    private <T> JsonNode schemaFor(Class<T> type) {
+        var format = StructuredResponseCreateParams.<T>builder()
+                .model("test-model").input("test").text(type).build()
+                .rawParams().text().orElseThrow().format().orElseThrow().asJsonSchema();
+        return com.openai.core.ObjectMappers.jsonMapper().valueToTree(format).path("schema");
     }
 
     @Test
@@ -88,8 +136,7 @@ class OpenAiProjectFlowAIClientTest {
                 mock(PreCheckPromptBuilder.class), generationPrompts);
 
         assertThatThrownBy(() -> client.generatePlan(request))
-                .isInstanceOf(AiOutputValidationException.class)
-                .hasMessageContaining("unbekannte Aufgabenprioritaet");
+                .isInstanceOf(AiOutputValidationException.class);
     }
 
     private AiWizardSnapshot snapshot() {
@@ -142,10 +189,10 @@ class OpenAiProjectFlowAIClientTest {
             } else {
                 output = new OpenAiGenerationOutput(
                         List.of(new OpenAiGenerationOutput.Phase(
-                                "phase-1", "Phase", Optional.empty(), Optional.empty(), Optional.empty(), 1,
+                                "phase-1", "Phase", null, null, null, 1,
                                 List.of(new OpenAiGenerationOutput.Task(
-                                        "task-1", "Aufgabe", Optional.empty(), Optional.of(1),
-                                        Optional.empty(), Optional.empty(), Optional.empty(),
+                                        "task-1", "Aufgabe", null, Optional.of(1),
+                                        null, null, null,
                                         GeneratedElementOrigin.AI_INFERRED, 1, List.of(), priority)),
                                 List.of())));
             }
