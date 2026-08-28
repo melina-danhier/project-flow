@@ -39,6 +39,9 @@ public class AiWorkflowController {
         if (workflow.status() == AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW) {
             return "redirect:/projects/new/ai/problems/" + workflowId;
         }
+        if (workflow.status() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
+            return "redirect:/projects/" + workflow.projectId() + "/draft";
+        }
         model.addAttribute("workflow", workflow);
         return "generation/ai-status";
     }

@@ -106,6 +106,10 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     @Column(name = "generation_prompt_version", nullable = false, updatable = false, length = 100)
     private String generationPromptVersion;
 
+    @Size(max = 100)
+    @Column(name = "model_name", length = 100)
+    private String modelName;
+
     @NotBlank
     @Size(max = 20)
     @Column(name = "pre_check_schema_version", nullable = false, updatable = false, length = 20)
@@ -223,9 +227,8 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         generationTotalAttemptCount++;
     }
 
-    public void recordGeneratedPlan(String serializedPlan) {
+    public void recordGenerationCompleted() {
         requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
-        generatedPlan = serializedPlan;
         clearError();
         status = AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
     }

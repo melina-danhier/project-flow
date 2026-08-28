@@ -45,7 +45,7 @@ class DraftReviewIntegrationTest {
     @Autowired ProjectRepository projects;
     @Autowired UserRepository users;
     @Autowired PlanDraftRepository drafts;
-    @Autowired PlanDraftMaterializationService materialization;
+    @Autowired de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper generatedPlanMapper;
     @Autowired DraftReviewService reviews;
     @Autowired DraftApplicationService application;
     @Autowired PlatformTransactionManager transactionManager;
@@ -279,8 +279,14 @@ class DraftReviewIntegrationTest {
                     "task-" + index, "Aufgabe " + index, null, null, null, null,
                     index == 1 ? firstAssumption : index == 2 ? secondAssumption : null,
                     GeneratedElementOrigin.AI_INFERRED, index)).toList();
-            materialization.materialize(project, new GeneratedPlanResponse(List.of(new GeneratedPhase(
+            var contents = generatedPlanMapper.map(new GeneratedPlanResponse(List.of(new GeneratedPhase(
                     "phase", "Phase", null, null, null, 1, tasks, List.of()))));
+            DraftPlan draft = new DraftPlan();
+            project.attachDraft(draft);
+            draft.setStatus(DraftPlanStatus.READY_FOR_REVIEW);
+            contents.sections().forEach(draft::addSection);
+            contents.elements().forEach(draft::addElement);
+            drafts.saveAndFlush(draft);
             return new Fixture(project.getId(), new AuthenticatedUser(owner.getId(), owner.getEmail(), owner.getPasswordHash(), true));
         });
     }

@@ -1,20 +1,12 @@
 package de.melinadanhier.projectflow.draft;
 
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedMilestone;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedPhase;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedTask;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
-import de.melinadanhier.projectflow.draft.model.DraftSection;
-import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
 import de.melinadanhier.projectflow.draft.service.DraftReviewService;
-import de.melinadanhier.projectflow.draft.service.PlanDraftMaterializationService;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
@@ -22,21 +14,16 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
-import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.Task;
-import de.melinadanhier.projectflow.planelement.model.TaskPriority;
+import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,9 +32,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 @Transactional
 class DraftServicesIntegrationTest {
-
-    @Autowired
-    private PlanDraftMaterializationService materializationService;
 
     @Autowired
     private DraftReviewService reviewService;
@@ -63,73 +47,6 @@ class DraftServicesIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private EntityManager entityManager;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Test
-    void readyDraftIsNotOverwritten() {
-        Project project = projectWithOwner("ready-draft-owner@example.org");
-        DraftPlan draft = draft(project, DraftPlanStatus.READY_FOR_REVIEW);
-        DraftSection oldSection = new DraftSection();
-        oldSection.setTitle("Bereits geprüft");
-        draft.addSection(oldSection);
-        draftRepository.saveAndFlush(draft);
-
-        DraftPlan result = materializationService.materialize(project, generatedPlan());
-
-        assertThat(result.getId()).isEqualTo(draft.getId());
-        assertThat(result.getSections()).singleElement()
-                .extracting(DraftSection::getTitle).isEqualTo("Bereits geprüft");
-        assertThat(result.getAttemptCount()).isZero();
-    }
-
-    @Test
-    void nonReadyDraftReplacesAllContentsAndDeletesOrphans() {
-        Project project = projectWithOwner("replace-draft-owner@example.org");
-        DraftPlan draft = draft(project, DraftPlanStatus.GENERATING);
-        DraftSection oldSection = new DraftSection();
-        oldSection.setTitle("Alt");
-        draft.addSection(oldSection);
-        DraftTask oldTask = new DraftTask();
-        oldTask.setTitle("Alte Aufgabe");
-        draft.addElement(oldTask);
-        oldSection.addElement(oldTask);
-        draftRepository.saveAndFlush(draft);
-        var oldSectionId = oldSection.getId();
-        var oldTaskId = oldTask.getId();
-
-        DraftPlan result = materializationService.materialize(project, generatedPlan());
-        entityManager.flush();
-        entityManager.clear();
-
-        assertThat(jdbcTemplate.queryForObject(
-                "select count(*) from draft_sections where id = ?", Integer.class, oldSectionId)).isZero();
-        assertThat(jdbcTemplate.queryForObject(
-                "select count(*) from draft_plan_elements where id = ?", Integer.class, oldTaskId)).isZero();
-        DraftPlan reloaded = draftRepository.findById(result.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
-        assertThat(reloaded.getSchemaVersion()).isEqualTo("1.0");
-        assertThat(reloaded.getSections()).singleElement().satisfies(section -> {
-            assertThat(section.getTitle()).isEqualTo("Neue Phase");
-            assertThat(section.getDescription()).isEqualTo("Phasenbeschreibung");
-            assertThat(section.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 1));
-            assertThat(section.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 20));
-        });
-        assertThat(reloaded.getElements()).hasSize(2);
-        assertThat(reloaded.getElements()).allSatisfy(element ->
-                assertThat(element.getDraftSection().getId()).isEqualTo(reloaded.getSections().getFirst().getId()));
-        DraftTask task = reloaded.getElements().stream()
-                .filter(DraftTask.class::isInstance).map(DraftTask.class::cast).findFirst().orElseThrow();
-        assertThat(task.getDescription()).isEqualTo("Aufgabenbeschreibung");
-        assertThat(task.getEstimatedHours()).isEqualTo(4);
-        assertThat(task.getCriticalAssumption()).isEqualTo("Material ist verfügbar");
-        assertThat(task.getAiOrigin()).isEqualTo(GeneratedElementOrigin.USER_INPUT);
-        assertThat(task.getPriority()).isEqualTo(TaskPriority.MEDIUM);
-    }
 
     @Test
     void reviewRequiresTheProjectOwner() {
@@ -190,23 +107,8 @@ class DraftServicesIntegrationTest {
         DraftPlan draft = new DraftPlan();
         draft.setProject(project);
         draft.setStatus(status);
-        draft.setPromptVersion("generation-v1");
-        draft.setSchemaVersion("generated-plan-v1");
         project.attachDraft(draft);
         return draft;
     }
 
-    private GeneratedPlanResponse generatedPlan() {
-        return new GeneratedPlanResponse(
-                List.of(new GeneratedPhase(
-                        "phase-new", "Neue Phase", "Phasenbeschreibung",
-                        LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20), 3,
-                        List.of(new GeneratedTask(
-                                "task-new", "Neue Aufgabe", "Aufgabenbeschreibung", 4,
-                                LocalDate.of(2026, 9, 2), LocalDate.of(2026, 9, 10),
-                                "Material ist verfügbar", GeneratedElementOrigin.USER_INPUT, 1)),
-                        List.of(new GeneratedMilestone(
-                                "milestone-new", "Neuer Meilenstein",
-                                LocalDate.of(2026, 9, 20), 2)))));
-    }
 }

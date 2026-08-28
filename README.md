@@ -46,3 +46,7 @@ Der Prototyp soll im Rahmen einer kleinen Nutzerstudie getestet werden. Untersuc
 ## Abgrenzung
 
 ProjectFlow soll kein vollständiges Projektmanagementsystem und kein autonomer KI-Agent werden. Eine komplexe Teamverwaltung, differenzierte Rollen- und Rechtekonzepte, organisationsübergreifende Zusammenarbeit, mobile Apps, komplexe Automatisierungen und professionelle Unternehmensplanung sind nicht Teil des geplanten Prototyps.
+
+## Betrieb und Migrationen
+
+Vor dem Deployment von Migration V16: [Draft-Lebenszyklus, PostgreSQL-Prüfung und Umgang mit Alt-Drafts](docs/draft-lifecycle-migration.md).

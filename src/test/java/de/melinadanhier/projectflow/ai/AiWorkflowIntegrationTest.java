@@ -122,22 +122,24 @@ class AiWorkflowIntegrationTest {
         AtomicBoolean transactionActiveDuringGenerationCall = new AtomicBoolean(true);
         AtomicBoolean committedWorkflowVisibleDuringAiCall = new AtomicBoolean(false);
         long workflowsBefore = workflowRepository.count();
+        long draftsBefore = planDraftRepository.count();
         when(aiClient.preCheck(any())).thenAnswer(invocation -> {
             transactionActiveDuringAiCall.set(
                     TransactionSynchronizationManager.isActualTransactionActive());
             committedWorkflowVisibleDuringAiCall.set(workflowRepository.count() == workflowsBefore + 1);
+            assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
             return AiPreCheckResult.withoutIssues();
         });
         org.mockito.Mockito.doAnswer(invocation -> {
             transactionActiveDuringGenerationCall.set(
                     TransactionSynchronizationManager.isActualTransactionActive());
+            assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
             return generatedPlan();
         }).when(aiClient).generatePlan(any());
 
         long sectionsBefore = planSectionRepository.count();
         long tasksBefore = taskRepository.count();
         long milestonesBefore = milestoneRepository.count();
-        long draftsBefore = planDraftRepository.count();
         AiWorkflowCompletion completion = completionService.complete(token, owner.getId(), () -> snapshot);
         await(() -> workflowRepository.findById(completion.workflowId())
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
@@ -152,7 +154,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("1.0");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
         assertThat(workflow.getPreCheckRetryCount()).isZero();
-        assertThat(workflow.getGeneratedPlan()).contains("Erster Schritt");
+        assertThat(workflow.getGeneratedPlan()).isNull();
         assertThat(transactionActiveDuringAiCall).isFalse();
         assertThat(transactionActiveDuringGenerationCall).isFalse();
         assertThat(committedWorkflowVisibleDuringAiCall).isTrue();
@@ -347,6 +349,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(1);
         assertThat(workflow.getLastTechnicalError())
                 .isEqualTo(AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR);
+        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(workflow.getLastErrorRetryable()).isFalse();
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
@@ -383,6 +386,7 @@ class AiWorkflowIntegrationTest {
         assertThat(failed.getLastTechnicalError()).isEqualTo(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
         assertThat(failed.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(failed.getLastErrorRetryable()).isTrue();
+        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(generationWorkflowService.retry(completion.workflowId(), outsider.getId())).isFalse();
 
         CountDownLatch generationStarted = new CountDownLatch(1);
@@ -397,6 +401,7 @@ class AiWorkflowIntegrationTest {
 
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isTrue();
         assertThat(generationStarted.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
         releaseGeneration.countDown();
         await(() -> workflowRepository.findById(completion.workflowId())
@@ -408,6 +413,8 @@ class AiWorkflowIntegrationTest {
         assertThat(completed.getGenerationTotalAttemptCount()).isEqualTo(4);
         assertThat(completed.getLastTechnicalError()).isNull();
         assertThat(completed.getLastErrorRetryable()).isNull();
+        assertThat(planDraftRepository.findByProjectId(completion.projectId())).get()
+                .extracting("status").isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
     }
 

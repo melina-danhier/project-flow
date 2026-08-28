@@ -97,7 +97,11 @@ class AiPreCheckWizardIntegrationTest {
         verify(aiClient).preCheck(any());
         verify(aiClient).generatePlan(any());
         assertThat(workflowRepository.findById(workflowId).orElseThrow().getGeneratedPlan())
-                .contains("Generierter Schritt");
+                .isNull();
+        UUID projectId = workflowRepository.findById(workflowId).orElseThrow().getProject().getId();
+        mockMvc.perform(get(statusUrl(workflowId)).with(user(new AuthenticatedUser(
+                        owner.getId(), owner.getEmail(), owner.getPasswordHash(), true))))
+                .andExpect(redirectedUrl("/projects/" + projectId + "/draft"));
     }
 
     @Test
