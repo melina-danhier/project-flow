@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.ai;
+package de.melinadanhier.projectflow.ai.provider;
 
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;

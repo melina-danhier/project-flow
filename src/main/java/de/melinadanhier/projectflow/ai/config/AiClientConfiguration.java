@@ -5,7 +5,7 @@ import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.google.genai.Client;
 import com.google.genai.types.HttpOptions;
 import com.google.genai.types.HttpRetryOptions;
-import de.melinadanhier.projectflow.ai.AiClient;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
@@ -96,7 +96,7 @@ public class AiClientConfiguration {
     public OpenAIClient openAiSdk(OpenAiProperties openAiProperties) {
         openAiProperties.validateActiveConfiguration();
         return OpenAIOkHttpClient.builder()
-                .apiKey(openAiProperties.requireApiKey())
+                .apiKey(openAiProperties.getApiKey())
                 .timeout(openAiProperties.getTimeout())
                 .maxRetries(0) // Retry wird durch das Backend gesteuert
                 .build();

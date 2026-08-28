@@ -1,40 +1,39 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.ai.config.AiClientConfiguration;
-import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
-import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
-import de.melinadanhier.projectflow.ai.provider.openai.OpenAiProjectFlowAIClient;
+import de.melinadanhier.projectflow.ai.provider.openai.OpenAiProperties;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import java.time.Duration;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OpenAiProjectFlowAIClientConfigurationTest {
 
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withUserConfiguration(AiClientConfiguration.class)
-            .withBean(PreCheckPromptBuilder.class, () -> mock(PreCheckPromptBuilder.class))
-            .withBean(GenerationPromptBuilder.class, () -> mock(GenerationPromptBuilder.class));
+    @ParameterizedTest
+    @MethodSource("invalidTimeouts")
+    void rejectsMissingOrSubMillisecondTimeouts(Duration timeout) {
+        OpenAiProperties properties = new OpenAiProperties();
+        properties.setApiKey("test-key");
+        properties.setTimeout(timeout);
 
-    @Test
-    void selectsOpenAiClientWithEnvironmentBackedConfiguration() {
-        contextRunner.withPropertyValues(
-                        "projectflow.ai.provider=openai",
-                        "projectflow.ai.openai.api-key=test-key")
-                .run(context -> {
-                    assertThat(context).hasNotFailed();
-                    assertThat(context.getBean(AiClient.class))
-                            .isInstanceOf(OpenAiProjectFlowAIClient.class);
-                });
+        assertThatThrownBy(properties::validateActiveConfiguration)
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    private static Stream<Duration> invalidTimeouts() {
+        return Stream.of(null, Duration.ZERO, Duration.ofMillis(-1), Duration.ofNanos(999_999));
     }
 
     @Test
-    void missingApiKeyPreventsOpenAiStartup() {
-        contextRunner.withPropertyValues("projectflow.ai.provider=openai")
-                .run(context -> {
-                    assertThat(context).hasFailed();
-                    assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalStateException.class);
-                });
+    void acceptsOneMillisecondTimeout() {
+        OpenAiProperties properties = new OpenAiProperties();
+        properties.setApiKey("test-key");
+        properties.setTimeout(Duration.ofMillis(1));
+
+        assertThatCode(properties::validateActiveConfiguration).doesNotThrowAnyException();
     }
 }

@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.provider.AiClient;
+
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.AiOperation;

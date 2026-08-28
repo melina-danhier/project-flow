@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.wizard;
 
-import de.melinadanhier.projectflow.ai.AiClient;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
