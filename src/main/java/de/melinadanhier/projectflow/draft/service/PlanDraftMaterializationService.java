@@ -1,101 +1,55 @@
 package de.melinadanhier.projectflow.draft.service;
 
-import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
-import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
-import de.melinadanhier.projectflow.draft.model.DraftMilestone;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
+import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
+import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper.MappedDraft;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
-import de.melinadanhier.projectflow.draft.model.DraftSection;
-import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
-import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
+import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class PlanDraftMaterializationService {
 
     private final PlanDraftRepository planDraftRepository;
+    private final AiPlanGenerationWorkflowRepository workflowRepository;
+    private final Clock clock;
+
+    /**
+     * The graph and both success states commit (or roll back) together.
+     * The workflow coordinator calls this without a transaction. Direct transactional
+     * callers retain ownership of the commit; materialization must not commit independently.
+     */
     @Transactional
-    public DraftPlan materialize(Project project, GeneratedPlanResponse response) {
-        DraftPlan draft = planDraftRepository.findByProjectId(project.getId()).orElseGet(DraftPlan::new);
-        if (draft.getId() != null && draft.getStatus() == DraftPlanStatus.READY_FOR_REVIEW) {
-            return draft;
+    public boolean materialize(UUID workflowId, MappedDraft contents) {
+        var workflow = workflowRepository.findByIdForUpdate(workflowId)
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
+            return false;
+        }
+        UUID projectId = workflow.getProject().getId();
+        if (planDraftRepository.findByProjectId(projectId).isPresent()) {
+            throw new ConflictException("Für dieses Projekt existiert bereits ein Planentwurf.");
         }
 
-        removeExistingContents(draft);
-        draft.setProject(project);
-        draft.setStatus(DraftPlanStatus.GENERATING);
-        draft.setAttemptCount(draft.getAttemptCount() + 1);
-        draft.setPromptVersion(AiPromptVersions.GENERATION_PROMPT);
-        draft.setSchemaVersion(AiSchemaVersions.GENERATED_PLAN);
-        Map<String, DraftTask> draftTasksByTempId = new LinkedHashMap<>();
-        response.phases().forEach(phase -> {
-            DraftSection section = new DraftSection();
-            section.setTitle(phase.title());
-            section.setDescription(phase.description());
-            section.setStartDate(phase.startDate());
-            section.setEndDate(phase.endDate());
-            section.setSortOrder(phase.order());
-            draft.addSection(section);
-
-            phase.tasks().forEach(generated -> {
-                DraftTask task = new DraftTask();
-                task.setTitle(generated.title());
-                task.setDescription(generated.description());
-                task.setStartDate(generated.startDate());
-                task.setDueDate(generated.dueDate());
-                task.setEstimatedHours(generated.estimatedHours());
-                task.setPriority(generated.priority() == null
-                        ? de.melinadanhier.projectflow.planelement.model.TaskPriority.MEDIUM
-                        : generated.priority());
-                task.setSortOrder(generated.order());
-                task.setCriticalAssumption(generated.criticalAssumption());
-                task.setHasCriticalAssumption(generated.criticalAssumption() != null);
-                task.setAiOrigin(generated.origin());
-                draft.addElement(task);
-                section.addElement(task);
-                draftTasksByTempId.put(generated.tempId(), task);
-            });
-
-            phase.milestones().forEach(generated -> {
-                DraftMilestone milestone = new DraftMilestone();
-                milestone.setTitle(generated.title());
-                milestone.setDueDate(generated.date());
-                milestone.setSortOrder(generated.order());
-                milestone.setAiOrigin(de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin.AI_INFERRED);
-                draft.addElement(milestone);
-                section.addElement(milestone);
-            });
-        });
-
-        response.phases().stream().flatMap(phase -> phase.tasks().stream()).forEach(generated -> {
-            DraftTask successor = draftTasksByTempId.get(generated.tempId());
-            generated.prerequisiteTaskTempIds().forEach(prerequisiteId ->
-                    successor.addPrerequisite(draftTasksByTempId.get(prerequisiteId)));
-        });
-
-        draft.setGeneratedAt(Instant.now());
+        DraftPlan draft = new DraftPlan();
+        workflow.getProject().attachDraft(draft);
+        contents.sections().forEach(draft::addSection);
+        contents.elements().forEach(draft::addElement);
+        draft.setGeneratedAt(Instant.now(clock));
         draft.setStatus(DraftPlanStatus.READY_FOR_REVIEW);
-        project.attachDraft(draft);
-        return planDraftRepository.save(draft);
-    }
-
-    private void removeExistingContents(DraftPlan draft) {
-        List.copyOf(draft.getElements()).forEach(element -> {
-            if (element.getDraftSection() != null) {
-                element.getDraftSection().removeElement(element);
-            }
-            draft.removeElement(element);
-        });
-        List.copyOf(draft.getSections()).forEach(draft::removeSection);
+        workflow.recordGenerationCompleted();
+        // Cascade persists sections and elements; prerequisite links reference these same task entities.
+        planDraftRepository.saveAndFlush(draft);
+        return true;
     }
 }

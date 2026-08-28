@@ -13,10 +13,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,29 +38,7 @@ public class DraftPlan extends MutableEntity {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
-    private DraftPlanStatus status = DraftPlanStatus.GENERATING;
-
-    @PositiveOrZero
-    @Column(name = "attempt_count", nullable = false)
-    private int attemptCount;
-
-    @Size(max = 2000)
-    @Column(name = "last_error", length = 2000)
-    private String lastError;
-
-    @Size(max = 100)
-    @Column(name = "model_name", length = 100)
-    private String modelName;
-
-    @NotBlank
-    @Size(max = 100)
-    @Column(name = "prompt_version", nullable = false, length = 100)
-    private String promptVersion;
-
-    @NotBlank
-    @Size(max = 100)
-    @Column(name = "schema_version", nullable = false, length = 100)
-    private String schemaVersion;
+    private DraftPlanStatus status = DraftPlanStatus.READY_FOR_REVIEW;
 
     @Column(name = "generated_at")
     private Instant generatedAt;

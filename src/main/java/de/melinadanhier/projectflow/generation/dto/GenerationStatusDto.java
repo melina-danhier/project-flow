@@ -16,6 +16,5 @@ public class GenerationStatusDto {
     private UUID draftId;
     private UUID projectId;
     private DraftPlanStatus status;
-    private int attemptCount;
     private Instant generatedAt;
 }

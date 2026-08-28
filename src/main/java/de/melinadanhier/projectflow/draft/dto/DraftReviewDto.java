@@ -20,10 +20,6 @@ public class DraftReviewDto {
     private UUID projectId;
     private long lockVersion;
     private DraftPlanStatus status;
-    private int attemptCount;
-    private String modelName;
-    private String promptVersion;
-    private String schemaVersion;
     private Instant generatedAt;
     private List<DraftSectionDto> sections = new ArrayList<>();
     private List<DraftPlanElementDto> elements = new ArrayList<>();

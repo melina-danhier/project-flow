@@ -346,8 +346,6 @@ class JpaEntityModelTest {
     private DraftPlan newDraft(Project project) {
         DraftPlan draft = new DraftPlan();
         draft.setProject(project);
-        draft.setPromptVersion("prompt-v1");
-        draft.setSchemaVersion("plan-draft-v1");
         return draft;
     }
 }

@@ -316,8 +316,6 @@ class ProjectSecurityIntegrationTest {
         addMembership(project, member, ProjectMemberRole.MEMBER, true);
         DraftPlan draft = new DraftPlan();
         draft.setProject(project);
-        draft.setPromptVersion("prompt-v1");
-        draft.setSchemaVersion("schema-v1");
         planDraftRepository.saveAndFlush(draft);
 
         assertThat(authorizationService.requireDraftOwner(draft.getId(), owner.getId()).getId())

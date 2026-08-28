@@ -7,6 +7,7 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.service.PlanDraftMaterializationService;
+import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
 import de.melinadanhier.projectflow.generation.model.workflow.AiGenerationWork;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
 import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -29,6 +31,7 @@ public class AiGenerationWorkflowService {
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final AiWorkflowPayloadCodec payloadCodec;
     private final PlanDraftMaterializationService draftMaterializationService;
+    private final GeneratedPlanDraftMapper draftMapper;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -69,21 +72,15 @@ public class AiGenerationWorkflowService {
         workflow.recordGenerationAttempt();
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public boolean recordSuccess(UUID workflowId, GeneratedPlanResponse result) {
-        AiPlanGenerationWorkflow workflow = require(workflowId);
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
-            return false;
-        }
-        String serializedPlan = payloadCodec.writeGeneratedPlan(result);
-        draftMaterializationService.materialize(workflow.getProject(), result);
-        workflow.recordGeneratedPlan(serializedPlan);
-        return true;
+        var contents = draftMapper.map(result);
+        return draftMaterializationService.materialize(workflowId, contents);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean recordGenerationFailure(UUID workflowId, AiTechnicalError error) {
-        AiPlanGenerationWorkflow workflow = require(workflowId);
+        AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
             return false;
         }
@@ -91,9 +88,9 @@ public class AiGenerationWorkflowService {
         return true;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean recordTechnicalFailure(UUID workflowId, AiTechnicalError error) {
-        AiPlanGenerationWorkflow workflow = require(workflowId);
+        AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
             return false;
         }
@@ -125,4 +122,10 @@ public class AiGenerationWorkflowService {
         return workflowRepository.findById(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
     }
+
+    private AiPlanGenerationWorkflow requireForUpdate(UUID workflowId) {
+        return workflowRepository.findByIdForUpdate(workflowId)
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+    }
+
 }

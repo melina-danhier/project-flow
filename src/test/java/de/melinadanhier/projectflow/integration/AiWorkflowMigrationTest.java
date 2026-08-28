@@ -14,6 +14,103 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AiWorkflowMigrationTest {
 
     @Test
+    void movesGenerationMetadataAndRemovesOnlyEmptyLegacyDrafts() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:draft-lifecycle;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            createLegacyDraftTables(connection);
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        INSERT INTO ai_plan_generation_workflows
+                            (project_id, generation_prompt_version, generation_schema_version, generation_total_attempt_count)
+                        VALUES (1, 'confirmed-prompt', '1.0', 3)
+                        """);
+                statement.execute("""
+                        INSERT INTO plan_drafts (id, project_id, status, model_name)
+                        VALUES (1, 1, 'READY_FOR_REVIEW', 'original-model'),
+                               (2, 2, 'GENERATING', NULL), (3, 3, 'FAILED', NULL)
+                        """);
+                statement.execute("INSERT INTO draft_sections (id, plan_draft_id) VALUES (1, 1)");
+            }
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V16__create_drafts_only_after_generation.sql"));
+            try (var statement = connection.createStatement()) {
+                try (var result = statement.executeQuery("SELECT * FROM plan_drafts")) {
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getInt("id")).isEqualTo(1);
+                    assertThat(result.getString("status")).isEqualTo("READY_FOR_REVIEW");
+                    assertThat(result.next()).isFalse();
+                }
+                try (var result = statement.executeQuery("SELECT * FROM ai_plan_generation_workflows")) {
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getString("model_name")).isEqualTo("original-model");
+                    assertThat(result.getString("generation_prompt_version")).isEqualTo("confirmed-prompt");
+                    assertThat(result.getString("generation_schema_version")).isEqualTo("1.0");
+                    assertThat(result.getInt("generation_total_attempt_count")).isEqualTo(3);
+                }
+                assertThatThrownBy(() -> statement.execute(
+                        "INSERT INTO plan_drafts (id, project_id, status) VALUES (4, 4, 'GENERATING')"))
+                        .isInstanceOf(SQLException.class);
+                assertThatThrownBy(() -> statement.execute(
+                        "INSERT INTO plan_drafts (id, project_id, status) VALUES (5, 1, 'READY_FOR_REVIEW')"))
+                        .isInstanceOf(SQLException.class);
+                for (String removedColumn : java.util.List.of(
+                        "attempt_count", "last_error", "model_name", "prompt_version", "schema_version")) {
+                    assertThatThrownBy(() -> statement.executeQuery("SELECT " + removedColumn + " FROM plan_drafts"))
+                            .isInstanceOf(SQLException.class);
+                }
+                try (var result = statement.executeQuery("SELECT count(*) FROM draft_sections")) {
+                    result.next();
+                    assertThat(result.getInt(1)).isEqualTo(1);
+                }
+            }
+        }
+    }
+
+    @Test
+    void migrationRefusesToSilentlyDeletePopulatedLegacyGenerationDraft() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:populated-legacy-draft;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            createLegacyDraftTables(connection);
+            try (var statement = connection.createStatement()) {
+                statement.execute("INSERT INTO plan_drafts (id, project_id, status) VALUES (1, 1, 'FAILED')");
+                statement.execute("INSERT INTO draft_sections (id, plan_draft_id) VALUES (1, 1)");
+            }
+            assertThatThrownBy(() -> ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V16__create_drafts_only_after_generation.sql")))
+                    .isInstanceOf(org.springframework.jdbc.datasource.init.ScriptStatementFailedException.class);
+            try (var statement = connection.createStatement();
+                 var result = statement.executeQuery("SELECT count(*) FROM draft_sections")) {
+                result.next();
+                assertThat(result.getInt(1)).isEqualTo(1);
+            }
+        }
+    }
+
+    private void createLegacyDraftTables(java.sql.Connection connection) throws SQLException {
+        try (var statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TABLE ai_plan_generation_workflows (
+                        project_id INT PRIMARY KEY,
+                        generation_prompt_version VARCHAR(100),
+                        generation_schema_version VARCHAR(20),
+                        generation_total_attempt_count INT)
+                    """);
+            statement.execute("""
+                    CREATE TABLE plan_drafts (
+                        id INT PRIMARY KEY, project_id INT UNIQUE,
+                        status VARCHAR(30) DEFAULT 'GENERATING',
+                        attempt_count INT DEFAULT 0, last_error VARCHAR(2000),
+                        model_name VARCHAR(100), prompt_version VARCHAR(100), schema_version VARCHAR(100),
+                        CONSTRAINT ck_plan_drafts_status CHECK (
+                            status IN ('GENERATING', 'FAILED', 'READY_FOR_REVIEW', 'IN_REVIEW', 'APPLYING', 'APPLIED')),
+                        CONSTRAINT ck_plan_drafts_attempt_count CHECK (attempt_count >= 0))
+                    """);
+            statement.execute("CREATE TABLE draft_sections (id INT PRIMARY KEY, plan_draft_id INT REFERENCES plan_drafts(id))");
+            statement.execute("CREATE TABLE draft_plan_elements (id INT PRIMARY KEY, plan_draft_id INT REFERENCES plan_drafts(id))");
+        }
+    }
+
+    @Test
     void migratesLegacyErrorCodesAndSeparatesOperation() throws Exception {
         try (var connection = DriverManager.getConnection(
                 "jdbc:h2:mem:ai-error-operation;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {

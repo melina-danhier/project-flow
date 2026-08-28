@@ -19,6 +19,10 @@ import jakarta.persistence.LockModeType;
 public interface AiPlanGenerationWorkflowRepository
         extends JpaRepository<AiPlanGenerationWorkflow, UUID> {
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select workflow from AiPlanGenerationWorkflow workflow where workflow.id = :workflowId")
+    Optional<AiPlanGenerationWorkflow> findByIdForUpdate(@Param("workflowId") UUID workflowId);
+
     @Query("""
             select workflow
             from AiPlanGenerationWorkflow workflow
