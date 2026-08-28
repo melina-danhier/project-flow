@@ -17,6 +17,17 @@ public class OpenAiProperties {
     private String preCheckModel = "gpt-5-mini";
     private String generationModel = "gpt-5-mini";
     private Duration timeout = Duration.ofSeconds(60);
+    @Getter
+    private int maxOutputTokens = 16384;
+
+    public void validateActiveConfiguration() {
+        requireApiKey();
+        if (preCheckModel == null || preCheckModel.isBlank() || generationModel == null || generationModel.isBlank()
+                || timeout == null || timeout.toMillis() < 1 || maxOutputTokens < 1) {
+            throw new IllegalStateException("Für projectflow.ai.provider=openai sind Modellnamen, "
+                    + "ein positives Timeout und max-output-tokens erforderlich.");
+        }
+    }
 
     @NotBlank
     public String getPreCheckModel() {

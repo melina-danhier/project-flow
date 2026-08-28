@@ -3,8 +3,9 @@ package de.melinadanhier.projectflow.ai;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
-import de.melinadanhier.projectflow.ai.parser.generation.GeneratedPlanResponseParser;
-import de.melinadanhier.projectflow.ai.parser.precheck.PreCheckResponseParser;
+import de.melinadanhier.projectflow.ai.parser.AiResponseParser;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.validation.precheck.PreCheckResultValidator;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
@@ -26,10 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AiOutputParserTest {
 
     @Autowired
-    private PreCheckResponseParser preCheckParser;
-
-    @Autowired
-    private GeneratedPlanResponseParser generationParser;
+    private AiResponseParser parser;
 
     @Autowired
     private PreCheckResultValidator preCheckValidator;
@@ -42,7 +40,7 @@ class AiOutputParserTest {
 
     @Test
     void parsesPreCheckWithoutProblems() {
-        var result = preCheckParser.parse("{\"problems\":[]}");
+        var result = parsePreCheck("{\"problems\":[]}");
 
         assertThat(result.problems()).isEmpty();
         assertThat(result.hasPlausibilityIssues()).isFalse();
@@ -51,7 +49,7 @@ class AiOutputParserTest {
 
     @Test
     void parsesWarningWithActionableSuggestion() {
-        var result = preCheckParser.parse(problemJson("WARNING", "Zeitraum ist knapp."));
+        var result = parsePreCheck(problemJson("WARNING", "Zeitraum ist knapp."));
 
         assertThat(result.problems()).singleElement().satisfies(problem -> {
             assertThat(problem.severity()).isEqualTo(AiPreCheckSeverity.WARNING);
@@ -63,7 +61,7 @@ class AiOutputParserTest {
 
     @Test
     void parsesErrorAsBusinessProblemRatherThanTechnicalFailure() {
-        var result = preCheckParser.parse(problemJson("ERROR", "Das Ziel ist in einem Tag nicht erreichbar."));
+        var result = parsePreCheck(problemJson("ERROR", "Das Ziel ist in einem Tag nicht erreichbar."));
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.problems()).singleElement()
@@ -72,7 +70,7 @@ class AiOutputParserTest {
 
     @Test
     void parsesMultipleProblems() {
-        var result = preCheckParser.parse("""
+        var result = parsePreCheck("""
                 {"problems":[
                   {"severity":"WARNING","message":"Knapp.","suggestion":"Mehr Zeit einplanen."},
                   {"severity":"ERROR","message":"Ziel widerspricht der Frist.","suggestion":"Ziel reduzieren."}
@@ -86,39 +84,40 @@ class AiOutputParserTest {
 
     @Test
     void rejectsUnknownSeverityAsTechnicalOutputFailure() {
-        assertThatThrownBy(() -> preCheckParser.parse(problemJson("INFO", "Hinweis")))
+        assertThatThrownBy(() -> parsePreCheck(problemJson("INFO", "Hinweis")))
                 .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
-    void ignoresSchemaVersionSuppliedByModelBecauseVersionIsBackendManaged() {
-        assertThat(preCheckParser.parse("{\"schemaVersion\":\"2.0\",\"problems\":[]}").problems())
-                .isEmpty();
+    void rejectsModelSuppliedSchemaVersionBecauseVersionIsBackendManaged() {
+        assertThatThrownBy(() -> parsePreCheck("{\"schemaVersion\":\"2.0\",\"problems\":[]}"))
+                .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
-    void rejectsMalformedAndNullButIgnoresUnknownPreCheckJsonFields() {
-        assertThatThrownBy(() -> preCheckParser.parse("{not-json"))
+    void rejectsMalformedNullAndUnknownPreCheckJsonFields() {
+        assertThatThrownBy(() -> parsePreCheck("{not-json"))
                 .isInstanceOf(AiOutputValidationException.class);
-        assertThat(preCheckParser.parse("{\"problems\":[],\"unknown\":true}").problems()).isEmpty();
-        assertThatThrownBy(() -> preCheckParser.parse("null"))
+        assertThatThrownBy(() -> parsePreCheck("{\"problems\":[],\"unknown\":true}"))
+                .isInstanceOf(AiOutputValidationException.class);
+        assertThatThrownBy(() -> parsePreCheck("null"))
                 .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
     void preCheckBeanValidationIsSeparateFromParsing() {
-        var incomplete = preCheckParser.parse("""
+        var incomplete = parsePreCheck("""
                 {"problems":[{"severity":"ERROR","message":"Fehler","suggestion":""}]}
                 """);
 
         assertThatThrownBy(() -> preCheckValidator.validate(incomplete))
                 .isInstanceOf(AiOutputValidationException.class);
-        preCheckValidator.validate(preCheckParser.parse("{\"problems\":[]}"));
+        preCheckValidator.validate(parsePreCheck("{\"problems\":[]}"));
     }
 
     @Test
     void parsesGenerationWithTemporaryIdsAndBothOrigins() {
-        var result = generationParser.parse(validGenerationJson());
+        var result = parseGeneration(validGenerationJson());
 
         assertThat(result.phases()).singleElement().satisfies(phase -> {
             assertThat(phase.tempId()).isEqualTo("phase-1");
@@ -133,10 +132,10 @@ class AiOutputParserTest {
 
     @Test
     void persistedProviderResultsDoNotTreatSchemaVersionAsGeneratedContent() {
-        var result = generationParser.parse(validGenerationJson());
+        var result = parseGeneration(validGenerationJson());
 
         assertThat(snapshotCodec.writeGeneratedPlan(result)).doesNotContain("schemaVersion");
-        assertThat(snapshotCodec.writePreCheckResult(preCheckParser.parse("{\"problems\":[]}")))
+        assertThat(snapshotCodec.writePreCheckResult(parsePreCheck("{\"problems\":[]}")))
                 .doesNotContain("schemaVersion");
     }
 
@@ -146,7 +145,7 @@ class AiOutputParserTest {
                 "Testprojekt", "Beschreibung", null, null,
                 CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Sonstiges",
                 "Ziel", null, null);
-        var preCheckResult = preCheckParser.parse(problemJson("WARNING", "Knapp"));
+        var preCheckResult = parsePreCheck(problemJson("WARNING", "Knapp"));
 
         String snapshotJson = snapshotCodec.writeSnapshot(snapshot);
         String legacyJsonString = objectMapper.writeValueAsString(snapshotJson);
@@ -175,22 +174,22 @@ class AiOutputParserTest {
 
     @Test
     void parserDoesNotPerformGenerationBeanOrDomainValidation() {
-        assertThat(generationParser.parse(validGenerationJson().replace(
+        assertThat(parseGeneration(validGenerationJson().replace(
                 "\"title\":\"Umzugskartons packen\",", ""))).isNotNull();
-        assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
+        assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
                 "\"origin\":\"USER_INPUT\"", "\"origin\":\"TEMPLATE\"")))
                 .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
     void parsesValidPriorityAndRejectsUnknownPriority() {
-        var parsed = generationParser.parse(validGenerationJson().replace(
+        var parsed = parseGeneration(validGenerationJson().replace(
                 "\"origin\":\"USER_INPUT\"",
                 "\"priority\":\"HIGH\",\"origin\":\"USER_INPUT\""));
         assertThat(parsed.phases().getFirst().tasks().getFirst().priority())
                 .isEqualTo(TaskPriority.HIGH);
 
-        assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
+        assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
                 "\"origin\":\"USER_INPUT\"",
                 "\"priority\":\"URGENT\",\"origin\":\"USER_INPUT\"")))
                 .isInstanceOf(AiOutputValidationException.class);
@@ -198,16 +197,16 @@ class AiOutputParserTest {
 
     @Test
     void rejectsWrongJsonTypesDuringDeserialization() {
-        assertThatThrownBy(() -> preCheckParser.parse("{\"problems\":{}}"))
+        assertThatThrownBy(() -> parsePreCheck("{\"problems\":{}}"))
                 .isInstanceOf(AiOutputValidationException.class);
-        assertThatThrownBy(() -> generationParser.parse(validGenerationJson().replace(
+        assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
                 "\"startDate\":\"2026-08-25\"", "\"startDate\":false")))
                 .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
     void trimsHarmlessSurroundingWhitespace() {
-        var result = generationParser.parse(validGenerationJson().replace(
+        var result = parseGeneration(validGenerationJson().replace(
                 "\"title\":\"Vorbereitung\"", "\"title\":\"  Vorbereitung  \""));
 
         assertThat(result.phases().getFirst().title()).isEqualTo("Vorbereitung");
@@ -215,28 +214,57 @@ class AiOutputParserTest {
 
     @Test
     void acceptsDuplicateTemporaryIdsForSubsequentDomainValidation() {
-        assertThat(generationParser.parse(validGenerationJson().replace(
+        assertThat(parseGeneration(validGenerationJson().replace(
                 "\"tempId\":\"task-2\"", "\"tempId\":\"task-1\""))).isNotNull();
     }
 
     @Test
-    void ignoresUnknownApplicationManagedFields() {
-        assertThat(generationParser.parse(validGenerationJson().replace(
+    void rejectsUnknownApplicationManagedFields() {
+        assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
                 "\"phases\":",
-                "\"projectTitle\":\"Nicht übernehmen\",\"phases\":"))).isNotNull();
-        assertThat(generationParser.parse(validGenerationJson().replace(
+                "\"projectTitle\":\"Nicht übernehmen\",\"phases\":"))).isInstanceOf(AiOutputValidationException.class);
+        assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
                 "\"origin\":\"USER_INPUT\",",
-                "\"origin\":\"USER_INPUT\",\"reviewed\":true,"))).isNotNull();
+                "\"origin\":\"USER_INPUT\",\"reviewed\":true,"))).isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
-    void rejectsMalformedAndNullButIgnoresUnknownGenerationFields() {
-        assertThatThrownBy(() -> generationParser.parse("{not-json"))
+    void rejectsMalformedNullAndUnknownGenerationFields() {
+        assertThatThrownBy(() -> parseGeneration("{not-json"))
                 .isInstanceOf(AiOutputValidationException.class);
-        assertThat(generationParser.parse(validGenerationJson().replace(
-                "\"phases\":", "\"unknown\":true,\"phases\":"))).isNotNull();
-        assertThatThrownBy(() -> generationParser.parse("null"))
+        assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
+                "\"phases\":", "\"unknown\":true,\"phases\":"))).isInstanceOf(AiOutputValidationException.class);
+        assertThatThrownBy(() -> parseGeneration("null"))
                 .isInstanceOf(AiOutputValidationException.class);
+    }
+
+    @Test
+    void rejectsBlankOversizedTrailingAndNullElementResponses() {
+        for (String json : java.util.Arrays.asList(null, "", " \n\t", "{\"problems\":[]} {}",
+                "{\"problems\":[null]}", " ".repeat(1048576) + "{}",
+                "{\"problems\":[],\"extra\":\"" + "ü".repeat(524288) + "\"}")) {
+            assertThatThrownBy(() -> parsePreCheck(json)).isInstanceOf(AiOutputValidationException.class);
+        }
+        assertThatThrownBy(() -> parseGeneration("{\"phases\":[null]}"))
+                .isInstanceOf(AiOutputValidationException.class);
+    }
+
+    private AiPreCheckResult parsePreCheck(String json) {
+        return parser.parse(json, AiPreCheckResult.class);
+    }
+
+    @Test
+    void byteLimitCountsUtf8BytesBeforeDeserialization() {
+        String json = problemJson("WARNING", "ü".repeat(524288));
+        assertThat(json.length()).isLessThan(1048576);
+        assertThatThrownBy(() -> parsePreCheck(json)).isInstanceOf(AiOutputValidationException.class)
+                .hasMessageContaining("Größe");
+        // Der reine Parser prüft keine fachliche Textlänge.
+        assertThat(parsePreCheck(problemJson("WARNING", "ü".repeat(1000)))).isNotNull();
+    }
+
+    private GeneratedPlanResponse parseGeneration(String json) {
+        return parser.parse(json, GeneratedPlanResponse.class);
     }
 
     private String problemJson(String severity, String message) {

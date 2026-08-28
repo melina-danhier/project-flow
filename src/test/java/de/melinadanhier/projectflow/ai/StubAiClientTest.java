@@ -23,6 +23,28 @@ class StubAiClientTest {
     private final StubAiClient client = new StubAiClient(properties);
 
     @Test
+    void normalScenariosAreDeterministicAndPassSharedValidation() {
+        try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+            var generationValidator = new de.melinadanhier.projectflow.ai.validation.generation.GenerationResponseValidator(factory.getValidator());
+            var preCheckValidator = new de.melinadanhier.projectflow.ai.validation.precheck.PreCheckResultValidator(factory.getValidator());
+            for (var scenario : StubAiPreCheckScenario.values()) {
+                properties.setPreCheckScenario(scenario);
+                var result = client.preCheck(preCheckRequest());
+                assertThat(client.preCheck(preCheckRequest())).isEqualTo(result);
+                preCheckValidator.validate(result);
+            }
+            var datedRequest = generationRequest();
+            assertThat(generationValidator.validate(client.generatePlan(datedRequest), datedRequest).isValid()).isTrue();
+            assertThat(client.generatePlan(datedRequest)).isEqualTo(client.generatePlan(datedRequest));
+            properties.setGenerationScenario(StubAiGenerationScenario.WITHOUT_DATES);
+            var noDates = new AiGenerationRequest(new AiWizardSnapshot("Projekt", null, null, null,
+                    CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test", null, null, null), List.of());
+            assertThat(generationValidator.validate(client.generatePlan(noDates), noDates).isValid()).isTrue();
+            assertThat(client.generatePlan(noDates)).isEqualTo(client.generatePlan(noDates));
+        }
+    }
+
+    @Test
     void providesAllPreCheckScenariosWithVersionedStructuredResponses() {
         properties.setPreCheckScenario(StubAiPreCheckScenario.NO_PROBLEMS);
         assertThat(client.preCheck(preCheckRequest()).problems()).isEmpty();

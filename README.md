@@ -34,6 +34,10 @@ Das Frontend soll zunächst einfach gehalten und serverseitig mit Thymeleaf umge
 
 Die KI-Integration soll über eine externe Schnittstelle zu einem Large Language Model erfolgen. Die Antworten sollen möglichst strukturiert, beispielsweise als JSON, verarbeitet werden.
 
+Die Backend-Anbindung unterstützt OpenAI, Gemini und einen lokalen Stub über
+`projectflow.ai.provider`. Konfiguration, Verarbeitung und Fehlerbehandlung sind in
+[KI-Provider](docs/ai-providers.md) dokumentiert.
+
 ## Evaluation
 
 Der Prototyp soll im Rahmen einer kleinen Nutzerstudie getestet werden. Untersucht werden insbesondere:

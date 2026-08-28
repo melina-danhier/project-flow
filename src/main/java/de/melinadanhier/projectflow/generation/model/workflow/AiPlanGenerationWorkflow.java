@@ -161,7 +161,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         workflow.consentVersion = consentVersion;
         workflow.generationPromptVersion = generationPromptVersion;
         workflow.preCheckSchemaVersion = AiSchemaVersions.PRE_CHECK;
-        workflow.generationSchemaVersion = AiSchemaVersions.GENERATION;
+        workflow.generationSchemaVersion = AiSchemaVersions.GENERATING_PLAN;
         return workflow;
     }
 

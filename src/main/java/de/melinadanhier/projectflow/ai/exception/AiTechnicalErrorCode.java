@@ -2,7 +2,7 @@ package de.melinadanhier.projectflow.ai.exception;
 
 import lombok.Getter;
 
-/** Stabiler Code samt providerneutralen Metadaten für technische Fehler bei der KI-Ausführung. */
+/** Stabiler Fehlercode mit providerneutralen Metadaten für Fehler bei der KI-Ausführung. */
 @Getter
 public enum AiTechnicalErrorCode {
     PROVIDER_UNAVAILABLE(true,
@@ -18,10 +18,10 @@ public enum AiTechnicalErrorCode {
             "Der KI-Zugriff ist serverseitig nicht korrekt konfiguriert."
     ),
     INVALID_AI_RESPONSE(false,
-            "Die KI-Antwort entsprach nicht den erwarteten Planungsregeln."
+            "Die Antwort des KI-Anbieters entsprach nicht dem erwarteten Format oder den Planungsregeln."
     ),
     AI_REFUSAL(false,
-            "Der KI-Anbieter hat die unveränderte Anfrage abgelehnt."
+            "Der KI-Anbieter hat die Anfrage abgelehnt."
     ),
     RETRY_INTERRUPTED(false,
             "Die Wartezeit vor einem erneuten KI-Aufruf wurde unterbrochen."

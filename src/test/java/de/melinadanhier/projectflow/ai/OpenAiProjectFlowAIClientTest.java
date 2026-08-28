@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
@@ -29,10 +30,10 @@ class OpenAiProjectFlowAIClientTest {
 
     @Test
     void sdkCanDeriveStrictSchemasForBothOutputTypes() {
-        assertThat(StructuredResponseCreateParams.<OpenAiPreCheckOutput>builder()
+        assertThat(StructuredResponseCreateParams.<AiPreCheckResult>builder()
                 .model("test-model")
                 .input("test")
-                .text(OpenAiPreCheckOutput.class)
+                .text(AiPreCheckResult.class)
                 .build()).isNotNull();
         assertThat(StructuredResponseCreateParams.<OpenAiGenerationOutput>builder()
                 .model("test-model")
@@ -69,7 +70,7 @@ class OpenAiProjectFlowAIClientTest {
                     .extracting("title").isEqualTo("Aufgabe");
         });
         assertThat(gateway.calls).containsExactly(
-                "precheck-model:precheck-v1:OpenAiPreCheckOutput",
+                "precheck-model:precheck-v1:AiPreCheckResult",
                 "generation-model:generation-v1:OpenAiGenerationOutput");
     }
 
@@ -97,6 +98,27 @@ class OpenAiProjectFlowAIClientTest {
                 null, null, null);
     }
 
+    @Test
+    void rejectsMissingOutputAndNullListElementsAsValidationFailure() {
+        var gateway = mock(OpenAiResponsesGateway.class);
+        var prompts = mock(GenerationPromptBuilder.class);
+        var request = new AiGenerationRequest(snapshot(), List.of());
+        var properties = new OpenAiProperties();
+        var prompt = new AiPrompt("v1", "instructions", "data");
+        when(prompts.build(request)).thenReturn(prompt);
+        var client = new OpenAiProjectFlowAIClient(gateway, properties, mock(PreCheckPromptBuilder.class), prompts);
+        var nullTasks = new OpenAiGenerationOutput.Phase("phase", "Phase", Optional.empty(), Optional.empty(),
+                Optional.empty(), 1, java.util.Arrays.asList((OpenAiGenerationOutput.Task) null), List.of());
+        var nullMilestones = new OpenAiGenerationOutput.Phase("phase", "Phase", Optional.empty(), Optional.empty(),
+                Optional.empty(), 1, List.of(), java.util.Arrays.asList((OpenAiGenerationOutput.Milestone) null));
+        for (var output : java.util.Arrays.asList(null,
+                new OpenAiGenerationOutput(java.util.Arrays.asList((OpenAiGenerationOutput.Phase) null)),
+                new OpenAiGenerationOutput(List.of(nullTasks)), new OpenAiGenerationOutput(List.of(nullMilestones)))) {
+            when(gateway.execute(properties.getGenerationModel(), prompt, OpenAiGenerationOutput.class)).thenReturn(output);
+            assertThatThrownBy(() -> client.generatePlan(request)).isInstanceOf(AiOutputValidationException.class);
+        }
+    }
+
     private static class RecordingGateway implements OpenAiResponsesGateway {
         private final java.util.ArrayList<String> calls = new java.util.ArrayList<>();
         private final Optional<String> priority;
@@ -113,8 +135,8 @@ class OpenAiProjectFlowAIClientTest {
         public <T> T execute(String model, AiPrompt prompt, Class<T> responseType) {
             calls.add(model + ":" + prompt.version() + ":" + responseType.getSimpleName());
             Object output;
-            if (responseType == OpenAiPreCheckOutput.class) {
-                output = new OpenAiPreCheckOutput(List.of(new AiPreCheckProblem(
+            if (responseType == AiPreCheckResult.class) {
+                output = new AiPreCheckResult(List.of(new AiPreCheckProblem(
                         AiPreCheckSeverity.WARNING, "Knapp", "Mehr Zeit einplanen")));
             } else {
                 output = new OpenAiGenerationOutput(
