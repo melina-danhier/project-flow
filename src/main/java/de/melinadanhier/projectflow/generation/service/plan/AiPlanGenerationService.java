@@ -10,7 +10,6 @@ import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
-import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationResponseValidator;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationIssue;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationResult;
@@ -46,12 +45,8 @@ public class AiPlanGenerationService {
             String promptVersion,
             Runnable beforeProviderCall
     ) {
-        List<AiPreCheckProblem> warnings = acknowledgedWarnings == null ? List.of()
-                : acknowledgedWarnings.stream()
-                        .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
-                        .toList();
         AiGenerationRequest request = new AiGenerationRequest(
-                confirmedSnapshot, warnings, List.of(), promptVersion);
+                confirmedSnapshot, acknowledgedWarnings, List.of(), promptVersion);
         int attempts = alreadyUsedAttempts;
         int maxAttempts = executionProperties.getMaxAttempts();
         while (true) {

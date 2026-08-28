@@ -1,4 +1,7 @@
 package de.melinadanhier.projectflow.ai.prompt;
 
-public record AiPrompt(String version, String systemInstructions, String confirmedUserData) {
-}
+public record AiPrompt(
+        String version,
+        String systemInstructions,
+        String confirmedUserData
+) { }

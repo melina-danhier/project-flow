@@ -17,7 +17,8 @@ public class GeminiProperties {
     private int maxOutputTokens = 16384;
 
     public void validateActiveConfiguration() {
-        if (apiKey == null || apiKey.isBlank() || preCheckModel == null || preCheckModel.isBlank()
+        if (apiKey == null || apiKey.isBlank()
+                || preCheckModel == null || preCheckModel.isBlank()
                 || generationModel == null || generationModel.isBlank()
                 || timeout == null || timeout.toMillis() < 1 || timeout.toMillis() > Integer.MAX_VALUE
                 || maxOutputTokens < 1) {

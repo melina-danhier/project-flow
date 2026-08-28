@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
+
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
@@ -12,7 +14,6 @@ import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.ai.provider.openai.*;
-import de.melinadanhier.projectflow.ai.provider.openai.OpenAiResponsesGateway;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import org.junit.jupiter.api.Test;
@@ -100,7 +101,7 @@ class OpenAiProjectFlowAIClientTest {
 
     @Test
     void rejectsMissingOutputAndNullListElementsAsValidationFailure() {
-        var gateway = mock(OpenAiResponsesGateway.class);
+        var gateway = mock(AiResponsesGateway.class);
         var prompts = mock(GenerationPromptBuilder.class);
         var request = new AiGenerationRequest(snapshot(), List.of());
         var properties = new OpenAiProperties();
@@ -119,7 +120,7 @@ class OpenAiProjectFlowAIClientTest {
         }
     }
 
-    private static class RecordingGateway implements OpenAiResponsesGateway {
+    private static class RecordingGateway implements AiResponsesGateway {
         private final java.util.ArrayList<String> calls = new java.util.ArrayList<>();
         private final Optional<String> priority;
 
