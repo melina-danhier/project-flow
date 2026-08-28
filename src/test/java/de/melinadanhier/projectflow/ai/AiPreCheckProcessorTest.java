@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.provider.AiClient;
+
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;

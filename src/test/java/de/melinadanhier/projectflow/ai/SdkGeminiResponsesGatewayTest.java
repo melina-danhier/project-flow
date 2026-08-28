@@ -14,13 +14,17 @@ import de.melinadanhier.projectflow.ai.provider.gemini.SdkGeminiResponsesGateway
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.SocketTimeoutException;
+import java.net.http.HttpTimeoutException;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -58,7 +62,8 @@ class SdkGeminiResponsesGatewayTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"})
+    @ValueSource(strings = {"SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII",
+            "IMAGE_SAFETY", "IMAGE_PROHIBITED_CONTENT"})
     void mapsRefusalWithoutParsing(String reason) {
         when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class)))
                 .thenReturn(response(reason, "ignored"));
@@ -92,11 +97,65 @@ class SdkGeminiResponsesGatewayTest {
         }
     }
 
+    @Test
+    void rejectsMultipleCandidatesWithoutParsing() {
+        Candidate candidate = response("STOP", "{\"problems\":[]}").candidates().orElseThrow().getFirst();
+        when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class)))
+                .thenReturn(GenerateContentResponse.builder().candidates(List.of(candidate, candidate)).build());
+
+        assertCode(AiTechnicalErrorCode.INVALID_AI_RESPONSE);
+        verifyNoInteractions(parser);
+    }
+
+    @Test
+    void rejectsMissingFinishReasonWithoutParsing() {
+        Candidate candidate = Candidate.builder().content(Content.fromParts(Part.fromText("{\"problems\":[]}"))).build();
+        when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class)))
+                .thenReturn(GenerateContentResponse.builder().candidates(List.of(candidate)).build());
+
+        assertCode(AiTechnicalErrorCode.INVALID_AI_RESPONSE);
+        verifyNoInteractions(parser);
+    }
+
+    @ParameterizedTest
+    @MethodSource("unexpectedParts")
+    void rejectsNonTextPartsEvenAlongsideValidJson(Part unexpectedPart) {
+        when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class)))
+                .thenReturn(response("STOP", Part.fromText("{\"problems\":[]}"), unexpectedPart));
+
+        assertCode(AiTechnicalErrorCode.INVALID_AI_RESPONSE);
+        verifyNoInteractions(parser);
+    }
+
+    private static Stream<Part> unexpectedParts() {
+        FunctionCall functionCall = FunctionCall.builder().name("unexpected_tool").build();
+        return Stream.of(
+                Part.builder().build(),
+                Part.builder().functionCall(functionCall).build(),
+                Part.builder().text("extra text").functionCall(functionCall).build(),
+                Part.builder().text("extra text").inlineData(Blob.builder().mimeType("image/png").build()).build(),
+                Part.builder().text("extra text").fileData(FileData.builder().fileUri("gs://example/file").build()).build()
+        );
+    }
+
+    @Test
+    void excludesThoughtPartsAndCombinesAnswerTextBeforeParsing() {
+        when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class)))
+                .thenReturn(response("STOP",
+                        Part.builder().thought(true).text("internal reasoning").build(),
+                        Part.fromText("{\"problems\":"), Part.fromText("[]}")));
+
+        assertThat(execute().problems()).isEmpty();
+        verify(parser).parse("{\"problems\":[]}", AiPreCheckResult.class);
+        verifyNoMoreInteractions(parser);
+    }
+
     @ParameterizedTest
     @CsvSource({"408,PROVIDER_TIMEOUT", "504,PROVIDER_TIMEOUT", "429,RATE_LIMIT_EXCEEDED",
             "500,PROVIDER_UNAVAILABLE", "503,PROVIDER_UNAVAILABLE", "400,CLIENT_CONFIGURATION_ERROR",
             "401,CLIENT_CONFIGURATION_ERROR", "403,CLIENT_CONFIGURATION_ERROR", "404,CLIENT_CONFIGURATION_ERROR",
-            "422,CLIENT_CONFIGURATION_ERROR", "599,PROVIDER_UNAVAILABLE", "302,UNKNOWN_AI_ERROR"})
+            "422,CLIENT_CONFIGURATION_ERROR", "499,CLIENT_CONFIGURATION_ERROR", "599,PROVIDER_UNAVAILABLE",
+            "600,UNKNOWN_AI_ERROR", "302,UNKNOWN_AI_ERROR"})
     void translatesEverySdkApiException(int status, AiTechnicalErrorCode expected) {
         var exception = new ApiException(status, "status", "provider detail");
         when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class))).thenThrow(exception);
@@ -119,6 +178,33 @@ class SdkGeminiResponsesGatewayTest {
     }
 
     @Test
+    void recognizesTimeoutsInsideWrappedIoExceptions() {
+        var exception = new GenAiIOException(new IOException("wrapped", new HttpTimeoutException("timeout")));
+        when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class))).thenThrow(exception);
+
+        assertThatThrownBy(this::execute)
+                .hasCause(exception)
+                .isInstanceOfSatisfying(AiTechnicalException.class,
+                        failure -> assertThat(failure.getErrorCode()).isEqualTo(AiTechnicalErrorCode.PROVIDER_TIMEOUT));
+        verifyNoInteractions(parser);
+    }
+
+    @Test
+    void preservesThreadInterruptionAndDoesNotClassifyItAsTimeout() {
+        when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class)))
+                .thenThrow(new GenAiIOException(new InterruptedIOException()));
+
+        Thread.currentThread().interrupt();
+        try {
+            assertCode(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
+            assertThat(Thread.currentThread().isInterrupted()).isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+        verifyNoInteractions(parser);
+    }
+
+    @Test
     void doesNotHideProgrammingErrors() {
         var bug = new IllegalStateException("bug");
         when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class))).thenThrow(bug);
@@ -135,7 +221,11 @@ class SdkGeminiResponsesGatewayTest {
     }
 
     private GenerateContentResponse response(String reason, String text) {
+        return response(reason, Part.fromText(text));
+    }
+
+    private GenerateContentResponse response(String reason, Part... parts) {
         return GenerateContentResponse.builder().candidates(List.of(Candidate.builder()
-                .finishReason(new FinishReason(reason)).content(Content.fromParts(Part.fromText(text))).build())).build();
+                .finishReason(new FinishReason(reason)).content(Content.fromParts(parts)).build())).build();
     }
 }

@@ -3,9 +3,14 @@ package de.melinadanhier.projectflow.ai;
 import com.openai.client.OpenAIClient;
 import com.openai.errors.BadRequestException;
 import com.openai.errors.InternalServerException;
+import com.openai.errors.NotFoundException;
 import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.errors.OpenAIIoException;
+import com.openai.errors.OpenAIRetryableException;
+import com.openai.errors.PermissionDeniedException;
 import com.openai.errors.RateLimitException;
+import com.openai.errors.UnauthorizedException;
+import com.openai.errors.UnprocessableEntityException;
 import com.openai.models.responses.StructuredResponseCreateParams;
 import com.openai.models.responses.*;
 import com.openai.errors.OpenAIException;
@@ -15,9 +20,15 @@ import de.melinadanhier.projectflow.ai.provider.openai.OpenAiGenerationOutput;
 import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.http.HttpTimeoutException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import com.openai.services.blocking.ResponseService;
 import de.melinadanhier.projectflow.ai.exception.*;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
@@ -86,10 +97,55 @@ class SdkOpenAiResponsesGatewayTest {
         }
     }
 
+    @Test
+    void rejectsIncompleteDetailsEvenWhenStatusIsCompleted() {
+        Response raw = rawResponse("{\"problems\":[]}");
+        when(raw.status()).thenReturn(Optional.of(ResponseStatus.COMPLETED));
+        when(raw.incompleteDetails()).thenReturn(Optional.of(mock(Response.IncompleteDetails.class)));
+
+        assertThatThrownBy(() -> executeRaw(raw, AiPreCheckResult.class))
+                .isInstanceOf(AiOutputValidationException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"in_progress", "incomplete"})
+    void rejectsUnfinishedMessagesEvenWithValidJson(String status) {
+        var message = ResponseOutputMessage.builder().id("message").status(ResponseOutputMessage.Status.of(status))
+                .addContent(ResponseOutputText.builder().text("{\"problems\":[]}").annotations(List.of()).build()).build();
+
+        assertThatThrownBy(() -> executeRaw(rawResponse(ResponseOutputItem.ofMessage(message)), AiPreCheckResult.class))
+                .isInstanceOf(AiOutputValidationException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void rejectsMultipleStructuredOutputsWithinOrAcrossMessages(boolean separateMessages) {
+        var text = ResponseOutputText.builder().text("{\"problems\":[]}").annotations(List.of()).build();
+        var message = ResponseOutputMessage.builder().id("message").status(ResponseOutputMessage.Status.COMPLETED)
+                .addContent(text);
+        Response raw = separateMessages
+                ? rawResponse(ResponseOutputItem.ofMessage(message.build()), ResponseOutputItem.ofMessage(message.build()))
+                : rawResponse(ResponseOutputItem.ofMessage(message.addContent(text).build()));
+
+        assertThatThrownBy(() -> executeRaw(raw, AiPreCheckResult.class))
+                .isInstanceOf(AiOutputValidationException.class);
+    }
+
+    @Test
+    void doesNotReturnValidOutputWhenFollowedByRefusal() {
+        var message = ResponseOutputMessage.builder().id("message").status(ResponseOutputMessage.Status.COMPLETED)
+                .addContent(ResponseOutputText.builder().text("{\"problems\":[]}").annotations(List.of()).build())
+                .addRefusalContent("refused").build();
+
+        assertThatThrownBy(() -> executeRaw(rawResponse(ResponseOutputItem.ofMessage(message)), AiPreCheckResult.class))
+                .isInstanceOfSatisfying(AiTechnicalException.class,
+                        exception -> assertThat(exception.getErrorCode()).isEqualTo(AiTechnicalErrorCode.AI_REFUSAL));
+    }
+
     @ParameterizedTest
     @CsvSource({"server_error,PROVIDER_UNAVAILABLE", "rate_limit_exceeded,RATE_LIMIT_EXCEEDED",
             "invalid_prompt,CLIENT_CONFIGURATION_ERROR", "vector_store_timeout,PROVIDER_TIMEOUT",
-            "future_code,UNKNOWN_AI_ERROR"})
+            "image_content_policy_violation,AI_REFUSAL", "future_code,UNKNOWN_AI_ERROR"})
     void mapsErrorResponseWithoutMakingEveryFailureRetryable(String code, AiTechnicalErrorCode expected) {
         Response raw = mock(Response.class);
         when(raw.error()).thenReturn(Optional.of(ResponseError.builder()
@@ -102,7 +158,8 @@ class SdkOpenAiResponsesGatewayTest {
     @ParameterizedTest
     @CsvSource({"408,PROVIDER_TIMEOUT", "504,PROVIDER_TIMEOUT", "429,RATE_LIMIT_EXCEEDED",
             "503,PROVIDER_UNAVAILABLE", "401,CLIENT_CONFIGURATION_ERROR", "403,CLIENT_CONFIGURATION_ERROR",
-            "422,CLIENT_CONFIGURATION_ERROR", "302,UNKNOWN_AI_ERROR"})
+            "422,CLIENT_CONFIGURATION_ERROR", "499,CLIENT_CONFIGURATION_ERROR", "599,PROVIDER_UNAVAILABLE",
+            "600,UNKNOWN_AI_ERROR", "302,UNKNOWN_AI_ERROR"})
     void mapsSdkServiceStatuses(int status, AiTechnicalErrorCode expected) {
         var exception = mock(OpenAIServiceException.class);
         when(exception.statusCode()).thenReturn(status);
@@ -120,10 +177,14 @@ class SdkOpenAiResponsesGatewayTest {
     }
 
     private Response rawResponse(String json) {
-        Response raw = mock(Response.class);
-        when(raw.output()).thenReturn(List.of(ResponseOutputItem.ofMessage(ResponseOutputMessage.builder()
+        return rawResponse(ResponseOutputItem.ofMessage(ResponseOutputMessage.builder()
                 .id("message").status(ResponseOutputMessage.Status.COMPLETED)
-                .addContent(ResponseOutputText.builder().text(json).annotations(List.of()).build()).build())));
+                .addContent(ResponseOutputText.builder().text(json).annotations(List.of()).build()).build()));
+    }
+
+    private Response rawResponse(ResponseOutputItem... items) {
+        Response raw = mock(Response.class);
+        when(raw.output()).thenReturn(List.of(items));
         return raw;
     }
 
@@ -149,6 +210,28 @@ class SdkOpenAiResponsesGatewayTest {
     }
 
     @Test
+    void mapsNestedTimeoutInsideRetryableSdkException() {
+        var timeout = new HttpTimeoutException("request timed out");
+        var exception = new OpenAIRetryableException("retryable", new IOException("wrapped", timeout));
+        assertMapping(exception, AiTechnicalErrorCode.PROVIDER_TIMEOUT, timeout);
+    }
+
+    @Test
+    void preservesThreadInterruptionInsteadOfTreatingItAsTimeout() {
+        var cause = new InterruptedIOException("interrupted");
+        var exception = new OpenAIIoException("I/O", cause);
+        assertMapping(exception, AiTechnicalErrorCode.PROVIDER_TIMEOUT, cause);
+
+        Thread.currentThread().interrupt();
+        try {
+            assertMapping(exception, AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, cause);
+            assertThat(Thread.currentThread().isInterrupted()).isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test
     void mapsSdkRateLimitToDedicatedCause() {
         assertMapping(mock(RateLimitException.class), AiTechnicalErrorCode.RATE_LIMIT_EXCEEDED, null);
     }
@@ -156,12 +239,26 @@ class SdkOpenAiResponsesGatewayTest {
     @Test
     void mapsConnectionAndServerFailuresToUnavailable() {
         assertMapping(new OpenAIIoException("connection reset"), AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, null);
+        assertMapping(new OpenAIRetryableException("retryable"), AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, null);
         assertMapping(mock(InternalServerException.class), AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, null);
     }
 
     @Test
-    void mapsRequestAndConfigurationFailuresToClientConfiguration() {
-        assertMapping(mock(BadRequestException.class), AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR, null);
+    void mapsTypedGatewayTimeoutToTimeout() {
+        var exception = mock(InternalServerException.class);
+        when(exception.statusCode()).thenReturn(504);
+        assertMapping(exception, AiTechnicalErrorCode.PROVIDER_TIMEOUT, null);
+    }
+
+    @ParameterizedTest
+    @MethodSource("configurationFailures")
+    void mapsRequestAndConfigurationFailuresToClientConfiguration(OpenAIServiceException exception) {
+        assertMapping(exception, AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR, null);
+    }
+
+    private static Stream<OpenAIServiceException> configurationFailures() {
+        return Stream.of(mock(BadRequestException.class), mock(UnauthorizedException.class),
+                mock(PermissionDeniedException.class), mock(NotFoundException.class), mock(UnprocessableEntityException.class));
     }
 
     @Test
@@ -196,6 +293,7 @@ class SdkOpenAiResponsesGatewayTest {
         var assertion = assertThatThrownBy(() -> gateway.execute(
                 "model", new AiPrompt("v1", "instructions", "input"), TestOutput.class))
                 .isInstanceOf(expectedType)
+                .hasCause(sdkException)
                 .isInstanceOfSatisfying(AiTechnicalException.class,
                         exception -> org.assertj.core.api.Assertions.assertThat(exception.getErrorCode())
                                 .isEqualTo(expectedCode));

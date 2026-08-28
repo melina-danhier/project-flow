@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.provider.AiClient;
+
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
 
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;

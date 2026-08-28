@@ -2,7 +2,7 @@ package de.melinadanhier.projectflow.generation.service.precheck;
 
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.service.workflow.AiPreCheckWorkflowService;
-import de.melinadanhier.projectflow.ai.AiClient;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;

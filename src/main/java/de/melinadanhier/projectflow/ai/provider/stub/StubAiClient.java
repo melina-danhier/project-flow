@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.ai.provider.stub;
 
-import de.melinadanhier.projectflow.ai.AiClient;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;

@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.provider.AiClient;
+
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;

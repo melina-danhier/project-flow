@@ -1,31 +1,20 @@
 package de.melinadanhier.projectflow.ai.provider.openai;
 
+import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedMilestone;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedPhase;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedTask;
+import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
+import de.melinadanhier.projectflow.ai.provider.AbstractProviderAiClient;
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
+import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
-import de.melinadanhier.projectflow.ai.AiClient;
-import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
-import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
-import de.melinadanhier.projectflow.ai.model.generation.*;
-import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
-import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
-import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
-import de.melinadanhier.projectflow.ai.model.AiOperation;
-import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
-import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
-import lombok.extern.slf4j.Slf4j;
-import de.melinadanhier.projectflow.planelement.model.TaskPriority;
-
-@Slf4j
-public class OpenAiProjectFlowAIClient implements AiClient {
-
-    private final AiResponsesGateway gateway;
-    private final OpenAiProperties properties;
-    private final PreCheckPromptBuilder preCheckPromptBuilder;
-    private final GenerationPromptBuilder generationPromptBuilder;
+public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGenerationOutput> {
 
     public OpenAiProjectFlowAIClient(
             AiResponsesGateway gateway,
@@ -33,52 +22,19 @@ public class OpenAiProjectFlowAIClient implements AiClient {
             PreCheckPromptBuilder preCheckPromptBuilder,
             GenerationPromptBuilder generationPromptBuilder
     ) {
-        this.gateway = gateway;
-        this.properties = properties;
-        this.preCheckPromptBuilder = preCheckPromptBuilder;
-        this.generationPromptBuilder = generationPromptBuilder;
+        super(
+                "openai",
+                gateway,
+                properties::getPreCheckModel,
+                properties::getGenerationModel,
+                OpenAiGenerationOutput.class,
+                preCheckPromptBuilder,
+                generationPromptBuilder
+        );
     }
 
     @Override
-    public AiPreCheckResult preCheck(AiPreCheckRequest request) {
-        var prompt = preCheckPromptBuilder.build(request);
-        return invoke(
-                AiOperation.PRE_CHECK, properties.getPreCheckModel(), prompt.version(),
-                () -> requireOutput(gateway.execute(properties.getPreCheckModel(), prompt, AiPreCheckResult.class)));
-    }
-
-    @Override
-    public GeneratedPlanResponse generatePlan(AiGenerationRequest request) {
-        var prompt = generationPromptBuilder.build(request);
-        return invoke(
-                AiOperation.PLAN_GENERATION, properties.getGenerationModel(), prompt.version(),
-                () -> map(requireOutput(gateway.execute(properties.getGenerationModel(), prompt, OpenAiGenerationOutput.class))));
-    }
-
-    private <T> T invoke(AiOperation operation, String model, String promptVersion, Supplier<T> invocation) {
-        long startedAt = System.nanoTime();
-        try {
-            T result = invocation.get();
-            log.info("KI-Aufruf provider=openai model={} promptVersion={} schemaVersion={} type={} durationMs={} result=success",
-                    model, promptVersion, schemaVersion(operation), operation, elapsedMillis(startedAt));
-            return result;
-        } catch (AiTechnicalException exception) {
-            log.warn("KI-Aufruf provider=openai model={} promptVersion={} schemaVersion={} type={} durationMs={} errorCode={}",
-                    model, promptVersion, schemaVersion(operation), operation, elapsedMillis(startedAt),
-                    exception.getErrorCode());
-            throw exception;
-        }
-    }
-
-    private String schemaVersion(AiOperation operation) {
-        return operation == AiOperation.PRE_CHECK ? AiSchemaVersions.PRE_CHECK : AiSchemaVersions.GENERATING_PLAN;
-    }
-
-    private long elapsedMillis(long startedAt) {
-        return (System.nanoTime() - startedAt) / 1_000_000;
-    }
-
-    private GeneratedPlanResponse map(OpenAiGenerationOutput output) {
+    protected GeneratedPlanResponse mapPlan(OpenAiGenerationOutput output) {
         return new GeneratedPlanResponse(mapList(output.phases(), this::map));
     }
 
@@ -104,11 +60,6 @@ public class OpenAiProjectFlowAIClient implements AiClient {
 
     private <T> T nullable(Optional<T> value) {
         return value == null ? null : value.orElse(null);
-    }
-
-    private <T> T requireOutput(T output) {
-        if (output == null) throw new AiOutputValidationException("OpenAI lieferte einen leeren Ausgabewert.");
-        return output;
     }
 
     private <T, R> List<R> mapList(List<T> values, java.util.function.Function<T, R> mapper) {

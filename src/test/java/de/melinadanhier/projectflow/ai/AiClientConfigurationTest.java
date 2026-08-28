@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.provider.stub.StubAiClient;
 import de.melinadanhier.projectflow.ai.config.AiClientConfiguration;
 import de.melinadanhier.projectflow.ai.parser.AiResponseParser;
@@ -12,19 +13,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-@SpringBootTest(properties = "projectflow.ai.provider=stub")
-@ActiveProfiles("test")
 class AiClientConfigurationTest {
-
-    @Autowired
-    private AiClient aiClient;
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(AiClientConfiguration.class)
@@ -33,8 +26,12 @@ class AiClientConfigurationTest {
             .withBean(AiResponseParser.class, () -> new AiResponseParser(JsonMapper.builder().build()));
 
     @Test
-    void selectsStubClientThroughProviderProperty() {
-        assertThat(aiClient).isInstanceOf(StubAiClient.class);
+    void unknownProviderPreventsSpringContextStartup() {
+        runner.withPropertyValues("projectflow.ai.provider=stbu")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalStateException.class);
+                });
     }
 
     @ParameterizedTest
@@ -60,7 +57,8 @@ class AiClientConfigurationTest {
     @ValueSource(strings = {"openai", "gemini"})
     void activeProviderRequiresKeyAndValidLimits(String provider) {
         runner.withPropertyValues("projectflow.ai.provider=" + provider).run(context -> assertThat(context).hasFailed());
-        for (String invalid : new String[]{"max-output-tokens=0", "timeout=0ms", "pre-check-model=", "generation-model="}) {
+        for (String invalid : new String[]{"max-output-tokens=0", "max-output-tokens=-1", "timeout=0ms",
+                "timeout=-1ms", "pre-check-model=", "generation-model="}) {
             runner.withPropertyValues("projectflow.ai.provider=" + provider,
                             "projectflow.ai." + provider + ".api-key=test-key",
                             "projectflow.ai." + provider + "." + invalid)

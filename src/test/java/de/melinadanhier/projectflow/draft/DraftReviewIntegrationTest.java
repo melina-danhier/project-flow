@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.draft;
 
-import de.melinadanhier.projectflow.ai.AiClient;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.draft.dto.DraftReviewDto;
 import de.melinadanhier.projectflow.draft.model.*;

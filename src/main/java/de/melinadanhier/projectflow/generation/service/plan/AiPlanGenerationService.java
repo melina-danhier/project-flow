@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.generation.service.plan;
 
-import de.melinadanhier.projectflow.ai.AiClient;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
