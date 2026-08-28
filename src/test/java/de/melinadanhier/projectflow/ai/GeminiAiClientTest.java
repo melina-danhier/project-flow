@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
+
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.ai.model.precheck.*;
 import de.melinadanhier.projectflow.ai.prompt.*;
@@ -18,7 +20,7 @@ import static org.mockito.Mockito.*;
 class GeminiAiClientTest {
     @Test
     void forwardsBothPromptsModelsAndSharedResponseTypesWithoutReparsing() {
-        var gateway = mock(GeminiResponsesGateway.class);
+        var gateway = mock(AiResponsesGateway.class);
         var properties = new GeminiProperties();
         properties.setPreCheckModel("pre-model");
         properties.setGenerationModel("plan-model");

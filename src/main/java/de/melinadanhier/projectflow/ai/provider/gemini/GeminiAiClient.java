@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai.provider.gemini;
 
+import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
+
 import de.melinadanhier.projectflow.ai.AiClient;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
@@ -16,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class GeminiAiClient implements AiClient {
-    private final GeminiResponsesGateway gateway;
+    private final AiResponsesGateway gateway;
     private final GeminiProperties properties;
     private final PreCheckPromptBuilder preCheckPromptBuilder;
     private final GenerationPromptBuilder generationPromptBuilder;

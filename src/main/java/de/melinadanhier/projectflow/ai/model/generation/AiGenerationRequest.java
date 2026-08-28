@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.ai.model.generation;
 
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -17,13 +18,17 @@ public record AiGenerationRequest(
 ) {
     public AiGenerationRequest {
         Objects.requireNonNull(confirmedWizardData, "confirmedWizardData darf nicht null sein");
+        Objects.requireNonNull(promptVersion,"promptVersion darf nicht null sein");
         acknowledgedWarnings = acknowledgedWarnings == null
                 ? List.of()
                 : List.copyOf(acknowledgedWarnings);
+        if (acknowledgedWarnings.stream()
+                .anyMatch(problem -> problem.severity() != AiPreCheckSeverity.WARNING)) {
+            throw new IllegalArgumentException("acknowledgedWarnings darf nur Warnungen enthalten");
+        }
         previousValidationIssues = previousValidationIssues == null
                 ? List.of()
                 : List.copyOf(previousValidationIssues);
-        promptVersion = Objects.requireNonNull(promptVersion, "promptVersion darf nicht null sein");
     }
 
     public AiGenerationRequest(

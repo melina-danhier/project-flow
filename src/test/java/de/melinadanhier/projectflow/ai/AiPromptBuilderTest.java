@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -27,6 +28,9 @@ class AiPromptBuilderTest {
 
     @Autowired
     private GenerationPromptBuilder generationPromptBuilder;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     void preCheckPromptSeparatesRulesAndConfirmedDataAndPinsVersions() {
@@ -44,13 +48,14 @@ class AiPromptBuilderTest {
     }
 
     @Test
-    void generationPromptExcludesGeneralProjectFieldsFromOutputAndIncludesOnlyIgnoredWarnings() {
+    void generationPromptExcludesGeneralProjectFieldsFromOutputAndPreservesAcknowledgedWarnings() {
         var warning = new AiPreCheckProblem(
                 AiPreCheckSeverity.WARNING, "Zeitraum knapp", "Mehr Zeit einplanen");
-        var error = new AiPreCheckProblem(
-                AiPreCheckSeverity.ERROR, "Unmöglich", "Ziel reduzieren");
+        var otherWarning = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, "Budget knapp", "Umfang reduzieren");
+        var warnings = List.of(warning, otherWarning);
 
-        var prompt = generationPromptBuilder.build(snapshot(), List.of(warning, error));
+        var prompt = generationPromptBuilder.build(snapshot(), warnings);
 
         assertThat(prompt.version()).isEqualTo(AiPromptVersions.GENERATION_PROMPT);
         assertThat(prompt.systemInstructions())
@@ -62,8 +67,9 @@ class AiPromptBuilderTest {
                         "ungeprüft")
                 .doesNotContain("schemaVersion", "metadata", "summary", "assumptions");
         assertThat(prompt.confirmedUserData())
-                .contains("confirmedWizardData", "acknowledgedPreCheckWarnings", "Zeitraum knapp")
-                .doesNotContain("Unmöglich");
+                .contains("confirmedWizardData", "acknowledgedPreCheckWarnings", "Zeitraum knapp");
+        assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("acknowledgedPreCheckWarnings"))
+                .isEqualTo(objectMapper.valueToTree(warnings));
     }
 
     private AiWizardSnapshot snapshot() {

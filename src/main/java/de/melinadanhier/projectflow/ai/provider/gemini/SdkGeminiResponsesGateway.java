@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai.provider.gemini;
 
+import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
+
 import com.google.genai.Models;
 import com.google.genai.errors.ApiException;
 import com.google.genai.errors.GenAiIOException;
@@ -21,7 +23,7 @@ import java.util.Set;
 import static de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode.*;
 
 @RequiredArgsConstructor
-public class SdkGeminiResponsesGateway implements GeminiResponsesGateway {
+public class SdkGeminiResponsesGateway implements AiResponsesGateway {
     private static final Set<String> REFUSAL_REASONS = Set.of(
             "SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "IMAGE_SAFETY",
             "IMAGE_PROHIBITED_CONTENT");

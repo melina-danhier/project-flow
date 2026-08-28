@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai.prompt;
 
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
@@ -39,22 +41,26 @@ public class PreCheckPromptBuilder {
     }
 
     public AiPrompt build(AiPreCheckRequest request) {
+        return new AiPrompt(
+                AiPromptVersions.PRE_CHECK_PROMPT,
+                SYSTEM_INSTRUCTIONS_TEMPLATE,
+                serializeRequestData(request)
+        );
+    }
+
+    private String serializeRequestData(AiPreCheckRequest request) {
         Map<String, Object> context = new LinkedHashMap<>();
         context.put("confirmedWizardData", request.confirmedWizardData());
         if (!request.previousValidationIssues().isEmpty()) {
             context.put("previousOutputValidationIssues", request.previousValidationIssues());
         }
-        return new AiPrompt(
-                AiPromptVersions.PRE_CHECK_PROMPT,
-                SYSTEM_INSTRUCTIONS_TEMPLATE,
-                serialize(context));
-    }
-
-    private String serialize(Object value) {
         try {
-            return objectMapper.writeValueAsString(value);
+            return objectMapper.writeValueAsString(context);
         } catch (JacksonException exception) {
-            throw new GenerationException("Die bestätigten Wizard-Daten konnten nicht für den Pre-Check aufbereitet werden.", exception);
+            throw new GenerationException(
+                    "Die bestätigten Wizard-Daten konnten nicht für den Pre-Check aufbereitet werden.",
+                    exception
+            );
         }
     }
 }

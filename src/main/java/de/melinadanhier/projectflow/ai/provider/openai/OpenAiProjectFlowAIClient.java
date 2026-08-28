@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai.provider.openai;
 
+import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -20,13 +22,13 @@ import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 @Slf4j
 public class OpenAiProjectFlowAIClient implements AiClient {
 
-    private final OpenAiResponsesGateway gateway;
+    private final AiResponsesGateway gateway;
     private final OpenAiProperties properties;
     private final PreCheckPromptBuilder preCheckPromptBuilder;
     private final GenerationPromptBuilder generationPromptBuilder;
 
     public OpenAiProjectFlowAIClient(
-            OpenAiResponsesGateway gateway,
+            AiResponsesGateway gateway,
             OpenAiProperties properties,
             PreCheckPromptBuilder preCheckPromptBuilder,
             GenerationPromptBuilder generationPromptBuilder

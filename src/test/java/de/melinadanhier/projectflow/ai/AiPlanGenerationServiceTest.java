@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
+
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
@@ -7,6 +9,9 @@ import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.generation.*;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
+import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationResponseValidator;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.service.plan.AiPlanGenerationService;
@@ -16,6 +21,11 @@ import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategor
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import de.melinadanhier.projectflow.ai.provider.openai.*;
+import de.melinadanhier.projectflow.ai.provider.gemini.*;
+import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 
 import java.util.List;
 
@@ -25,6 +35,43 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class AiPlanGenerationServiceTest {
+
+    @Test
+    void rejectsInvalidAcknowledgedWarningsBeforeProviderCallOrAttemptRecording() {
+        var client = mock(AiClient.class);
+        var backoff = mock(AiRetryBackoff.class);
+        var beforeProviderCall = mock(Runnable.class);
+        var error = new AiPreCheckProblem(AiPreCheckSeverity.ERROR, "Unmöglich", "Ziel ändern");
+
+        assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of(error),
+                0, AiPromptVersions.GENERATION_PROMPT, beforeProviderCall))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("acknowledgedWarnings");
+        verifyNoInteractions(client, backoff, beforeProviderCall);
+    }
+
+    @Test
+    void everyRealAdapterStillPassesThroughCommonDomainValidation() {
+        var generationPrompts = mock(GenerationPromptBuilder.class);
+        var prePrompts = mock(PreCheckPromptBuilder.class);
+        var prompt = new AiPrompt("v1", "instructions", "data");
+        when(generationPrompts.build(any(AiGenerationRequest.class))).thenReturn(prompt);
+        var openAiGateway = mock(AiResponsesGateway.class);
+        when(openAiGateway.execute(anyString(), any(), eq(OpenAiGenerationOutput.class)))
+                .thenReturn(new OpenAiGenerationOutput(List.of()));
+        var geminiGateway = mock(AiResponsesGateway.class);
+        when(geminiGateway.execute(anyString(), any(), eq(GeneratedPlanResponse.class))).thenReturn(emptyPlan());
+        for (AiClient client : List.of(
+                new OpenAiProjectFlowAIClient(openAiGateway, new OpenAiProperties(), prePrompts, generationPrompts),
+                new GeminiAiClient(geminiGateway, new GeminiProperties(), prePrompts, generationPrompts))) {
+            var backoff = mock(AiRetryBackoff.class);
+            assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of()))
+                    .isInstanceOf(AiOutputValidationException.class);
+            verifyNoInteractions(backoff);
+        }
+        verify(openAiGateway).execute(anyString(), any(), eq(OpenAiGenerationOutput.class));
+        verify(geminiGateway).execute(anyString(), any(), eq(GeneratedPlanResponse.class));
+    }
 
     @AfterEach
     void clearInterruptStatus() {
@@ -55,6 +102,21 @@ class AiPlanGenerationServiceTest {
         ArgumentCaptor<AiGenerationRequest> requests = ArgumentCaptor.forClass(AiGenerationRequest.class);
         verify(client).generatePlan(requests.capture());
         assertThat(requests.getAllValues().get(0).previousValidationIssues()).isEmpty();
+        verifyNoInteractions(backoff);
+    }
+
+    @Test
+    void parsingFailureFromProviderIsNotRetried() {
+        AiClient client = mock(AiClient.class);
+        AiRetryBackoff backoff = mock(AiRetryBackoff.class);
+        var failure = new AiOutputValidationException("Antwort konnte nicht deserialisiert werden");
+        when(client.generatePlan(any())).thenThrow(failure).thenReturn(validPlan());
+
+        assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of()))
+                .isSameAs(failure)
+                .isInstanceOfSatisfying(AiOutputValidationException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(AiTechnicalErrorCode.INVALID_AI_RESPONSE));
+        verify(client).generatePlan(any());
         verifyNoInteractions(backoff);
     }
 

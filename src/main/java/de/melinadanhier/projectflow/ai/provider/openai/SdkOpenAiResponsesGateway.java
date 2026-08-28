@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.ai.provider.openai;
 
+import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
+
 import com.openai.client.OpenAIClient;
 import com.openai.errors.BadRequestException;
 import com.openai.errors.InternalServerException;
@@ -20,7 +22,7 @@ import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 
-public class SdkOpenAiResponsesGateway implements OpenAiResponsesGateway {
+public class SdkOpenAiResponsesGateway implements AiResponsesGateway {
 
     private final OpenAIClient client;
     private final int maxOutputTokens;

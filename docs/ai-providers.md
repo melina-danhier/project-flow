@@ -42,6 +42,12 @@ Gemeinsam bleiben `AiClient`, Request-/Response-DTOs, Prompt-Builder und deren
 Versionierung, Validatoren, Fehlercodes sowie Workflow und Retry-Steuerung.
 Ein Anbieterwechsel ändert weder Entwurfslebenszyklus noch Transaktionsgrenzen.
 
+Die beiden realen Adapter verwenden denselben technischen Vertrag `AiResponsesGateway`.
+Die SDK-Implementierungen bleiben providerspezifisch und unterstützen die Ausgabetypen
+ihres jeweiligen Adapters. Das Interface trennt die Prompt-/DTO-Aufbereitung vom
+SDK-Aufruf und erlaubt kleine Test-Doubles; es ersetzt nicht `AiClient` als fachliche
+Grenze für den Providerwechsel. Der Stub benötigt kein Gateway.
+
 - **OpenAI:** Das vorhandene offizielle SDK 4.39.1 erzeugt das Structured-Output-Schema
   und deserialisiert den Inhalt. Der Pre-Check liefert direkt `AiPreCheckResult`.
   Für Pläne bleibt `OpenAiGenerationOutput` als technisches SDK-Modell mit `Optional`

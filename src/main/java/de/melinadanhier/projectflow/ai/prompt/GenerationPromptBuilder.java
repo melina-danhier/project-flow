@@ -3,10 +3,10 @@ package de.melinadanhier.projectflow.ai.prompt;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
-import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -55,34 +55,37 @@ public class GenerationPromptBuilder {
     }
 
     public AiPrompt build(AiWizardSnapshot confirmedSnapshot, List<AiPreCheckProblem> acknowledgedWarnings) {
-        return build(new AiGenerationRequest(
-                confirmedSnapshot, acknowledgedWarnings));
+        return build(new AiGenerationRequest(confirmedSnapshot, acknowledgedWarnings));
     }
 
     public AiPrompt build(AiGenerationRequest request) {
         if (!AiPromptVersions.GENERATION_PROMPT.equals(request.promptVersion())) {
             throw new AiTechnicalException(
                     AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
-                    "Die gespeicherte Generation-Prompt-Version wird serverseitig nicht unterstützt.");
+                    "Die gespeicherte Generation-Prompt-Version wird serverseitig nicht unterstützt."
+            );
         }
-        AiWizardSnapshot confirmedSnapshot = request.confirmedWizardData();
-        List<AiPreCheckProblem> acknowledgedWarnings = request.acknowledgedWarnings();
-        List<AiPreCheckProblem> warnings = acknowledgedWarnings == null ? List.of() : acknowledgedWarnings.stream()
-                .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
-                .toList();
+        return new AiPrompt(
+                request.promptVersion(),
+                SYSTEM_INSTRUCTIONS_TEMPLATE,
+                serializeRequestData(request)
+        );
+    }
+
+    private String serializeRequestData(AiGenerationRequest request) {
         Map<String, Object> context = new LinkedHashMap<>();
-        context.put("confirmedWizardData", confirmedSnapshot);
-        context.put("acknowledgedPreCheckWarnings", warnings);
+        context.put("confirmedWizardData", request.confirmedWizardData());
+        context.put("acknowledgedPreCheckWarnings", request.acknowledgedWarnings());
         if (!request.previousValidationIssues().isEmpty()) {
             context.put("previousOutputValidationIssues", request.previousValidationIssues());
         }
         try {
-            return new AiPrompt(
-                    request.promptVersion(),
-                    SYSTEM_INSTRUCTIONS_TEMPLATE,
-                    objectMapper.writeValueAsString(context));
+            return objectMapper.writeValueAsString(context);
         } catch (JacksonException exception) {
-            throw new GenerationException("Die bestätigten Wizard-Daten konnten nicht für die Generierung aufbereitet werden.", exception);
+            throw new GenerationException(
+                    "Die bestätigten Wizard-Daten konnten nicht für die Generierung aufbereitet werden.",
+                    exception
+            );
         }
     }
 }
