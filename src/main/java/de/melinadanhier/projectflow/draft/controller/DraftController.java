@@ -20,6 +20,8 @@ import de.melinadanhier.projectflow.draft.dto.DraftElementMoveForm;
 import de.melinadanhier.projectflow.draft.dto.DraftSectionMoveForm;
 import de.melinadanhier.projectflow.draft.dto.DraftSortModeForm;
 import de.melinadanhier.projectflow.draft.service.CriticalAssumptionsConfirmationRequiredException;
+import de.melinadanhier.projectflow.draft.service.PendingDraftElementsConfirmationRequiredException;
+import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -41,10 +43,12 @@ public class DraftController {
     @GetMapping({"/projects/{projectId}/draft", "/projects/{projectId}/draft/review"})
     public String review(@PathVariable UUID projectId,
                          @AuthenticationPrincipal AuthenticatedUser currentUser,
+                         @RequestParam(required = false) DraftReviewStatus reviewStatus,
+                         @RequestParam(defaultValue = "false") boolean criticalAssumptions,
                          Model model) {
         model.addAttribute(
                 "draft",
-                draftReviewService.review(projectId, currentUser.userId())
+                draftReviewService.review(projectId, currentUser.userId(), reviewStatus, criticalAssumptions)
         );
         return "generation/draft-review";
     }
@@ -78,9 +82,10 @@ public class DraftController {
 
     @PostMapping("/projects/{projectId}/draft/confirm-and-apply")
     public String confirmAndApply(@PathVariable UUID projectId, @RequestParam long lockVersion,
+                                  @RequestParam(defaultValue = "false") boolean includePending,
                                   @AuthenticationPrincipal AuthenticatedUser currentUser,
                                   RedirectAttributes redirectAttributes) {
-        draftApplicationService.confirmAndApply(projectId, currentUser.userId(), lockVersion);
+        draftApplicationService.confirmAndApply(projectId, currentUser.userId(), lockVersion, includePending);
         redirectAttributes.addFlashAttribute(
                 "successMessage",
                 "Der KI-Entwurf wurde übernommen."
@@ -116,6 +121,47 @@ public class DraftController {
         }
         draftReviewService.updateTask(projectId, taskId, currentUser.userId(), taskForm);
         return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/elements/{elementId}/reject")
+    public String rejectElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
+                                @RequestParam long lockVersion,
+                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        draftReviewService.rejectElement(projectId, elementId, currentUser.userId(), lockVersion);
+        return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/elements/{elementId}/reset")
+    public String resetElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
+                               @RequestParam long lockVersion,
+                               @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        draftReviewService.resetElement(projectId, elementId, currentUser.userId(), lockVersion);
+        return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/reject")
+    public String rejectSection(@PathVariable UUID projectId, @PathVariable UUID sectionId,
+                                @RequestParam long lockVersion,
+                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        draftReviewService.rejectSection(projectId, sectionId, currentUser.userId(), lockVersion);
+        return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/reset")
+    public String resetSection(@PathVariable UUID projectId, @PathVariable UUID sectionId,
+                               @RequestParam long lockVersion,
+                               @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        draftReviewService.resetSection(projectId, sectionId, currentUser.userId(), lockVersion);
+        return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/continue-with-pending")
+    public String continueWithPending(@PathVariable UUID projectId, @RequestParam long lockVersion,
+                                      @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                      RedirectAttributes redirectAttributes) {
+        draftApplicationService.continueWithPending(projectId, currentUser.userId(), lockVersion);
+        redirectAttributes.addFlashAttribute("successMessage", "Der KI-Entwurf wurde übernommen.");
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @PostMapping("/projects/{projectId}/draft/milestones/{milestoneId}")
@@ -171,7 +217,14 @@ public class DraftController {
     @ExceptionHandler(CriticalAssumptionsConfirmationRequiredException.class)
     public String confirmation(CriticalAssumptionsConfirmationRequiredException exception, Model model) {
         model.addAttribute("draft", exception.getDraft());
+        model.addAttribute("includePending", exception.isIncludePending());
         return "generation/draft-confirmation";
+    }
+
+    @ExceptionHandler(PendingDraftElementsConfirmationRequiredException.class)
+    public String pendingConfirmation(PendingDraftElementsConfirmationRequiredException exception, Model model) {
+        model.addAttribute("draft", exception.getDraft());
+        return "generation/draft-pending-confirmation";
     }
 
     @ExceptionHandler({DomainValidationException.class, ConflictException.class})

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Offene Elemente bestätigen – ProjectFlow</title>
+    <link rel="stylesheet" th:href="@{/css/draft-review.css}">
+</head>
+<body><main>
+<h1>Review mit offenen Elementen abschließen?</h1>
+<p><strong th:text="${draft.pendingElementCount + ' Elemente wurden noch nicht überprüft.'}"></strong></p>
+<p>Wenn du trotzdem fortfährst, werden diese offenen Elemente ebenfalls in den finalen Projektplan übernommen.</p>
+<form th:action="@{/projects/{projectId}/draft/continue-with-pending(projectId=${draft.projectId})}" method="post">
+    <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+    <button type="submit">Offene Elemente mit übernehmen</button>
+</form>
+<a th:href="@{/projects/{projectId}/draft/review(projectId=${draft.projectId},reviewStatus='PENDING')}">Zurück zum Review</a>
+</main></body></html>

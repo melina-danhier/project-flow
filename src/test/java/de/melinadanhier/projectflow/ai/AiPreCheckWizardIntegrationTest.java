@@ -187,6 +187,11 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(content().string(containsString("Generierter Schritt")))
                 .andExpect(content().string(containsString("Bereichsziel")));
         mockMvc.perform(post("/projects/" + projectId + "/draft/apply").with(user(principal)).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/draft-pending-confirmation"));
+        mockMvc.perform(post("/projects/" + projectId + "/draft/continue-with-pending")
+                        .param("lockVersion", String.valueOf(draft.getLockVersion()))
+                        .with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/" + projectId + "/plan"));
 

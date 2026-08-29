@@ -36,6 +36,21 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px soli
 .element-edit form { max-width: 32rem; margin-block-start: .75rem; }
 .sort-mode { max-width: 30rem; padding-block-start: .25rem; }
 .sorting-hint { color: #59636e; font-size: .9rem; }
+.review-progress { margin-block: 1rem; }
+.review-filters { margin-block: 1rem; padding: 1rem; border: 1px solid #d9dde2; border-radius: .4rem; }
+.review-filters fieldset { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: 0; padding: 0; border: 0; }
+.review-filters label { display: inline-flex; align-items: center; gap: .35rem; margin-block: .35rem; font-weight: 500; }
+.review-filters input { width: auto; }
+.review-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .5rem; }
+.review-actions form { margin: 0; }
+.review-actions button { margin: 0; padding: .35rem .65rem; }
+.button-reject { border-color: #9b2c2c; background: #9b2c2c; }
+.button-secondary { border-color: #59636e; background: #fff; color: #39424c; }
+.review-status { padding: .1rem .45rem; border-radius: 999px; font-size: .8rem; font-weight: 650; }
+.status-pending { background: #fff3cd; color: #604700; }
+.status-accepted { background: #dff2e1; color: #27552c; }
+.status-rejected { background: #f5dddd; color: #742323; }
+.unsectioned { border-style: dashed; }
 .plan-elements { min-height: 2.5rem; }
 .critical-assumption { position: relative; display: inline-block; }
 .assumption-toggle { width: 1.7rem; height: 1.7rem; margin: 0; padding: 0; border: 2px solid #735000; border-radius: 50%; background: #fff3cd; color: #533b00; font-weight: bold; }
