@@ -1,8 +1,20 @@
 package de.melinadanhier.projectflow.ai.validation.generation;
 
-public record GenerationValidationIssue(String code, String fieldPath, String message) {
+import java.util.Objects;
 
-    public GenerationValidationIssue(String code, String message) {
-        this(code, "$", message);
+public record GenerationValidationIssue(GenerationValidationCode code, String fieldPath, String message) {
+
+    public GenerationValidationIssue {
+        Objects.requireNonNull(code, "code");
+        Objects.requireNonNull(fieldPath, "fieldPath");
+        Objects.requireNonNull(message, "message");
+    }
+
+    public GenerationValidationIssue(GenerationValidationCode code) {
+        this(code, "$");
+    }
+
+    public GenerationValidationIssue(GenerationValidationCode code, String fieldPath) {
+        this(code, fieldPath, code.getDefaultMessage());
     }
 }

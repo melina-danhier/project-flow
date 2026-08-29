@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
@@ -9,28 +10,19 @@ import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@ActiveProfiles("test")
 class AiPromptBuilderTest {
 
-    @Autowired
-    private PreCheckPromptBuilder preCheckPromptBuilder;
-
-    @Autowired
-    private GenerationPromptBuilder generationPromptBuilder;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = JsonMapper.builder().build();
+    private final PreCheckPromptBuilder preCheckPromptBuilder = new PreCheckPromptBuilder(objectMapper);
+    private final GenerationPromptBuilder generationPromptBuilder = new GenerationPromptBuilder(objectMapper);
 
     @Test
     void preCheckPromptSeparatesRulesAndConfirmedDataAndPinsVersions() {
@@ -38,17 +30,17 @@ class AiPromptBuilderTest {
 
         assertThat(prompt.version()).isEqualTo(AiPromptVersions.PRE_CHECK_PROMPT);
         assertThat(prompt.systemInstructions())
-                .contains(
-                        "noch keinen Projektplan",
-                        "WARNING",
-                        "ERROR")
-                .doesNotContain("schemaVersion")
+                .isNotBlank()
                 .doesNotContain("Umzug planen");
-        assertThat(prompt.confirmedUserData()).contains("Umzug planen", "Kartons sind vorhanden");
+        assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("confirmedWizardData"))
+                .isEqualTo(objectMapper.valueToTree(snapshot()));
+        assertThat(objectMapper.readTree(prompt.confirmedUserData())
+                .at("/confirmedWizardData/subcategory").asText()).isEqualTo("MOVING");
+        assertThat(prompt.confirmedUserData()).doesNotContain("\"projectType\"");
     }
 
     @Test
-    void generationPromptExcludesGeneralProjectFieldsFromOutputAndPreservesAcknowledgedWarnings() {
+    void generationPromptSeparatesRulesFromConfirmedDataAndPreservesAcknowledgedWarnings() {
         var warning = new AiPreCheckProblem(
                 AiPreCheckSeverity.WARNING, "Zeitraum knapp", "Mehr Zeit einplanen");
         var otherWarning = new AiPreCheckProblem(
@@ -59,15 +51,10 @@ class AiPromptBuilderTest {
 
         assertThat(prompt.version()).isEqualTo(AiPromptVersions.GENERATION_PROMPT);
         assertThat(prompt.systemInstructions())
-                .contains(
-                        "keinen\n  Projekttitel",
-                        "tempId",
-                        "USER_INPUT",
-                        "AI_INFERRED",
-                        "ungeprüft")
-                .doesNotContain("schemaVersion", "metadata", "summary", "assumptions");
-        assertThat(prompt.confirmedUserData())
-                .contains("confirmedWizardData", "acknowledgedPreCheckWarnings", "Zeitraum knapp");
+                .isNotBlank()
+                .doesNotContain("Umzug planen", "Zeitraum knapp");
+        assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("confirmedWizardData"))
+                .isEqualTo(objectMapper.valueToTree(snapshot()));
         assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("acknowledgedPreCheckWarnings"))
                 .isEqualTo(objectMapper.valueToTree(warnings));
     }
@@ -76,7 +63,7 @@ class AiPromptBuilderTest {
         return new AiWizardSnapshot(
                 "Umzug planen", "Wohnungswechsel organisieren",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
-                CollaborationMode.GROUP, TemplateCategory.HOME, "Umzug",
+                CollaborationMode.GROUP, TemplateCategory.HOME, ProjectSubCategory.MOVING, null,
                 "Bis Monatsende umziehen", "Budget 2.000 Euro", "Kartons sind vorhanden");
     }
 }

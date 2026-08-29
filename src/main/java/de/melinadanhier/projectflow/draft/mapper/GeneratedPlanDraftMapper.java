@@ -1,12 +1,16 @@
 package de.melinadanhier.projectflow.draft.mapper;
 
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedMilestone;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedSection;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedTask;
 import de.melinadanhier.projectflow.draft.model.DraftMilestone;
 import de.melinadanhier.projectflow.draft.model.DraftPlanElement;
 import de.melinadanhier.projectflow.draft.model.DraftSection;
 import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -25,62 +29,83 @@ public class GeneratedPlanDraftMapper {
         Map<String, DraftTask> tasksByKey = new HashMap<>();
         Map<String, DraftMilestone> milestonesByKey = new HashMap<>();
 
-        for (var phase : response.phases()) {
-            DraftSection section = new DraftSection();
-            section.setTitle(phase.title());
-            section.setDescription(phase.description());
-            section.setStartDate(phase.startDate());
-            section.setEndDate(phase.endDate());
-            section.setSortOrder(phase.order());
-            sections.add(section);
-            // Phase/milestone keys are optional in the existing response schema.
-            if (phase.tempId() != null && !phase.tempId().isBlank()) {
-                register(sectionsByKey, phase.tempId(), section);
-            }
-        }
+        response.sections().forEach(section ->
+                createSection(sections, sectionsByKey, section)
+        );
 
-        for (int index = 0; index < response.phases().size(); index++) {
-            var phase = response.phases().get(index);
+        for (int index = 0; index < response.sections().size(); index++) {
+            GeneratedSection generatedSection = response.sections().get(index);
             DraftSection section = sections.get(index);
-            for (var generated : phase.tasks()) {
-                DraftTask task = new DraftTask();
-                task.setTitle(generated.title());
-                task.setDescription(generated.description());
-                task.setStartDate(generated.startDate());
-                task.setDueDate(generated.dueDate());
-                task.setEstimatedHours(generated.estimatedHours());
-                task.setPriority(generated.priority() == null ? TaskPriority.MEDIUM : generated.priority());
-                task.setSortOrder(generated.order());
-                task.setCriticalAssumption(generated.criticalAssumption());
-                task.setAiOrigin(generated.origin());
-                section.addElement(task);
-                elements.add(task);
-                register(tasksByKey, generated.tempId(), task);
+
+            for (var generated : generatedSection.tasks()) {
+                createTask(generated, section, elements, tasksByKey);
             }
-            for (var generated : phase.milestones()) {
-                DraftMilestone milestone = new DraftMilestone();
-                milestone.setTitle(generated.title());
-                milestone.setDueDate(generated.date());
-                milestone.setSortOrder(generated.order());
-                section.addElement(milestone);
-                elements.add(milestone);
-                if (generated.tempId() != null && !generated.tempId().isBlank()) {
-                    register(milestonesByKey, generated.tempId(), milestone);
-                }
+
+            for (var generated : generatedSection.milestones()) {
+                createMilestone(generated, section, elements, milestonesByKey);
             }
+
         }
 
-        response.phases().stream().flatMap(phase -> phase.tasks().stream()).forEach(generated -> {
-            DraftTask successor = tasksByKey.get(generated.tempId());
-            for (String prerequisiteKey : generated.prerequisiteTaskTempIds()) {
-                DraftTask prerequisite = tasksByKey.get(prerequisiteKey);
-                if (prerequisite == null) {
-                    throw new AiOutputValidationException("Eine Aufgabenreferenz kann nicht aufgelöst werden.");
-                }
-                successor.addPrerequisite(prerequisite);
-            }
-        });
+        response.sections().stream()
+                .flatMap(section -> section.tasks().stream())
+                .forEach(generated -> createDependency(tasksByKey, generated));
+
         return new MappedDraft(sections, elements);
+    }
+
+    private static void createDependency(Map<String, DraftTask> tasksByKey, GeneratedTask generated) {
+        DraftTask successor = tasksByKey.get(generated.tempId());
+        for (String prerequisiteKey : generated.prerequisiteTaskTempIds()) {
+            DraftTask prerequisite = tasksByKey.get(prerequisiteKey);
+            if (prerequisite == null) {
+                throw new AiOutputValidationException("Eine Aufgabenreferenz kann nicht aufgelöst werden.");
+            }
+            successor.addPrerequisite(prerequisite);
+        }
+    }
+
+    private void createSection(
+            List<DraftSection> sections,
+            Map<String, DraftSection> sectionsByKey,
+            GeneratedSection generatedSection
+    ) {
+        DraftSection section = new DraftSection();
+        section.setTitle(generatedSection.title());
+        section.setDescription(generatedSection.description());
+        section.setSortOrder(generatedSection.order());
+        sections.add(section);
+        if (generatedSection.tempId() != null && !generatedSection.tempId().isBlank()) {
+            register(sectionsByKey, generatedSection.tempId(), section);
+        }
+    }
+
+    private void createTask(GeneratedTask generated, DraftSection section, List<DraftPlanElement> elements, Map<String, DraftTask> tasksByKey) {
+        DraftTask task = new DraftTask();
+        task.setTitle(generated.title());
+        task.setDescription(generated.description());
+        task.setStartDate(generated.startDate());
+        task.setDueDate(generated.dueDate());
+        task.setEstimatedHours(generated.estimatedHours());
+        task.setPriority(generated.priority() == null ? TaskPriority.MEDIUM : generated.priority());
+        task.setSortOrder(generated.order());
+        task.setCriticalAssumption(generated.criticalAssumption());
+        task.setAiOrigin(generated.origin());
+        section.addElement(task);
+        elements.add(task);
+        register(tasksByKey, generated.tempId(), task);
+    }
+
+    private void createMilestone(GeneratedMilestone generated, DraftSection section, List<DraftPlanElement> elements, Map<String, DraftMilestone> milestonesByKey) {
+        DraftMilestone milestone = new DraftMilestone();
+        milestone.setTitle(generated.title());
+        milestone.setDueDate(generated.date());
+        milestone.setSortOrder(generated.order());
+        section.addElement(milestone);
+        elements.add(milestone);
+        if (generated.tempId() != null && !generated.tempId().isBlank()) {
+            register(milestonesByKey, generated.tempId(), milestone);
+        }
     }
 
     private <T> void register(Map<String, T> entities, String key, T entity) {

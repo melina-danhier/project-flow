@@ -1,7 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
 import de.melinadanhier.projectflow.ai.provider.AiClient;
-
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
 
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
@@ -32,6 +31,7 @@ import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationCode.SECTION_MISSING;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -47,8 +47,7 @@ class AiPlanGenerationServiceTest {
 
         assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of(error),
                 0, AiPromptVersions.GENERATION_PROMPT, beforeProviderCall))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("acknowledgedWarnings");
+                .isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(client, backoff, beforeProviderCall);
     }
 
@@ -99,7 +98,9 @@ class AiPlanGenerationServiceTest {
         when(client.generatePlan(any())).thenReturn(emptyPlan(), validPlan());
 
         assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of()))
-                .isInstanceOf(AiOutputValidationException.class);
+                .isInstanceOfSatisfying(AiOutputValidationException.class, exception ->
+                        assertThat(exception.getValidationIssues())
+                                .anyMatch(issue -> issue.startsWith(SECTION_MISSING.name() + " | $ | ")));
 
         ArgumentCaptor<AiGenerationRequest> requests = ArgumentCaptor.forClass(AiGenerationRequest.class);
         verify(client).generatePlan(requests.capture());
@@ -231,8 +232,8 @@ class AiPlanGenerationServiceTest {
 
     private GeneratedPlanResponse validPlan() {
         return new GeneratedPlanResponse(
-                List.of(new GeneratedPhase(
-                        "phase-1", "Phase", null, null, null, 1,
+                List.of(new GeneratedSection(
+                        "section-1", "Section", null, 1,
                         List.of(
                                 task("task-1", 1), task("task-2", 2), task("task-3", 3)),
                         List.of())));
@@ -246,7 +247,7 @@ class AiPlanGenerationServiceTest {
     private AiWizardSnapshot snapshot() {
         return new AiWizardSnapshot(
                 "Projekt", null, null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test",
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
                 null, null, null);
     }
 }

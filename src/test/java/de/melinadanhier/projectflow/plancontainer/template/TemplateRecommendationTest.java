@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.template;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
@@ -36,9 +37,9 @@ class TemplateRecommendationTest {
         Template broadMatch = new Template();
         Template exactMatch = new Template();
         Template differentCategory = new Template();
-        TemplateSummaryDto broadSummary = summary(TemplateCategory.EDUCATION, "Hausarbeit");
-        TemplateSummaryDto exactSummary = summary(TemplateCategory.EDUCATION, "Präsentation");
-        TemplateSummaryDto differentSummary = summary(TemplateCategory.EVENT, "Präsentation");
+        TemplateSummaryDto broadSummary = summary(TemplateCategory.EDUCATION, ProjectSubCategory.TERM_PAPER);
+        TemplateSummaryDto exactSummary = summary(TemplateCategory.EDUCATION, ProjectSubCategory.PRESENTATION_OR_REPORT);
+        TemplateSummaryDto differentSummary = summary(TemplateCategory.EVENT, ProjectSubCategory.STUDY_EVENT);
         when(repository.findAllByActiveTrueOrderByTitleAsc())
                 .thenReturn(List.of(broadMatch, exactMatch, differentCategory));
         when(mapper.toSummaryDto(broadMatch)).thenReturn(broadSummary);
@@ -46,15 +47,15 @@ class TemplateRecommendationTest {
         when(mapper.toSummaryDto(differentCategory)).thenReturn(differentSummary);
 
         assertThat(service.getTemplates()).containsExactly(broadSummary, exactSummary, differentSummary);
-        assertThat(service.findRecommendation(TemplateCategory.EDUCATION, " präsentation "))
+        assertThat(service.findRecommendation(TemplateCategory.EDUCATION, ProjectSubCategory.PRESENTATION_OR_REPORT))
                 .get().isSameAs(exactSummary);
     }
 
-    private TemplateSummaryDto summary(TemplateCategory category, String projectType) {
+    private TemplateSummaryDto summary(TemplateCategory category, ProjectSubCategory subcategory) {
         TemplateSummaryDto summary = new TemplateSummaryDto();
         summary.setId(UUID.randomUUID());
         summary.setCategory(category);
-        summary.setProjectType(projectType);
+        summary.setSubcategory(subcategory);
         return summary;
     }
 }

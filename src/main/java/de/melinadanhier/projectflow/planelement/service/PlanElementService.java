@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.planelement.service;
 
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
+import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
@@ -27,7 +28,11 @@ public class PlanElementService {
 
     @Transactional
     public void assignTask(UUID projectId, UUID taskId, UUID assigneeUserId, UUID actingUserId) {
-        authorizationService.requireEditableMember(projectId, actingUserId);
+        var project = authorizationService.requireEditableMemberForUpdate(projectId, actingUserId).getProject();
+        if (!project.isGroupProject()) {
+            throw new DomainValidationException(
+                    "Aufgabenzuständigkeiten sind nur bei Gruppenprojekten möglich.");
+        }
         lockMembershipChanges(projectId);
         authorizationService.requireEditableMember(projectId, actingUserId);
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
@@ -40,7 +45,11 @@ public class PlanElementService {
 
     @Transactional
     public void unassignTask(UUID projectId, UUID taskId, UUID actingUserId) {
-        authorizationService.requireEditableMember(projectId, actingUserId);
+        var project = authorizationService.requireEditableMemberForUpdate(projectId, actingUserId).getProject();
+        if (!project.isGroupProject()) {
+            throw new DomainValidationException(
+                    "Aufgabenzuständigkeiten sind nur bei Gruppenprojekten möglich.");
+        }
         lockMembershipChanges(projectId);
         authorizationService.requireEditableMember(projectId, actingUserId);
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)

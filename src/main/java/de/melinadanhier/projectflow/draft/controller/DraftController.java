@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.draft.controller;
 
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
 import de.melinadanhier.projectflow.draft.service.DraftReviewService;
+import de.melinadanhier.projectflow.draft.dto.DraftSectionForm;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.validation.BindingResult;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 import java.util.Map;
 import java.util.UUID;
@@ -32,14 +34,30 @@ public class DraftController {
     private final DraftReviewService draftReviewService;
     private final DraftApplicationService draftApplicationService;
 
-    @GetMapping("/projects/{projectId}/draft")
+    @GetMapping({"/projects/{projectId}/draft", "/projects/{projectId}/draft/review"})
     public String review(@PathVariable UUID projectId,
                          @AuthenticationPrincipal AuthenticatedUser currentUser,
-                         @RequestParam(defaultValue = "false") boolean pendingOnly,
                          Model model) {
-        model.addAttribute("draft", draftReviewService.review(projectId, currentUser.userId()));
-        model.addAttribute("pendingOnly", pendingOnly);
+        model.addAttribute(
+                "draft",
+                draftReviewService.review(projectId, currentUser.userId())
+        );
         return "generation/draft-review";
+    }
+
+    @PostMapping("/projects/{projectId}/draft/sections/{sectionId}")
+    public String updateSection(@PathVariable UUID projectId,
+                                @PathVariable UUID sectionId,
+                                @Valid @ModelAttribute DraftSectionForm sectionForm,
+                                BindingResult bindingResult,
+                                @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            throw new DomainValidationException("Bitte prüfe Titel und Beschreibung des Bereichs.");
+        }
+        draftReviewService.updateSection(projectId, sectionId, currentUser.userId(), sectionForm);
+        redirectAttributes.addFlashAttribute("successMessage", "Der Bereich wurde aktualisiert.");
+        return reviewRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/draft/apply")
@@ -47,7 +65,10 @@ public class DraftController {
                         @AuthenticationPrincipal AuthenticatedUser currentUser,
                         RedirectAttributes redirectAttributes) {
         draftApplicationService.apply(projectId, currentUser.userId());
-        redirectAttributes.addFlashAttribute("successMessage", "Der KI-Entwurf wurde übernommen.");
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "Der KI-Entwurf wurde übernommen."
+        );
         return "redirect:/projects/" + projectId + "/plan";
     }
 
@@ -56,7 +77,10 @@ public class DraftController {
                                   @AuthenticationPrincipal AuthenticatedUser currentUser,
                                   RedirectAttributes redirectAttributes) {
         draftApplicationService.confirmAndApply(projectId, currentUser.userId(), lockVersion);
-        redirectAttributes.addFlashAttribute("successMessage", "Der KI-Entwurf wurde übernommen.");
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "Der KI-Entwurf wurde übernommen."
+        );
         return "redirect:/projects/" + projectId + "/plan";
     }
 
@@ -65,7 +89,7 @@ public class DraftController {
                                 @RequestParam long lockVersion,
                                 @AuthenticationPrincipal AuthenticatedUser currentUser) {
         draftReviewService.acceptElement(projectId, elementId, currentUser.userId(), lockVersion);
-        return "redirect:/projects/" + projectId + "/draft";
+        return reviewRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/accept")
@@ -73,7 +97,7 @@ public class DraftController {
                                 @RequestParam long lockVersion,
                                 @AuthenticationPrincipal AuthenticatedUser currentUser) {
         draftReviewService.acceptSection(projectId, sectionId, currentUser.userId(), lockVersion);
-        return "redirect:/projects/" + projectId + "/draft";
+        return reviewRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/draft/tasks/{taskId}")
@@ -82,10 +106,12 @@ public class DraftController {
                              BindingResult bindingResult,
                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
         if (bindingResult.hasErrors()) {
-            throw new DomainValidationException("Bitte prüfe die Aufgabenangaben, insbesondere Datums- und Zahlenfelder.");
+            throw new DomainValidationException(
+                    "Bitte prüfe die Aufgabenangaben, insbesondere Datums- und Zahlenfelder."
+            );
         }
         draftReviewService.updateTask(projectId, taskId, currentUser.userId(), taskForm);
-        return "redirect:/projects/" + projectId + "/draft";
+        return reviewRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/draft/tasks/{taskId}/delete")
@@ -93,7 +119,7 @@ public class DraftController {
                              @RequestParam long lockVersion,
                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
         draftReviewService.deleteTask(projectId, taskId, currentUser.userId(), lockVersion);
-        return "redirect:/projects/" + projectId + "/draft";
+        return reviewRedirect(projectId);
     }
 
     @ExceptionHandler(CriticalAssumptionsConfirmationRequiredException.class)
@@ -108,6 +134,10 @@ public class DraftController {
                               HttpServletRequest request) {
         var variables = (Map<?, ?>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         attributes.addFlashAttribute("errorMessage", exception.getMessage());
-        return "redirect:/projects/" + variables.get("projectId") + "/draft";
+        return "redirect:/projects/" + variables.get("projectId") + "/draft/review";
+    }
+
+    private String reviewRedirect(UUID projectId) {
+        return "redirect:/projects/" + projectId + "/draft/review";
     }
 }

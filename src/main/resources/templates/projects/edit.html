@@ -5,9 +5,25 @@
 <h1>Projekt bearbeiten</h1>
 <form th:action="@{/projects/{id}/edit(id=${project.id})}" th:object="${projectForm}" method="post">
     <input type="hidden" th:field="*{lockVersion}">
+    <p th:each="error : ${#fields.globalErrors()}" th:text="${error}" role="alert"></p>
     <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
     <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
     <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
+    <div th:replace="~{fragments/project-classification :: fields}"></div>
+    <fieldset>
+        <legend>Wer arbeitet am Projekt?</legend>
+        <label><input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required> Nur ich</label>
+        <label><input type="radio" th:field="*{collaborationMode}" value="GROUP"> Eine kleine Gruppe</label>
+    </fieldset>
+    <p th:if="${#fields.hasErrors('collaborationMode')}" th:errors="*{collaborationMode}" role="alert"></p>
+    <p th:if="${#fields.hasErrors('projectCollaborationModeValid')}" th:errors="*{projectCollaborationModeValid}" role="alert"></p>
+    <div th:if="${project.groupProject or project.collaborationMode == null}">
+        <p>Beim Wechsel zum Einzelprojekt werden alle weiteren Projektmitglieder, ihre Kommentare
+            und sämtliche Aufgabenzuständigkeiten entfernt. Diese Personen verlieren ihren Zugriff.
+            Du bleibst Eigentümer; Aufgaben, Inhalte und deine eigenen Beiträge bleiben als Notizen erhalten.</p>
+        <label><input type="checkbox" th:field="*{confirmIndividualConversion}">
+            Ich bestätige das Entfernen, falls ich zum Einzelprojekt wechsle.</label>
+    </div>
     <label for="startDate">Start</label><input id="startDate" type="date" th:field="*{startDate}">
     <label for="endDate">Ende</label><input id="endDate" type="date" th:field="*{endDate}">
     <button type="submit">Speichern</button>

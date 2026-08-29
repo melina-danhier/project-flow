@@ -33,6 +33,7 @@ public interface PlanElementMapper {
     @Mapping(target = "affectedDependencyCount", ignore = true)
     @Mapping(target = "editable", ignore = true)
     @Mapping(target = "availableSections", ignore = true)
+    @Mapping(target = "groupProject", ignore = true)
     TaskDetailsDto toDetailsDto(Task task);
 
     @Mapping(target = "planContainerId", source = "planContainer.id")

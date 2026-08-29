@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +19,10 @@ public class DraftReviewDto {
 
     private UUID id;
     private UUID projectId;
+    private String projectTitle;
+    private String categoryLabel;
+    private LocalDate projectStartDate;
+    private LocalDate projectEndDate;
     private long lockVersion;
     private DraftPlanStatus status;
     private Instant generatedAt;

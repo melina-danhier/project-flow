@@ -89,8 +89,6 @@ public class DraftApplicationService {
             PlanSection target = new PlanSection();
             target.setTitle(source.getTitle());
             target.setDescription(source.getDescription());
-            target.setStartDate(source.getStartDate());
-            target.setEndDate(source.getEndDate());
             target.setSortOrder(source.getSortOrder());
             target.setOrigin(ElementOrigin.AI);
             project.addSection(target);

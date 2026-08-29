@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project.service;
 
+import de.melinadanhier.projectflow.plancontainer.project.validation.ProjectClassificationValidator;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
@@ -89,9 +90,8 @@ public class ProjectService {
                 .orElseThrow(() -> new ResourceNotFoundException("Vorlage wurde nicht gefunden."));
         if (form.getCategory() == null) {
             form.setCategory(template.getCategory());
-        }
-        if (form.getProjectType() == null) {
-            form.setProjectType(template.getProjectType());
+            form.setSubcategory(template.getSubcategory());
+            form.setOtherProjectTypeDescription(template.getOtherProjectTypeDescription());
         }
         if (form.getCollaborationMode() == null) {
             form.setCollaborationMode(template.getCollaborationMode() == CollaborationMode.BOTH
@@ -120,7 +120,9 @@ public class ProjectService {
         project.setStartDate(form.getStartDate());
         project.setEndDate(form.getEndDate());
         project.setCategory(form.getCategory());
-        project.setProjectType(normalizeOptionalText(form.getProjectType()));
+        project.setSubcategory(form.getSubcategory());
+        project.setOtherProjectTypeDescription(form.isOtherCategory()
+                ? normalizeOptionalText(form.getOtherProjectTypeDescription()) : null);
         project.setCollaborationMode(form.getCollaborationMode());
         project.setCreationType(creationType);
         projectStateService.changeState(project, ProjectStatus.ACTIVE, ProjectLocation.OVERVIEW);
@@ -145,10 +147,6 @@ public class ProjectService {
             PlanSection copy = new PlanSection();
             copy.setTitle(source.getTitle());
             copy.setDescription(source.getDescription());
-            copy.setStartDate(toAbsoluteDate(project, source.getStartDate(), source.getRelativeStartDay()));
-            copy.setEndDate(toAbsoluteDate(project, source.getEndDate(), source.getRelativeEndDay()));
-            copy.setRelativeStartDay(null);
-            copy.setRelativeEndDay(null);
             copy.setSortOrder(source.getSortOrder());
             copy.setOrigin(ElementOrigin.TEMPLATE);
             copy.setHasCriticalAssumption(source.isHasCriticalAssumption());
@@ -249,9 +247,10 @@ public class ProjectService {
         view.setProject(projectMapper.toDetailsDto(project));
         view.setEditable(authorizationService.isEditable(currentMembership));
         view.setOwner(currentMembership.getRole() == ProjectMemberRole.OWNER);
-        view.setActiveMembers(projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
-                .map(projectMapper::toMemberDto)
-                .toList());
+        view.setActiveMembers(project.isGroupProject()
+                ? projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
+                        .map(projectMapper::toMemberDto).toList()
+                : List.of());
 
         List<TaskDetailsDto> taskDtos = tasks.stream().map(planElementMapper::toDetailsDto).toList();
         List<MilestoneDetailsDto> milestoneDtos = milestones.stream().map(planElementMapper::toDetailsDto).toList();
@@ -303,11 +302,38 @@ public class ProjectService {
 
     @Transactional
     public ProjectDetailsDto updateProject(UUID projectId, ProjectUpdateForm form, UUID userId) {
-        authorizationService.requireEditableOwner(projectId, userId);
+        ProjectMember actingOwner = authorizationService.requireEditableOwnerForUpdate(projectId, userId);
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
         requireCurrentVersion(project.getLockVersion(), form.getLockVersion());
+        if (form.getCollaborationMode() == null || form.getCollaborationMode() == CollaborationMode.BOTH) {
+            throw new DomainValidationException("Bitte wähle Einzel- oder Gruppenprojekt aus.");
+        }
+        boolean convertToIndividual = form.getCollaborationMode() == CollaborationMode.INDIVIDUAL
+                && project.getCollaborationMode() != CollaborationMode.INDIVIDUAL;
+        if (convertToIndividual && !form.isConfirmIndividualConversion()) {
+            throw new DomainValidationException(
+                    "Bitte bestätige den Wechsel zum Einzelprojekt: Alle weiteren Projektmitglieder, ihre Beiträge und sämtliche Aufgabenzuständigkeiten werden entfernt.");
+        }
+        if (form.getCategory() == null) {
+            throw new DomainValidationException("Bitte wähle eine Oberkategorie aus.");
+        }
+        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
+                form.getOtherProjectTypeDescription());
         validateDateRange(form.getStartDate(), form.getEndDate());
+        if (convertToIndividual) {
+            taskRepository.findPlanTasks(projectId).forEach(task -> task.setAssignee(null));
+            taskRepository.flush();
+            var otherMemberships = projectMemberRepository.findAllByProjectId(projectId).stream()
+                    .filter(membership -> membership.getRole() != ProjectMemberRole.OWNER).toList();
+            project.getMemberships().removeAll(otherMemberships);
+            projectMemberRepository.deleteAll(otherMemberships);
+        }
+        project.setCollaborationMode(form.getCollaborationMode());
+        project.setCategory(form.getCategory());
+        project.setSubcategory(form.getSubcategory());
+        project.setOtherProjectTypeDescription(form.isOtherCategory()
+                ? normalizeOptionalText(form.getOtherProjectTypeDescription()) : null);
         project.setTitle(form.getTitle().trim());
         project.setDescription(form.getDescription());
         project.setStartDate(form.getStartDate());
@@ -376,6 +402,8 @@ public class ProjectService {
     }
 
     private void validateGeneralProjectData(ProjectCreateForm form) {
+        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
+                form.getOtherProjectTypeDescription());
         validateDateRange(form.getStartDate(), form.getEndDate());
         if (form.getCategory() == null) {
             throw new DomainValidationException("Bitte wähle eine Oberkategorie aus.");

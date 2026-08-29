@@ -45,17 +45,15 @@ public final class AiResponseSchemas {
 
     private static Map<String, Object> generatedPlanSchema() {
         return object(Map.of(
-                "phases", array(phaseSchema(), MIN_PHASES, MAX_PHASES)
+                "sections", array(sectionSchema(), MIN_SECTIONS, MAX_SECTIONS)
         ));
     }
 
-    private static Map<String, Object> phaseSchema() {
+    private static Map<String, Object> sectionSchema() {
         return object(Map.ofEntries(
                 entry("tempId", nullable(string())),
                 entry("title", string()),
                 entry("description", nullable(string())),
-                entry("startDate", nullable(date())),
-                entry("endDate", nullable(date())),
                 entry("order", positiveInteger()),
                 entry("tasks", array(taskSchema(), 1, MAX_TASKS)),
                 entry("milestones", array(milestoneSchema(), 0, MAX_MILESTONES))

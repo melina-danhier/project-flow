@@ -11,11 +11,12 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface DraftMapper {
 
-    @Mapping(target = "draftId", source = "id")
     @Mapping(target = "projectId", source = "project.id")
-    GenerationStatusDto toStatusDto(DraftPlan draftPlan);
-
-    @Mapping(target = "projectId", source = "project.id")
+    @Mapping(target = "projectTitle", source = "project.title")
+    @Mapping(target = "projectStartDate", source = "project.startDate")
+    @Mapping(target = "projectEndDate", source = "project.endDate")
+    @Mapping(target = "categoryLabel", ignore = true)
+    @Mapping(target = "uncheckedCriticalTasks", ignore = true)
     DraftReviewDto toReviewDto(DraftPlan draftPlan);
 
     DraftSectionDto toDto(DraftSection draftSection);

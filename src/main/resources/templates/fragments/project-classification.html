@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body><div th:fragment="fields">
+    <label for="category">Oberkategorie</label>
+    <select id="category" th:field="*{category}" required>
+        <option value="OTHER">Sonstiges</option>
+        <option value="EDUCATION">Bildung und Studium</option>
+        <option value="SOFTWARE_TECHNOLOGY">Software und Technik</option>
+        <option value="EVENT">Veranstaltung</option>
+        <option value="HOME">Haushalt und Wohnen</option>
+        <option value="CREATIVE">Kreatives</option>
+        <option value="CAREER">Beruf und Karriere</option>
+        <option value="HEALTH_PERSONAL_DEVELOPMENT">Gesundheit und persönliche Entwicklung</option>
+        <option value="TRAVEL">Reise</option>
+    </select>
+    <p th:if="${#fields.hasErrors('category')}" th:errors="*{category}" role="alert"></p>
+    <div id="subcategory-fields" th:hidden="*{otherCategory}">
+        <label for="subcategory">Unterkategorie <span>(optional)</span></label>
+        <select id="subcategory" th:field="*{subcategory}" th:disabled="*{otherCategory}">
+            <option value="">Keine Unterkategorie</option>
+            <option th:each="option : *{subcategoryOptions}" th:value="${option.name()}" th:text="${option.label}"></option>
+        </select>
+
+    </div>
+        <p th:if="${#fields.hasErrors('subcategory')}" th:errors="*{subcategory}" role="alert"></p>
+    <div id="other-project-type-fields" th:hidden="*{!otherCategory}">
+        <label for="otherProjectTypeDescription">Was für ein Projekt ist es?</label>
+        <input id="otherProjectTypeDescription" th:field="*{otherProjectTypeDescription}" maxlength="100"
+               placeholder="z. B. privater Flohmarkt" th:required="*{otherCategory}" th:disabled="*{!otherCategory}">
+        <p th:if="${#fields.hasErrors('otherProjectTypeDescription')}"
+           th:errors="*{otherProjectTypeDescription}" role="alert"></p>
+    </div>
+    <template id="subcategory-options">
+        <option th:each="option : ${T(de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory).values()}"
+                th:value="${option.name()}" th:attr="data-category=${option.category.name()}"
+                th:text="${option.label}"></option>
+    </template>
+    <script th:src="@{/js/project-classification.js}" defer></script>
+</div></body></html>

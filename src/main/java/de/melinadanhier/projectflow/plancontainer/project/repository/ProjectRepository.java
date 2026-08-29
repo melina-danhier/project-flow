@@ -12,6 +12,10 @@ import java.util.UUID;
 
 public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
+    // Lock only the project row, without fetching the optional draft in the joined entity hierarchy.
+    @Query(value = "select id from projects where id = :projectId for update", nativeQuery = true)
+    java.util.Optional<UUID> findForUpdate(@Param("projectId") UUID projectId);
+
     @Query("""
             select distinct project
             from Project project

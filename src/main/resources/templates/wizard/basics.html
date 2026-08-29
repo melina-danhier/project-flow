@@ -12,31 +12,7 @@
     <label for="description">Ziel oder kurze Beschreibung <span>(optional)</span></label>
     <textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
     <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
-    <label for="category">Oberkategorie</label>
-    <select id="category" th:field="*{category}" required>
-        <option value="OTHER">Sonstiges</option>
-        <option value="EDUCATION">Bildung und Studium</option>
-        <option value="SOFTWARE_TECHNOLOGY">Software und Technik</option>
-        <option value="EVENT">Veranstaltung</option>
-        <option value="HOME">Haushalt und Wohnen</option>
-        <option value="CREATIVE">Kreatives</option>
-        <option value="CAREER">Beruf und Karriere</option>
-        <option value="HEALTH_PERSONAL_DEVELOPMENT">Gesundheit und persönliche Entwicklung</option>
-        <option value="TRAVEL">Reise</option>
-    </select>
-    <p th:if="${#fields.hasErrors('category')}" th:errors="*{category}" role="alert"></p>
-    <div id="subcategory-fields" th:hidden="*{otherCategory}">
-        <label for="subcategory">Unterkategorie <span>(optional)</span></label>
-        <input id="subcategory" th:field="*{subcategory}" maxlength="100" th:disabled="*{otherCategory}">
-        <p th:if="${#fields.hasErrors('subcategory')}" th:errors="*{subcategory}" role="alert"></p>
-    </div>
-    <div id="other-project-type-fields" th:hidden="*{!otherCategory}">
-        <label for="otherProjectTypeDescription">Was für ein Projekt ist es?</label>
-        <input id="otherProjectTypeDescription" th:field="*{otherProjectTypeDescription}" maxlength="100"
-               placeholder="z. B. privater Flohmarkt" th:required="*{otherCategory}" th:disabled="*{!otherCategory}">
-        <p th:if="${#fields.hasErrors('otherProjectTypeDescription')}"
-           th:errors="*{otherProjectTypeDescription}" role="alert"></p>
-    </div>
+    <div th:replace="~{fragments/project-classification :: fields}"></div>
     <fieldset>
         <legend>Wer arbeitet am Projekt?</legend>
         <label><input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required> Nur ich</label>
@@ -74,25 +50,12 @@
 <form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Abbrechen</button></form>
 <script>
     (() => {
-        const category = document.getElementById('category');
-        const subcategoryFields = document.getElementById('subcategory-fields');
-        const subcategory = document.getElementById('subcategory');
-        const otherFields = document.getElementById('other-project-type-fields');
-        const otherDescription = document.getElementById('otherProjectTypeDescription');
         const startField = document.getElementById('start-date-field');
         const startInput = document.getElementById('startDate');
         const endField = document.getElementById('end-date-field');
         const endInput = document.getElementById('endDate');
         const durationField = document.getElementById('duration-field');
         const durationInput = document.getElementById('durationDays');
-        const updateCategoryFields = () => {
-            const isOther = category.value === 'OTHER';
-            subcategoryFields.hidden = isOther;
-            subcategory.disabled = isOther;
-            otherFields.hidden = !isOther;
-            otherDescription.disabled = !isOther;
-            otherDescription.required = isOther;
-        };
         const updateTimeFields = () => {
             const selected = document.querySelector('input[name="timeFrameType"]:checked')?.value ?? 'NONE';
             const needsStart = selected === 'START_AND_END' || selected === 'START_AND_DURATION';
@@ -108,10 +71,8 @@
             durationInput.disabled = !needsDuration;
             durationInput.required = needsDuration;
         };
-        category.addEventListener('change', updateCategoryFields);
         document.querySelectorAll('input[name="timeFrameType"]')
             .forEach(input => input.addEventListener('change', updateTimeFields));
-        updateCategoryFields();
         updateTimeFields();
     })();
 </script>

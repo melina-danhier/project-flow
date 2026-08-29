@@ -84,7 +84,7 @@ public class AiPlanGenerationService {
     }
 
     private String formatIssue(GenerationValidationIssue issue) {
-        return issue.code() + " | " + issue.fieldPath() + " | " + issue.message();
+        return issue.code().name() + " | " + issue.fieldPath() + " | " + issue.message();
     }
 
     private void waitBeforeRetry(int retryNumber) {

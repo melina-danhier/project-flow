@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><title>Vorlage – ProjectFlow</title></head>
 <body><main><a th:href="@{/templates}">Zu den Vorlagen</a><h1 th:text="${template.title}">Vorlage</h1>
-<p th:text="${template.description}"></p><h2>Phasen</h2><ul><li th:each="section : ${template.sections}" th:text="${section.title}"></li></ul>
+<p th:if="${template.projectTypeLabel}" th:text="${template.projectTypeLabel}"></p>
+<p th:text="${template.description}"></p><h2>Bereiche</h2><ul><li th:each="section : ${template.sections}" th:text="${section.title}"></li></ul>
 <h2>Aufgaben</h2><ul><li th:each="task : ${template.tasks}" th:text="${task.title}"></li></ul>
 <p><a th:href="@{/projects/new}">Projekt mit dem Wizard anlegen</a></p>
 </main></body></html>

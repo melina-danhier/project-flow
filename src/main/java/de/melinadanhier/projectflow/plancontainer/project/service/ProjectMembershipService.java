@@ -35,7 +35,7 @@ public class ProjectMembershipService {
 
     @Transactional(readOnly = true)
     public List<ProjectMemberDto> getMembersForManagement(UUID projectId, UUID actingOwnerId) {
-        authorizationService.requireEditableOwner(projectId, actingOwnerId);
+        requireGroupProject(authorizationService.requireEditableOwner(projectId, actingOwnerId).getProject());
         return projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
                 .map(projectMapper::toMemberDto)
                 .toList();
@@ -48,8 +48,9 @@ public class ProjectMembershipService {
 
     @Transactional
     public ProjectMember addMember(UUID projectId, String email, UUID actingUserId) {
-        authorizationService.requireEditableOwner(projectId, actingUserId);
+        authorizationService.requireEditableOwnerForUpdate(projectId, actingUserId);
         Project project = lockActiveOwner(projectId).getProject();
+        requireGroupProject(project);
         User user = userRepository.findByEmail(normalizeEmail(email))
                 .orElseThrow(() -> new ResourceNotFoundException("Unter dieser E-Mail-Adresse wurde kein Konto gefunden."));
 
@@ -77,7 +78,7 @@ public class ProjectMembershipService {
 
     @Transactional
     public void removeMember(UUID projectId, UUID memberUserId, UUID actingOwnerId) {
-        authorizationService.requireEditableOwner(projectId, actingOwnerId);
+        requireGroupProject(authorizationService.requireEditableOwnerForUpdate(projectId, actingOwnerId).getProject());
         lockActiveOwner(projectId);
         ProjectMember membership = projectMemberRepository
                 .findByIdAndProjectIdAndActiveTrue(memberUserId, projectId)
@@ -87,7 +88,7 @@ public class ProjectMembershipService {
 
     @Transactional
     public void leaveProject(UUID projectId, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
+        requireGroupProject(authorizationService.requireEditableMemberForUpdate(projectId, userId).getProject());
         lockActiveOwner(projectId);
         ProjectMember membership = requireActiveMembership(projectId, userId);
         deactivateMember(membership);
@@ -109,6 +110,12 @@ public class ProjectMembershipService {
     private ProjectMember lockActiveOwner(UUID projectId) {
         return projectMemberRepository.findActiveOwnerForUpdate(projectId, ProjectMemberRole.OWNER)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
+    }
+
+    private void requireGroupProject(Project project) {
+        if (!project.isGroupProject()) {
+            throw new ResourceNotFoundException("Die Mitgliederverwaltung steht nur bei Gruppenprojekten zur Verfügung.");
+        }
     }
 
     private String normalizeEmail(String email) {

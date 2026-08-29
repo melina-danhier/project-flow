@@ -27,12 +27,14 @@ public class GenerationPromptBuilder {
             Regeln:
             - Gib keine bereits bestätigten allgemeinen Projektdaten zurück, insbesondere keinen
               Projekttitel, keine Kategorie, Unterkategorie oder Projektart.
-            - Erzeuge ausschließlich Phasen mit Aufgaben und Meilensteinen.
+            - Erzeuge ausschließlich Sections mit Aufgaben und Meilensteinen. Eine Section ist ein
+              allgemeiner Bereich und kann zeitlich, thematisch oder funktional gegliedert sein.
+              Sections besitzen deshalb keine eigenen Datumsfelder.
             - Erzeuge insgesamt mindestens drei Aufgaben.
             - Gib alle im Ausgabeschema definierten Felder zurück. Nutze für nicht belegte optionale
               Werte null statt das Feld wegzulassen.
             - Vergib für jede Aufgabe einen im gesamten Entwurf eindeutigen, stabilen tempId-Wert.
-              Er ist eine Referenz im Entwurf und keine Datenbank-ID. Bei Phasen und Meilensteinen
+              Er ist eine Referenz im Entwurf und keine Datenbank-ID. Bei Sections und Meilensteinen
               darf tempId null sein.
             - Gib für jede Aufgabe prerequisiteTaskTempIds als Liste vorhandener Aufgaben-tempId-Werte
               zurück. Nutze eine leere Liste, wenn keine Abhängigkeiten bestehen. Erzeuge weder
@@ -44,9 +46,9 @@ public class GenerationPromptBuilder {
             - Gib keinen Prüfstatus wie checked, verified oder reviewed zurück. Neue Inhalte sind
               anwendungsseitig ungeprüft.
             - Richte die Terminierung nach dem bestätigten Zeitraum-Modus aus. Bei terminierter Planung
-              benötigt jede Aufgabe dueDate und jeder Meilenstein date; Aufgaben-startDate sowie
-              Phasen-startDate und -endDate bleiben optional. Ohne terminierte Planung dürfen alle
-              Datumsfelder null sein. Ergänze keine fehlenden Datumswerte durch bloße technische Annahmen.
+              benötigt jede Aufgabe dueDate und jeder Meilenstein date; Aufgaben-startDate bleibt
+              optional. Ohne terminierte Planung dürfen alle Datumsfelder null sein. Ergänze keine
+              fehlenden Datumswerte durch bloße technische Annahmen.
             - Berücksichtige bestätigte Pre-Check-Warnungen als fachlichen Kontext; ändere deswegen keine Eingabe.
             """;
 

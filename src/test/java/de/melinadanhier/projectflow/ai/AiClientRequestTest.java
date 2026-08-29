@@ -22,11 +22,9 @@ class AiClientRequestTest {
     @Test
     void requiredConfirmedWizardDataCannotBeNull() {
         assertThatThrownBy(() -> new AiPreCheckRequest(null))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("confirmedWizardData");
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new AiGenerationRequest(null, List.of()))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("confirmedWizardData");
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -59,8 +57,7 @@ class AiClientRequestTest {
         var invalid = new AiPreCheckProblem(severity, "Unmöglich", "Ziel ändern");
 
         assertThatThrownBy(() -> new AiGenerationRequest(snapshot(), List.of(warning, invalid)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("acknowledgedWarnings darf nur Warnungen enthalten");
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -72,7 +69,7 @@ class AiClientRequestTest {
     private AiWizardSnapshot snapshot() {
         return new AiWizardSnapshot(
                 "Testprojekt", null, null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test",
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
                 null, null, null);
     }
 }

@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.project.controller;
 
 import de.melinadanhier.projectflow.common.exception.ConflictException;
+import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectMembershipService;
@@ -68,6 +69,10 @@ public class ProjectController {
         ProjectUpdateForm form = new ProjectUpdateForm();
         form.setTitle(project.getTitle());
         form.setDescription(project.getDescription());
+        form.setCategory(project.getCategory());
+        form.setSubcategory(project.getSubcategory());
+        form.setOtherProjectTypeDescription(project.getOtherProjectTypeDescription());
+        form.setCollaborationMode(project.getCollaborationMode());
         form.setStartDate(project.getStartDate());
         form.setEndDate(project.getEndDate());
         form.setStructureMode(project.getStructureMode());
@@ -91,7 +96,13 @@ public class ProjectController {
             model.addAttribute("project", projectService.getProject(projectId, currentUser.userId()));
             return "projects/edit";
         }
-        projectService.updateProject(projectId, form, currentUser.userId());
+        try {
+            projectService.updateProject(projectId, form, currentUser.userId());
+        } catch (DomainValidationException exception) {
+            bindingResult.reject("projectUpdate", exception.getMessage());
+            model.addAttribute("project", projectService.getProject(projectId, currentUser.userId()));
+            return "projects/edit";
+        }
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde aktualisiert.");
         return "redirect:/projects/" + projectId + "/plan";
     }

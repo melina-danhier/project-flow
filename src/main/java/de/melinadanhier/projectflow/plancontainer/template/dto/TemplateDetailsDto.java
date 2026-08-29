@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.template.dto;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -19,7 +21,7 @@ import de.melinadanhier.projectflow.planelement.dto.TaskDependencyDto;
 @Getter
 @Setter
 @NoArgsConstructor
-public class TemplateDetailsDto {
+public class TemplateDetailsDto implements ProjectClassification {
 
     private UUID id;
     private String title;
@@ -27,7 +29,9 @@ public class TemplateDetailsDto {
     private StructureMode structureMode;
     private SortMode sortMode;
     private TemplateCategory category;
-    private String projectType;
+    private String otherProjectTypeDescription;
+
+    private ProjectSubCategory subcategory;
     private Integer recommendedDurationDays;
     private CollaborationMode collaborationMode;
     private boolean active;

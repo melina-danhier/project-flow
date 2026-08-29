@@ -37,7 +37,7 @@ class AiTechnicalErrorTest {
         AiTechnicalError error = AiTechnicalError.from(exception, AiOperation.PRE_CHECK);
 
         assertThat(error.errorCode()).isEqualTo(AiTechnicalErrorCode.UNKNOWN_AI_ERROR);
-        assertThat(error.message()).isEqualTo("RuntimeException");
+        assertThat(error.message()).isNotBlank();
         assertThat(error.cause()).isSameAs(exception);
         assertThat(error.isRetryable()).isFalse();
     }

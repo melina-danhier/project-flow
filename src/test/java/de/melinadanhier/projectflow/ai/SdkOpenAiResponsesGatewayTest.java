@@ -77,8 +77,8 @@ class SdkOpenAiResponsesGatewayTest {
     @Test
     void sdkDeserializesGenerationWithOptionalFields() {
         String json = """
-                {"phases":[{
-                  "tempId":null,"title":"Phase","description":null,"startDate":null,"endDate":null,"order":1,
+                {"sections":[{
+                  "tempId":null,"title":"Section","description":null,"order":1,
                   "tasks":[{
                     "tempId":"task-1","title":"Aufgabe","description":null,"estimatedHours":null,
                     "startDate":null,"dueDate":null,"criticalAssumption":null,"origin":"AI_INFERRED",
@@ -88,12 +88,10 @@ class SdkOpenAiResponsesGatewayTest {
                 }]}
                 """;
         var output = executeRaw(rawResponse(json), OpenAiGenerationOutput.class);
-        assertThat(output.phases()).singleElement().satisfies(phase -> {
-            assertThat(phase.tempId()).isEmpty();
-            assertThat(phase.description()).isEmpty();
-            assertThat(phase.startDate()).isEmpty();
-            assertThat(phase.endDate()).isEmpty();
-            assertThat(phase.tasks()).singleElement().satisfies(task -> {
+        assertThat(output.sections()).singleElement().satisfies(section -> {
+            assertThat(section.tempId()).isEmpty();
+            assertThat(section.description()).isEmpty();
+            assertThat(section.tasks()).singleElement().satisfies(task -> {
                 assertThat(task.description()).isEmpty();
                 assertThat(task.estimatedHours()).isEmpty();
                 assertThat(task.startDate()).isEmpty();
@@ -101,7 +99,7 @@ class SdkOpenAiResponsesGatewayTest {
                 assertThat(task.criticalAssumption()).isEmpty();
                 assertThat(task.priority()).isEmpty();
             });
-            assertThat(phase.milestones()).singleElement().satisfies(milestone -> {
+            assertThat(section.milestones()).singleElement().satisfies(milestone -> {
                 assertThat(milestone.tempId()).isEmpty();
                 assertThat(milestone.date()).isEmpty();
             });

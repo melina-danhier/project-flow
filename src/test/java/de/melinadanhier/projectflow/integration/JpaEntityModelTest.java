@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.integration;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.draft.model.DraftMilestone;
 import de.melinadanhier.projectflow.draft.model.DraftSection;
 import de.melinadanhier.projectflow.draft.model.DraftTask;
@@ -46,6 +47,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 class JpaEntityModelTest {
 
+    @Test
+    void sectionsHaveNoOwnDateFields() {
+        assertThat(java.util.Arrays.stream(PlanSection.class.getDeclaredFields()).map(java.lang.reflect.Field::getName))
+                .doesNotContain("startDate", "endDate", "relativeStartDay", "relativeEndDay");
+        assertThat(java.util.Arrays.stream(DraftSection.class.getDeclaredFields()).map(java.lang.reflect.Field::getName))
+                .doesNotContain("startDate", "endDate");
+    }
+
     @Autowired
     private TestEntityManager entityManager;
 
@@ -83,6 +92,8 @@ class JpaEntityModelTest {
     @Test
     void persistsProjectAsPlanContainerSubtype() {
         Project project = newProject("Umzug", CreationType.EMPTY, ProjectStatus.ACTIVE);
+        project.setCategory(TemplateCategory.HOME);
+        project.setSubcategory(ProjectSubCategory.MOVING);
 
         entityManager.persistAndFlush(project);
         UUID id = project.getId();
@@ -91,6 +102,9 @@ class JpaEntityModelTest {
         PlanContainer loaded = entityManager.find(PlanContainer.class, id);
         assertThat(loaded).isInstanceOf(Project.class);
         assertThat(loaded.getTitle()).isEqualTo("Umzug");
+        assertThat(((Project) loaded).getSubcategory()).isEqualTo(ProjectSubCategory.MOVING);
+        assertThat(jdbcTemplate.queryForObject("select subcategory from projects where id = ?",
+                String.class, id)).isEqualTo("MOVING");
     }
 
     @Test
@@ -131,16 +145,14 @@ class JpaEntityModelTest {
     }
 
     @Test
-    void persistsTemplateWithRelativeDates() {
+    void persistsTemplateWithRelativeTaskDates() {
         Template template = new Template();
         template.setTitle("Studienprojekt");
         template.setCategory(TemplateCategory.EDUCATION);
-        template.setProjectType("Gruppenpräsentation");
+        template.setSubcategory(ProjectSubCategory.PRESENTATION_OR_REPORT);
         template.setRecommendedDurationDays(21);
         template.setCollaborationMode(CollaborationMode.GROUP);
         PlanSection section = newSection("Recherche", ElementOrigin.TEMPLATE, 0);
-        section.setRelativeStartDay(0);
-        section.setRelativeEndDay(7);
         Task task = newTask("Quellen sammeln", ElementOrigin.TEMPLATE, 0);
         task.setRelativeStartDay(0);
         task.setRelativeDueDay(5);
@@ -153,10 +165,13 @@ class JpaEntityModelTest {
         entityManager.clear();
 
         Template loaded = entityManager.find(Template.class, id);
+        assertThat(loaded.getSubcategory()).isEqualTo(ProjectSubCategory.PRESENTATION_OR_REPORT);
+        assertThat(jdbcTemplate.queryForObject("select subcategory from plan_templates where id = ?",
+                String.class, id)).isEqualTo("PRESENTATION_OR_REPORT");
         assertThat(loaded.getRecommendedDurationDays()).isEqualTo(21);
         assertThat(loaded.getSections()).singleElement()
-                .extracting(PlanSection::getRelativeEndDay)
-                .isEqualTo(7);
+                .extracting(PlanSection::getTitle)
+                .isEqualTo("Recherche");
         assertThat(loaded.getElements()).singleElement()
                 .isInstanceOf(Task.class)
                 .extracting(element -> ((Task) element).getRelativeDueDay())
@@ -169,7 +184,7 @@ class JpaEntityModelTest {
         entityManager.persist(project);
         DraftPlan draft = newDraft(project);
         DraftSection section = new DraftSection();
-        section.setTitle("Entwurfsphase");
+        section.setTitle("Entwurfssection");
         DraftTask task = new DraftTask();
         task.setTitle("Vorschlag prüfen");
         DraftMilestone milestone = new DraftMilestone();

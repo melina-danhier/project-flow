@@ -30,6 +30,19 @@ class AiResponseSchemasTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void generatedPlanUsesSectionsWithoutSectionDates() {
+        var planProperties = (Map<String, Object>) AiResponseSchemas.forType(GeneratedPlanResponse.class)
+                .get("properties");
+        assertThat(planProperties).containsOnlyKeys("sections");
+        var sections = (Map<String, Object>) planProperties.get("sections");
+        var section = (Map<String, Object>) sections.get("items");
+        var sectionProperties = (Map<String, Object>) section.get("properties");
+        assertThat(sectionProperties).containsKeys("title", "description", "order", "tasks", "milestones")
+                .doesNotContainKeys("startDate", "endDate");
+    }
+
     @SuppressWarnings("unchecked")
     private void assertSchema(Map<String, Object> schema, Type type) {
         if (schema.containsKey("anyOf")) {
