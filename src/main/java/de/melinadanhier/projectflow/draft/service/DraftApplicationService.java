@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.draft.service;
 
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.draft.model.DraftMilestone;
 import de.melinadanhier.projectflow.draft.mapper.DraftMapper;
@@ -83,6 +82,8 @@ public class DraftApplicationService {
         }
         validationService.validate(draft);
 
+        project.setSortMode(draft.getSortMode());
+
         draft.setStatus(DraftPlanStatus.APPLYING);
         Map<DraftSection, PlanSection> sections = new HashMap<>();
         draft.getSections().forEach(source -> {
@@ -90,7 +91,7 @@ public class DraftApplicationService {
             target.setTitle(source.getTitle());
             target.setDescription(source.getDescription());
             target.setSortOrder(source.getSortOrder());
-            target.setOrigin(ElementOrigin.AI);
+            target.setOrigin(source.getOrigin());
             project.addSection(target);
             sections.put(source, target);
             source.setReviewStatus(DraftReviewStatus.ACCEPTED);
@@ -130,8 +131,7 @@ public class DraftApplicationService {
         target.setTitle(source.getTitle());
         target.setDescription(source.getDescription());
         target.setSortOrder(source.getSortOrder());
-        target.setOrigin(source.getAiOrigin() == GeneratedElementOrigin.USER_INPUT
-                ? ElementOrigin.USER : ElementOrigin.AI);
+        target.setOrigin(source.getOrigin());
         return target;
     }
 }

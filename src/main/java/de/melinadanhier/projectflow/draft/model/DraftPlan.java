@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.draft.model;
 
 import de.melinadanhier.projectflow.common.model.MutableEntity;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -42,6 +43,11 @@ public class DraftPlan extends MutableEntity {
 
     @Column(name = "generated_at")
     private Instant generatedAt;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sort_mode", nullable = false, length = 20)
+    private SortMode sortMode = SortMode.DATE;
 
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "draftPlan", cascade = CascadeType.ALL, orphanRemoval = true)

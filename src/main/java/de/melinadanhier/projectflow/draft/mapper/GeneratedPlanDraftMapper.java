@@ -10,6 +10,7 @@ import de.melinadanhier.projectflow.draft.model.DraftPlanElement;
 import de.melinadanhier.projectflow.draft.model.DraftSection;
 import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
+import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +46,17 @@ public class GeneratedPlanDraftMapper {
                 createMilestone(generated, section, elements, milestonesByKey);
             }
 
+            if (section.getElements().stream().map(DraftPlanElement::getSortOrder).distinct().count()
+                    != section.getElements().size()) {
+                List<DraftPlanElement> sharedOrder = new ArrayList<>(section.getElements());
+                sharedOrder.sort(java.util.Comparator.comparingInt(DraftPlanElement::getSortOrder));
+                section.getElements().clear();
+                section.getElements().addAll(sharedOrder);
+                for (int position = 0; position < sharedOrder.size(); position++) {
+                    sharedOrder.get(position).setSortOrder(position + 1);
+                }
+            }
+
         }
 
         response.sections().stream()
@@ -74,6 +86,7 @@ public class GeneratedPlanDraftMapper {
         section.setTitle(generatedSection.title());
         section.setDescription(generatedSection.description());
         section.setSortOrder(generatedSection.order());
+        section.setOrigin(ElementOrigin.AI);
         sections.add(section);
         if (generatedSection.tempId() != null && !generatedSection.tempId().isBlank()) {
             register(sectionsByKey, generatedSection.tempId(), section);
@@ -101,6 +114,7 @@ public class GeneratedPlanDraftMapper {
         milestone.setTitle(generated.title());
         milestone.setDueDate(generated.date());
         milestone.setSortOrder(generated.order());
+        milestone.setOrigin(ElementOrigin.AI);
         section.addElement(milestone);
         elements.add(milestone);
         if (generated.tempId() != null && !generated.tempId().isBlank()) {

@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.draft.dto;
 
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
+import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,7 +20,21 @@ public class DraftSectionDto {
     private String description;
     private int sortOrder;
     private DraftReviewStatus reviewStatus;
-    private boolean userModified;
+    private ElementOrigin origin;
     private boolean hasCriticalAssumption;
     private List<DraftPlanElementDto> elements = new ArrayList<>();
+
+    public boolean isUserModified() {
+        return origin == ElementOrigin.AI_MODIFIED || origin == ElementOrigin.TEMPLATE_MODIFIED;
+    }
+
+    public String getOriginLabel() {
+        return switch (origin) {
+            case AI -> "KI-Vorschlag";
+            case AI_MODIFIED -> "KI-Vorschlag, bearbeitet";
+            case TEMPLATE -> "Vorlage";
+            case TEMPLATE_MODIFIED -> "Vorlage, bearbeitet";
+            case USER -> "Nutzereingabe";
+        };
+    }
 }

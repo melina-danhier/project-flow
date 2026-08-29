@@ -134,9 +134,16 @@ public class MilestoneService {
     }
 
     private void apply(Milestone milestone, MilestoneForm form) {
-        milestone.setTitle(form.getTitle().trim());
-        milestone.setDescription(form.getDescription() == null || form.getDescription().isBlank()
-                ? null : form.getDescription().trim());
+        String title = form.getTitle().trim();
+        String description = form.getDescription() == null || form.getDescription().isBlank()
+                ? null : form.getDescription().trim();
+        if (!java.util.Objects.equals(milestone.getTitle(), title)
+                || !java.util.Objects.equals(milestone.getDescription(), description)
+                || !java.util.Objects.equals(milestone.getDueDate(), form.getDueDate())) {
+            milestone.setOrigin(milestone.getOrigin().modifiedByUser());
+        }
+        milestone.setTitle(title);
+        milestone.setDescription(description);
         milestone.setDueDate(form.getDueDate());
         milestone.setRelativeDueDay(null);
         milestone.setCompleted(form.isCompleted());

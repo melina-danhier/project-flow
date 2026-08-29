@@ -15,6 +15,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -53,8 +54,10 @@ public class DraftSection extends MutableEntity {
     @Column(name = "review_status", nullable = false, length = 20)
     private DraftReviewStatus reviewStatus = DraftReviewStatus.PENDING;
 
-    @Column(name = "user_modified", nullable = false)
-    private boolean userModified;
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origin", nullable = false, length = 20)
+    private ElementOrigin origin = ElementOrigin.AI;
 
     @Column(name = "has_critical_assumption", nullable = false)
     private boolean hasCriticalAssumption;
@@ -74,5 +77,9 @@ public class DraftSection extends MutableEntity {
         if (element.getDraftSection() == this) {
             element.setDraftSection(null);
         }
+    }
+
+    public void markContentModified() {
+        origin = origin.modifiedByUser();
     }
 }

@@ -129,9 +129,15 @@ public class SectionService {
     }
 
     private void apply(PlanSection section, SectionForm form) {
-        section.setTitle(form.getTitle().trim());
-        section.setDescription(form.getDescription() == null || form.getDescription().isBlank()
-                ? null : form.getDescription().trim());
+        String title = form.getTitle().trim();
+        String description = form.getDescription() == null || form.getDescription().isBlank()
+                ? null : form.getDescription().trim();
+        if (!java.util.Objects.equals(section.getTitle(), title)
+                || !java.util.Objects.equals(section.getDescription(), description)) {
+            section.setOrigin(section.getOrigin().modifiedByUser());
+        }
+        section.setTitle(title);
+        section.setDescription(description);
     }
 
     private int boundedPosition(Integer requested, int size) {

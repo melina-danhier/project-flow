@@ -163,8 +163,18 @@ public class TaskService {
     }
 
     private void apply(Task task, TaskForm form, ProjectMember assignee) {
-        task.setTitle(form.getTitle().trim());
-        task.setDescription(normalizeOptional(form.getDescription()));
+        String title = form.getTitle().trim();
+        String description = normalizeOptional(form.getDescription());
+        if (!java.util.Objects.equals(task.getTitle(), title)
+                || !java.util.Objects.equals(task.getDescription(), description)
+                || task.getPriority() != form.getPriority()
+                || !java.util.Objects.equals(task.getStartDate(), form.getStartDate())
+                || !java.util.Objects.equals(task.getDueDate(), form.getDueDate())
+                || !java.util.Objects.equals(task.getAssignee(), assignee)) {
+            task.setOrigin(task.getOrigin().modifiedByUser());
+        }
+        task.setTitle(title);
+        task.setDescription(description);
         task.setPriority(form.getPriority());
         task.setStartDate(form.getStartDate());
         task.setDueDate(form.getDueDate());
