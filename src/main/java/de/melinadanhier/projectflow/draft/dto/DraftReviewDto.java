@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.draft.dto;
 
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
+import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,6 +27,7 @@ public class DraftReviewDto {
     private long lockVersion;
     private DraftPlanStatus status;
     private Instant generatedAt;
+    private SortMode sortMode;
     private List<DraftSectionDto> sections = new ArrayList<>();
     private List<DraftPlanElementDto> elements = new ArrayList<>();
 

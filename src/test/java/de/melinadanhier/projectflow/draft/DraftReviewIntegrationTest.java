@@ -186,6 +186,8 @@ class DraftReviewIntegrationTest {
         var current = review(f);
         assertThat(current.getLockVersion()).isGreaterThan(version);
         assertThat(current.getElements().getFirst().getTitle()).isEqualTo("Überarbeitet");
+        assertThat(current.getElements().getFirst().getOrigin())
+                .isEqualTo(de.melinadanhier.projectflow.planelement.model.ElementOrigin.AI_MODIFIED);
         assertThat(current.getElements().getFirst().getCriticalAssumption()).isEqualTo("Material ist verfügbar");
         assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.PENDING);
         mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
@@ -204,6 +206,8 @@ class DraftReviewIntegrationTest {
                 .andExpect(redirectedUrl(f.reviewUrl()));
         assertThat(review(f).getUncheckedCriticalTasks()).isEmpty();
         assertThat(review(f).getElements()).hasSize(3);
+        assertThat(review(f).getSections().getFirst().getElements())
+                .extracting("sortOrder").containsExactly(0, 1, 2);
         application.apply(f.projectId(), f.owner().userId());
         assertThat(elementCount(f)).isEqualTo(3);
     }
@@ -244,12 +248,17 @@ class DraftReviewIntegrationTest {
         var draft = review(f);
         var task = draft.getElements().getFirst();
         var section = draft.getSections().getFirst();
+        var milestoneId = UUID.randomUUID();
         mvc.perform(get(f.reviewUrl()).with(user(outsider))).andExpect(status().isNotFound());
         mvc.perform(get(f.reviewUrl())).andExpect(status().is3xxRedirection());
         for (String suffix : List.of("/apply", "/confirm-and-apply", "/elements/" + task.getId() + "/accept",
                 "/sections/" + section.getId() + "/accept", "/sections/" + section.getId(),
-                "/tasks/" + task.getId() + "/delete", "/tasks/" + task.getId())) {
+                "/tasks/" + task.getId() + "/delete", "/tasks/" + task.getId(),
+                "/milestones/" + milestoneId, "/elements/" + task.getId() + "/move",
+                "/sections/" + section.getId() + "/move", "/sort-mode")) {
             mvc.perform(post(f.url() + suffix).param("lockVersion", "0").param("title", "Titel").param("priority", "LOW")
+                            .param("targetSectionId", section.getId().toString()).param("targetPosition", "0")
+                            .param("sortMode", "MANUAL")
                             .with(user(outsider)).with(csrf())).andExpect(status().isNotFound());
             mvc.perform(post(f.url() + suffix).param("lockVersion", "0").with(user(f.owner())))
                     .andExpect(status().isForbidden());
@@ -313,6 +322,8 @@ class DraftReviewIntegrationTest {
                 .containsExactly("Erster Bereich", "Section");
         assertThat(review.getSections().get(1).getElements()).extracting("title")
                 .containsExactly("Aufgabe 2", "Aufgabe 3", "Zwischenziel", "Aufgabe 1", "Aufgabe 4");
+        assertThat(review.getSections().get(1).getElements()).extracting("manualPosition")
+                .containsExactly(0, 1, 2, 3, 4);
     }
 
     @Test
@@ -333,6 +344,8 @@ class DraftReviewIntegrationTest {
         DraftReviewDto updated = review(f);
         assertThat(updated.getSections().getFirst().getTitle()).isEqualTo("Neu geordnet");
         assertThat(updated.getSections().getFirst().getDescription()).isEqualTo("Thematischer Bereich");
+        assertThat(updated.getSections().getFirst().getOrigin())
+                .isEqualTo(de.melinadanhier.projectflow.planelement.model.ElementOrigin.AI_MODIFIED);
         assertThat(updated.getElements().stream()
                 .map(element -> List.of(element.getId(), element.getTitle(), element.getSortOrder())))
                 .containsExactlyElementsOf(elementsBefore);

@@ -10,6 +10,7 @@ import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkfl
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.hibernate.Hibernate;
 
 @Service
 @RequiredArgsConstructor
@@ -41,13 +42,13 @@ public class DraftValidationService {
                         project.getCategory(), project.getSubcategory(), project.getOtherProjectTypeDescription(), null, null, null));
         var plan = new GeneratedPlanResponse(draft.getSections().stream().map(section ->
                 new GeneratedSection(section.getId().toString(), section.getTitle(), section.getDescription(),
-                        section.getSortOrder(),
+                        section.getSortOrder() + 1,
                         section.getElements().stream().filter(DraftTask.class::isInstance)
                                 .map(DraftTask.class::cast).map(this::task).toList(),
                         section.getElements().stream().filter(DraftMilestone.class::isInstance)
                                 .map(DraftMilestone.class::cast).map(milestone -> new GeneratedMilestone(
                                         milestone.getId().toString(), milestone.getTitle(),
-                                        milestone.getDueDate(), milestone.getSortOrder())).toList())).toList());
+                                        milestone.getDueDate(), milestone.getSortOrder() + 1)).toList())).toList());
         var result = generationValidator.validatePlan(plan, snapshot);
         if (!result.isValid()) {
             throw new DomainValidationException("Der Entwurf kann noch nicht übernommen werden: "
@@ -58,12 +59,19 @@ public class DraftValidationService {
     private GeneratedTask task(DraftTask task) {
         return new GeneratedTask(task.getId().toString(), task.getTitle(), task.getDescription(),
                 task.getEstimatedHours(), task.getStartDate(), task.getDueDate(), task.getCriticalAssumption(),
-                task.getAiOrigin(), task.getSortOrder(), task.getPrerequisites().stream()
+                generatedOrigin(task), task.getSortOrder() + 1, task.getPrerequisites().stream()
                 .map(prerequisite -> prerequisite.getId().toString()).toList(), task.getPriority());
     }
 
+    private GeneratedElementOrigin generatedOrigin(DraftPlanElement element) {
+        return element.getOrigin() == de.melinadanhier.projectflow.planelement.model.ElementOrigin.USER
+                ? GeneratedElementOrigin.USER_INPUT : GeneratedElementOrigin.AI_INFERRED;
+    }
+
     private void requireValidBean(Object value) {
-        if (!beanValidator.validate(value).isEmpty()) {
+        Object initialized = Hibernate.unproxy(value);
+        var violations = beanValidator.validate(initialized);
+        if (!violations.isEmpty()) {
             throw new DomainValidationException("Der Entwurf enthält ungültige Angaben. Bitte prüfe Titel, Texte und Aufwand.");
         }
     }

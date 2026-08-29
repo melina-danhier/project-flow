@@ -43,6 +43,7 @@ public class PlanDraftMaterializationService {
 
         DraftPlan draft = new DraftPlan();
         workflow.getProject().attachDraft(draft);
+        draft.setSortMode(workflow.getProject().getSortMode());
         contents.sections().forEach(draft::addSection);
         contents.elements().forEach(draft::addElement);
         draft.setGeneratedAt(Instant.now(clock));

@@ -29,8 +29,7 @@ public interface DraftMapper {
         target.setDescription(source.getDescription());
         target.setSortOrder(source.getSortOrder());
         target.setReviewStatus(source.getReviewStatus());
-        target.setAiOrigin(source.getAiOrigin());
-        target.setUserModified(source.isUserModified());
+        target.setOrigin(source.getOrigin());
         target.setHasCriticalAssumption(source.isHasCriticalAssumption());
         target.setCriticalAssumption(source.getCriticalAssumption());
         if (source instanceof DraftTask task) {

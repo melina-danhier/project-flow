@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import de.melinadanhier.projectflow.draft.dto.DraftTaskForm;
+import de.melinadanhier.projectflow.draft.dto.DraftMilestoneForm;
+import de.melinadanhier.projectflow.draft.dto.DraftElementMoveForm;
+import de.melinadanhier.projectflow.draft.dto.DraftSectionMoveForm;
+import de.melinadanhier.projectflow.draft.dto.DraftSortModeForm;
 import de.melinadanhier.projectflow.draft.service.CriticalAssumptionsConfirmationRequiredException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
@@ -102,7 +106,7 @@ public class DraftController {
 
     @PostMapping("/projects/{projectId}/draft/tasks/{taskId}")
     public String updateTask(@PathVariable UUID projectId, @PathVariable UUID taskId,
-                             @ModelAttribute DraftTaskForm taskForm,
+                             @Valid @ModelAttribute DraftTaskForm taskForm,
                              BindingResult bindingResult,
                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
         if (bindingResult.hasErrors()) {
@@ -111,6 +115,48 @@ public class DraftController {
             );
         }
         draftReviewService.updateTask(projectId, taskId, currentUser.userId(), taskForm);
+        return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/milestones/{milestoneId}")
+    public String updateMilestone(@PathVariable UUID projectId, @PathVariable UUID milestoneId,
+                                  @Valid @ModelAttribute DraftMilestoneForm milestoneForm,
+                                  BindingResult bindingResult,
+                                  @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        if (bindingResult.hasErrors()) {
+            throw new DomainValidationException("Bitte prüfe die Meilensteinangaben.");
+        }
+        draftReviewService.updateMilestone(projectId, milestoneId, currentUser.userId(), milestoneForm);
+        return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/elements/{elementId}/move")
+    public String moveElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
+                              @Valid @ModelAttribute DraftElementMoveForm moveForm,
+                              BindingResult bindingResult,
+                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        if (bindingResult.hasErrors()) throw new DomainValidationException("Die Zielposition ist ungültig.");
+        draftReviewService.moveElement(projectId, elementId, currentUser.userId(), moveForm);
+        return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/move")
+    public String moveSection(@PathVariable UUID projectId, @PathVariable UUID sectionId,
+                              @Valid @ModelAttribute DraftSectionMoveForm moveForm,
+                              BindingResult bindingResult,
+                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        if (bindingResult.hasErrors()) throw new DomainValidationException("Die Zielposition ist ungültig.");
+        draftReviewService.moveSection(projectId, sectionId, currentUser.userId(), moveForm);
+        return reviewRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/draft/sort-mode")
+    public String updateSortMode(@PathVariable UUID projectId,
+                                 @Valid @ModelAttribute DraftSortModeForm sortModeForm,
+                                 BindingResult bindingResult,
+                                 @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        if (bindingResult.hasErrors()) throw new DomainValidationException("Der Sortiermodus ist ungültig.");
+        draftReviewService.updateSortMode(projectId, currentUser.userId(), sortModeForm);
         return reviewRedirect(projectId);
     }
 
