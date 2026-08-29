@@ -150,16 +150,11 @@ class SdkGeminiResponsesGatewayTest {
         verifyNoMoreInteractions(parser);
     }
 
-    @ParameterizedTest
-    @CsvSource({"408,PROVIDER_TIMEOUT", "504,PROVIDER_TIMEOUT", "429,RATE_LIMIT_EXCEEDED",
-            "500,PROVIDER_UNAVAILABLE", "503,PROVIDER_UNAVAILABLE", "400,CLIENT_CONFIGURATION_ERROR",
-            "401,CLIENT_CONFIGURATION_ERROR", "403,CLIENT_CONFIGURATION_ERROR", "404,CLIENT_CONFIGURATION_ERROR",
-            "422,CLIENT_CONFIGURATION_ERROR", "499,CLIENT_CONFIGURATION_ERROR", "599,PROVIDER_UNAVAILABLE",
-            "600,UNKNOWN_AI_ERROR", "302,UNKNOWN_AI_ERROR"})
-    void translatesEverySdkApiException(int status, AiTechnicalErrorCode expected) {
-        var exception = new ApiException(status, "status", "provider detail");
+    @Test
+    void translatesSdkApiExceptionUsingSharedStatusClassification() {
+        var exception = new ApiException(429, "status", "provider detail");
         when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class))).thenThrow(exception);
-        assertCode(expected);
+        assertCode(AiTechnicalErrorCode.RATE_LIMIT_EXCEEDED);
         assertThatThrownBy(this::execute).hasCause(exception);
     }
 

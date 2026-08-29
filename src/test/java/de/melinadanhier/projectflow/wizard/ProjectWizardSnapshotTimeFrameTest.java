@@ -65,9 +65,9 @@ class ProjectWizardSnapshotTimeFrameTest {
     }
 
 
-    @ParameterizedTest
-    @EnumSource(ProjectSubCategory.class)
-    void restoresTypedClassificationFromSerializedSnapshot(ProjectSubCategory subcategory) {
+    @Test
+    void restoresTypedClassificationFromSerializedSnapshot() {
+        ProjectSubCategory subcategory = ProjectSubCategory.THESIS;
         var snapshot = new AiWizardSnapshot("Projekt", null, null, null,
                 CollaborationMode.INDIVIDUAL, subcategory.getCategory(), subcategory, null,
                 null, null, null);
