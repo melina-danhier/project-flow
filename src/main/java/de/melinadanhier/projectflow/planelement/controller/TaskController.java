@@ -3,11 +3,13 @@ package de.melinadanhier.projectflow.planelement.controller;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.planelement.dto.TaskDependencyForm;
+import de.melinadanhier.projectflow.planelement.dto.TaskCommentForm;
 import de.melinadanhier.projectflow.planelement.dto.TaskDetailsDto;
 import de.melinadanhier.projectflow.planelement.dto.TaskForm;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import de.melinadanhier.projectflow.planelement.service.TaskDependencyService;
+import de.melinadanhier.projectflow.planelement.service.TaskCommentService;
 import de.melinadanhier.projectflow.planelement.service.TaskService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import jakarta.validation.Valid;
@@ -30,6 +32,7 @@ public class TaskController {
 
     private final TaskService taskService;
     private final TaskDependencyService dependencyService;
+    private final TaskCommentService commentService;
 
     @GetMapping("/projects/{projectId}/tasks/new")
     public String createForm(
@@ -79,6 +82,38 @@ public class TaskController {
         populateDetailModel(model, projectId, taskId, currentUser.userId());
         model.addAttribute("dependencyForm", new TaskDependencyForm());
         return "projects/tasks/detail";
+    }
+
+    @PostMapping("/projects/{projectId}/tasks/{taskId}/comments")
+    public String addComment(
+            @PathVariable UUID projectId,
+            @PathVariable UUID taskId,
+            @Valid @ModelAttribute("commentForm") TaskCommentForm form,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            populateDetailModel(model, projectId, taskId, currentUser.userId());
+            return "projects/tasks/detail";
+        }
+        commentService.addComment(projectId, taskId, form, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", "Beitrag wurde hinzugefügt.");
+        return taskRedirect(projectId, taskId);
+    }
+
+    @PostMapping("/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete")
+    public String deleteComment(
+            @PathVariable UUID projectId,
+            @PathVariable UUID taskId,
+            @PathVariable UUID commentId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            RedirectAttributes redirectAttributes
+    ) {
+        commentService.deleteOwnComment(projectId, taskId, commentId, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", "Beitrag wurde gelöscht.");
+        return taskRedirect(projectId, taskId);
     }
 
     @GetMapping("/projects/{projectId}/tasks/{taskId}/edit")
@@ -172,6 +207,12 @@ public class TaskController {
 
     private void populateDetailModel(Model model, UUID projectId, UUID taskId, UUID userId) {
         model.addAttribute("task", taskService.getTaskDetail(projectId, taskId, userId));
+        var commentSection = commentService.getCommentSection(projectId, taskId, userId);
+        model.addAttribute("comments", commentSection.comments());
+        model.addAttribute("commentGroupProject", commentSection.groupProject());
+        if (!model.containsAttribute("commentForm")) {
+            model.addAttribute("commentForm", new TaskCommentForm());
+        }
     }
 
     private void populateFormModel(Model model, TaskDetailsDto context, boolean editing) {

@@ -19,6 +19,35 @@
     <dt>Zuständigkeit</dt><dd th:text="${task.assigneeDisplayName ?: 'Nicht zugewiesen'}"></dd>
 </dl>
 
+<section aria-labelledby="task-comments-heading">
+    <h2 id="task-comments-heading" th:text="${commentGroupProject ? 'Kommentare' : 'Notizen'}">Notizen</h2>
+    <p th:if="${#lists.isEmpty(comments)}"
+       th:text="${commentGroupProject ? 'Noch keine Kommentare vorhanden.' : 'Noch keine Notizen vorhanden.'}">Noch keine Einträge vorhanden.</p>
+    <ol th:unless="${#lists.isEmpty(comments)}">
+        <li th:each="comment : ${comments}">
+            <p th:text="${comment.content}">Beitrag</p>
+            <p>
+                <span th:text="${comment.authorDisplayName}">Name</span>,
+                <time th:datetime="${comment.createdAt}"
+                      th:text="${#temporals.format(comment.createdAt, 'dd.MM.yyyy HH:mm')}">Zeitpunkt</time>
+            </p>
+            <form th:if="${comment.deletable}"
+                  th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
+                  method="post">
+                <button type="submit" th:text="${commentGroupProject ? 'Eigenen Kommentar löschen' : 'Eigene Notiz löschen'}">Beitrag löschen</button>
+            </form>
+        </li>
+    </ol>
+    <form th:if="${task.editable}"
+          th:action="@{/projects/{projectId}/tasks/{taskId}/comments(projectId=${task.planContainerId},taskId=${task.id})}"
+          th:object="${commentForm}" method="post">
+        <label for="comment-content" th:text="${commentGroupProject ? 'Neuer Kommentar' : 'Neue Notiz'}">Neue Notiz</label>
+        <textarea id="comment-content" th:field="*{content}" maxlength="2000" required></textarea>
+        <p th:if="${#fields.hasErrors('content')}" th:errors="*{content}" role="alert"></p>
+        <button type="submit" th:text="${commentGroupProject ? 'Kommentar hinzufügen' : 'Notiz hinzufügen'}">Hinzufügen</button>
+    </form>
+</section>
+
 <section><h2>Voraussetzungen</h2>
     <p th:if="${#lists.isEmpty(task.predecessors)}">Keine Voraussetzungen.</p>
     <ul><li th:each="prerequisite : ${task.predecessors}">
