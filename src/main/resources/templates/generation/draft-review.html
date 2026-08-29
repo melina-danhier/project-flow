@@ -1,74 +1,92 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>KI-Entwurf prüfen – ProjectFlow</title>
     <link rel="stylesheet" th:href="@{/css/draft-review.css}">
     <script th:src="@{/js/draft-review.js}" defer></script>
 </head>
-<body><main>
-<a th:href="@{/projects/drafts}">Zurück zu den Entwürfen</a>
-<h1>KI-Entwurf prüfen</h1>
-<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
-<p>„Als geprüft markieren“ hält deinen Reviewfortschritt fest. Bei Aufgaben mit kritischer Annahme gilt damit auch die Annahme als geprüft.
-    Erst die Übernahme bestätigt den gesamten Plan einschließlich aller übrigen Elemente.</p>
-<nav aria-label="Reviewfilter">
-    <a th:href="@{/projects/{id}/draft(id=${draft.projectId})}" th:attr="aria-current=${!pendingOnly ? 'page' : null}">Alle Elemente</a>
-    <a th:href="@{/projects/{id}/draft(id=${draft.projectId},pendingOnly=true)}" th:attr="aria-current=${pendingOnly ? 'page' : null}">Nur ungeprüfte Elemente</a>
-</nav>
-<section th:each="section : ${draft.sections}">
-    <h2 th:text="${section.title}"></h2>
-    <p th:if="${section.description}" th:text="${section.description}"></p>
-    <form th:if="${draft.status.name() != 'APPLIED' and section.reviewStatus.name() != 'ACCEPTED'}"
-          th:action="@{/projects/{pid}/draft/sections/{id}/accept(pid=${draft.projectId},id=${section.id})}" method="post">
-        <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
-        <button type="submit">Phase als geprüft markieren</button>
+<body>
+<main>
+    <a th:href="@{/projects/drafts}">Zurück zu den Entwürfen</a>
+    <header class="review-header">
+        <p class="draft-label">Noch nicht übernommener Entwurf</p>
+        <h1>KI-Entwurf prüfen</h1>
+        <h2 th:text="${draft.projectTitle}">Projekttitel</h2>
+        <dl class="project-facts">
+            <div th:if="${draft.categoryLabel}"><dt>Kategorie</dt><dd th:text="${draft.categoryLabel}"></dd></div>
+            <div th:if="${draft.projectStartDate != null or draft.projectEndDate != null}">
+                <dt>Projektzeitraum</dt>
+                <dd>
+                    <th:block th:if="${draft.projectStartDate != null and draft.projectEndDate != null}">
+                        <time th:datetime="${draft.projectStartDate}" th:text="${#temporals.format(draft.projectStartDate, 'dd.MM.yyyy')}"></time>
+                        <span aria-hidden="true">–</span>
+                        <time th:datetime="${draft.projectEndDate}" th:text="${#temporals.format(draft.projectEndDate, 'dd.MM.yyyy')}"></time>
+                    </th:block>
+                    <th:block th:if="${draft.projectStartDate != null and draft.projectEndDate == null}">
+                        Ab <time th:datetime="${draft.projectStartDate}" th:text="${#temporals.format(draft.projectStartDate, 'dd.MM.yyyy')}"></time>
+                    </th:block>
+                    <th:block th:if="${draft.projectStartDate == null and draft.projectEndDate != null}">
+                        Bis <time th:datetime="${draft.projectEndDate}" th:text="${#temporals.format(draft.projectEndDate, 'dd.MM.yyyy')}"></time>
+                    </th:block>
+                </dd>
+            </div>
+        </dl>
+        <p>Prüfe die vorgeschlagene Struktur. Erst mit der ausdrücklichen Übernahme wird daraus ein verwaltbares Projekt.</p>
+    </header>
+    <p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+    <p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
+
+    <section class="draft-section" th:each="section : ${draft.sections}">
+        <div class="section-heading">
+            <div><h2 th:text="${section.title}"></h2><p th:if="${section.description}" th:text="${section.description}"></p></div>
+            <details class="section-edit" th:if="${draft.status.name() != 'APPLIED'}">
+                <summary>Bearbeiten</summary>
+                <form th:action="@{/projects/{projectId}/draft/sections/{sectionId}(projectId=${draft.projectId},sectionId=${section.id})}" method="post">
+                    <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+                    <label th:for="${'draft-section-title-' + section.id}">Titel</label>
+                    <input th:id="${'draft-section-title-' + section.id}" name="title" th:value="${section.title}" required maxlength="100">
+                    <label th:for="${'draft-section-description-' + section.id}">Beschreibung</label>
+                    <textarea th:id="${'draft-section-description-' + section.id}" name="description" maxlength="2000"
+                              th:text="${section.description}" placeholder="Optionale Beschreibung"></textarea>
+                    <button type="submit">Bereich speichern</button>
+                </form>
+            </details>
+        </div>
+
+        <ol class="plan-elements">
+            <li class="plan-element" th:each="element : ${section.elements}">
+                <div class="element-heading">
+                    <span class="element-icon" aria-hidden="true" th:text="${element.type == 'TASK' ? '☐' : '◆'}"></span>
+                    <strong th:text="${element.title}"></strong>
+                    <span class="element-type" th:text="${element.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span>
+                    <span class="critical-assumption"
+                          th:if="${element.type == 'TASK' and element.criticalAssumption != null and !element.criticalAssumption.isBlank()}">
+                        <button type="button" class="assumption-toggle" aria-label="Kritische Annahme anzeigen" aria-expanded="false"
+                                th:attr="aria-controls=${'assumption-' + element.id},aria-describedby=${'assumption-' + element.id}">
+                            <span aria-hidden="true">!</span>
+                        </button>
+                        <span class="assumption-text" role="tooltip" tabindex="0" th:id="${'assumption-' + element.id}"
+                              th:text="${element.criticalAssumption}" hidden></span>
+                        <noscript><span th:text="${element.criticalAssumption}"></span></noscript>
+                    </span>
+                </div>
+                <p th:if="${element.description}" th:text="${element.description}"></p>
+                <dl class="element-facts">
+                    <div th:if="${element.type == 'TASK' and element.estimatedHours != null}"><dt>Aufwand</dt><dd th:text="${element.estimatedHours + ' Std.'}"></dd></div>
+                    <div th:if="${element.type == 'TASK' and element.priority != null}"><dt>Priorität</dt><dd th:text="${element.priority.name() == 'LOW' ? 'Niedrig' : (element.priority.name() == 'HIGH' ? 'Hoch' : 'Mittel')}"></dd></div>
+                    <div th:if="${element.type == 'TASK' and element.startDate != null}"><dt>Startdatum</dt><dd><time th:datetime="${element.startDate}" th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy')}"></time></dd></div>
+                    <div th:if="${element.type == 'TASK' and element.dueDate != null}"><dt>Fällig am</dt><dd><time th:datetime="${element.dueDate}" th:text="${#temporals.format(element.dueDate, 'dd.MM.yyyy')}"></time></dd></div>
+                    <div th:if="${element.type == 'MILESTONE' and element.dueDate != null}"><dt>Datum</dt><dd><time th:datetime="${element.dueDate}" th:text="${#temporals.format(element.dueDate, 'dd.MM.yyyy')}"></time></dd></div>
+                </dl>
+            </li>
+        </ol>
+    </section>
+    <form class="apply-draft" th:if="${draft.status.name() != 'APPLIED'}"
+          th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
+        <button type="submit">Entwurf ausdrücklich übernehmen</button>
     </form>
-    <ul><li th:each="element : ${section.elements}" th:if="${!pendingOnly or element.reviewStatus.name() != 'ACCEPTED'}">
-        <strong th:text="${element.title}"></strong>
-        <span th:text="${element.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span>
-        <span class="critical-assumption" th:if="${element.type == 'TASK' and element.hasCriticalAssumption}">
-            <button type="button" class="assumption-toggle" aria-label="Kritische Annahme anzeigen" aria-expanded="false"
-                    th:attr="aria-controls=${'assumption-' + element.id},aria-describedby=${'assumption-' + element.id}">
-                <span aria-hidden="true">!</span>
-            </button>
-            <span class="assumption-text" role="tooltip" tabindex="0" th:id="${'assumption-' + element.id}" th:text="${element.criticalAssumption}" hidden></span>
-            <noscript><span th:text="${element.criticalAssumption}"></span></noscript>
-        </span>
-        <span th:text="${element.reviewStatus.name() == 'ACCEPTED' ? 'Geprüft' : 'Ungeprüft'}"></span>
-        <span th:if="${element.dueDate}" th:text="${element.dueDate}"></span>
-        <span th:if="${element.estimatedHours}" th:text="${element.estimatedHours + ' Std.'}"></span>
-        <p th:if="${element.description}" th:text="${element.description}"></p>
-        <form th:if="${draft.status.name() != 'APPLIED' and element.reviewStatus.name() != 'ACCEPTED'}"
-              th:action="@{/projects/{pid}/draft/elements/{id}/accept(pid=${draft.projectId},id=${element.id})}" method="post">
-            <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
-            <button type="submit">Als geprüft markieren</button>
-        </form>
-        <details th:if="${draft.status.name() != 'APPLIED' and element.type == 'TASK'}">
-            <summary>Aufgabe bearbeiten</summary>
-            <form th:action="@{/projects/{pid}/draft/tasks/{id}(pid=${draft.projectId},id=${element.id})}" method="post">
-                <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
-                <label>Titel <input name="title" th:value="${element.title}" required maxlength="100"></label>
-                <label>Beschreibung <textarea name="description" maxlength="2000" th:text="${element.description}"></textarea></label>
-                <label>Startdatum <input type="date" name="startDate" th:value="${element.startDate}"></label>
-                <label>Fälligkeitsdatum <input type="date" name="dueDate" th:value="${element.dueDate}"></label>
-                <label>Aufwand in Stunden <input type="number" name="estimatedHours" min="1" max="10000" th:value="${element.estimatedHours}"></label>
-                <label>Priorität <select name="priority" required>
-                    <option value="LOW" th:selected="${element.priority.name() == 'LOW'}">Niedrig</option>
-                    <option value="MEDIUM" th:selected="${element.priority.name() == 'MEDIUM'}">Mittel</option>
-                    <option value="HIGH" th:selected="${element.priority.name() == 'HIGH'}">Hoch</option>
-                </select></label>
-                <p>Die kritische Annahme bleibt unverändert. Nach dem Speichern ist die Aufgabe erneut ungeprüft.</p>
-                <button type="submit">Aufgabe speichern</button>
-            </form>
-            <form th:action="@{/projects/{pid}/draft/tasks/{id}/delete(pid=${draft.projectId},id=${element.id})}" method="post">
-                <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
-                <button type="submit">Aufgabe löschen</button>
-            </form>
-        </details>
-    </li></ul>
-</section>
-<form th:if="${draft.status.name() != 'APPLIED'}"
-      th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
-    <button type="submit">Entwurf ausdrücklich übernehmen</button>
-</form>
-</main></body></html>
+</main>
+</body>
+</html>

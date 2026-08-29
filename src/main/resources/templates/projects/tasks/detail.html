@@ -8,15 +8,16 @@
 <p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
 <dl>
     <dt>Beschreibung</dt><dd th:text="${task.description ?: 'Keine Beschreibung'}"></dd>
-    <dt>Phase</dt><dd>
-        <span th:if="${task.planSectionId == null}">Ohne Phase</span>
+    <dt>Bereich</dt><dd>
+        <span th:if="${task.planSectionId == null}">Ohne Bereich</span>
         <span th:each="section : ${task.availableSections}" th:if="${section.id == task.planSectionId}" th:text="${section.title}"></span>
     </dd>
     <dt>Status</dt><dd th:text="${task.status}"></dd>
     <dt>Priorität</dt><dd th:text="${task.priority}"></dd>
     <dt>Startdatum</dt><dd th:text="${task.startDate ?: 'Nicht festgelegt'}"></dd>
     <dt>Fälligkeitsdatum</dt><dd th:text="${task.dueDate ?: 'Nicht festgelegt'}"></dd>
-    <dt>Zuständigkeit</dt><dd th:text="${task.assigneeDisplayName ?: 'Nicht zugewiesen'}"></dd>
+    <dt th:if="${task.groupProject}">Zuständigkeit</dt>
+    <dd th:if="${task.groupProject}" th:text="${task.assigneeDisplayName ?: 'Nicht zugewiesen'}"></dd>
 </dl>
 
 <section aria-labelledby="task-comments-heading">

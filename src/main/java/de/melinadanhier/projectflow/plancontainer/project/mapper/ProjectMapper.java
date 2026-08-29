@@ -11,9 +11,11 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ProjectMapper {
 
+    @Mapping(target = "subcategoryOptions", ignore = true)
     ProjectSummaryDto toSummaryDto(Project project);
 
     @Mapping(target = "members", source = "memberships")
+    @Mapping(target = "subcategoryOptions", ignore = true)
     ProjectDetailsDto toDetailsDto(Project project);
 
     @Mapping(target = "userId", source = "user.id")

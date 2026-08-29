@@ -7,21 +7,18 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
-import java.time.LocalDate;
 
 import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.*;
 
-public record GeneratedPhase(
+public record GeneratedSection(
         @Size(max = 100) String tempId,
         @NotBlank @Size(max = MAX_TITLE_LENGTH) String title,
         @Size(max = MAX_DESCRIPTION_LENGTH) String description,
-        LocalDate startDate,
-        LocalDate endDate,
         @Positive int order,
         @NotNull @Size(max = MAX_TASKS) List<@Valid GeneratedTask> tasks,
         @NotNull @Size(max = MAX_MILESTONES) List<@Valid GeneratedMilestone> milestones
 ) {
-    public GeneratedPhase {
+    public GeneratedSection {
         tempId = trim(tempId);
         title = trim(title);
         description = trim(description);

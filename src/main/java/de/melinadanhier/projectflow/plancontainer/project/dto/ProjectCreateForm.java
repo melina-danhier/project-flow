@@ -1,5 +1,8 @@
 package de.melinadanhier.projectflow.plancontainer.project.dto;
 
+import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
@@ -18,7 +21,8 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProjectCreateForm {
+@ValidProjectClassification
+public class ProjectCreateForm implements ProjectClassification {
 
     @NotBlank
     @Size(max = 100)
@@ -34,7 +38,9 @@ public class ProjectCreateForm {
     private TemplateCategory category = TemplateCategory.OTHER;
 
     @Size(max = 100)
-    private String projectType;
+    private String otherProjectTypeDescription;
+
+    private ProjectSubCategory subcategory;
 
     @NotNull
     private CollaborationMode collaborationMode;

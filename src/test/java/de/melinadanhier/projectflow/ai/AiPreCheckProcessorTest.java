@@ -1,7 +1,5 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.ai.provider.AiClient;
-
 import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
@@ -12,6 +10,7 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.validation.precheck.PreCheckResultValidator;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
@@ -197,7 +196,7 @@ class AiPreCheckProcessorTest {
     private AiWizardSnapshot snapshot() {
         return new AiWizardSnapshot(
                 "Testprojekt", null, null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test",
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
                 null, null, null);
     }
 

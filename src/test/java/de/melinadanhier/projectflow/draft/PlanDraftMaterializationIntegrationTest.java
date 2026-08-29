@@ -153,8 +153,8 @@ class PlanDraftMaterializationIntegrationTest {
     @Test
     void mappingFailureLeavesNoDraftAndRecordsValidationCode() {
         Fixture f = runningWorkflow();
-        stubGeneration(new GeneratedPlanResponse(List.of(new GeneratedPhase(
-                "p", "Phase", null, null, null, 1,
+        stubGeneration(new GeneratedPlanResponse(List.of(new GeneratedSection(
+                "p", "Section", null, 1,
                 List.of(task("t", "Aufgabe", 1, null, List.of("missing"))), List.of()))));
         coordinator.generateClaimed(work(f));
         assertNoDraft(f);
@@ -351,11 +351,10 @@ class PlanDraftMaterializationIntegrationTest {
 
     private GeneratedPlanResponse generatedPlan() {
         return new GeneratedPlanResponse(List.of(
-                new GeneratedPhase("last", "Abschluss", null, null, null, 2,
+                new GeneratedSection("last", "Abschluss", null, 2,
                         List.of(task("last", "Letzte Aufgabe", 2, TaskPriority.HIGH, List.of("second"))),
                         List.of(new GeneratedMilestone("done", "Fertig", LocalDate.of(2026, 9, 20), 3))),
-                new GeneratedPhase("first", "Vorbereitung", "Phasenbeschreibung",
-                        LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20), 1,
+                new GeneratedSection("first", "Vorbereitung", "Bereichsbeschreibung", 1,
                         List.of(task("second", "Zweite Aufgabe", 2, null, List.of("first")),
                                 new GeneratedTask("first", "Erste Aufgabe", "Beschreibung", 4,
                                         LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),

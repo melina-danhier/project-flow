@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.wizard;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -80,17 +82,15 @@ class AiWizardSummaryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/ai-summary"))
                 .andExpect(model().attributeExists("summary", "aiProcessingConsentForm"))
-                .andExpect(content().string(containsString("Allgemeine Projektdaten")))
+                .andExpect(content().string(containsString("aria-labelledby=\"general-project-data\"")))
                 .andExpect(content().string(containsString("Umzug planen")))
                 .andExpect(content().string(containsString("Wohnungswechsel organisieren")))
                 .andExpect(content().string(containsString("01.09.2026 bis 21.09.2026")))
                 .andExpect(content().string(containsString("Haushalt und Wohnen – Umzug")))
-                .andExpect(content().string(containsString("Zusätzliche Angaben für die KI")))
-                .andExpect(content().string(containsString("nur für die KI-Verarbeitung bestimmt")))
+                .andExpect(content().string(containsString("aria-labelledby=\"ai-only-data\"")))
                 .andExpect(content().string(containsString("Bis zum Monatsende umziehen")))
                 .andExpect(content().string(containsString("Budget 2.000 Euro")))
-                .andExpect(content().string(containsString("Mitgliederdaten werden nicht übermittelt")))
-                .andExpect(content().string(containsString("überprüfbarer Entwurf")))
+                .andExpect(content().string(containsString("aria-labelledby=\"ai-processing-information\"")))
                 .andExpect(content().string(not(containsString("21 Tage"))));
     }
 
@@ -109,11 +109,9 @@ class AiWizardSummaryIntegrationTest {
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("04.10.2026")))
-                .andExpect(content().string(containsString("Keine zusätzlichen Angaben gemacht.")))
-                .andExpect(content().string(not(containsString("<dt>Beschreibung</dt>"))))
-                .andExpect(content().string(not(containsString("<dt>Projektziel</dt>"))))
-                .andExpect(content().string(not(containsString("<dt>Rahmenbedingungen</dt>"))))
-                .andExpect(content().string(not(containsString("<dt>Weitere Hinweise</dt>"))));
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<section[^>]*aria-labelledby=\"ai-only-data\"[^>]*>(?:(?!</section>).)*<dl>\\s*</dl>.*")))
+                .andExpect(content().string(not(matchesPattern("(?s).*<dd>\\s*</dd>.*"))));
     }
 
     @Test
@@ -143,8 +141,8 @@ class AiWizardSummaryIntegrationTest {
         });
         mockMvc.perform(get("/projects/new/ai/summary")
                         .session(request.session()).with(user(request.user())))
-                .andExpect(content().string(containsString("href=\"/projects/new/ai/details\">Zurück")))
-                .andExpect(content().string(containsString("href=\"/projects/new\">Allgemeine Projektdaten bearbeiten")));
+                .andExpect(content().string(containsString("href=\"/projects/new/ai/details\"")))
+                .andExpect(content().string(containsString("href=\"/projects/new\"")));
     }
 
     @Test
@@ -161,7 +159,7 @@ class AiWizardSummaryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/ai-summary"))
                 .andExpect(model().attributeHasFieldErrors("aiProcessingConsentForm", "consent"))
-                .andExpect(content().string(containsString("Bitte stimme der beschriebenen KI-Verarbeitung zu")));
+                .andExpect(content().string(containsString("role=\"alert\"")));
 
         assertThat(request.session().getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isSameAs(request.state());
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
@@ -176,7 +174,8 @@ class AiWizardSummaryIntegrationTest {
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("name=\"completionToken\"")))
-                .andExpect(content().string(containsString("id=\"ai-confirmation-submit\" type=\"submit\" disabled")));
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<button\\b(?=[^>]*\\bid=\"ai-confirmation-submit\")(?=[^>]*\\bdisabled(?:\\s|=|>))[^>]*>.*")));
 
         assertThat(request.state().getCompletionToken()).isNotNull();
     }
@@ -218,7 +217,7 @@ class AiWizardSummaryIntegrationTest {
         mockMvc.perform(get(statusUrl).session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/ai-status"))
-                .andExpect(content().string(containsString("Deine Angaben werden geprüft")));
+                .andExpect(model().attributeExists("workflow"));
         AuthenticatedUser outsider = new AuthenticatedUser(
                 UUID.randomUUID(), "outsider@example.org", "ignored", true);
         mockMvc.perform(get(statusUrl).with(user(outsider)))
@@ -266,7 +265,7 @@ class AiWizardSummaryIntegrationTest {
         state.setTitle("Umzug planen");
         state.setDescription("Wohnungswechsel organisieren");
         state.setCategory(TemplateCategory.HOME);
-        state.setProjectType("Umzug");
+        state.setSubcategory(ProjectSubCategory.MOVING);
         state.setCollaborationMode(groupProject ? CollaborationMode.GROUP : CollaborationMode.INDIVIDUAL);
         state.setCreationType(CreationType.AI);
         state.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);

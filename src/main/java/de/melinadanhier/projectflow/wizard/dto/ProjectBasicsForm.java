@@ -1,5 +1,8 @@
 package de.melinadanhier.projectflow.wizard.dto;
 
+import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
@@ -18,7 +21,8 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @ValidProjectBasics
-public class ProjectBasicsForm {
+@ValidProjectClassification
+public class ProjectBasicsForm implements ProjectClassification {
 
     @NotBlank(message = "Bitte gib deinem Projekt einen Titel.")
     @Size(max = 100, message = "Der Titel darf höchstens 100 Zeichen lang sein.")
@@ -30,8 +34,7 @@ public class ProjectBasicsForm {
     @NotNull(message = "Bitte wähle eine Oberkategorie aus.")
     private TemplateCategory category = TemplateCategory.OTHER;
 
-    @Size(max = 100, message = "Die Unterkategorie darf höchstens 100 Zeichen lang sein.")
-    private String subcategory;
+    private ProjectSubCategory subcategory;
 
     @Size(max = 100, message = "Die Beschreibung darf höchstens 100 Zeichen lang sein.")
     private String otherProjectTypeDescription;
@@ -56,11 +59,8 @@ public class ProjectBasicsForm {
         form.setTitle(state.getTitle());
         form.setDescription(state.getDescription());
         form.setCategory(state.getCategory() == null ? TemplateCategory.OTHER : state.getCategory());
-        if (form.getCategory() == TemplateCategory.OTHER) {
-            form.setOtherProjectTypeDescription(state.getProjectType());
-        } else {
-            form.setSubcategory(state.getProjectType());
-        }
+        form.setOtherProjectTypeDescription(state.getOtherProjectTypeDescription());
+        form.setSubcategory(state.getSubcategory());
         form.setCollaborationMode(state.getCollaborationMode());
         form.setTimeFrameType(state.getTimeFrameType() == null
                 ? ProjectTimeFrameType.NONE : state.getTimeFrameType());

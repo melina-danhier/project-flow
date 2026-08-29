@@ -45,10 +45,10 @@ public class TaskService {
 
     @Transactional
     public TaskDetailsDto createTask(UUID projectId, TaskForm form, UUID userId) {
-        Project project = authorizationService.requireEditableMember(projectId, userId).getProject();
+        Project project = authorizationService.requireEditableMemberForUpdate(projectId, userId).getProject();
         validateDates(form.getStartDate(), form.getDueDate());
         PlanSection section = resolveSection(projectId, form.getPlanSectionId());
-        ProjectMember assignee = resolveAssignee(projectId, form.getAssigneeId());
+        ProjectMember assignee = resolveAssignee(project, form.getAssigneeId());
 
         Task task = new Task();
         task.setPlanContainer(project);
@@ -58,36 +58,40 @@ public class TaskService {
         task.setRelativeDueDay(null);
         apply(task, form, assignee);
         insertAtRequestedPosition(task, projectId, section, form.getSortOrder());
-        return planElementMapper.toDetailsDto(taskRepository.save(task));
+        TaskDetailsDto dto = planElementMapper.toDetailsDto(taskRepository.save(task));
+        dto.setGroupProject(project.isGroupProject());
+        return dto;
     }
 
     @Transactional(readOnly = true)
     public TaskDetailsDto getTaskDetail(UUID projectId, UUID taskId, UUID userId) {
         ProjectMember membership = authorizationService.requireMember(projectId, userId);
-        return buildTaskDetail(projectId, taskId, authorizationService.isEditable(membership));
+        return buildTaskDetail(projectId, taskId, authorizationService.isEditable(membership), membership.getProject().isGroupProject());
     }
 
     @Transactional(readOnly = true)
     public TaskDetailsDto getTaskForEditing(UUID projectId, UUID taskId, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
-        return buildTaskDetail(projectId, taskId, true);
+        var project = authorizationService.requireEditableMember(projectId, userId).getProject();
+        return buildTaskDetail(projectId, taskId, true, project.isGroupProject());
     }
 
     @Transactional(readOnly = true)
     public TaskDetailsDto getTaskCreationContext(UUID projectId, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
+        var project = authorizationService.requireEditableMember(projectId, userId).getProject();
         TaskDetailsDto dto = new TaskDetailsDto();
+        dto.setGroupProject(project.isGroupProject());
         dto.setPlanContainerId(projectId);
         dto.setEditable(true);
         populateOptions(dto, projectId);
         return dto;
     }
 
-    private TaskDetailsDto buildTaskDetail(UUID projectId, UUID taskId, boolean editable) {
+    private TaskDetailsDto buildTaskDetail(UUID projectId, UUID taskId, boolean editable, boolean groupProject) {
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
         List<Task> successors = taskRepository.findSuccessors(projectId, taskId);
         TaskDetailsDto dto = planElementMapper.toDetailsDto(task);
+        dto.setGroupProject(groupProject);
         dto.setPredecessors(task.getPrerequisites().stream()
                 .map(predecessor -> new TaskReferenceDto(predecessor.getId(), predecessor.getTitle()))
                 .toList());
@@ -108,9 +112,10 @@ public class TaskService {
     }
 
     private void populateOptions(TaskDetailsDto dto, UUID projectId) {
-        dto.setAvailableAssignees(projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
-                .map(projectMapper::toMemberDto)
-                .toList());
+        dto.setAvailableAssignees(dto.isGroupProject()
+                ? projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
+                        .map(projectMapper::toMemberDto).toList()
+                : List.of());
         dto.setAvailableSections(planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId).stream()
                 .map(planElementMapper::toDto)
                 .toList());
@@ -127,17 +132,19 @@ public class TaskService {
 
     @Transactional
     public TaskDetailsDto updateTask(UUID projectId, UUID taskId, TaskForm form, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
+        Project project = authorizationService.requireEditableMemberForUpdate(projectId, userId).getProject();
         validateDates(form.getStartDate(), form.getDueDate());
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
         requireCurrentVersion(task.getLockVersion(), form.getLockVersion());
         PlanSection oldSection = task.getPlanSection();
         PlanSection newSection = resolveSection(projectId, form.getPlanSectionId());
-        ProjectMember assignee = resolveAssignee(projectId, form.getAssigneeId());
+        ProjectMember assignee = resolveAssignee(project, form.getAssigneeId());
         apply(task, form, assignee);
         moveToRequestedPosition(task, projectId, oldSection, newSection, form.getSortOrder());
-        return planElementMapper.toDetailsDto(task);
+        TaskDetailsDto dto = planElementMapper.toDetailsDto(task);
+        dto.setGroupProject(project.isGroupProject());
+        return dto;
     }
 
     @Transactional
@@ -176,14 +183,17 @@ public class TaskService {
             return null;
         }
         return planSectionRepository.findByIdAndPlanContainerId(sectionId, projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Projektphase wurde nicht gefunden."));
+                .orElseThrow(() -> new ResourceNotFoundException("Projektbereich wurde nicht gefunden."));
     }
 
-    private ProjectMember resolveAssignee(UUID projectId, UUID membershipId) {
+    private ProjectMember resolveAssignee(Project project, UUID membershipId) {
         if (membershipId == null) {
             return null;
         }
-        return projectMemberRepository.findByIdAndProjectIdAndActiveTrue(membershipId, projectId)
+        if (!project.isGroupProject()) {
+            throw new DomainValidationException("Aufgabenzuständigkeiten sind nur bei Gruppenprojekten möglich.");
+        }
+        return projectMemberRepository.findByIdAndProjectIdAndActiveTrue(membershipId, project.getId())
                 .orElseThrow(() -> new DomainValidationException(
                         "Die Aufgabe kann nur einem aktiven Mitglied dieses Projekts zugewiesen werden."
                 ));

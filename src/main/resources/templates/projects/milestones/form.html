@@ -12,8 +12,8 @@
     <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
     <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
     <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
-    <label for="section">Phase</label><select id="section" th:field="*{planSectionId}">
-        <option value="">Ohne Phase</option><option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.title}"></option>
+    <label for="section">Bereich</label><select id="section" th:field="*{planSectionId}">
+        <option value="">Ohne Bereich</option><option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.title}"></option>
     </select>
     <label for="dueDate">Datum</label><input id="dueDate" type="date" th:field="*{dueDate}">
     <label th:if="${editing}" for="completed">Erledigt</label><input th:if="${editing}" id="completed" type="checkbox" th:field="*{completed}">

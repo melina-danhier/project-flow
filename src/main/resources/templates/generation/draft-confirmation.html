@@ -16,5 +16,5 @@
     <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
     <button type="submit">Kritische Annahmen bestätigen und Plan übernehmen</button>
 </form>
-<a th:href="@{/projects/{projectId}/draft(projectId=${draft.projectId})}">Zurück zum Entwurf</a>
+<a th:href="@{/projects/{projectId}/draft/review(projectId=${draft.projectId})}">Zurück zum Entwurf</a>
 </main></body></html>

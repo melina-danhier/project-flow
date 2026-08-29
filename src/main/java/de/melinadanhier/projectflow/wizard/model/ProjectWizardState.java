@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.wizard.model;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
@@ -19,16 +21,18 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProjectWizardState implements Serializable {
+public class ProjectWizardState implements Serializable, ProjectClassification {
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private UUID userId;
     private String title;
     private String description;
     private TemplateCategory category = TemplateCategory.OTHER;
-    private String projectType;
+    private String otherProjectTypeDescription;
+
+    private ProjectSubCategory subcategory;
     private CollaborationMode collaborationMode;
     private CreationType creationType;
     private LocalDate startDate;
@@ -48,7 +52,8 @@ public class ProjectWizardState implements Serializable {
         form.setTitle(title);
         form.setDescription(description);
         form.setCategory(category);
-        form.setProjectType(projectType);
+        form.setOtherProjectTypeDescription(otherProjectTypeDescription);
+        form.setSubcategory(subcategory);
         form.setCollaborationMode(collaborationMode);
         form.setCreationType(creationType);
         form.setStartDate(startDate);

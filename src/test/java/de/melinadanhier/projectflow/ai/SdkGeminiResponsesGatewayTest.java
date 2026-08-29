@@ -56,9 +56,9 @@ class SdkGeminiResponsesGatewayTest {
     @Test
     void deserializesPlanToSharedDtoAndLeavesDomainValidationToService() {
         when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class)))
-                .thenReturn(response("STOP", "{\"phases\":[]}"));
-        assertThat(gateway.execute("model", prompt, GeneratedPlanResponse.class).phases()).isEmpty();
-        verify(parser).parse("{\"phases\":[]}", GeneratedPlanResponse.class);
+                .thenReturn(response("STOP", "{\"sections\":[]}"));
+        assertThat(gateway.execute("model", prompt, GeneratedPlanResponse.class).sections()).isEmpty();
+        verify(parser).parse("{\"sections\":[]}", GeneratedPlanResponse.class);
     }
 
     @ParameterizedTest

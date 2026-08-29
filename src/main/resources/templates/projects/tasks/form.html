@@ -20,14 +20,16 @@
         <option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option>
     </select>
     <p th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" role="alert"></p>
-    <label for="section">Phase</label><select id="section" th:field="*{planSectionId}">
-        <option value="">Ohne Phase</option><option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.title}"></option>
+    <label for="section">Bereich</label><select id="section" th:field="*{planSectionId}">
+        <option value="">Ohne Bereich</option><option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.title}"></option>
     </select>
     <label for="startDate">Startdatum</label><input id="startDate" type="date" th:field="*{startDate}">
     <label for="dueDate">Fälligkeitsdatum</label><input id="dueDate" type="date" th:field="*{dueDate}">
+    <div th:if="${groupProject}">
     <label for="assignee">Zuständigkeit</label><select id="assignee" th:field="*{assigneeId}">
         <option value="">Nicht zugewiesen</option><option th:each="member : ${assignees}" th:value="${member.id}" th:text="${member.displayName}"></option>
     </select>
+    </div>
     <button type="submit" th:text="${editing ? 'Aufgabe speichern' : 'Aufgabe anlegen'}">Speichern</button>
 </form>
 </main></body></html>

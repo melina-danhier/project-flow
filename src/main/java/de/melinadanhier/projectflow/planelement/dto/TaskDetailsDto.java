@@ -46,6 +46,7 @@ public class TaskDetailsDto {
     private List<SectionDto> availableSections = new ArrayList<>();
     private int affectedDependencyCount;
     private boolean editable;
+    private boolean groupProject;
     private Instant completedAt;
     private long lockVersion;
 }

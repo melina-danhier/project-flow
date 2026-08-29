@@ -51,7 +51,7 @@ public class PlanController {
             return "projects/plan";
         }
         sectionService.createSection(projectId, form, currentUser.userId());
-        redirectAttributes.addFlashAttribute("successMessage", "Projektphase wurde angelegt.");
+        redirectAttributes.addFlashAttribute("successMessage", "Projektbereich wurde angelegt.");
         return planRedirect(projectId);
     }
 
@@ -71,7 +71,7 @@ public class PlanController {
             return "projects/plan";
         }
         sectionService.updateSection(projectId, sectionId, form, currentUser.userId());
-        redirectAttributes.addFlashAttribute("successMessage", "Projektphase wurde aktualisiert.");
+        redirectAttributes.addFlashAttribute("successMessage", "Projektbereich wurde aktualisiert.");
         return planRedirect(projectId);
     }
 
@@ -92,7 +92,7 @@ public class PlanController {
             return "projects/plan";
         }
         sectionService.deleteSection(projectId, sectionId, form, currentUser.userId());
-        redirectAttributes.addFlashAttribute("successMessage", "Projektphase wurde gelöscht.");
+        redirectAttributes.addFlashAttribute("successMessage", "Projektbereich wurde gelöscht.");
         return planRedirect(projectId);
     }
 

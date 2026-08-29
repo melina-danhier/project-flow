@@ -27,6 +27,6 @@
 </form>
 
 <a th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}"
-   th:href="@{/projects/{id}/draft(id=${workflow.projectId})}">Entwurf jetzt prüfen</a>
+   th:href="@{/projects/{id}/draft/review(id=${workflow.projectId})}">Entwurf jetzt prüfen</a>
 <a th:unless="${workflow.status.name() == 'GENERATION_COMPLETED'}" th:href="@{/projects/drafts}">Zu den Entwürfen</a>
 </main></body></html>

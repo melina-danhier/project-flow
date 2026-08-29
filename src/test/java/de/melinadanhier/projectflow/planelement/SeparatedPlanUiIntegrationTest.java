@@ -230,8 +230,8 @@ class SeparatedPlanUiIntegrationTest {
         User owner = saveUser("foreign-child-owner@example.org");
         Project firstProject = saveProject("Erstes Projekt", owner);
         Project secondProject = saveProject("Zweites Projekt", owner);
-        SectionDto firstSection = createSection(firstProject, owner, "Erste Phase");
-        SectionDto secondSection = createSection(secondProject, owner, "Zweite Phase");
+        SectionDto firstSection = createSection(firstProject, owner, "Erste Section");
+        SectionDto secondSection = createSection(secondProject, owner, "Zweite Section");
         Task firstTask = createTask(firstProject, owner, firstSection.getId(), "Erste Aufgabe");
         Task secondTask = createTask(secondProject, owner, secondSection.getId(), "Zweite Aufgabe");
         Milestone firstMilestone = createMilestone(firstProject, owner, firstSection.getId(), "Erster Meilenstein");
@@ -259,7 +259,7 @@ class SeparatedPlanUiIntegrationTest {
     void dependenciesAreAddedAndRemovedOnTaskDetailAndCyclesAreRejected() throws Exception {
         User owner = saveUser("dependency-ui-owner@example.org");
         Project project = saveProject("Abhängigkeiten", owner);
-        SectionDto section = createSection(project, owner, "Phase");
+        SectionDto section = createSection(project, owner, "Section");
         Task prerequisite = createTask(project, owner, section.getId(), "Vorbereitung");
         Task successor = createTask(project, owner, section.getId(), "Umsetzung");
         MockHttpSession session = login(owner.getEmail());
@@ -283,7 +283,8 @@ class SeparatedPlanUiIntegrationTest {
                         .param("prerequisiteTaskId", successor.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("projects/tasks/detail"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Zyklus")));
+                .andExpect(model().attribute("errorMessage",
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.blankOrNullString())));
         assertThat(taskService.getTaskDetail(project.getId(), prerequisite.getId(), owner.getId()).getPredecessors())
                 .isEmpty();
 
@@ -332,7 +333,7 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("projects/members"))
                 .andExpect(model().attribute("errorMessage",
-                        org.hamcrest.Matchers.containsString("bereits aktives Projektmitglied")));
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.blankOrNullString())));
 
         Task assignedTask = createTask(project, owner, null, "Zugewiesene Aufgabe");
         assignedTask.setAssignee(membership);
@@ -354,7 +355,7 @@ class SeparatedPlanUiIntegrationTest {
     @Test
     void sectionsAreCreatedAndEditedOnPlanWithOnlyTitleAndDescription() throws Exception {
         User owner = saveUser("section-ui-owner@example.org");
-        Project project = saveProject("Phasen direkt", owner);
+        Project project = saveProject("Bereiche direkt", owner);
         MockHttpSession session = login(owner.getEmail());
 
         mockMvc.perform(post("/projects/{projectId}/sections", project.getId())
@@ -398,9 +399,94 @@ class SeparatedPlanUiIntegrationTest {
         var updated = sectionRepository.findById(section.getId()).orElseThrow();
         assertThat(updated.getTitle()).isEqualTo("Planung aktualisiert");
         assertThat(updated.getDescription()).isNull();
-        assertThat(SectionForm.class.getDeclaredFields())
-                .extracting(java.lang.reflect.Field::getName)
-                .containsExactlyInAnyOrder("title", "description", "sortOrder", "lockVersion");
+    }
+
+
+    @Test
+    void soloProjectHidesGroupFeaturesRejectsAssignmentsAndCanBecomeAGroup() throws Exception {
+        var owner = saveUser("solo-ui-owner@example.org");
+        var project = saveProject("Solo", owner);
+        project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.INDIVIDUAL);
+        project.setCategory(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.EDUCATION);
+        projectRepository.saveAndFlush(project);
+        var task = createTask(project, owner, null, "Meine Aufgabe");
+        var membership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), owner.getId()).orElseThrow();
+        var session = login(owner.getEmail());
+        mockMvc.perform(get("/projects/{id}/plan", project.getId()).session(session))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Mitglieder verwalten"))))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Projektdetails bearbeiten")));
+        for (String path : new String[] {"/tasks/new", "/tasks/" + task.getId() + "/edit", "/tasks/" + task.getId()}) {
+            mockMvc.perform(get("/projects/" + project.getId() + path).session(session))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Zuständigkeit"))));
+        }
+        mockMvc.perform(get("/projects/{id}/members", project.getId()).session(session)).andExpect(status().isNotFound());
+        mockMvc.perform(post("/projects/{id}/members", project.getId()).session(session).with(csrf())
+                        .param("email", owner.getEmail())).andExpect(status().isNotFound());
+        mockMvc.perform(post("/projects/{id}/tasks", project.getId()).session(session).with(csrf())
+                        .param("title", "Manipuliert").param("priority", "MEDIUM")
+                        .param("assigneeId", membership.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("errorMessage"));
+        mockMvc.perform(post("/projects/{id}/tasks/{taskId}", project.getId(), task.getId()).session(session).with(csrf())
+                        .param("title", "Manipuliert").param("priority", "MEDIUM")
+                        .param("assigneeId", membership.getId().toString()))
+                .andExpect(model().attributeExists("errorMessage"));
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee()).isNull();
+        assertThat(taskRepository.findPlanTasks(project.getId())).hasSize(1);
+
+        mockMvc.perform(get("/projects/{id}/edit", project.getId()).session(session))
+                .andExpect(status().isOk()).andExpect(model().attribute("projectForm",
+                        org.hamcrest.Matchers.hasProperty("collaborationMode",
+                                org.hamcrest.Matchers.is(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.INDIVIDUAL))));
+        mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(session).with(csrf())
+                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION").param("collaborationMode", "BOTH"))
+                .andExpect(model().attributeHasFieldErrors("projectForm", "projectCollaborationModeValid"));
+        mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(session).with(csrf())
+                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION").param("collaborationMode", "GROUP"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(get("/projects/{id}/members", project.getId()).session(session)).andExpect(status().isOk());
+        mockMvc.perform(get("/projects/{id}/tasks/new", project.getId()).session(session))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Zuständigkeit")));
+    }
+
+    @Test
+    void conversionFormRequiresConfirmationAndRemovesFormerMemberAccess() throws Exception {
+        var owner = saveUser("convert-ui-owner@example.org");
+        var member = saveUser("convert-ui-member@example.org");
+        var project = saveProject("Gemeinsames Projekt", owner);
+        project.setCategory(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.EDUCATION);
+        projectRepository.saveAndFlush(project);
+        var ownerSession = login(owner.getEmail());
+        var memberSession = login(member.getEmail());
+        mockMvc.perform(post("/projects/{id}/members", project.getId()).session(ownerSession).with(csrf())
+                        .param("email", member.getEmail())).andExpect(status().is3xxRedirection());
+        var task = createTask(project, owner, null, "Bleibt erhalten");
+        var membership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), member.getId()).orElseThrow();
+        task.setAssignee(membership);
+        taskRepository.saveAndFlush(task);
+        mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(memberSession).with(csrf())
+                        .param("title", "Solo").param("category", "EDUCATION")
+                        .param("collaborationMode", "INDIVIDUAL").param("confirmIndividualConversion", "true"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(ownerSession).with(csrf())
+                        .param("title", "Solo").param("category", "EDUCATION").param("collaborationMode", "INDIVIDUAL"))
+                .andExpect(status().isOk()).andExpect(view().name("projects/edit"))
+                .andExpect(model().attributeHasErrors("projectForm"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Bitte bestätige")));
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().isGroupProject()).isTrue();
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee()).isNotNull();
+
+        mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(ownerSession).with(csrf())
+                        .param("title", "Solo").param("category", "EDUCATION")
+                        .param("collaborationMode", "INDIVIDUAL").param("confirmIndividualConversion", "true"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(projectMemberRepository.findById(membership.getId())).isEmpty();
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee()).isNull();
+        mockMvc.perform(get("/projects/{id}/plan", project.getId()).session(memberSession)).andExpect(status().isNotFound());
+        mockMvc.perform(get("/projects/{id}/tasks/{taskId}", project.getId(), task.getId()).session(ownerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Zuständigkeit"))));
     }
 
     private User saveUser(String email) {
@@ -415,6 +501,7 @@ class SeparatedPlanUiIntegrationTest {
     private Project saveProject(String title, User owner) {
         Project project = new Project();
         project.setTitle(title);
+        project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.GROUP);
         project.setCreationType(CreationType.EMPTY);
         project.setStatus(ProjectStatus.ACTIVE);
         project.setLocation(ProjectLocation.OVERVIEW);

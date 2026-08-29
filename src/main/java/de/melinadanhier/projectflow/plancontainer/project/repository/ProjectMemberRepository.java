@@ -31,6 +31,8 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
 
     long countByProjectIdAndActiveTrue(UUID projectId);
 
+    List<ProjectMember> findAllByProjectId(UUID projectId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from ProjectMember membership where membership.project.id = :projectId")
     int deleteAllByProjectId(@Param("projectId") UUID projectId);

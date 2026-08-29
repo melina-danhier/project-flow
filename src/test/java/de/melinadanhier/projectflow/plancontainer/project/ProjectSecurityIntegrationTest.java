@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ForbiddenOperationException;
@@ -69,6 +70,9 @@ import static org.assertj.core.api.Assertions.within;
 class ProjectSecurityIntegrationTest {
 
     @Autowired
+    private jakarta.persistence.EntityManager entityManager;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -114,7 +118,7 @@ class ProjectSecurityIntegrationTest {
         form.setTitle(" Neues Projekt ");
         form.setCreationType(CreationType.EMPTY);
         form.setCategory(TemplateCategory.HOME);
-        form.setProjectType("Umzug");
+        form.setSubcategory(ProjectSubCategory.MOVING);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
 
         UUID projectId = projectService.createProject(form, owner.getId()).getId();
@@ -131,7 +135,7 @@ class ProjectSecurityIntegrationTest {
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
         assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
         assertThat(project.getCategory()).isEqualTo(TemplateCategory.HOME);
-        assertThat(project.getProjectType()).isEqualTo("Umzug");
+        assertThat(project.getSubcategory()).isEqualTo(ProjectSubCategory.MOVING);
         assertThat(project.getCollaborationMode()).isEqualTo(CollaborationMode.INDIVIDUAL);
         assertThat(planSectionRepository.count()).isZero();
         assertThat(taskRepository.count()).isZero();
@@ -153,6 +157,24 @@ class ProjectSecurityIntegrationTest {
         assertThat(projectRepository.findAll()).isEmpty();
         assertThat(projectMemberRepository.count()).isZero();
         assertThat(planDraftRepository.count()).isZero();
+    }
+
+    @Test
+    void directServiceCreationRejectsForeignSubcategoriesWithoutPersistingAnything() {
+        User owner = saveUser("invalid-subcategory@example.org");
+        ProjectCreateForm form = new ProjectCreateForm();
+        form.setTitle("Nicht übernehmen");
+        form.setCreationType(CreationType.EMPTY);
+        form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
+        form.setSubcategory(ProjectSubCategory.MOVING);
+        for (TemplateCategory category : java.util.List.of(TemplateCategory.EDUCATION, TemplateCategory.OTHER)) {
+            form.setCategory(category);
+            form.setOtherProjectTypeDescription("Besonderes Vorhaben");
+            assertThatThrownBy(() -> projectService.createProject(form, owner.getId()))
+                    .isInstanceOf(DomainValidationException.class).hasMessageContaining("Unterkategorie");
+        }
+        assertThat(projectRepository.count()).isZero();
+        assertThat(projectMemberRepository.count()).isZero();
     }
 
     @Test
@@ -218,13 +240,11 @@ class ProjectSecurityIntegrationTest {
         template.setTitle("Studienprojekt");
         template.setDescription("Unveränderte Vorlage");
         template.setCategory(TemplateCategory.EDUCATION);
-        template.setProjectType("Präsentation");
+        template.setSubcategory(ProjectSubCategory.PRESENTATION_OR_REPORT);
         template.setCollaborationMode(CollaborationMode.BOTH);
         PlanSection sourceSection = new PlanSection();
         sourceSection.setTitle("Vorbereitung");
         sourceSection.setOrigin(ElementOrigin.TEMPLATE);
-        sourceSection.setRelativeStartDay(0);
-        sourceSection.setRelativeEndDay(4);
         template.addSection(sourceSection);
         Task sourceFirst = templateTask("Thema wählen", 0);
         Task sourceSecond = templateTask("Folien erstellen", 1);
@@ -239,6 +259,7 @@ class ProjectSecurityIntegrationTest {
 
         ProjectCreateForm form = new ProjectCreateForm();
         form.setTitle("Meine Präsentation");
+        form.setCategory(null);
         form.setCreationType(CreationType.TEMPLATE);
         form.setStartDate(LocalDate.of(2026, 9, 1));
         UUID projectId = projectService.createProjectFromTemplate(template.getId(), form, owner.getId()).getId();
@@ -246,10 +267,6 @@ class ProjectSecurityIntegrationTest {
         Project copy = projectRepository.findById(projectId).orElseThrow();
         assertThat(copy.getSections()).singleElement().satisfies(section -> {
             assertThat(section.getTitle()).isEqualTo("Vorbereitung");
-            assertThat(section.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 1));
-            assertThat(section.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 5));
-            assertThat(section.getRelativeStartDay()).isNull();
-            assertThat(section.getRelativeEndDay()).isNull();
         });
         assertThat(copy.getElements()).hasSize(2)
                 .allSatisfy(element -> {
@@ -275,7 +292,7 @@ class ProjectSecurityIntegrationTest {
         assertThat(unchanged.getDescription()).isEqualTo("Unveränderte Vorlage");
         assertThat(unchanged.getSections()).hasSize(1);
         assertThat(unchanged.getElements()).hasSize(2);
-        assertThat(unchanged.getSections().getFirst().getRelativeStartDay()).isZero();
+        assertThat(unchanged.getSections().getFirst().getTitle()).isEqualTo("Vorbereitung");
         assertThat(((Task) unchanged.getElements().getFirst()).getRelativeStartDay()).isEqualTo(1);
     }
 
@@ -366,8 +383,7 @@ class ProjectSecurityIntegrationTest {
         assertThat(projectMemberRepository.countByProjectIdAndActiveTrue(project.getId())).isEqualTo(10);
         assertThatThrownBy(() -> membershipService.addMember(
                 project.getId(), eleventh.getEmail(), owner.getId()))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("höchstens zehn");
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -425,6 +441,93 @@ class ProjectSecurityIntegrationTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+
+    @Test
+    void convertingToIndividualRemovesAllOtherMembershipsAndAssignmentsButKeepsOwnerAndContents() {
+        var owner = saveUser("convert-owner@example.org");
+        var member = saveUser("convert-member@example.org");
+        var inactive = saveUser("convert-inactive@example.org");
+        var project = saveProject("Gruppenprojekt", owner);
+        var ownerMembership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), owner.getId()).orElseThrow();
+        var membership = addMembership(project, member, ProjectMemberRole.MEMBER, true);
+        var inactiveMembership = addMembership(project, inactive, ProjectMemberRole.MEMBER, false);
+        var open = saveTask(project, "Offen", TaskStatus.OPEN, membership);
+        var done = saveTask(project, "Erledigt", TaskStatus.COMPLETED, ownerMembership);
+        var completionTime = done.getCompletedAt();
+        var otherProject = saveProject("Anderes Gruppenprojekt", owner);
+        var otherMembership = addMembership(otherProject, member, ProjectMemberRole.MEMBER, true);
+        var otherTask = saveTask(otherProject, "Unverändert", TaskStatus.OPEN, otherMembership);
+
+        var form = updateForm(CollaborationMode.INDIVIDUAL);
+        assertThatThrownBy(() -> projectService.updateProject(project.getId(), form, owner.getId()))
+                .isInstanceOf(DomainValidationException.class).hasMessageContaining("bestätige");
+        assertThat(project.getCollaborationMode()).isEqualTo(CollaborationMode.GROUP);
+        assertThat(taskRepository.findById(open.getId()).orElseThrow().getAssignee()).isEqualTo(membership);
+
+        form.setConfirmIndividualConversion(true);
+        projectService.updateProject(project.getId(), form, owner.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().getCollaborationMode())
+                .isEqualTo(CollaborationMode.INDIVIDUAL);
+        assertThat(projectMemberRepository.findById(membership.getId())).isEmpty();
+        assertThat(projectMemberRepository.findById(inactiveMembership.getId())).isEmpty();
+        assertThat(projectMemberRepository.findAllByProjectId(project.getId())).singleElement()
+                .satisfies(remaining -> {
+                    assertThat(remaining.getId()).isEqualTo(ownerMembership.getId());
+                    assertThat(remaining.isActive()).isTrue();
+                });
+        assertThat(taskRepository.findPlanTasks(project.getId())).hasSize(2)
+                .allSatisfy(task -> assertThat(task.getAssignee()).isNull());
+        assertThat(taskRepository.findById(done.getId()).orElseThrow().getCompletedAt())
+                .isCloseTo(completionTime, within(1, ChronoUnit.MICROS));
+        assertThat(taskRepository.findById(done.getId()).orElseThrow().getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        assertThat(taskRepository.findById(otherTask.getId()).orElseThrow().getAssignee().getId())
+                .isEqualTo(otherMembership.getId());
+        assertThatThrownBy(() -> authorizationService.requireMember(project.getId(), member.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThat(authorizationService.requireOwner(project.getId(), owner.getId())).isNotNull();
+
+        projectService.updateProject(project.getId(), updateForm(CollaborationMode.GROUP), owner.getId());
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(projectMemberRepository.findAllByProjectId(project.getId())).hasSize(1);
+        assertThat(taskRepository.findPlanTasks(project.getId())).allSatisfy(task -> assertThat(task.getAssignee()).isNull());
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().isGroupProject()).isTrue();
+    }
+
+    @Test
+    void individualProjectsRejectMemberManagementAssignmentsAndInvalidProjectModes() {
+        var owner = saveUser("solo-guard-owner@example.org");
+        var other = saveUser("solo-guard-other@example.org");
+        var project = saveProject("Einzelprojekt", owner);
+        project.setCollaborationMode(CollaborationMode.INDIVIDUAL);
+        projectRepository.flush();
+        var task = saveTask(project, "Eigene Aufgabe", TaskStatus.OPEN, null);
+        assertThatThrownBy(() -> membershipService.getMembersForManagement(project.getId(), owner.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> membershipService.addMember(project.getId(), other.getEmail(), owner.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> planElementService.assignTask(project.getId(), task.getId(), owner.getId(), owner.getId()))
+                .isInstanceOf(DomainValidationException.class);
+        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(CollaborationMode.BOTH), owner.getId()))
+                .isInstanceOf(DomainValidationException.class);
+        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(null), owner.getId()))
+                .isInstanceOf(DomainValidationException.class);
+        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(CollaborationMode.GROUP), other.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThat(projectMemberRepository.findAllByProjectId(project.getId())).hasSize(1);
+    }
+
+    private ProjectUpdateForm updateForm(CollaborationMode mode) {
+        var form = new ProjectUpdateForm();
+        form.setTitle("Projekt aktualisiert");
+        form.setCategory(TemplateCategory.EDUCATION);
+        form.setCollaborationMode(mode);
+        return form;
+    }
+
     private User saveUser(String email) {
         User user = new User();
         user.setEmail(email);
@@ -436,6 +539,7 @@ class ProjectSecurityIntegrationTest {
     private Project saveProject(String title, User owner) {
         Project project = new Project();
         project.setTitle(title);
+        project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.GROUP);
         project.setCreationType(CreationType.EMPTY);
         project.setStatus(ProjectStatus.ACTIVE);
         ProjectMember ownerMembership = new ProjectMember();

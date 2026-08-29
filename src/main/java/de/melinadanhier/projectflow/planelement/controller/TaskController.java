@@ -220,6 +220,7 @@ public class TaskController {
         model.addAttribute("taskId", context.getId());
         model.addAttribute("sections", context.getAvailableSections());
         model.addAttribute("assignees", context.getAvailableAssignees());
+        model.addAttribute("groupProject", context.isGroupProject());
         model.addAttribute("editing", editing);
     }
 

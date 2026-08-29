@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.security;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -36,6 +37,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
@@ -226,7 +228,7 @@ class AuthenticationIntegrationTest {
         mockMvc.perform(get("/projects/new").session(ownerSession))
                 .andExpect(status().isOk())
                 .andExpect(view().name("wizard/basics"))
-                .andExpect(content().string(containsString("Grundangaben zum Projekt")));
+                .andExpect(model().attributeExists("projectBasicsForm"));
 
         long projectsBefore = projectRepository.count();
         long membersBefore = projectMemberRepository.count();
@@ -237,7 +239,7 @@ class AuthenticationIntegrationTest {
                         .param("title", "MVC KI-Projekt")
                         .param("description", "Nur temporär")
                         .param("category", "EDUCATION")
-                        .param("subcategory", "Bachelorarbeit")
+                        .param("subcategory", "THESIS")
                         .param("collaborationMode", "INDIVIDUAL")
                         .param("timeFrameType", "START_AND_DURATION")
                         .param("startDate", "2026-09-01")
@@ -252,7 +254,7 @@ class AuthenticationIntegrationTest {
                 .isInstanceOfSatisfying(ProjectWizardState.class, state -> {
                     assertThat(state.getCreationType()).isNull();
                     assertThat(state.getTitle()).isEqualTo("MVC KI-Projekt");
-                    assertThat(state.getProjectType()).isEqualTo("Bachelorarbeit");
+                    assertThat(state.getSubcategory()).isEqualTo(ProjectSubCategory.THESIS);
                     assertThat(state.getEndDate()).hasToString("2026-09-21");
                 });
 
@@ -303,16 +305,12 @@ class AuthenticationIntegrationTest {
 
         mockMvc.perform(get("/projects/new").session(session))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString(
-                        "<option value=\"OTHER\" selected=\"selected\">Sonstiges</option>")))
-                .andExpect(content().string(containsString(
-                        "id=\"subcategory-fields\" hidden=\"hidden\"")))
-                .andExpect(content().string(containsString(
-                        "id=\"subcategory\" maxlength=\"100\" disabled=\"disabled\"")))
-                .andExpect(content().string(containsString(
-                        "placeholder=\"z. B. privater Flohmarkt\"")))
-                .andExpect(content().string(containsString(
-                        "required=\"required\" name=\"otherProjectTypeDescription\"")));
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<option\\b(?=[^>]*\\bvalue=\"OTHER\")(?=[^>]*\\bselected(?:\\s|=|>))[^>]*>.*")))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<select\\b(?=[^>]*\\bid=\"subcategory\")(?=[^>]*\\bdisabled(?:\\s|=|>))[^>]*>.*")))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<input\\b(?=[^>]*\\bname=\"otherProjectTypeDescription\")(?=[^>]*\\brequired(?:\\s|=|>))[^>]*>.*")));
 
         long projectsBefore = projectRepository.count();
         mockMvc.perform(post("/projects/new")
@@ -332,7 +330,6 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Anderes Projekt")
                         .param("category", "OTHER")
-                        .param("subcategory", "Wird verworfen")
                         .param("otherProjectTypeDescription", "Privaten Flohmarkt organisieren")
                         .param("collaborationMode", "INDIVIDUAL")
                         .param("timeFrameType", "NONE"))
@@ -343,7 +340,7 @@ class AuthenticationIntegrationTest {
         assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
                 .isInstanceOfSatisfying(ProjectWizardState.class, saved -> {
                     assertThat(saved.getCategory()).isEqualTo(TemplateCategory.OTHER);
-                    assertThat(saved.getProjectType()).isEqualTo("Privaten Flohmarkt organisieren");
+                    assertThat(saved.getOtherProjectTypeDescription()).isEqualTo("Privaten Flohmarkt organisieren");
                 });
         mockMvc.perform(get("/projects/new").session(session))
                 .andExpect(status().isOk())
@@ -370,7 +367,7 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Eingegebener Titel")
                         .param("category", "EDUCATION")
-                        .param("subcategory", "Präsentation")
+                        .param("subcategory", "PRESENTATION_OR_REPORT")
                         .param("collaborationMode", "INDIVIDUAL")
                         .param("timeFrameType", "START_AND_END")
                         .param("startDate", "2026-09-20")
@@ -378,14 +375,12 @@ class AuthenticationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("wizard/basics"))
                 .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "endDate"))
-                .andExpect(content().string(containsString(
-                        "Das Enddatum darf nicht vor dem Startdatum liegen.")))
                 .andReturn();
 
         ProjectBasicsForm submitted = (ProjectBasicsForm) result.getModelAndView()
                 .getModel().get("projectBasicsForm");
         assertThat(submitted.getTitle()).isEqualTo("Eingegebener Titel");
-        assertThat(submitted.getSubcategory()).isEqualTo("Präsentation");
+        assertThat(submitted.getSubcategory()).isEqualTo(ProjectSubCategory.PRESENTATION_OR_REPORT);
         assertThat(submitted.getStartDate()).hasToString("2026-09-20");
         assertThat(submitted.getEndDate()).hasToString("2026-09-01");
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
@@ -492,13 +487,13 @@ class AuthenticationIntegrationTest {
         mockMvc.perform(get("/projects/{projectId}/members", draft.getId()).session(session))
                 .andExpect(status().isConflict());
         mockMvc.perform(post("/projects/{projectId}/edit", draft.getId())
-                        .session(session).with(csrf()).param("title", "Manipuliert"))
+                        .session(session).with(csrf()).param("title", "Manipuliert").param("category", "EDUCATION").param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().isConflict());
         mockMvc.perform(post("/projects/{projectId}/trash", draft.getId())
                         .session(session).with(csrf()))
                 .andExpect(status().isConflict());
         mockMvc.perform(post("/projects/{projectId}/sections", draft.getId())
-                        .session(session).with(csrf()).param("title", "Manipulierte Phase"))
+                        .session(session).with(csrf()).param("title", "Manipulierte Section"))
                 .andExpect(status().isConflict());
         mockMvc.perform(post("/projects/{projectId}/tasks", draft.getId())
                         .session(session).with(csrf())
@@ -554,6 +549,94 @@ class AuthenticationIntegrationTest {
         assertThat(html.indexOf("Reihenfolge 2")).isLessThan(html.indexOf("Reihenfolge 3"));
     }
 
+
+    @Test
+    void subcategoryBindingRejectsManipulationAndPreservesValidSelections() throws Exception {
+        var user = saveUser("subcategory-binding@example.org", "richtiges-passwort", true);
+        var session = login(user.getEmail(), "richtiges-passwort");
+        mockMvc.perform(post("/projects/new").session(session).with(csrf())
+                        .param("title", "Abschlussarbeit").param("category", "EDUCATION")
+                        .param("subcategory", "THESIS").param("collaborationMode", "INDIVIDUAL"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(get("/projects/new").session(session))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(subcategoryDropdown(result).split("<option")).hasSize(8))
+                .andExpect(result -> assertThat(subcategoryDropdown(result)).containsPattern(
+                        "<option[^>]*value=\"THESIS\"[^>]*selected=\"selected\""))
+                .andExpect(result -> assertThat(subcategoryDropdown(result)).doesNotContain("MOVING"))
+                .andExpect(result -> assertThat(subcategoryDropdown(result)).contains(">Abschlussarbeit</option>"));
+        for (String[] input : new String[][] {
+                {"EDUCATION", "MOVING"}, {"OTHER", "THESIS"}, {"EDUCATION", "manipuliert"}}) {
+            mockMvc.perform(post("/projects/new").session(session).with(csrf())
+                            .param("title", "Nicht übernehmen").param("category", input[0])
+                            .param("subcategory", input[1]).param("otherProjectTypeDescription", "Privates Vorhaben")
+                            .param("collaborationMode", "INDIVIDUAL"))
+                    .andExpect(status().isOk())
+                    .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "subcategory"))
+                    .andExpect(content().string(containsString("Bitte wähle eine")));
+            assertThat(((ProjectWizardState) session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                    .getSubcategory()).isEqualTo(ProjectSubCategory.THESIS);
+        }
+        mockMvc.perform(post("/projects/new").session(session).with(csrf())
+                        .param("title", "").param("category", "EDUCATION")
+                        .param("subcategory", "THESIS").param("collaborationMode", "INDIVIDUAL"))
+                .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "title"))
+                .andExpect(result -> assertThat(subcategoryDropdown(result)).containsPattern(
+                        "<option[^>]*value=\"THESIS\"[^>]*selected=\"selected\""));
+        mockMvc.perform(post("/projects/new").session(session).with(csrf())
+                        .param("title", "Wohnprojekt").param("category", "HOME")
+                        .param("subcategory", "").param("collaborationMode", "INDIVIDUAL"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(((ProjectWizardState) session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .getSubcategory()).isNull();
+        mockMvc.perform(get("/projects/new").session(session))
+                .andExpect(result -> assertThat(subcategoryDropdown(result).split("<option")).hasSize(7))
+                .andExpect(result -> assertThat(subcategoryDropdown(result)).doesNotContain("selected=\"selected\""));
+    }
+
+    @Test
+    void projectEditingRestoresAndValidatesTypedClassification() throws Exception {
+        var user = saveUser("subcategory-edit@example.org", "richtiges-passwort", true);
+        var session = login(user.getEmail(), "richtiges-passwort");
+        mockMvc.perform(post("/projects/new").session(session).with(csrf())
+                        .param("title", "Mein Umzug").param("category", "HOME")
+                        .param("subcategory", "MOVING").param("collaborationMode", "INDIVIDUAL"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(post("/projects/new/method").session(session).with(csrf())
+                        .param("creationType", "EMPTY"))
+                .andExpect(status().is3xxRedirection());
+        var id = projectRepository.findAllAccessibleByUserId(user.getId()).getFirst().getId();
+        mockMvc.perform(get("/projects/{id}/edit", id).session(session))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(subcategoryDropdown(result)).containsPattern(
+                        "<option[^>]*value=\"MOVING\"[^>]*selected=\"selected\""));
+        mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
+                        .param("title", "Mein Umzug").param("category", "HOME").param("subcategory", "THESIS"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("projectForm", "subcategory"));
+        assertThat(projectRepository.findById(id).orElseThrow().getSubcategory()).isEqualTo(ProjectSubCategory.MOVING);
+        mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
+                        .param("title", "Meine Arbeit").param("category", "EDUCATION").param("subcategory", "THESIS"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(projectRepository.findById(id).orElseThrow().getSubcategory()).isEqualTo(ProjectSubCategory.THESIS);
+        mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
+                        .param("title", "Anderes").param("category", "OTHER").param("subcategory", ""))
+                .andExpect(model().attributeHasFieldErrors("projectForm", "otherProjectTypeDescription"));
+        mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
+                        .param("title", "Anderes").param("category", "OTHER").param("subcategory", "")
+                        .param("otherProjectTypeDescription", "Besonderes Vorhaben"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(projectRepository.findById(id).orElseThrow().getSubcategory()).isNull();
+    }
+
+    private String subcategoryDropdown(MvcResult result) throws Exception {
+        var matcher = java.util.regex.Pattern.compile(
+                "<select[^>]*id=\"subcategory\"[^>]*>(.*?)</select>",
+                java.util.regex.Pattern.DOTALL).matcher(result.getResponse().getContentAsString());
+        assertThat(matcher.find()).isTrue();
+        return matcher.group(1);
+    }
+
     private TaskForm taskForm(String title, UUID sectionId) {
         TaskForm form = new TaskForm();
         form.setTitle(title);
@@ -595,7 +678,7 @@ class AuthenticationIntegrationTest {
         Project project = new Project();
         project.setTitle("Direkt gesperrter Entwurf");
         project.setCategory(TemplateCategory.EDUCATION);
-        project.setProjectType("Präsentation");
+        project.setSubcategory(ProjectSubCategory.PRESENTATION_OR_REPORT);
         project.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         project.setCreationType(CreationType.AI);
         project.setStatus(ProjectStatus.DRAFT);

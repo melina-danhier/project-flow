@@ -31,17 +31,17 @@ public class DraftValidationService {
                 || !element.getDraftSection().getElements().contains(element))
                 || draft.getSections().stream().flatMap(section -> section.getElements().stream())
                 .anyMatch(element -> !draft.getElements().contains(element))) {
-            throw new DomainValidationException("Die Zuordnung der Entwurfselemente zu den Phasen ist ungültig.");
+            throw new DomainValidationException("Die Zuordnung der Entwurfselemente zu den Bereichen ist ungültig.");
         }
         var project = draft.getProject();
         var snapshot = workflowRepository.findByProjectId(project.getId())
                 .map(workflow -> payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()))
                 .orElseGet(() -> new AiWizardSnapshot(project.getTitle(), project.getDescription(),
                         project.getStartDate(), project.getEndDate(), project.getCollaborationMode(),
-                        project.getCategory(), project.getProjectType(), null, null, null));
+                        project.getCategory(), project.getSubcategory(), project.getOtherProjectTypeDescription(), null, null, null));
         var plan = new GeneratedPlanResponse(draft.getSections().stream().map(section ->
-                new GeneratedPhase(section.getId().toString(), section.getTitle(), section.getDescription(),
-                        section.getStartDate(), section.getEndDate(), section.getSortOrder(),
+                new GeneratedSection(section.getId().toString(), section.getTitle(), section.getDescription(),
+                        section.getSortOrder(),
                         section.getElements().stream().filter(DraftTask.class::isInstance)
                                 .map(DraftTask.class::cast).map(this::task).toList(),
                         section.getElements().stream().filter(DraftMilestone.class::isInstance)

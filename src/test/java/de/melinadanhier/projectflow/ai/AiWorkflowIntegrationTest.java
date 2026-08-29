@@ -1,13 +1,13 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.ai.provider.AiClient;
-
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
@@ -148,12 +148,12 @@ class AiWorkflowIntegrationTest {
                 .orElse(false));
 
         AiPlanGenerationWorkflow workflow = workflowRepository.findById(completion.workflowId()).orElseThrow();
-        assertThat(workflow.getSnapshotVersion()).isEqualTo("ai-wizard-v2");
+        assertThat(workflow.getSnapshotVersion()).isEqualTo("ai-wizard-v3");
         assertThat(workflow.getCompletionToken()).isEqualTo(token);
         assertThat(workflow.getConsentConfirmedAt()).isNotNull();
         assertThat(workflow.getConsentVersion()).isEqualTo(AiWorkflowInitializationService.CONSENT_VERSION);
         assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo("1.0");
-        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("1.0");
+        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("2.0");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
         assertThat(workflow.getPreCheckRetryCount()).isZero();
         assertThat(workflow.getGeneratedPlan()).isNull();
@@ -167,7 +167,8 @@ class AiWorkflowIntegrationTest {
             assertThat(project.getStartDate()).isEqualTo(snapshot.startDate());
             assertThat(project.getEndDate()).isEqualTo(snapshot.endDate());
             assertThat(project.getCategory()).isEqualTo(snapshot.category());
-            assertThat(project.getProjectType()).isEqualTo(snapshot.projectType());
+            assertThat(project.getOtherProjectTypeDescription()).isEqualTo(snapshot.otherProjectTypeDescription());
+            assertThat(project.getSubcategory()).isEqualTo(snapshot.subcategory());
             assertThat(project.getCollaborationMode()).isEqualTo(snapshot.collaborationMode());
             assertThat(project.getCreationType()).isEqualTo(CreationType.AI);
             assertThat(project.getStatus()).isEqualTo(ProjectStatus.DRAFT);
@@ -240,7 +241,7 @@ class AiWorkflowIntegrationTest {
         User owner = saveUser("ai-rollback@example.org");
         AiWizardSnapshot invalid = new AiWizardSnapshot(
                 "Rollback", "x".repeat(2001), LocalDate.now(), LocalDate.now(),
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test",
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
                 "Nur Snapshot", null, null);
         long projectsBefore = projectRepository.count();
         long membersBefore = projectMemberRepository.count();
@@ -428,7 +429,7 @@ class AiWorkflowIntegrationTest {
                 LocalDate.of(2026, 9, 21),
                 CollaborationMode.GROUP,
                 TemplateCategory.HOME,
-                "Umzug",
+                ProjectSubCategory.MOVING, null,
                 "Bis zum Monatsende umziehen",
                 "Budget 2.000 Euro",
                 "Kartons sind vorhanden",
@@ -439,9 +440,8 @@ class AiWorkflowIntegrationTest {
 
     private GeneratedPlanResponse generatedPlan() {
         return new GeneratedPlanResponse(
-                List.of(new GeneratedPhase(
-                        "phase-1", "Vorbereitung", null,
-                        LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21), 1,
+                List.of(new GeneratedSection(
+                        "section-1", "Vorbereitung", null, 1,
                         List.of(
                                 generatedTask("task-1", "Erster Schritt", 1),
                                 generatedTask("task-2", "Zweiter Schritt", 2),

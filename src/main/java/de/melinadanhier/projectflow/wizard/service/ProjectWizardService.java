@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.wizard.service;
 
+import de.melinadanhier.projectflow.plancontainer.project.validation.ProjectClassificationValidator;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
@@ -29,13 +30,16 @@ public class ProjectWizardService {
     private final ProjectTimeFrameCalculator timeFrameCalculator;
 
     public ProjectWizardState saveBasics(ProjectBasicsForm form, UUID userId, HttpSession session) {
+        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
+                form.getOtherProjectTypeDescription());
         ProjectWizardState state = findOwned(userId, session).orElseGet(ProjectWizardState::new);
         state.setUserId(userId);
         state.setTitle(form.getTitle().trim());
         state.setDescription(normalizeOptionalText(form.getDescription()));
         state.setCategory(form.getCategory());
-        state.setProjectType(normalizeOptionalText(form.getCategory() == TemplateCategory.OTHER
-                ? form.getOtherProjectTypeDescription() : form.getSubcategory()));
+        state.setSubcategory(form.getSubcategory());
+        state.setOtherProjectTypeDescription(form.isOtherCategory()
+                ? normalizeOptionalText(form.getOtherProjectTypeDescription()) : null);
         state.setCollaborationMode(form.getCollaborationMode());
         state.setTimeFrameType(form.getTimeFrameType());
         state.setDurationDays(form.getDurationDays());
@@ -76,7 +80,7 @@ public class ProjectWizardService {
         return new AiWizardSummary(
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
                 state.getCollaborationMode() == CollaborationMode.GROUP,
-                categoryLabel(state.getCategory(), state.getProjectType()),
+                categoryLabel(state.getCategory(), state.getProjectTypeLabel()),
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation());
     }
 
@@ -101,7 +105,7 @@ public class ProjectWizardService {
         }
         return new AiWizardSnapshot(
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
-                state.getCollaborationMode(), state.getCategory(), state.getProjectType(),
+                state.getCollaborationMode(), state.getCategory(), state.getSubcategory(), state.getOtherProjectTypeDescription(),
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(),
                 AiProjectTimeFrameType.valueOf(state.getTimeFrameType().name()), state.getDurationDays());
     }
@@ -148,7 +152,8 @@ public class ProjectWizardService {
         state.setTitle(snapshot.title());
         state.setDescription(snapshot.description());
         state.setCategory(snapshot.category());
-        state.setProjectType(snapshot.projectType());
+        state.setOtherProjectTypeDescription(snapshot.otherProjectTypeDescription());
+        state.setSubcategory(snapshot.subcategory());
         state.setCollaborationMode(snapshot.collaborationMode());
         state.setCreationType(CreationType.AI);
         state.setStartDate(snapshot.startDate());
@@ -177,7 +182,7 @@ public class ProjectWizardService {
                 : ProjectTimeFrameType.START_AND_END;
     }
 
-    private String categoryLabel(TemplateCategory category, String projectType) {
+    private String categoryLabel(TemplateCategory category, String projectTypeLabel) {
         String label = switch (category) {
             case EDUCATION -> "Bildung und Studium";
             case SOFTWARE_TECHNOLOGY -> "Software und Technik";
@@ -189,6 +194,6 @@ public class ProjectWizardService {
             case TRAVEL -> "Reise";
             case OTHER -> "Sonstiges";
         };
-        return projectType == null ? label : label + " – " + projectType;
+        return projectTypeLabel == null ? label : label + " – " + projectTypeLabel;
     }
 }

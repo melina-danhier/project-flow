@@ -1,5 +1,8 @@
 package de.melinadanhier.projectflow.plancontainer.template.model;
 
+import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,7 +11,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -22,17 +24,21 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Template extends PlanContainer {
+@ValidProjectClassification(requireOtherDescription = false)
+public class Template extends PlanContainer implements ProjectClassification {
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false, length = 50)
     private TemplateCategory category;
 
-    @NotBlank
     @Size(max = 100)
-    @Column(name = "project_type", nullable = false, length = 100)
-    private String projectType;
+    @Column(name = "other_project_type_description", length = 100)
+    private String otherProjectTypeDescription;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subcategory", length = 100)
+    private ProjectSubCategory subcategory;
 
     @Positive
     @Column(name = "recommended_duration_days")

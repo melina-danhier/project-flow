@@ -10,6 +10,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRol
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
 import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class ProjectAuthorizationService {
 
     private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectRepository projectRepository;
     private final PlanDraftRepository planDraftRepository;
     private final PlanSectionRepository planSectionRepository;
     private final PlanElementRepository planElementRepository;
@@ -61,6 +63,19 @@ public class ProjectAuthorizationService {
     public boolean isEditable(ProjectMember membership) {
         return membership.getProject().getStatus() == ProjectStatus.ACTIVE
                 && membership.getProject().getLocation() == ProjectLocation.OVERVIEW;
+    }
+
+    /** Serialize changes to mode, memberships and task assignments on the same project. */
+    @Transactional
+    public ProjectMember requireEditableMemberForUpdate(UUID projectId, UUID userId) {
+        projectRepository.findForUpdate(projectId).orElseThrow(this::notAccessible);
+        return requireEditableMember(projectId, userId);
+    }
+
+    @Transactional
+    public ProjectMember requireEditableOwnerForUpdate(UUID projectId, UUID userId) {
+        projectRepository.findForUpdate(projectId).orElseThrow(this::notAccessible);
+        return requireEditableOwner(projectId, userId);
     }
 
     private void requireEditable(ProjectMember membership) {

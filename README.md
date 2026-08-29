@@ -6,7 +6,7 @@ Das Projekt befindet sich in Entwicklung und entsteht im Rahmen einer Bachelorar
 
 ## Ziel
 
-Die Webanwendung soll Einzelpersonen und Kleingruppen bei der Erstellung und Verwaltung einfacher Projektstrukturen unterstützen. Sie richtet sich an kleinere private, studentische oder vergleichbare Projekte. Im Mittelpunkt steht ein Wizard, der mit wenigen gezielten Fragen Informationen zum geplanten Projekt erfasst. Auf dieser Grundlage soll die KI Aufgaben, Projektphasen und weitere Hinweise vorschlagen.
+Die Webanwendung soll Einzelpersonen und Kleingruppen bei der Erstellung und Verwaltung einfacher Projektstrukturen unterstützen. Sie richtet sich an kleinere private, studentische oder vergleichbare Projekte. Im Mittelpunkt steht ein Wizard, der mit wenigen gezielten Fragen Informationen zum geplanten Projekt erfasst. Auf dieser Grundlage soll die KI Bereiche, Aufgaben und weitere Hinweise vorschlagen.
 
 Die KI dient dabei als unterstützendes Werkzeug. Generierte Vorschläge sollen vor der Übernahme geprüft und angepasst werden können.
 
@@ -19,7 +19,7 @@ Die zentrale Forschungsfrage lautet:
 - Projektübersicht
 - geführte Projekterstellung über einen Wizard
 - Start mit einem leeren Projekt, einem statischen Template oder einem KI-generierten Projektplan
-- Verwaltung von Aufgaben und Projektphasen
+- Verwaltung von Aufgaben und Projektbereichen
 - einfache gemeinsame Bearbeitung von Projekten in Kleingruppen
 - Generierung von Projektplänen aus den Wizard-Eingaben
 - Beantwortung einfacher Fragen zu einem bestehenden Projekt

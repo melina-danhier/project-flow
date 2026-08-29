@@ -79,7 +79,7 @@ Der redundante `OpenAiPreCheckOutput` entfällt ebenfalls.
 Nach jeder erfolgreichen Adapterantwort validiert weiterhin `AiPreCheckProcessor`
 beziehungsweise `AiPlanGenerationService`. Bean Validation, Text- und Mengengrenzen,
 Termine, IDs und Abhängigkeiten werden deshalb unabhängig vom Provider geprüft.
-Die globale Mindestanzahl von Aufgaben und phasenübergreifende Limits bleiben
+Die globale Mindestanzahl von Aufgaben und bereichsübergreifende Limits bleiben
 serverseitige Regeln; ein gültiges JSON-Schema allein reicht nicht aus.
 
 ## Fehler und Wiederholungen

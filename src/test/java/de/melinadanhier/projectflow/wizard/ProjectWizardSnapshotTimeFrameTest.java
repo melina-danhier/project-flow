@@ -1,6 +1,9 @@
 package de.melinadanhier.projectflow.wizard;
 
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
+import tools.jackson.databind.json.JsonMapper;
 import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
@@ -32,7 +35,7 @@ class ProjectWizardSnapshotTimeFrameTest {
         var state = service.requireOwned(userId, originalSession);
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
-                state.getCollaborationMode(), state.getCategory(), state.getProjectType(),
+                state.getCollaborationMode(), state.getCategory(), state.getSubcategory(), state.getOtherProjectTypeDescription(),
                 null, null, null, AiProjectTimeFrameType.valueOf(state.getTimeFrameType().name()),
                 state.getDurationDays());
 
@@ -52,13 +55,36 @@ class ProjectWizardSnapshotTimeFrameTest {
         MockHttpSession session = new MockHttpSession();
         AiWizardSnapshot legacy = new AiWizardSnapshot(
                 "Alt", null, LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Sonstiges",
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Sonstiges",
                 null, null, null);
 
         service.restoreFromSnapshot(legacy, userId, session);
 
         assertThat(service.requireOwned(userId, session).getTimeFrameType())
                 .isEqualTo(ProjectTimeFrameType.START_AND_END);
+    }
+
+
+    @ParameterizedTest
+    @EnumSource(ProjectSubCategory.class)
+    void restoresTypedClassificationFromSerializedSnapshot(ProjectSubCategory subcategory) {
+        var snapshot = new AiWizardSnapshot("Projekt", null, null, null,
+                CollaborationMode.INDIVIDUAL, subcategory.getCategory(), subcategory, null,
+                null, null, null);
+        var codec = new AiWorkflowPayloadCodec(JsonMapper.builder().build());
+        String json = codec.writeSnapshot(snapshot);
+        assertThat(JsonMapper.builder().build().readTree(json).get("subcategory").asText())
+                .isEqualTo(subcategory.name());
+        var restoredSnapshot = codec.readSnapshot(json);
+        assertThat(restoredSnapshot).isEqualTo(snapshot);
+        var userId = UUID.randomUUID();
+        var session = new MockHttpSession();
+        service.restoreFromSnapshot(restoredSnapshot, userId, session);
+        var form = ProjectBasicsForm.from(service.requireOwned(userId, session));
+        assertThat(form.getSubcategory()).isEqualTo(subcategory);
+        assertThat(form.getSubcategoryOptions()).contains(subcategory);
+        assertThat(service.projectData(userId, session).getSubcategory()).isEqualTo(subcategory);
+        assertThat(form.getProjectTypeLabel()).isEqualTo(subcategory.getLabel());
     }
 
     private ProjectBasicsForm form(ProjectTimeFrameType mode) {

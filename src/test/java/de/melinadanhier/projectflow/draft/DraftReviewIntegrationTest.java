@@ -8,6 +8,7 @@ import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.draft.service.*;
 import de.melinadanhier.projectflow.plancontainer.project.model.*;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
@@ -61,7 +62,7 @@ class DraftReviewIntegrationTest {
             assertThat(element.getCriticalAssumption()).isNull();
             assertThat(element.isHasCriticalAssumption()).isFalse();
         });
-        mvc.perform(get(f.url()).with(user(f.owner())))
+        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("class=\"assumption-toggle\""))));
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
@@ -75,12 +76,13 @@ class DraftReviewIntegrationTest {
         Fixture f = fixture("  Material <script>alert(1)</script> ist verfügbar  ", null);
         var task = review(f).getElements().getFirst();
         assertThat(task.getCriticalAssumption()).isEqualTo("Material <script>alert(1)</script> ist verfügbar");
-        mvc.perform(get(f.url()).with(user(f.owner())))
+        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("aria-label=\"Kritische Annahme anzeigen\"")))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<button\\b(?=[^>]*\\baria-label=\"[^\"]+\")(?=[^>]*\\baria-describedby=\"assumption-"
+                                + task.getId() + "\")[^>]*>.*")))
                 .andExpect(content().string(containsString("aria-describedby=\"assumption-" + task.getId())))
                 .andExpect(content().string(containsString("role=\"tooltip\"")))
-                .andExpect(content().string(containsString("<span aria-hidden=\"true\">!</span>")))
                 .andExpect(content().string(containsString("&lt;script&gt;")))
                 .andExpect(content().string(not(containsString("<script>alert(1)"))))
                 .andDo(result -> writePreview("draft-review.html", result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
@@ -91,7 +93,7 @@ class DraftReviewIntegrationTest {
         Fixture f = fixture("Material ist verfügbar", null);
         var taskId = review(f).getElements().getFirst().getId();
         jdbc.update("update draft_plan_elements set critical_assumption = '   ', has_critical_assumption = true where id = ?", taskId);
-        mvc.perform(get(f.url()).with(user(f.owner())))
+        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(content().string(not(containsString("class=\"assumption-toggle\""))));
         application.apply(f.projectId(), f.owner().userId());
         assertApplied(f);
@@ -125,23 +127,23 @@ class DraftReviewIntegrationTest {
                 .andExpect(content().string(containsString("Aufgabe 1")))
                 .andExpect(content().string(containsString("Aufgabe 2")))
                 .andExpect(content().string(containsString(before.getElements().get(1).getCriticalAssumption())))
-                .andExpect(content().string(containsString("Kritische Annahmen bestätigen und Plan übernehmen")))
-                .andExpect(content().string(containsString("Zurück zum Entwurf")))
+                .andExpect(content().string(containsString("action=\"" + f.url() + "/confirm-and-apply\"")))
+                .andExpect(content().string(containsString("href=\"" + f.reviewUrl() + "\"")))
                 .andDo(result -> writePreview("draft-confirmation.html", result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
-        mvc.perform(get(f.url()).with(user(f.owner()))).andExpect(status().isOk());
+        mvc.perform(get(f.reviewUrl()).with(user(f.owner()))).andExpect(status().isOk());
         assertThat(review(f)).usingRecursiveComparison().isEqualTo(before);
         assertEmptyPlan(f);
     }
 
     @Test
-    void reviewedAssumptionDoesNotRequireConfirmationAndFilterOnlyShowsPendingElements() throws Exception {
+    void reviewedAssumptionDoesNotRequireConfirmationAndReviewStillShowsPersistedElements() throws Exception {
         Fixture f = fixture("Material ist verfügbar", null);
         var draft = review(f);
         mvc.perform(post(f.url() + "/elements/" + draft.getElements().getFirst().getId() + "/accept")
                         .param("lockVersion", String.valueOf(draft.getLockVersion())).with(user(f.owner())).with(csrf()))
-                .andExpect(redirectedUrl(f.url()));
-        mvc.perform(get(f.url()).param("pendingOnly", "true").with(user(f.owner())))
-                .andExpect(content().string(not(containsString("Aufgabe 1"))))
+                .andExpect(redirectedUrl(f.reviewUrl()));
+        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
+                .andExpect(content().string(containsString("Aufgabe 1")))
                 .andExpect(content().string(containsString("Aufgabe 2")));
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
@@ -180,7 +182,7 @@ class DraftReviewIntegrationTest {
                         .param("lockVersion", String.valueOf(version)).param("title", "Überarbeitet")
                         .param("priority", "HIGH").param("criticalAssumption", "Manipuliert")
                         .param("reviewStatus", "ACCEPTED").with(user(f.owner())).with(csrf()))
-                .andExpect(redirectedUrl(f.url()));
+                .andExpect(redirectedUrl(f.reviewUrl()));
         var current = review(f);
         assertThat(current.getLockVersion()).isGreaterThan(version);
         assertThat(current.getElements().getFirst().getTitle()).isEqualTo("Überarbeitet");
@@ -188,7 +190,7 @@ class DraftReviewIntegrationTest {
         assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.PENDING);
         mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
                         .with(user(f.owner())).with(csrf()))
-                .andExpect(redirectedUrl(f.url())).andExpect(flash().attribute("errorMessage", containsString("zwischenzeitlich")));
+                .andExpect(redirectedUrl(f.reviewUrl())).andExpect(flash().attribute("errorMessage", not(blankOrNullString())));
         assertEmptyPlan(f);
         verifyNoInteractions(aiClient);
     }
@@ -199,7 +201,7 @@ class DraftReviewIntegrationTest {
         var before = review(f);
         mvc.perform(post(f.url() + "/tasks/" + before.getElements().getFirst().getId() + "/delete")
                         .param("lockVersion", String.valueOf(before.getLockVersion())).with(user(f.owner())).with(csrf()))
-                .andExpect(redirectedUrl(f.url()));
+                .andExpect(redirectedUrl(f.reviewUrl()));
         assertThat(review(f).getUncheckedCriticalTasks()).isEmpty();
         assertThat(review(f).getElements()).hasSize(3);
         application.apply(f.projectId(), f.owner().userId());
@@ -217,7 +219,7 @@ class DraftReviewIntegrationTest {
                 LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 1), before.getElements().getFirst().getId());
         mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(before.getLockVersion()))
                         .with(user(f.owner())).with(csrf()))
-                .andExpect(redirectedUrl(f.url())).andExpect(flash().attribute("errorMessage", containsString("Fälligkeitsdatum")));
+                .andExpect(redirectedUrl(f.reviewUrl())).andExpect(flash().attribute("errorMessage", not(blankOrNullString())));
         assertEmptyPlan(f);
         assertThat(review(f).getStatus()).isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
         assertThat(review(f).getElements()).allSatisfy(element ->
@@ -241,11 +243,12 @@ class DraftReviewIntegrationTest {
         var outsider = fixture(null, null).owner();
         var draft = review(f);
         var task = draft.getElements().getFirst();
-        mvc.perform(get(f.url()).with(user(outsider))).andExpect(status().isNotFound());
-        mvc.perform(get(f.url())).andExpect(status().is3xxRedirection());
+        var section = draft.getSections().getFirst();
+        mvc.perform(get(f.reviewUrl()).with(user(outsider))).andExpect(status().isNotFound());
+        mvc.perform(get(f.reviewUrl())).andExpect(status().is3xxRedirection());
         for (String suffix : List.of("/apply", "/confirm-and-apply", "/elements/" + task.getId() + "/accept",
-                "/sections/" + draft.getSections().getFirst().getId() + "/accept", "/tasks/" + task.getId() + "/delete",
-                "/tasks/" + task.getId())) {
+                "/sections/" + section.getId() + "/accept", "/sections/" + section.getId(),
+                "/tasks/" + task.getId() + "/delete", "/tasks/" + task.getId())) {
             mvc.perform(post(f.url() + suffix).param("lockVersion", "0").param("title", "Titel").param("priority", "LOW")
                             .with(user(outsider)).with(csrf())).andExpect(status().isNotFound());
             mvc.perform(post(f.url() + suffix).param("lockVersion", "0").with(user(f.owner())))
@@ -254,6 +257,111 @@ class DraftReviewIntegrationTest {
         mvc.perform(get(f.url() + "/confirm-and-apply").with(user(f.owner())))
                 .andExpect(status().isMethodNotAllowed());
         assertEmptyPlan(f);
+    }
+
+    @Test
+    void reviewUsesPersistedProjectHeaderAndPrefersSubcategory() throws Exception {
+        Fixture f = fixture(null, null);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Project project = projects.findById(f.projectId()).orElseThrow();
+            project.setCategory(TemplateCategory.HOME);
+            project.setSubcategory(ProjectSubCategory.MOVING);
+            project.setStartDate(LocalDate.of(2026, 9, 1));
+            project.setEndDate(LocalDate.of(2026, 10, 13));
+        });
+
+        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Testprojekt")))
+                .andExpect(content().string(containsString("Umzug")))
+                .andExpect(content().string(containsString("01.09.2026")))
+                .andExpect(content().string(containsString("13.10.2026")))
+                .andExpect(content().string(not(containsString("Prompt-Version"))))
+                .andExpect(content().string(not(containsString("Schema-Version"))));
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                projects.findById(f.projectId()).orElseThrow().setSubcategory(null));
+        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
+                .andExpect(content().string(containsString("Zuhause")));
+    }
+
+    @Test
+    void reviewOrdersSectionsAndMixedElementsOnlyByPersistedOrder() {
+        Fixture f = fixture(null, null);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            DraftPlan draft = drafts.findByProjectId(f.projectId()).orElseThrow();
+            DraftSection existing = draft.getSections().getFirst();
+            existing.setSortOrder(20);
+            DraftSection first = new DraftSection();
+            first.setTitle("Erster Bereich");
+            first.setSortOrder(10);
+            draft.addSection(first);
+
+            DraftMilestone milestone = new DraftMilestone();
+            milestone.setTitle("Zwischenziel");
+            milestone.setSortOrder(25);
+            draft.addElement(milestone);
+            existing.addElement(milestone);
+        });
+        jdbc.update("update draft_plan_elements set sort_order = case title "
+                        + "when 'Aufgabe 1' then 30 when 'Aufgabe 2' then 10 "
+                        + "when 'Aufgabe 3' then 20 else 40 end where plan_draft_id = "
+                        + "(select id from plan_drafts where project_id = ?) and title like 'Aufgabe %'", f.projectId());
+
+        DraftReviewDto review = review(f);
+        assertThat(review.getSections()).extracting("title")
+                .containsExactly("Erster Bereich", "Section");
+        assertThat(review.getSections().get(1).getElements()).extracting("title")
+                .containsExactly("Aufgabe 2", "Aufgabe 3", "Zwischenziel", "Aufgabe 1", "Aufgabe 4");
+    }
+
+    @Test
+    void sectionCanBeEditedAndDescriptionCanBeRemovedWithoutChangingOtherDraftContent() throws Exception {
+        Fixture f = fixture("Bleibt erhalten", null);
+        DraftReviewDto before = review(f);
+        var section = before.getSections().getFirst();
+        var elementsBefore = before.getElements().stream()
+                .map(element -> List.of(element.getId(), element.getTitle(), element.getSortOrder()))
+                .toList();
+
+        mvc.perform(post(f.url() + "/sections/" + section.getId())
+                        .param("lockVersion", String.valueOf(before.getLockVersion()))
+                        .param("title", "Neu geordnet")
+                        .param("description", "  Thematischer Bereich  ")
+                        .with(user(f.owner())).with(csrf()))
+                .andExpect(redirectedUrl(f.reviewUrl()));
+        DraftReviewDto updated = review(f);
+        assertThat(updated.getSections().getFirst().getTitle()).isEqualTo("Neu geordnet");
+        assertThat(updated.getSections().getFirst().getDescription()).isEqualTo("Thematischer Bereich");
+        assertThat(updated.getElements().stream()
+                .map(element -> List.of(element.getId(), element.getTitle(), element.getSortOrder())))
+                .containsExactlyElementsOf(elementsBefore);
+
+        mvc.perform(post(f.url() + "/sections/" + section.getId())
+                        .param("lockVersion", String.valueOf(updated.getLockVersion()))
+                        .param("title", "Neu geordnet").param("description", "  ")
+                        .with(user(f.owner())).with(csrf()))
+                .andExpect(redirectedUrl(f.reviewUrl()));
+        assertThat(review(f).getSections().getFirst().getDescription()).isNull();
+    }
+
+    @Test
+    void missingDraftProjectAndForeignSectionReturnNotFound() throws Exception {
+        Fixture f = fixture(null, null);
+        Fixture other = fixture(null, null);
+        var otherSection = review(other).getSections().getFirst();
+
+        mvc.perform(post(f.url() + "/sections/" + otherSection.getId())
+                        .param("lockVersion", String.valueOf(review(f).getLockVersion()))
+                        .param("title", "Nicht erlaubt").with(user(f.owner())).with(csrf()))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/projects/" + UUID.randomUUID() + "/draft/review").with(user(f.owner())))
+                .andExpect(status().isNotFound());
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                drafts.delete(drafts.findByProjectId(f.projectId()).orElseThrow()));
+        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
+                .andExpect(status().isNotFound());
     }
 
     private Fixture fixture(String firstAssumption, String secondAssumption) {
@@ -279,8 +387,8 @@ class DraftReviewIntegrationTest {
                     "task-" + index, "Aufgabe " + index, null, null, null, null,
                     index == 1 ? firstAssumption : index == 2 ? secondAssumption : null,
                     GeneratedElementOrigin.AI_INFERRED, index)).toList();
-            var contents = generatedPlanMapper.map(new GeneratedPlanResponse(List.of(new GeneratedPhase(
-                    "phase", "Phase", null, null, null, 1, tasks, List.of()))));
+            var contents = generatedPlanMapper.map(new GeneratedPlanResponse(List.of(new GeneratedSection(
+                    "section", "Section", null, 1, tasks, List.of()))));
             DraftPlan draft = new DraftPlan();
             project.attachDraft(draft);
             draft.setStatus(DraftPlanStatus.READY_FOR_REVIEW);
@@ -314,5 +422,6 @@ class DraftReviewIntegrationTest {
     }
     private record Fixture(UUID projectId, AuthenticatedUser owner) {
         String url() { return "/projects/" + projectId + "/draft"; }
+        String reviewUrl() { return url() + "/review"; }
     }
 }

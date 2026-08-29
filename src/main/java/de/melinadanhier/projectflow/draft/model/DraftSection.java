@@ -20,7 +20,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,12 +43,6 @@ public class DraftSection extends MutableEntity {
     @Size(max = 2000)
     @Column(name = "description", length = 2000)
     private String description;
-
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
 
     @PositiveOrZero
     @Column(name = "sort_order", nullable = false)

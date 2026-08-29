@@ -156,12 +156,12 @@ class TaskCommentIntegrationTest {
     @Test
     void deletingSectionContentsAlsoDeletesTaskComments() {
         User owner = saveUser("delete-section-comment-owner@example.org", "Eigentümerin");
-        Project project = saveProject("Phase aufräumen", owner, CollaborationMode.INDIVIDUAL);
+        Project project = saveProject("Section aufräumen", owner, CollaborationMode.INDIVIDUAL);
         SectionForm sectionForm = new SectionForm();
-        sectionForm.setTitle("Zu löschende Phase");
+        sectionForm.setTitle("Zu löschende Section");
         UUID sectionId = sectionService.createSection(project.getId(), sectionForm, owner.getId()).getId();
-        Task task = saveTask(project, owner, sectionId, "Aufgabe in Phase");
-        addComment(project, task, owner, "Wird zusammen mit der Phase entfernt");
+        Task task = saveTask(project, owner, sectionId, "Aufgabe in Section");
+        addComment(project, task, owner, "Wird zusammen mit der Section entfernt");
         DeleteSectionForm deleteForm = new DeleteSectionForm();
         deleteForm.setMode(SectionDeletionMode.DELETE_CONTENT);
 

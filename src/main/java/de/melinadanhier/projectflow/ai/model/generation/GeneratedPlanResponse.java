@@ -6,14 +6,14 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_PHASES;
-import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MIN_PHASES;
+import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_SECTIONS;
+import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MIN_SECTIONS;
 
 public record GeneratedPlanResponse(
-        @NotNull @Size(min = MIN_PHASES, max = MAX_PHASES) List<@Valid GeneratedPhase> phases
+        @NotNull @Size(min = MIN_SECTIONS, max = MAX_SECTIONS) List<@Valid GeneratedSection> sections
 ) {
     public GeneratedPlanResponse {
-        phases = phases == null ? null : List.copyOf(phases);
+        sections = sections == null ? null : List.copyOf(sections);
     }
 
 }

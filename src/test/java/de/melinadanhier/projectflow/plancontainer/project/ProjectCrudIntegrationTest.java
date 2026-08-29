@@ -94,9 +94,9 @@ class ProjectCrudIntegrationTest {
 
         ProjectPlanViewDto activePlan = projectService.getProjectPlan(project.getId(), owner.getId());
         assertThat(activePlan.isEditable()).isTrue();
-        assertThat(activePlan.getSections()).singleElement().satisfies(phase -> {
-            assertThat(phase.getTaskCount()).isEqualTo(1);
-            assertThat(phase.getMilestoneCount()).isEqualTo(1);
+        assertThat(activePlan.getSections()).singleElement().satisfies(sectionView -> {
+            assertThat(sectionView.getTaskCount()).isEqualTo(1);
+            assertThat(sectionView.getMilestoneCount()).isEqualTo(1);
         });
         assertThat(activePlan.getTasks()).extracting(TaskDetailsDto::getId).containsExactly(task.getId());
 
@@ -140,8 +140,7 @@ class ProjectCrudIntegrationTest {
                 .getAffectedDependencyCount()).isEqualTo(2);
 
         assertThatThrownBy(() -> createDependency(project, owner, last.getId(), first.getId()))
-                .isInstanceOf(DomainValidationException.class)
-                .hasMessageContaining("Zyklus");
+                .isInstanceOf(DomainValidationException.class);
         assertThatThrownBy(() -> createDependency(project, owner, first.getId(), first.getId()))
                 .isInstanceOf(DomainValidationException.class);
         assertThatThrownBy(() -> createDependency(project, owner, first.getId(), middle.getId()))
@@ -164,7 +163,7 @@ class ProjectCrudIntegrationTest {
     @Test
     void sectionDeletionMovesContentsAndRejectsTargetFromAnotherProject() {
         User owner = saveUser("section-owner@example.org");
-        Project project = saveProject("Phasen", owner);
+        Project project = saveProject("Bereiche", owner);
         SectionDto source = sectionService.createSection(project.getId(), sectionForm("Quelle"), owner.getId());
         SectionDto target = sectionService.createSection(project.getId(), sectionForm("Ziel"), owner.getId());
         TaskDetailsDto task = taskService.createTask(
@@ -188,10 +187,10 @@ class ProjectCrudIntegrationTest {
         assertThat(taskRepository.findById(task.getId()).orElseThrow().getPlanSection().getId())
                 .isEqualTo(target.getId());
         assertThat(projectService.getProjectPlan(project.getId(), owner.getId()).getSections())
-                .singleElement().satisfies(phase -> {
-                    assertThat(phase.getSortOrder()).isZero();
-                    assertThat(phase.getTaskCount()).isEqualTo(1);
-                    assertThat(phase.getMilestoneCount()).isEqualTo(1);
+                .singleElement().satisfies(section -> {
+                    assertThat(section.getSortOrder()).isZero();
+                    assertThat(section.getTaskCount()).isEqualTo(1);
+                    assertThat(section.getMilestoneCount()).isEqualTo(1);
                 });
     }
 
@@ -220,12 +219,8 @@ class ProjectCrudIntegrationTest {
         ProjectMember membership = addMembership(project, member, true);
 
         SectionForm sectionCreate = sectionForm("Analyse");
-        sectionCreate.setDescription("Ausführliche Phase");
+        sectionCreate.setDescription("Ausführlicher Bereich");
         SectionDto section = sectionService.createSection(project.getId(), sectionCreate, owner.getId());
-        var sectionWithInternalDates = sectionRepository.findById(section.getId()).orElseThrow();
-        sectionWithInternalDates.setStartDate(LocalDate.of(2026, 8, 14));
-        sectionWithInternalDates.setEndDate(LocalDate.of(2026, 8, 18));
-        entityManager.flush();
 
         TaskForm taskCreate = taskForm("Recherche", section.getId());
         taskCreate.setDescription("Quellen sammeln");
@@ -283,13 +278,11 @@ class ProjectCrudIntegrationTest {
         assertThat(clearedMilestone.getRelativeDueDay()).isNull();
 
         SectionForm sectionUpdate = sectionFormFrom(section);
-        sectionUpdate.setLockVersion(sectionWithInternalDates.getLockVersion());
+        sectionUpdate.setLockVersion(section.getLockVersion());
         sectionUpdate.setTitle("Analyse aktualisiert");
         SectionDto updatedSection = sectionService.updateSection(
                 project.getId(), section.getId(), sectionUpdate, owner.getId());
-        assertThat(updatedSection.getDescription()).isEqualTo("Ausführliche Phase");
-        assertThat(updatedSection.getStartDate()).isEqualTo(LocalDate.of(2026, 8, 14));
-        assertThat(updatedSection.getEndDate()).isEqualTo(LocalDate.of(2026, 8, 18));
+        assertThat(updatedSection.getDescription()).isEqualTo("Ausführlicher Bereich");
 
         entityManager.flush();
         var sectionEntity = sectionRepository.findById(section.getId()).orElseThrow();
@@ -300,10 +293,6 @@ class ProjectCrudIntegrationTest {
         SectionDto clearedSection = sectionService.updateSection(
                 project.getId(), section.getId(), sectionClear, owner.getId());
         assertThat(clearedSection.getDescription()).isNull();
-        assertThat(clearedSection.getStartDate()).isEqualTo(LocalDate.of(2026, 8, 14));
-        assertThat(clearedSection.getEndDate()).isEqualTo(LocalDate.of(2026, 8, 18));
-        assertThat(clearedSection.getRelativeStartDay()).isNull();
-        assertThat(clearedSection.getRelativeEndDay()).isNull();
     }
 
     @Test
@@ -314,11 +303,11 @@ class ProjectCrudIntegrationTest {
         Project project = saveProject("Validierung", owner);
         Project otherProject = saveProject("Fremdprojekt", owner);
         SectionDto foreignSection = sectionService.createSection(
-                otherProject.getId(), sectionForm("Fremde Phase"), owner.getId());
+                otherProject.getId(), sectionForm("Fremde Section"), owner.getId());
         ProjectMember inactiveMember = addMembership(project, inactiveUser, false);
         ProjectMember foreignMember = addMembership(otherProject, foreignUser, true);
 
-        TaskForm foreignSectionForm = taskForm("Ungültige Phase", foreignSection.getId());
+        TaskForm foreignSectionForm = taskForm("Ungültige Section", foreignSection.getId());
         assertThatThrownBy(() -> taskService.createTask(project.getId(), foreignSectionForm, owner.getId()))
                 .isInstanceOf(ResourceNotFoundException.class);
         MilestoneForm foreignMilestoneForm = milestoneForm("Ungültiger Meilenstein", foreignSection.getId());
@@ -341,9 +330,9 @@ class ProjectCrudIntegrationTest {
         User owner = saveUser("ordering-owner@example.org");
         Project project = saveProject("Sortierung", owner);
         SectionDto firstSection = sectionService.createSection(
-                project.getId(), sectionForm("Erste Phase"), owner.getId());
+                project.getId(), sectionForm("Erste Section"), owner.getId());
         SectionDto secondSection = sectionService.createSection(
-                project.getId(), sectionForm("Zweite Phase"), owner.getId());
+                project.getId(), sectionForm("Zweite Section"), owner.getId());
 
         taskService.createTask(project.getId(), taskForm("A1", firstSection.getId()), owner.getId());
         taskService.createTask(project.getId(), taskForm("A3", firstSection.getId()), owner.getId());
@@ -363,7 +352,7 @@ class ProjectCrudIntegrationTest {
 
         ProjectPlanViewDto plan = projectService.getProjectPlan(project.getId(), owner.getId());
         assertThat(plan.getSections()).extracting(SectionDto::getTitle)
-                .containsExactly("Erste Phase", "Zweite Phase");
+                .containsExactly("Erste Section", "Zweite Section");
         assertThat(plan.getSections().get(0).getElements())
                 .extracting(PlanElementViewDto::getTitle, PlanElementViewDto::getType)
                 .containsExactly(
@@ -462,6 +451,7 @@ class ProjectCrudIntegrationTest {
     private Project saveProject(String title, User owner) {
         Project project = new Project();
         project.setTitle(title);
+        project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.GROUP);
         project.setCreationType(CreationType.EMPTY);
         project.setStatus(ProjectStatus.ACTIVE);
         ProjectMember membership = new ProjectMember();

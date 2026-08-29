@@ -1,5 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.project.dto;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
@@ -15,14 +17,16 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProjectSummaryDto {
+public class ProjectSummaryDto implements ProjectClassification {
 
     private UUID id;
     private String title;
     private LocalDate startDate;
     private LocalDate endDate;
     private TemplateCategory category;
-    private String projectType;
+    private String otherProjectTypeDescription;
+
+    private ProjectSubCategory subcategory;
     private CollaborationMode collaborationMode;
     private CreationType creationType;
     private ProjectStatus status;

@@ -21,6 +21,7 @@
             <a th:if="${selectedLocation.name() != 'DRAFT'}" th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}"></a>
             <a th:if="${selectedLocation.name() == 'DRAFT'}"
                th:href="@{/projects/{id}/draft(id=${project.id})}" th:text="${project.title}"></a>
+            <span th:if="${project.projectTypeLabel}" th:text="${project.projectTypeLabel}"></span>
         </li>
     </ul>
     <a th:href="@{/projects/new}">Projekt anlegen</a>

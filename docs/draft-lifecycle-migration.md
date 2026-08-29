@@ -54,7 +54,7 @@ sowie Widersprüche zwischen sichtbarem Draft und Workflowstatus.
 ## Sichere Bereinigung
 
 - **Leere Platzhalter in GENERATING/FAILED:** V16 entfernt sie selbst, sofern weder
-  Phasen noch Elemente existieren. Projekt, Workflow und Snapshot bleiben erhalten.
+  Bereiche noch Elemente existieren. Projekt, Workflow und Snapshot bleiben erhalten.
 - **Bereits gültige sichtbare Drafts:** V16 erhält deren Graphen und Reviewstatus.
   Die vorhandene Modellangabe wird in den Workflow übertragen. Prompt-/Schemaversionen,
   Fehler und Versuchszähler im Workflow bleiben maßgeblich und werden nicht überschrieben.

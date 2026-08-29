@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.wizard.dto;
 
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
@@ -12,28 +11,16 @@ public class ProjectBasicsValidator implements ConstraintValidator<ValidProjectB
             return true;
         }
 
-        boolean valid = validateProjectType(form, context);
         if (form.getTimeFrameType() == null) {
-            return valid;
+            return true;
         }
 
         return switch (form.getTimeFrameType()) {
-            case START_AND_END -> validateStartAndEnd(form, context) && valid;
-            case START_AND_DURATION -> validateStartAndDuration(form, context) && valid;
-            case END_AND_DURATION -> validateEndAndDuration(form, context) && valid;
-            case NONE -> validateNoTimeInformation(form, context) && valid;
+            case START_AND_END -> validateStartAndEnd(form, context);
+            case START_AND_DURATION -> validateStartAndDuration(form, context);
+            case END_AND_DURATION -> validateEndAndDuration(form, context);
+            case NONE -> validateNoTimeInformation(form, context);
         };
-    }
-
-    private boolean validateProjectType(ProjectBasicsForm form, ConstraintValidatorContext context) {
-        boolean descriptionPresent = form.getOtherProjectTypeDescription() != null
-                && !form.getOtherProjectTypeDescription().isBlank();
-        if (form.getCategory() != TemplateCategory.OTHER || descriptionPresent) {
-            return true;
-        }
-        addViolation(context, "otherProjectTypeDescription",
-                "Bitte beschreibe kurz, um welche Art von Projekt es sich handelt.");
-        return false;
     }
 
     private boolean validateStartAndEnd(ProjectBasicsForm form, ConstraintValidatorContext context) {

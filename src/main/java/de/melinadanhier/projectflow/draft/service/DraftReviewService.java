@@ -2,11 +2,13 @@ package de.melinadanhier.projectflow.draft.service;
 
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.draft.dto.DraftReviewDto;
+import de.melinadanhier.projectflow.draft.dto.DraftSectionForm;
 import de.melinadanhier.projectflow.draft.mapper.DraftMapper;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
 import de.melinadanhier.projectflow.draft.model.DraftTask;
+import de.melinadanhier.projectflow.draft.model.DraftSection;
 import de.melinadanhier.projectflow.draft.dto.DraftTaskForm;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
@@ -36,8 +38,14 @@ public class DraftReviewService {
         authorizationService.requireOwner(projectId, userId);
         DraftPlan draft = planDraftRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Für dieses Projekt ist kein Planentwurf vorhanden."));
-        return draftMapper.toReviewDto(draft);
+                        "Für dieses Projekt ist kein Planentwurf vorhanden."
+                ));
+        DraftReviewDto review = draftMapper.toReviewDto(draft);
+        var project = draft.getProject();
+        review.setCategoryLabel(project.getSubcategory() != null
+                ? project.getSubcategory().getLabel()
+                : categoryLabel(project.getCategory()));
+        return review;
     }
 
     @Transactional
@@ -52,8 +60,25 @@ public class DraftReviewService {
     public void acceptSection(UUID projectId, UUID sectionId, UUID userId, long version) {
         DraftPlan draft = editable(projectId, userId, version);
         var section = draft.getSections().stream().filter(value -> value.getId().equals(sectionId))
-                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Entwurfsphase nicht gefunden."));
+                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Entwurfsbereich nicht gefunden."));
         section.setReviewStatus(DraftReviewStatus.ACCEPTED);
+    }
+
+    @Transactional
+    public void updateSection(UUID projectId, UUID sectionId, UUID userId, DraftSectionForm form) {
+        if (!validator.validate(form).isEmpty()) {
+            throw new DomainValidationException("Bitte prüfe die Angaben zum Bereich.");
+        }
+        DraftPlan draft = editable(projectId, userId, form.getLockVersion());
+        DraftSection section = draft.getSections().stream()
+                .filter(candidate -> candidate.getId().equals(sectionId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Entwurfsbereich nicht gefunden."));
+        section.setTitle(form.getTitle().strip());
+        section.setDescription(form.getDescription() == null || form.getDescription().isBlank()
+                ? null : form.getDescription().strip());
+        section.setUserModified(true);
+        section.setReviewStatus(DraftReviewStatus.PENDING);
     }
 
     @Transactional
@@ -107,5 +132,22 @@ public class DraftReviewService {
         // Child edits must invalidate open confirmation forms, even when the status stays IN_REVIEW.
         entityManager.lock(draft, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
         return draft;
+    }
+
+    private String categoryLabel(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory category) {
+        if (category == null) {
+            return null;
+        }
+        return switch (category) {
+            case EDUCATION -> "Bildung und Studium";
+            case SOFTWARE_TECHNOLOGY -> "Software und Technik";
+            case EVENT -> "Veranstaltung";
+            case HOME -> "Zuhause";
+            case CREATIVE -> "Kreativprojekt";
+            case CAREER -> "Beruf und Karriere";
+            case HEALTH_PERSONAL_DEVELOPMENT -> "Gesundheit und persönliche Entwicklung";
+            case TRAVEL -> "Reise";
+            case OTHER -> "Sonstiges";
+        };
     }
 }

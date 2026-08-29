@@ -1,10 +1,10 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.ai.provider.AiClient;
-
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
+import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
@@ -103,7 +103,7 @@ class AiPreCheckWizardIntegrationTest {
         UUID projectId = workflowRepository.findById(workflowId).orElseThrow().getProject().getId();
         mockMvc.perform(get(statusUrl(workflowId)).with(user(new AuthenticatedUser(
                         owner.getId(), owner.getEmail(), owner.getPasswordHash(), true))))
-                .andExpect(redirectedUrl("/projects/" + projectId + "/draft"));
+                .andExpect(redirectedUrl("/projects/" + projectId + "/draft/review"));
     }
 
     @Test
@@ -126,8 +126,8 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(view().name("generation/ai-problems"))
                 .andExpect(content().string(containsString("Warnung eins")))
                 .andExpect(content().string(containsString("Warnung zwei")))
-                .andExpect(content().string(containsString("Vorschlag")))
-                .andExpect(content().string(containsString(">Hinweis akzeptieren</button>")));
+                .andExpect(content().string(containsString("action=\"" + ignoreUrl(workflowId, 0) + "\"")))
+                .andExpect(content().string(containsString("action=\"" + ignoreUrl(workflowId, 1) + "\"")));
         mockMvc.perform(post(ignoreUrl(workflowId, 0)).session(session).with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(problemsUrl(workflowId)));
@@ -172,12 +172,12 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(draft.getStatus()).isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
         assertThat(jdbcTemplate.queryForList(
                 "select title from draft_sections where plan_draft_id = ? order by sort_order",
-                String.class, draft.getId())).containsExactly("Phase");
+                String.class, draft.getId())).containsExactly("Section");
         assertThat(jdbcTemplate.queryForList(
                 "select title from draft_plan_elements where plan_draft_id = ? order by sort_order",
                 String.class, draft.getId()))
                 .containsExactlyInAnyOrder("Generierter Schritt", "Zweiter Schritt", "Dritter Schritt",
-                        "Phasenziel");
+                        "Bereichsziel");
         assertThat(planSectionRepository.count()).isEqualTo(activeSectionsBefore);
         assertThat(taskRepository.count()).isEqualTo(activeTasksBefore);
         assertThat(milestoneRepository.count()).isEqualTo(activeMilestonesBefore);
@@ -185,7 +185,7 @@ class AiPreCheckWizardIntegrationTest {
         mockMvc.perform(get("/projects/" + projectId + "/draft").with(user(principal)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Generierter Schritt")))
-                .andExpect(content().string(containsString("Phasenziel")));
+                .andExpect(content().string(containsString("Bereichsziel")));
         mockMvc.perform(post("/projects/" + projectId + "/draft/apply").with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/" + projectId + "/plan"));
@@ -220,8 +220,8 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Knapper Zeitraum")))
                 .andExpect(content().string(containsString("Ziel und Rahmen widersprechen sich")))
-                .andExpect(content().string(containsString("Dieser Fehler kann nicht akzeptiert werden")))
-                .andExpect(content().string(containsString(">Hinweis akzeptieren</button>")));
+                .andExpect(content().string(not(containsString("action=\"" + ignoreUrl(workflowId, 1) + "\""))))
+                .andExpect(content().string(containsString("action=\"" + ignoreUrl(workflowId, 0) + "\"")));
         mockMvc.perform(post(ignoreUrl(workflowId, 1)).session(session).with(user(principal)).with(csrf()))
                 .andExpect(status().isNotFound());
 
@@ -231,7 +231,8 @@ class AiPreCheckWizardIntegrationTest {
         mockMvc.perform(get(problemsUrl(workflowId)).session(session).with(user(principal)))
                 .andExpect(content().string(not(containsString("Knapper Zeitraum"))))
                 .andExpect(content().string(containsString("Ziel und Rahmen widersprechen sich")))
-                .andExpect(content().string(not(containsString(">Hinweis akzeptieren</button>"))));
+                .andExpect(content().string(not(containsString("action=\"" + ignoreUrl(workflowId, 0) + "\""))))
+                .andExpect(content().string(not(containsString("action=\"" + ignoreUrl(workflowId, 1) + "\""))));
 
         assertThat(workflowRepository.findById(workflowId).orElseThrow().getStatus())
                 .isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
@@ -342,15 +343,14 @@ class AiPreCheckWizardIntegrationTest {
 
     private GeneratedPlanResponse generatedPlan() {
         return new GeneratedPlanResponse(
-                List.of(new GeneratedPhase(
-                        "phase-1", "Phase", null,
-                        LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21), 1,
+                List.of(new GeneratedSection(
+                        "section-1", "Section", null, 1,
                         List.of(
                                 generatedTask("task-1", "Generierter Schritt", 1),
                                 generatedTask("task-2", "Zweiter Schritt", 2),
                                 generatedTask("task-3", "Dritter Schritt", 3)),
                         List.of(new GeneratedMilestone(
-                                "milestone-1", "Phasenziel", LocalDate.of(2026, 9, 21), 2)))));
+                                "milestone-1", "Bereichsziel", LocalDate.of(2026, 9, 21), 2)))));
     }
 
     private GeneratedTask generatedTask(String id, String title, int order) {
@@ -363,7 +363,7 @@ class AiPreCheckWizardIntegrationTest {
         return new AiWizardSnapshot(
                 "Umzug planen", "Wohnungswechsel organisieren",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
-                CollaborationMode.INDIVIDUAL, TemplateCategory.HOME, "Umzug",
+                CollaborationMode.INDIVIDUAL, TemplateCategory.HOME, ProjectSubCategory.MOVING, null,
                 "Rechtzeitig umziehen", "Budget 2.000 Euro", "Kartons vorhanden",
                 AiProjectTimeFrameType.START_AND_DURATION, 21);
     }

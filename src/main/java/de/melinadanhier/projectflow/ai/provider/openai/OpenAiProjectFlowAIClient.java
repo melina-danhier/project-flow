@@ -2,7 +2,7 @@ package de.melinadanhier.projectflow.ai.provider.openai;
 
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedMilestone;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedPhase;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedSection;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedTask;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
@@ -35,19 +35,17 @@ public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGe
 
     @Override
     protected GeneratedPlanResponse mapPlan(OpenAiGenerationOutput output) {
-        return new GeneratedPlanResponse(mapList(output.phases(), this::map));
+        return new GeneratedPlanResponse(mapList(output.sections(), this::map));
     }
 
-    private GeneratedPhase map(OpenAiGenerationOutput.Phase phase) {
-        return new GeneratedPhase(
-                phase.tempId().orElse(null),
-                phase.title(),
-                phase.description().orElse(null),
-                phase.startDate().orElse(null),
-                phase.endDate().orElse(null),
-                phase.order(),
-                mapList(phase.tasks(), this::map),
-                mapList(phase.milestones(), this::map)
+    private GeneratedSection map(OpenAiGenerationOutput.Section section) {
+        return new GeneratedSection(
+                section.tempId().orElse(null),
+                section.title(),
+                section.description().orElse(null),
+                section.order(),
+                mapList(section.tasks(), this::map),
+                mapList(section.milestones(), this::map)
         );
     }
 

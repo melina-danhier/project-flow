@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.template.service;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.mapper.TemplateMapper;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
 import de.melinadanhier.projectflow.plancontainer.template.dto.TemplateSummaryDto;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,17 +42,16 @@ public class TemplateService {
     @Transactional(readOnly = true)
     public Optional<TemplateSummaryDto> findRecommendation(
             TemplateCategory category,
-            String projectType
+            ProjectSubCategory subcategory
     ) {
         if (category == null) {
             return Optional.empty();
         }
-        String normalizedProjectType = normalize(projectType);
         return getTemplates().stream()
                 .filter(template -> template.getCategory() == category)
                 .sorted((left, right) -> Integer.compare(
-                        recommendationScore(right, normalizedProjectType),
-                        recommendationScore(left, normalizedProjectType)))
+                        recommendationScore(right, subcategory),
+                        recommendationScore(left, subcategory)))
                 .findFirst();
     }
 
@@ -78,14 +77,11 @@ public class TemplateService {
         return dto;
     }
 
-    private int recommendationScore(TemplateSummaryDto template, String normalizedProjectType) {
-        if (normalizedProjectType == null) {
+    private int recommendationScore(TemplateSummaryDto template, ProjectSubCategory subcategory) {
+        if (subcategory == null) {
             return 1;
         }
-        return normalizedProjectType.equals(normalize(template.getProjectType())) ? 2 : 1;
+        return subcategory == template.getSubcategory() ? 2 : 1;
     }
 
-    private String normalize(String value) {
-        return value == null || value.isBlank() ? null : value.trim().toLowerCase(Locale.ROOT);
-    }
 }

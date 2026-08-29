@@ -112,7 +112,7 @@ public class ProjectWizardController {
                 CreationType.TEMPLATE, currentUser.userId(), session);
         model.addAttribute("wizardState", state);
         model.addAttribute("templates", templateService.getTemplates());
-        templateService.findRecommendation(state.getCategory(), state.getProjectType())
+        templateService.findRecommendation(state.getCategory(), state.getSubcategory())
                 .ifPresent(template -> model.addAttribute("recommendedTemplateId", template.getId()));
         return "wizard/template-catalog";
     }

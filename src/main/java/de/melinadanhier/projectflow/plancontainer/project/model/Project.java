@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project.model;
 
+import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -31,7 +32,8 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Project extends PlanContainer {
+@ValidProjectClassification(requireOtherDescription = false)
+public class Project extends PlanContainer implements ProjectClassification {
 
     @Column(name = "start_date")
     private LocalDate startDate;
@@ -44,12 +46,20 @@ public class Project extends PlanContainer {
     private TemplateCategory category;
 
     @Size(max = 100)
-    @Column(name = "project_type", length = 100)
-    private String projectType;
+    @Column(name = "other_project_type_description", length = 100)
+    private String otherProjectTypeDescription;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subcategory", length = 100)
+    private ProjectSubCategory subcategory;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "collaboration_mode", length = 20)
     private CollaborationMode collaborationMode;
+
+    public boolean isGroupProject() {
+        return collaborationMode == CollaborationMode.GROUP;
+    }
 
     @NotNull
     @Enumerated(EnumType.STRING)

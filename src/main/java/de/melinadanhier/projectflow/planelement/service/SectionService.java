@@ -41,8 +41,6 @@ public class SectionService {
         PlanSection section = new PlanSection();
         section.setPlanContainer(project);
         section.setOrigin(ElementOrigin.USER);
-        section.setRelativeStartDay(null);
-        section.setRelativeEndDay(null);
         apply(section, form);
         List<PlanSection> sections = new ArrayList<>(
                 planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId));
@@ -77,7 +75,7 @@ public class SectionService {
         } else if (form.getMode() == SectionDeletionMode.DELETE_CONTENT) {
             deleteContents(contents);
         } else {
-            throw new DomainValidationException("Für das Löschen der Projektphase ist ein gültiger Modus erforderlich.");
+            throw new DomainValidationException("Für das Löschen des Projektbereichs ist ein gültiger Modus erforderlich.");
         }
         planSectionRepository.delete(section);
         planSectionRepository.flush();
@@ -92,14 +90,14 @@ public class SectionService {
             List<PlanElement> contents
     ) {
         if (targetSectionId == null) {
-            throw new DomainValidationException("Für das Verschieben muss eine Zielphase gewählt werden.");
+            throw new DomainValidationException("Für das Verschieben muss ein Zielbereich gewählt werden.");
         }
         if (source.getId().equals(targetSectionId)) {
-            throw new DomainValidationException("Die zu löschende Projektphase kann nicht Ziel des Verschiebens sein.");
+            throw new DomainValidationException("Der zu löschende Projektbereich kann nicht Ziel des Verschiebens sein.");
         }
         PlanSection target = planSectionRepository.findByIdAndPlanContainerId(targetSectionId, projectId)
                 .orElseThrow(() -> new DomainValidationException(
-                        "Die Zielphase muss zum selben Projekt gehören und vorhanden sein."
+                        "Der Zielbereich muss zum selben Projekt gehören und vorhanden sein."
                 ));
         List<PlanElement> targetContents = new ArrayList<>(
                 planElementRepository.findAllByPlanContainerIdAndPlanSectionIdOrderBySortOrderAsc(
@@ -127,7 +125,7 @@ public class SectionService {
 
     private PlanSection requireSection(UUID projectId, UUID sectionId) {
         return planSectionRepository.findByIdAndPlanContainerId(sectionId, projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Projektphase wurde nicht gefunden."));
+                .orElseThrow(() -> new ResourceNotFoundException("Projektbereich wurde nicht gefunden."));
     }
 
     private void apply(PlanSection section, SectionForm form) {
@@ -148,7 +146,7 @@ public class SectionService {
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {
         if (submittedVersion != null && submittedVersion != actualVersion) {
-            throw new ConflictException("Die Projektphase wurde zwischenzeitlich geändert. Bitte lade die Seite neu.");
+            throw new ConflictException("Der Projektbereich wurde zwischenzeitlich geändert. Bitte lade die Seite neu.");
         }
     }
 }

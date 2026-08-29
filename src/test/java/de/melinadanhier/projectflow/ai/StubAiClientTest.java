@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
@@ -11,6 +12,8 @@ import de.melinadanhier.projectflow.ai.provider.stub.StubAiProperties;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -38,7 +41,7 @@ class StubAiClientTest {
             assertThat(client.generatePlan(datedRequest)).isEqualTo(client.generatePlan(datedRequest));
             properties.setGenerationScenario(StubAiGenerationScenario.WITHOUT_DATES);
             var noDates = new AiGenerationRequest(new AiWizardSnapshot("Projekt", null, null, null,
-                    CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test", null, null, null), List.of());
+                    CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test", null, null, null), List.of());
             assertThat(generationValidator.validate(client.generatePlan(noDates), noDates).isValid()).isTrue();
             assertThat(client.generatePlan(noDates)).isEqualTo(client.generatePlan(noDates));
         }
@@ -64,39 +67,39 @@ class StubAiClientTest {
     }
 
     @Test
-    void generatesMultiplePhasesTasksAndMilestonesWithDates() {
+    void generatesMultipleSectionsTasksAndMilestonesWithDates() {
         properties.setGenerationScenario(StubAiGenerationScenario.WITH_DATES);
 
         var response = client.generatePlan(generationRequest());
 
-        assertThat(response.phases()).hasSize(2);
-        assertThat(response.phases()).allSatisfy(phase -> {
-            assertThat(phase.startDate()).isNotNull();
-            assertThat(phase.endDate()).isNotNull();
-            assertThat(phase.tasks()).hasSizeGreaterThanOrEqualTo(2);
-            assertThat(phase.milestones()).isNotEmpty();
-            assertThat(phase.tasks()).allSatisfy(task -> {
+        assertThat(response.sections()).hasSize(2);
+        assertThat(response.sections()).allSatisfy(section -> {
+            assertThat(section.tasks()).hasSizeGreaterThanOrEqualTo(2);
+            assertThat(section.milestones()).isNotEmpty();
+            assertThat(section.tasks()).allSatisfy(task -> {
                 assertThat(task.startDate()).isNotNull();
                 assertThat(task.dueDate()).isNotNull();
             });
-            assertThat(phase.milestones()).allSatisfy(milestone -> assertThat(milestone.date()).isNotNull());
+            assertThat(section.milestones()).allSatisfy(milestone -> assertThat(milestone.date()).isNotNull());
         });
     }
 
     @Test
     void generatesTheSameCentralStructureWithoutAnyDates() {
+        var datedResponse = client.generatePlan(generationRequest());
         properties.setGenerationScenario(StubAiGenerationScenario.WITHOUT_DATES);
 
         var response = client.generatePlan(generationRequest());
 
-        assertThat(response.phases()).hasSize(2).allSatisfy(phase -> {
-            assertThat(phase.startDate()).isNull();
-            assertThat(phase.endDate()).isNull();
-            assertThat(phase.tasks()).allSatisfy(task -> {
+        assertThat(response).usingRecursiveComparison()
+                .ignoringFieldsMatchingRegexes(".*startDate", ".*endDate", ".*dueDate", ".*\\.date")
+                .isEqualTo(datedResponse);
+        assertThat(response.sections()).hasSize(2).allSatisfy(section -> {
+            assertThat(section.tasks()).allSatisfy(task -> {
                 assertThat(task.startDate()).isNull();
                 assertThat(task.dueDate()).isNull();
             });
-            assertThat(phase.milestones()).allSatisfy(milestone -> assertThat(milestone.date()).isNull());
+            assertThat(section.milestones()).allSatisfy(milestone -> assertThat(milestone.date()).isNull());
         });
     }
 
@@ -107,42 +110,38 @@ class StubAiClientTest {
         LocalDate projectEnd = LocalDate.of(2026, 10, 12);
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
                 "Kurzes Projekt", null, projectStart, projectEnd,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test",
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
                 null, null, null);
 
         var response = client.generatePlan(new AiGenerationRequest(snapshot, List.of()));
 
-        assertThat(response.phases().getFirst().startDate()).isEqualTo(projectStart);
-        assertThat(response.phases()).allSatisfy(phase -> {
-            assertThat(phase.startDate()).isBetween(projectStart, projectEnd);
-            assertThat(phase.endDate()).isBetween(projectStart, projectEnd);
-            assertThat(phase.tasks()).allSatisfy(task -> {
+        assertThat(response.sections()).allSatisfy(section -> {
+            assertThat(section.tasks()).allSatisfy(task -> {
                 assertThat(task.startDate()).isBetween(projectStart, projectEnd);
                 assertThat(task.dueDate()).isBetween(projectStart, projectEnd);
             });
-            assertThat(phase.milestones()).allSatisfy(milestone ->
+            assertThat(section.milestones()).allSatisfy(milestone ->
                     assertThat(milestone.date()).isBetween(projectStart, projectEnd));
         });
     }
 
-    @Test
-    void datedScenarioWithoutProjectStartFallsBackToPlanWithoutDates() {
+    @ParameterizedTest
+    @CsvSource({",", ",2026-09-21", "2026-09-21,2026-09-01"})
+    void datedScenarioWithoutValidPeriodFallsBackToPlanWithoutDates(LocalDate start, LocalDate end) {
         properties.setGenerationScenario(StubAiGenerationScenario.WITH_DATES);
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
-                "Projekt ohne Terminbasis", null, null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test",
+                "Projekt ohne Terminbasis", null, start, end,
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
                 null, null, null);
 
         var response = client.generatePlan(new AiGenerationRequest(snapshot, List.of()));
 
-        assertThat(response.phases()).allSatisfy(phase -> {
-            assertThat(phase.startDate()).isNull();
-            assertThat(phase.endDate()).isNull();
-            assertThat(phase.tasks()).allSatisfy(task -> {
+        assertThat(response.sections()).allSatisfy(section -> {
+            assertThat(section.tasks()).allSatisfy(task -> {
                 assertThat(task.startDate()).isNull();
                 assertThat(task.dueDate()).isNull();
             });
-            assertThat(phase.milestones()).allSatisfy(milestone -> assertThat(milestone.date()).isNull());
+            assertThat(section.milestones()).allSatisfy(milestone -> assertThat(milestone.date()).isNull());
         });
     }
 
@@ -158,7 +157,7 @@ class StubAiClientTest {
         return new AiWizardSnapshot(
                 "Umzug planen", "Wohnungswechsel organisieren",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
-                CollaborationMode.GROUP, TemplateCategory.HOME, "Umzug",
+                CollaborationMode.GROUP, TemplateCategory.HOME, ProjectSubCategory.MOVING, null,
                 "Bis Monatsende umziehen", "Budget 2.000 Euro", "Kartons sind vorhanden");
     }
 }

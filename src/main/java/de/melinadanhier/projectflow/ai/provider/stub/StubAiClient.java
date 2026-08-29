@@ -35,36 +35,48 @@ public class StubAiClient implements AiClient {
         boolean withDates = properties.getGenerationScenario() == StubAiGenerationScenario.WITH_DATES
                 && projectStart != null
                 && (projectEnd == null || !projectEnd.isBefore(projectStart));
-        return new GeneratedPlanResponse(
-                List.of(
-                        new GeneratedPhase(
-                                "phase-1", "Vorbereitung", "Grundlagen und Organisation",
-                                date(withDates, projectStart, projectEnd, 0),
-                                date(withDates, projectStart, projectEnd, 2), 1,
-                                List.of(
-                                        task("task-1", "Anforderungen festhalten", GeneratedElementOrigin.USER_INPUT,
-                                                1, date(withDates, projectStart, projectEnd, 0),
-                                                date(withDates, projectStart, projectEnd, 1)),
-                                        task("task-2", "Ressourcen organisieren", GeneratedElementOrigin.AI_INFERRED,
-                                                2, date(withDates, projectStart, projectEnd, 1),
-                                                date(withDates, projectStart, projectEnd, 2))),
-                                List.of(new GeneratedMilestone(
-                                        "milestone-1", "Vorbereitung abgeschlossen",
-                                        date(withDates, projectStart, projectEnd, 2), 1))),
-                        new GeneratedPhase(
-                                "phase-2", "Umsetzung", "Geplante Schritte durchführen",
-                                date(withDates, projectStart, projectEnd, 3),
-                                date(withDates, projectStart, projectEnd, 6), 2,
-                                List.of(
-                                        task("task-3", "Kernaufgabe durchführen", GeneratedElementOrigin.AI_INFERRED,
-                                                1, date(withDates, projectStart, projectEnd, 3),
-                                                date(withDates, projectStart, projectEnd, 5)),
-                                        task("task-4", "Ergebnis kontrollieren", GeneratedElementOrigin.AI_INFERRED,
-                                                2, date(withDates, projectStart, projectEnd, 6),
-                                                date(withDates, projectStart, projectEnd, 6))),
-                                List.of(new GeneratedMilestone(
-                                        "milestone-2", "Projektziel erreicht",
-                                        date(withDates, projectStart, projectEnd, 6), 1)))));
+        LocalDate scheduleStart = withDates ? projectStart : null;
+
+        return new GeneratedPlanResponse(List.of(
+                preparationSection(scheduleStart, projectEnd),
+                implementationSection(scheduleStart, projectEnd))
+        );
+    }
+
+    private GeneratedSection preparationSection(LocalDate projectStart, LocalDate projectEnd) {
+        LocalDate startDate = date(projectStart, projectEnd, 0);
+        LocalDate requirementsDueDate = date(projectStart, projectEnd, 1);
+        LocalDate endDate = date(projectStart, projectEnd, 2);
+
+        List<GeneratedTask> tasks = List.of(
+                task("task-1", "Anforderungen festhalten", GeneratedElementOrigin.USER_INPUT,
+                        1, startDate, requirementsDueDate),
+                task("task-2", "Ressourcen organisieren", GeneratedElementOrigin.AI_INFERRED,
+                        2, requirementsDueDate, endDate));
+        GeneratedMilestone milestone = new GeneratedMilestone(
+                "milestone-1", "Vorbereitung abgeschlossen", endDate, 1);
+
+        return new GeneratedSection(
+                "section-1", "Vorbereitung", "Grundlagen und Organisation",
+                1, tasks, List.of(milestone));
+    }
+
+    private GeneratedSection implementationSection(LocalDate projectStart, LocalDate projectEnd) {
+        LocalDate startDate = date(projectStart, projectEnd, 3);
+        LocalDate executionDueDate = date(projectStart, projectEnd, 5);
+        LocalDate endDate = date(projectStart, projectEnd, 6);
+
+        List<GeneratedTask> tasks = List.of(
+                task("task-3", "Kernaufgabe durchführen", GeneratedElementOrigin.AI_INFERRED,
+                        1, startDate, executionDueDate),
+                task("task-4", "Ergebnis kontrollieren", GeneratedElementOrigin.AI_INFERRED,
+                        2, endDate, endDate));
+        GeneratedMilestone milestone = new GeneratedMilestone(
+                "milestone-2", "Projektziel erreicht", endDate, 1);
+
+        return new GeneratedSection(
+                "section-2", "Umsetzung", "Geplante Schritte durchführen",
+                2, tasks, List.of(milestone));
     }
 
     private AiPreCheckResult response(AiPreCheckProblem... problems) {
@@ -75,14 +87,16 @@ public class StubAiClient implements AiClient {
         return new AiPreCheckProblem(
                 AiPreCheckSeverity.WARNING,
                 "Der vorgesehene Zeitraum ist für den beschriebenen Umfang sehr knapp.",
-                "Plane mehr Zeit ein oder reduziere den Umfang.");
+                "Plane mehr Zeit ein oder reduziere den Umfang."
+        );
     }
 
     private AiPreCheckProblem error() {
         return new AiPreCheckProblem(
                 AiPreCheckSeverity.ERROR,
                 "Die genannten Rahmenbedingungen widersprechen dem gewünschten Projektziel.",
-                "Passe das Ziel oder die Rahmenbedingungen an.");
+                "Passe das Ziel oder die Rahmenbedingungen an."
+        );
     }
 
     private GeneratedTask task(
@@ -98,10 +112,8 @@ public class StubAiClient implements AiClient {
                 2, startDate, dueDate, null, origin, order);
     }
 
-    private LocalDate date(boolean withDates, LocalDate projectStart, LocalDate projectEnd, int offsetDays) {
-        if (!withDates) {
-            return null;
-        }
+    private LocalDate date(LocalDate projectStart, LocalDate projectEnd, int offsetDays) {
+        if (projectStart == null) return null;
         LocalDate candidate = projectStart.plusDays(offsetDays);
         return projectEnd != null && candidate.isAfter(projectEnd) ? projectEnd : candidate;
     }

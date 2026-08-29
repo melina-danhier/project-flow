@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.generation.service.workflow;
 
+import de.melinadanhier.projectflow.plancontainer.project.validation.ProjectClassificationValidator;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
@@ -34,7 +35,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class AiWorkflowInitializationService {
 
-    public static final String SNAPSHOT_VERSION = "ai-wizard-v2";
+    public static final String SNAPSHOT_VERSION = "ai-wizard-v3";
     public static final String CONSENT_VERSION = "v1";
 
     private final ProjectRepository projectRepository;
@@ -61,7 +62,8 @@ public class AiWorkflowInitializationService {
         project.setStartDate(snapshot.startDate());
         project.setEndDate(snapshot.endDate());
         project.setCategory(snapshot.category());
-        project.setProjectType(snapshot.projectType());
+        project.setOtherProjectTypeDescription(snapshot.otherProjectTypeDescription());
+        project.setSubcategory(snapshot.subcategory());
         project.setCollaborationMode(snapshot.collaborationMode());
         project.setCreationType(CreationType.AI);
         project.setStatus(ProjectStatus.DRAFT);
@@ -93,6 +95,8 @@ public class AiWorkflowInitializationService {
         if (snapshot == null) {
             throw new DomainValidationException("Die bestätigten Projektdaten fehlen.");
         }
+        ProjectClassificationValidator.requireValid(snapshot.category(), snapshot.subcategory(),
+                snapshot.otherProjectTypeDescription());
         if (snapshot.title() == null || snapshot.title().isBlank() || snapshot.title().length() > 100) {
             throw new DomainValidationException("Die bestätigten Projektdaten enthalten keinen gültigen Titel.");
         }

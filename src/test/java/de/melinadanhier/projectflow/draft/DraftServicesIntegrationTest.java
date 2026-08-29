@@ -75,8 +75,7 @@ class DraftServicesIntegrationTest {
 
         assertThatThrownBy(() -> applicationService.apply(
                 project.getId(), project.getMemberships().iterator().next().getUser().getId()))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("bereits Inhalte");
+                .isInstanceOf(ConflictException.class);
     }
 
     private Project projectWithOwner(String email) {

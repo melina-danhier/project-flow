@@ -27,7 +27,7 @@ class GeminiAiClientTest {
         var prePrompts = mock(PreCheckPromptBuilder.class);
         var planPrompts = mock(GenerationPromptBuilder.class);
         var snapshot = new AiWizardSnapshot("Projekt", null, null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, "Test", null, null, null);
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test", null, null, null);
         var preRequest = new AiPreCheckRequest(snapshot);
         var planRequest = new AiGenerationRequest(snapshot, List.of());
         var prePrompt = new AiPrompt("pre-v1", "pre instructions", "pre data");

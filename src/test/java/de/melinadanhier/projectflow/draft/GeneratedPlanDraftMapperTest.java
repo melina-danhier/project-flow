@@ -18,10 +18,10 @@ class GeneratedPlanDraftMapperTest {
     private final GeneratedPlanDraftMapper mapper = new GeneratedPlanDraftMapper();
 
     @Test
-    void resolvesForwardReferencesAcrossPhasesWithoutPersistingEntities() {
+    void resolvesForwardReferencesAcrossSectionsWithoutPersistingEntities() {
         var result = mapper.map(new GeneratedPlanResponse(List.of(
-                phase("p1", List.of(task("successor", List.of("prerequisite")))),
-                phase("p2", List.of(task("prerequisite", List.of()))))));
+                section("p1", List.of(task("successor", List.of("prerequisite")))),
+                section("p2", List.of(task("prerequisite", List.of()))))));
         var successor = (DraftTask) result.elements().getFirst();
         var prerequisite = (DraftTask) result.elements().getLast();
         assertThat(successor.getPrerequisites()).containsExactly(prerequisite);
@@ -35,7 +35,7 @@ class GeneratedPlanDraftMapperTest {
 
     @Test
     void rejectsUnresolvableReferencesWithExistingStableErrorCode() {
-        assertInvalid(new GeneratedPlanResponse(List.of(phase("p", List.of(task("task", List.of("missing")))))));
+        assertInvalid(new GeneratedPlanResponse(List.of(section("p", List.of(task("task", List.of("missing")))))));
     }
 
     @ParameterizedTest
@@ -43,15 +43,15 @@ class GeneratedPlanDraftMapperTest {
     @ValueSource(strings = {" ", "same"})
     void rejectsMissingOrAmbiguousTaskKeys(String key) {
         assertInvalid(new GeneratedPlanResponse(List.of(
-                phase("p1", List.of(task("same", List.of()))),
-                phase("p2", List.of(task(key, List.of()))))));
+                section("p1", List.of(task("same", List.of()))),
+                section("p2", List.of(task(key, List.of()))))));
     }
 
     @Test
-    void rejectsAmbiguousOptionalPhaseAndMilestoneKeys() {
-        assertInvalid(new GeneratedPlanResponse(List.of(phase("same", List.of()), phase("same", List.of()))));
-        assertInvalid(new GeneratedPlanResponse(List.of(new GeneratedPhase(
-                "p", "Phase", null, null, null, 1, List.of(), List.of(
+    void rejectsAmbiguousOptionalSectionAndMilestoneKeys() {
+        assertInvalid(new GeneratedPlanResponse(List.of(section("same", List.of()), section("same", List.of()))));
+        assertInvalid(new GeneratedPlanResponse(List.of(new GeneratedSection(
+                "p", "Section", null, 1, List.of(), List.of(
                 new GeneratedMilestone("same", "A", null, 1),
                 new GeneratedMilestone("same", "B", null, 2))))));
     }
@@ -62,8 +62,8 @@ class GeneratedPlanDraftMapperTest {
                         assertThat(exception.getErrorCode()).isEqualTo(AiTechnicalErrorCode.INVALID_AI_RESPONSE));
     }
 
-    private GeneratedPhase phase(String id, List<GeneratedTask> tasks) {
-        return new GeneratedPhase(id, "Phase", null, null, null, 1, tasks, List.of());
+    private GeneratedSection section(String id, List<GeneratedTask> tasks) {
+        return new GeneratedSection(id, "Section", null, 1, tasks, List.of());
     }
 
     private GeneratedTask task(String id, List<String> prerequisites) {

@@ -9,30 +9,24 @@ import java.util.Optional;
 /** Provider-DTO für die automatische Schema-Erzeugung des OpenAI-SDKs. */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public record OpenAiGenerationOutput(
-        List<Phase> phases
+        List<Section> sections
 ) {
-    public record Phase(
+    public record Section(
             Optional<String> tempId,
             String title,
             Optional<String> description,
-            Optional<LocalDate> startDate,
-            Optional<LocalDate> endDate,
             int order,
             List<Task> tasks,
             List<Milestone> milestones
     ) {
-        public Phase {
+        public Section {
             tempId = emptyIfNull(tempId);
             description = emptyIfNull(description);
-            startDate = emptyIfNull(startDate);
-            endDate = emptyIfNull(endDate);
         }
 
-        public Phase(String tempId, String title, Optional<String> description,
-                     Optional<LocalDate> startDate, Optional<LocalDate> endDate, int order,
+        public Section(String tempId, String title, Optional<String> description, int order,
                      List<Task> tasks, List<Milestone> milestones) {
-            this(Optional.ofNullable(tempId), title, description, startDate, endDate,
-                    order, tasks, milestones);
+            this(Optional.ofNullable(tempId), title, description, order, tasks, milestones);
         }
     }
 

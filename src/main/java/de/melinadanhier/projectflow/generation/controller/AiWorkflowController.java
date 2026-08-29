@@ -40,7 +40,7 @@ public class AiWorkflowController {
             return "redirect:/projects/new/ai/problems/" + workflowId;
         }
         if (workflow.status() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
-            return "redirect:/projects/" + workflow.projectId() + "/draft";
+            return "redirect:/projects/" + workflow.projectId() + "/draft/review";
         }
         model.addAttribute("workflow", workflow);
         return "generation/ai-status";

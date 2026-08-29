@@ -130,7 +130,7 @@ public class MilestoneService {
             return null;
         }
         return planSectionRepository.findByIdAndPlanContainerId(sectionId, projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Projektphase wurde nicht gefunden."));
+                .orElseThrow(() -> new ResourceNotFoundException("Projektbereich wurde nicht gefunden."));
     }
 
     private void apply(Milestone milestone, MilestoneForm form) {

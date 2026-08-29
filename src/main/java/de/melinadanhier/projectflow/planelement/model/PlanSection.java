@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,20 +44,6 @@ public class PlanSection extends MutableEntity {
     @Size(max = 2000)
     @Column(name = "description", length = 2000)
     private String description;
-
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
-
-    @PositiveOrZero
-    @Column(name = "relative_start_day")
-    private Integer relativeStartDay;
-
-    @PositiveOrZero
-    @Column(name = "relative_end_day")
-    private Integer relativeEndDay;
 
     @PositiveOrZero
     @Column(name = "sort_order", nullable = false)
