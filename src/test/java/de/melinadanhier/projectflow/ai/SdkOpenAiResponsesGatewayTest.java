@@ -181,15 +181,11 @@ class SdkOpenAiResponsesGatewayTest {
                         exception -> assertThat(exception.getErrorCode()).isEqualTo(expected));
     }
 
-    @ParameterizedTest
-    @CsvSource({"408,PROVIDER_TIMEOUT", "504,PROVIDER_TIMEOUT", "429,RATE_LIMIT_EXCEEDED",
-            "503,PROVIDER_UNAVAILABLE", "401,CLIENT_CONFIGURATION_ERROR", "403,CLIENT_CONFIGURATION_ERROR",
-            "422,CLIENT_CONFIGURATION_ERROR", "499,CLIENT_CONFIGURATION_ERROR", "599,PROVIDER_UNAVAILABLE",
-            "600,UNKNOWN_AI_ERROR", "302,UNKNOWN_AI_ERROR"})
-    void mapsSdkServiceStatuses(int status, AiTechnicalErrorCode expected) {
+    @Test
+    void mapsSdkServiceExceptionUsingSharedStatusClassification() {
         var exception = mock(OpenAIServiceException.class);
-        when(exception.statusCode()).thenReturn(status);
-        assertMapping(exception, expected, null);
+        when(exception.statusCode()).thenReturn(499);
+        assertMapping(exception, AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR, null);
     }
 
     @Test

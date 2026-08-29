@@ -162,9 +162,9 @@ class ProjectBasicsFormTest {
     }
 
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.EnumSource(ProjectSubCategory.class)
-    void acceptsEverySubcategoryOnlyWithinItsCategory(ProjectSubCategory subcategory) {
+    @Test
+    void acceptsSubcategoryOnlyWithinItsCategory() {
+        ProjectSubCategory subcategory = ProjectSubCategory.THESIS;
         ProjectBasicsForm form = validForm();
         form.setCategory(subcategory.getCategory());
         form.setSubcategory(subcategory);

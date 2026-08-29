@@ -13,30 +13,21 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
+import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
-@ActiveProfiles("test")
 class AiOutputParserTest {
 
-    @Autowired
-    private AiResponseParser parser;
-
-    @Autowired
-    private PreCheckResultValidator preCheckValidator;
-
-    @Autowired
-    private AiWorkflowPayloadCodec snapshotCodec;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = JsonMapper.builder().build();
+    private final AiResponseParser parser = new AiResponseParser(objectMapper);
+    private final PreCheckResultValidator preCheckValidator = new PreCheckResultValidator(
+            Validation.buildDefaultValidatorFactory().getValidator());
+    private final AiWorkflowPayloadCodec snapshotCodec = new AiWorkflowPayloadCodec(objectMapper);
 
     @Test
     void parsesPreCheckWithoutProblems() {
