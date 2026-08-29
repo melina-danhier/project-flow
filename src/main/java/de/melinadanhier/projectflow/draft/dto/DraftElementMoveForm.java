@@ -11,6 +11,6 @@ import java.util.UUID;
 @Setter
 public class DraftElementMoveForm {
     @NotNull private Long lockVersion;
-    @NotNull private UUID targetSectionId;
+    private UUID targetSectionId;
     @PositiveOrZero private int targetPosition;
 }

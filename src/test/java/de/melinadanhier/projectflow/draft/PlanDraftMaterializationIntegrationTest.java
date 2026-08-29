@@ -285,6 +285,8 @@ class PlanDraftMaterializationIntegrationTest {
             assertThat(draft.getGeneratedAt()).isNotNull();
             assertThat(draft.getSections()).extracting(DraftSection::getSortOrder).containsExactly(1, 2);
             assertThat(draft.getSections()).extracting(DraftSection::getTitle).containsExactly("Vorbereitung", "Abschluss");
+            assertThat(draft.getSections()).extracting(DraftSection::getReviewStatus)
+                    .containsOnly(DraftReviewStatus.PENDING);
             assertThat(draft.getElements()).hasSize(5).allSatisfy(element -> {
                 assertThat(element.getId()).isNotNull();
                 assertThat(element.getDraftPlan().getId()).isEqualTo(draft.getId());

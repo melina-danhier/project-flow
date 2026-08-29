@@ -56,7 +56,7 @@ class DraftReviewIntegrationTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"  ", "\t\n", "\u2003"})
-    void absentAssumptionsHaveNoMarkerAndApplyDirectly(String assumption) throws Exception {
+    void absentAssumptionsStillRequireExplicitPendingConfirmation(String assumption) throws Exception {
         Fixture f = fixture(assumption, null);
         assertThat(review(f).getElements()).allSatisfy(element -> {
             assertThat(element.getCriticalAssumption()).isNull();
@@ -66,6 +66,10 @@ class DraftReviewIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("class=\"assumption-toggle\""))));
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
+                .andExpect(status().isOk()).andExpect(view().name("generation/draft-pending-confirmation"));
+        mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("lockVersion", String.valueOf(review(f).getLockVersion()))
+                        .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
         assertApplied(f);
         verifyNoInteractions(aiClient);
@@ -95,7 +99,7 @@ class DraftReviewIntegrationTest {
         jdbc.update("update draft_plan_elements set critical_assumption = '   ', has_critical_assumption = true where id = ?", taskId);
         mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(content().string(not(containsString("class=\"assumption-toggle\""))));
-        application.apply(f.projectId(), f.owner().userId());
+        application.continueWithPending(f.projectId(), f.owner().userId(), review(f).getLockVersion());
         assertApplied(f);
     }
 
@@ -123,6 +127,10 @@ class DraftReviewIntegrationTest {
         Fixture f = fixture("Material ist verfügbar", "Raum ist frei\n" + "Vollständiger Text. ".repeat(70));
         var before = review(f);
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
+                .andExpect(status().isOk()).andExpect(view().name("generation/draft-pending-confirmation"));
+        mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("lockVersion", String.valueOf(before.getLockVersion()))
+                        .with(user(f.owner())).with(csrf()))
                 .andExpect(status().isOk()).andExpect(view().name("generation/draft-confirmation"))
                 .andExpect(content().string(containsString("Aufgabe 1")))
                 .andExpect(content().string(containsString("Aufgabe 2")))
@@ -136,7 +144,7 @@ class DraftReviewIntegrationTest {
     }
 
     @Test
-    void reviewedAssumptionDoesNotRequireConfirmationAndReviewStillShowsPersistedElements() throws Exception {
+    void acceptedElementStillRequiresSeparateCriticalAssumptionConfirmation() throws Exception {
         Fixture f = fixture("Material ist verfügbar", null);
         var draft = review(f);
         mvc.perform(post(f.url() + "/elements/" + draft.getElements().getFirst().getId() + "/accept")
@@ -146,6 +154,15 @@ class DraftReviewIntegrationTest {
                 .andExpect(content().string(containsString("Aufgabe 1")))
                 .andExpect(content().string(containsString("Aufgabe 2")));
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
+                .andExpect(view().name("generation/draft-pending-confirmation"));
+        var current = review(f);
+        mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("lockVersion", String.valueOf(current.getLockVersion()))
+                        .with(user(f.owner())).with(csrf()))
+                .andExpect(view().name("generation/draft-confirmation"));
+        mvc.perform(post(f.url() + "/confirm-and-apply")
+                        .param("lockVersion", String.valueOf(current.getLockVersion()))
+                        .param("includePending", "true").with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
         assertApplied(f);
     }
@@ -156,6 +173,7 @@ class DraftReviewIntegrationTest {
         long version = review(f).getLockVersion();
         for (int attempt = 0; attempt < 2; attempt++) {
             mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
+                            .param("includePending", "true")
                             .param("criticalAssumption", "Manipuliert").with(user(f.owner())).with(csrf()))
                     .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
         }
@@ -167,7 +185,7 @@ class DraftReviewIntegrationTest {
         assertThat(jdbc.queryForList("select status from tasks where id in (select id from plan_elements where plan_container_id = ?)",
                 String.class, f.projectId())).containsOnly("OPEN");
         assertThat(review(f).getElements()).allSatisfy(element ->
-                assertThat(element.getReviewStatus()).isEqualTo(DraftReviewStatus.ACCEPTED));
+                assertThat(element.getReviewStatus()).isEqualTo(DraftReviewStatus.PENDING));
         verifyNoInteractions(aiClient);
     }
 
@@ -189,7 +207,7 @@ class DraftReviewIntegrationTest {
         assertThat(current.getElements().getFirst().getOrigin())
                 .isEqualTo(de.melinadanhier.projectflow.planelement.model.ElementOrigin.AI_MODIFIED);
         assertThat(current.getElements().getFirst().getCriticalAssumption()).isEqualTo("Material ist verfügbar");
-        assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.PENDING);
+        assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.ACCEPTED);
         mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl(f.reviewUrl())).andExpect(flash().attribute("errorMessage", not(blankOrNullString())));
@@ -208,7 +226,7 @@ class DraftReviewIntegrationTest {
         assertThat(review(f).getElements()).hasSize(3);
         assertThat(review(f).getSections().getFirst().getElements())
                 .extracting("sortOrder").containsExactly(0, 1, 2);
-        application.apply(f.projectId(), f.owner().userId());
+        application.continueWithPending(f.projectId(), f.owner().userId(), review(f).getLockVersion());
         assertThat(elementCount(f)).isEqualTo(3);
     }
 
@@ -217,11 +235,16 @@ class DraftReviewIntegrationTest {
         Fixture f = fixture("Material ist verfügbar", null);
         var before = review(f);
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
+                .andExpect(view().name("generation/draft-pending-confirmation"));
+        mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("lockVersion", String.valueOf(before.getLockVersion()))
+                        .with(user(f.owner())).with(csrf()))
                 .andExpect(view().name("generation/draft-confirmation"));
         // Simulate persisted domain-invalid dates, which are legal SQL values.
         jdbc.update("update draft_tasks set start_date = ?, due_date = ? where id = ?",
                 LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 1), before.getElements().getFirst().getId());
         mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(before.getLockVersion()))
+                        .param("includePending", "true")
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl(f.reviewUrl())).andExpect(flash().attribute("errorMessage", not(blankOrNullString())));
         assertEmptyPlan(f);
@@ -236,7 +259,8 @@ class DraftReviewIntegrationTest {
         Fixture f = fixture(null, null);
         var taskId = review(f).getElements().getFirst().getId();
         jdbc.update("insert into draft_task_prerequisites (successor_draft_task_id, prerequisite_draft_task_id) values (?, ?)", taskId, taskId);
-        assertThatThrownBy(() -> application.apply(f.projectId(), f.owner().userId()))
+        assertThatThrownBy(() -> application.continueWithPending(
+                f.projectId(), f.owner().userId(), review(f).getLockVersion()))
                 .isInstanceOf(de.melinadanhier.projectflow.common.exception.DomainValidationException.class);
         assertEmptyPlan(f);
     }
@@ -251,8 +275,11 @@ class DraftReviewIntegrationTest {
         var milestoneId = UUID.randomUUID();
         mvc.perform(get(f.reviewUrl()).with(user(outsider))).andExpect(status().isNotFound());
         mvc.perform(get(f.reviewUrl())).andExpect(status().is3xxRedirection());
-        for (String suffix : List.of("/apply", "/confirm-and-apply", "/elements/" + task.getId() + "/accept",
-                "/sections/" + section.getId() + "/accept", "/sections/" + section.getId(),
+        for (String suffix : List.of("/apply", "/confirm-and-apply", "/continue-with-pending",
+                "/elements/" + task.getId() + "/accept", "/elements/" + task.getId() + "/reject",
+                "/elements/" + task.getId() + "/reset", "/sections/" + section.getId() + "/accept",
+                "/sections/" + section.getId() + "/reject", "/sections/" + section.getId() + "/reset",
+                "/sections/" + section.getId(),
                 "/tasks/" + task.getId() + "/delete", "/tasks/" + task.getId(),
                 "/milestones/" + milestoneId, "/elements/" + task.getId() + "/move",
                 "/sections/" + section.getId() + "/move", "/sort-mode")) {
@@ -356,6 +383,130 @@ class DraftReviewIntegrationTest {
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl(f.reviewUrl()));
         assertThat(review(f).getSections().getFirst().getDescription()).isNull();
+    }
+
+    @Test
+    void reviewFiltersCombineStatusAndCriticalAssumptionsAndKeepMatchingChildSectionVisible() {
+        Fixture f = fixture("Kritische Annahme", null);
+        DraftReviewDto initial = review(f);
+        assertThat(initial.getTotalElementCount()).isEqualTo(5);
+        assertThat(initial.getReviewedElementCount()).isZero();
+        assertThat(initial.getPendingElementCount()).isEqualTo(5);
+
+        reviews.acceptSection(f.projectId(), initial.getSections().getFirst().getId(),
+                f.owner().userId(), initial.getLockVersion());
+        DraftReviewDto afterSection = review(f);
+        reviews.rejectElement(f.projectId(), afterSection.getElements().getFirst().getId(),
+                f.owner().userId(), afterSection.getLockVersion());
+
+        DraftReviewDto pending = reviews.review(
+                f.projectId(), f.owner().userId(), DraftReviewStatus.PENDING, false);
+        assertThat(pending.getElements()).hasSize(3).allMatch(element ->
+                element.getReviewStatus() == DraftReviewStatus.PENDING);
+        assertThat(pending.getSections()).singleElement().satisfies(section -> {
+            assertThat(section.getReviewStatus()).isEqualTo(DraftReviewStatus.ACCEPTED);
+            assertThat(section.getElements()).hasSize(3);
+        });
+        assertThat(pending.getReviewedElementCount()).isEqualTo(2);
+        assertThat(pending.getTotalElementCount()).isEqualTo(5);
+
+        DraftReviewDto rejectedCritical = reviews.review(
+                f.projectId(), f.owner().userId(), DraftReviewStatus.REJECTED, true);
+        assertThat(rejectedCritical.getElements()).singleElement()
+                .extracting("title").isEqualTo("Aufgabe 1");
+        assertThat(rejectedCritical.getSections()).singleElement()
+                .satisfies(section -> assertThat(section.getElements()).hasSize(1));
+    }
+
+    @Test
+    void statusChangesAreReversibleAndNeverCascadeFromASectionToItsChildren() {
+        Fixture f = fixture(null, null);
+        DraftReviewDto current = review(f);
+        UUID sectionId = current.getSections().getFirst().getId();
+        UUID taskId = current.getElements().getFirst().getId();
+
+        reviews.rejectSection(f.projectId(), sectionId, f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        assertThat(current.getSections().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.REJECTED);
+        assertThat(current.getElements()).allMatch(element ->
+                element.getReviewStatus() == DraftReviewStatus.PENDING);
+
+        reviews.resetSection(f.projectId(), sectionId, f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        reviews.acceptElement(f.projectId(), taskId, f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.ACCEPTED);
+        reviews.resetElement(f.projectId(), taskId, f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.PENDING);
+        reviews.rejectElement(f.projectId(), taskId, f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        reviews.resetElement(f.projectId(), taskId, f.owner().userId(), current.getLockVersion());
+        assertThat(review(f).getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.PENDING);
+    }
+
+    @Test
+    void rejectedSectionKeepsAcceptedChildrenAndMaterializesThemWithoutASection() {
+        Fixture f = fixture(null, null);
+        DraftReviewDto current = review(f);
+        UUID sectionId = current.getSections().getFirst().getId();
+        reviews.rejectSection(f.projectId(), sectionId, f.owner().userId(), current.getLockVersion());
+
+        current = review(f);
+        UUID firstTask = current.getElements().get(0).getId();
+        UUID secondTask = current.getElements().get(1).getId();
+        reviews.acceptElement(f.projectId(), firstTask, f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        reviews.acceptElement(f.projectId(), secondTask, f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        for (int index = 2; index < current.getElements().size(); index++) {
+            reviews.rejectElement(f.projectId(), current.getElements().get(index).getId(),
+                    f.owner().userId(), current.getLockVersion());
+            current = review(f);
+        }
+
+        var move = new de.melinadanhier.projectflow.draft.dto.DraftElementMoveForm();
+        move.setLockVersion(current.getLockVersion());
+        move.setTargetSectionId(null);
+        move.setTargetPosition(0);
+        reviews.moveElement(f.projectId(), secondTask, f.owner().userId(), move);
+        current = review(f);
+        assertThat(current.getSections().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.REJECTED);
+        assertThat(current.getSections().getFirst().getElements()).extracting("id").contains(firstTask);
+        assertThat(current.getUnsectionedElements()).extracting("id").containsExactly(secondTask);
+
+        application.apply(f.projectId(), f.owner().userId());
+
+        assertThat(jdbc.queryForObject("select count(*) from plan_sections where plan_container_id = ?",
+                Integer.class, f.projectId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
+                Integer.class, f.projectId())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ? "
+                        + "and plan_section_id is null", Integer.class, f.projectId())).isEqualTo(2);
+    }
+
+    @Test
+    void acceptedSectionAndElementKeepTheirAssociationWhileRejectedElementsAreOmitted() {
+        Fixture f = fixture(null, null);
+        DraftReviewDto current = review(f);
+        reviews.acceptSection(f.projectId(), current.getSections().getFirst().getId(),
+                f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        reviews.acceptElement(f.projectId(), current.getElements().getFirst().getId(),
+                f.owner().userId(), current.getLockVersion());
+        current = review(f);
+        for (int index = 1; index < current.getElements().size(); index++) {
+            reviews.rejectElement(f.projectId(), current.getElements().get(index).getId(),
+                    f.owner().userId(), current.getLockVersion());
+            current = review(f);
+        }
+
+        application.apply(f.projectId(), f.owner().userId());
+
+        assertThat(jdbc.queryForObject("select count(*) from plan_sections where plan_container_id = ?",
+                Integer.class, f.projectId())).isOne();
+        assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ? "
+                        + "and plan_section_id is not null", Integer.class, f.projectId())).isOne();
     }
 
     @Test

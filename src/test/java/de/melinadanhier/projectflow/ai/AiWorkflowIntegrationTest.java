@@ -194,7 +194,8 @@ class AiWorkflowIntegrationTest {
                 .containsExactlyInAnyOrder("Erster Schritt", "Zweiter Schritt", "Dritter Schritt",
                         "Vorbereitung abgeschlossen");
 
-        draftApplicationService.apply(completion.projectId(), owner.getId());
+        draftApplicationService.confirmAndApply(
+                completion.projectId(), owner.getId(), draft.getLockVersion());
 
         assertThat(planSectionRepository.count()).isEqualTo(sectionsBefore + 1);
         assertThat(taskRepository.count()).isEqualTo(tasksBefore + 3);

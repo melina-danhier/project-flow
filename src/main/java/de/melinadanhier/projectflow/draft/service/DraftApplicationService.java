@@ -43,15 +43,26 @@ public class DraftApplicationService {
 
     @Transactional
     public UUID apply(UUID projectId, UUID userId) {
-        return apply(projectId, userId, null);
+        return apply(projectId, userId, null, false, false);
     }
 
     @Transactional
     public UUID confirmAndApply(UUID projectId, UUID userId, long lockVersion) {
-        return apply(projectId, userId, lockVersion);
+        return apply(projectId, userId, lockVersion, true, true);
     }
 
-    private UUID apply(UUID projectId, UUID userId, Long confirmedVersion) {
+    @Transactional
+    public UUID continueWithPending(UUID projectId, UUID userId, long lockVersion) {
+        return apply(projectId, userId, lockVersion, true, false);
+    }
+
+    @Transactional
+    public UUID confirmAndApply(UUID projectId, UUID userId, long lockVersion, boolean includePending) {
+        return apply(projectId, userId, lockVersion, includePending, true);
+    }
+
+    private UUID apply(UUID projectId, UUID userId, Long confirmedVersion,
+                       boolean includePending, boolean criticalAssumptionsConfirmed) {
         authorizationService.requireOwner(projectId, userId);
         DraftPlan draft = planDraftRepository.findForUpdateByProjectId(projectId)
                 .orElseThrow(() -> new ConflictException(
@@ -76,9 +87,12 @@ public class DraftApplicationService {
         if (confirmedVersion != null && confirmedVersion != draft.getLockVersion()) {
             throw new ConflictException("Der Entwurf wurde zwischenzeitlich geändert. Bitte prüfe ihn erneut.");
         }
-        var review = draftMapper.toReviewDto(draft);
-        if (confirmedVersion == null && !review.getUncheckedCriticalTasks().isEmpty()) {
-            throw new CriticalAssumptionsConfirmationRequiredException(review);
+        var review = fullReview(draft);
+        if (!includePending && review.getPendingElementCount() > 0) {
+            throw new PendingDraftElementsConfirmationRequiredException(review);
+        }
+        if (!criticalAssumptionsConfirmed && !review.getUncheckedCriticalTasks().isEmpty()) {
+            throw new CriticalAssumptionsConfirmationRequiredException(review, includePending);
         }
         validationService.validate(draft);
 
@@ -86,7 +100,7 @@ public class DraftApplicationService {
 
         draft.setStatus(DraftPlanStatus.APPLYING);
         Map<DraftSection, PlanSection> sections = new HashMap<>();
-        draft.getSections().forEach(source -> {
+        draft.getSections().stream().filter(source -> included(source.getReviewStatus(), includePending)).forEach(source -> {
             PlanSection target = new PlanSection();
             target.setTitle(source.getTitle());
             target.setDescription(source.getDescription());
@@ -94,15 +108,14 @@ public class DraftApplicationService {
             target.setOrigin(source.getOrigin());
             project.addSection(target);
             sections.put(source, target);
-            source.setReviewStatus(DraftReviewStatus.ACCEPTED);
         });
-        draft.getElements().forEach(source -> {
+        draft.getElements().stream().filter(source -> included(source.getReviewStatus(), includePending)).forEach(source -> {
             PlanElement target = copy(source);
             project.addElement(target);
-            if (source.getDraftSection() != null) {
-                sections.get(source.getDraftSection()).addElement(target);
+            PlanSection targetSection = sections.get(source.getDraftSection());
+            if (targetSection != null) {
+                targetSection.addElement(target);
             }
-            source.setReviewStatus(DraftReviewStatus.ACCEPTED);
         });
 
         projectStateService.changeState(project, ProjectStatus.ACTIVE, ProjectLocation.OVERVIEW);
@@ -110,6 +123,22 @@ public class DraftApplicationService {
         workflowRepository.findByProjectId(projectId)
                 .ifPresent(AiPlanGenerationWorkflow::markDraftApplied);
         return projectId;
+    }
+
+    private de.melinadanhier.projectflow.draft.dto.DraftReviewDto fullReview(DraftPlan draft) {
+        var review = draftMapper.toReviewDto(draft);
+        review.setElements(draft.getElements().stream().map(draftMapper::toDto).toList());
+        review.setTotalElementCount(draft.getSections().size() + draft.getElements().size());
+        review.setReviewedElementCount((int) java.util.stream.Stream.concat(
+                        draft.getSections().stream().map(DraftSection::getReviewStatus),
+                        draft.getElements().stream().map(DraftPlanElement::getReviewStatus))
+                .filter(status -> status != DraftReviewStatus.PENDING).count());
+        return review;
+    }
+
+    private boolean included(DraftReviewStatus status, boolean includePending) {
+        return status == DraftReviewStatus.ACCEPTED
+                || includePending && status == DraftReviewStatus.PENDING;
     }
 
     private PlanElement copy(DraftPlanElement source) {

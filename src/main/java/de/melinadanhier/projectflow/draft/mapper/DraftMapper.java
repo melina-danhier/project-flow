@@ -17,6 +17,12 @@ public interface DraftMapper {
     @Mapping(target = "projectEndDate", source = "project.endDate")
     @Mapping(target = "categoryLabel", ignore = true)
     @Mapping(target = "uncheckedCriticalTasks", ignore = true)
+    @Mapping(target = "activeReviewStatus", ignore = true)
+    @Mapping(target = "criticalAssumptionsOnly", ignore = true)
+    @Mapping(target = "reviewedElementCount", ignore = true)
+    @Mapping(target = "totalElementCount", ignore = true)
+    @Mapping(target = "pendingElementCount", ignore = true)
+    @Mapping(target = "unsectionedElements", ignore = true)
     DraftReviewDto toReviewDto(DraftPlan draftPlan);
 
     DraftSectionDto toDto(DraftSection draftSection);

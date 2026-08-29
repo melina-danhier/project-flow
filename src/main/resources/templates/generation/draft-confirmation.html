@@ -14,6 +14,7 @@
 </li></ul>
 <form th:action="@{/projects/{projectId}/draft/confirm-and-apply(projectId=${draft.projectId})}" method="post">
     <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+    <input type="hidden" name="includePending" th:value="${includePending}">
     <button type="submit">Kritische Annahmen bestätigen und Plan übernehmen</button>
 </form>
 <a th:href="@{/projects/{projectId}/draft/review(projectId=${draft.projectId})}">Zurück zum Entwurf</a>

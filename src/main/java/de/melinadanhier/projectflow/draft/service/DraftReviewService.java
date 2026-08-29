@@ -48,12 +48,25 @@ public class DraftReviewService {
 
     @Transactional(readOnly = true)
     public DraftReviewDto review(UUID projectId, UUID userId) {
+        return review(projectId, userId, null, false);
+    }
+
+    @Transactional(readOnly = true)
+    public DraftReviewDto review(UUID projectId, UUID userId, DraftReviewStatus reviewStatus,
+                                 boolean criticalAssumptionsOnly) {
         authorizationService.requireOwner(projectId, userId);
         DraftPlan draft = planDraftRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Für dieses Projekt ist kein Planentwurf vorhanden."
                 ));
         DraftReviewDto review = draftMapper.toReviewDto(draft);
+        review.setActiveReviewStatus(reviewStatus);
+        review.setCriticalAssumptionsOnly(criticalAssumptionsOnly);
+        review.setTotalElementCount(draft.getSections().size() + draft.getElements().size());
+        review.setReviewedElementCount((int) java.util.stream.Stream.concat(
+                        draft.getSections().stream().map(DraftSection::getReviewStatus),
+                        draft.getElements().stream().map(DraftPlanElement::getReviewStatus))
+                .filter(status -> status != DraftReviewStatus.PENDING).count());
         review.setSections(draft.getSections().stream()
                 .sorted(Comparator.comparingInt(DraftSection::getSortOrder).thenComparing(DraftSection::getId))
                 .map(section -> {
@@ -64,14 +77,35 @@ public class DraftReviewService {
                         manualPositions.put(manualOrder.get(position).getId(), position);
                     }
                     dto.setElements(displayOrder(manualOrder, draft.getSortMode()).stream()
+                            .filter(element -> matches(element, reviewStatus, criticalAssumptionsOnly))
                             .map(element -> {
                                 var elementDto = draftMapper.toDto(element);
                                 elementDto.setManualPosition(manualPositions.get(element.getId()));
                                 return elementDto;
                             }).toList());
                     return dto;
+                })
+                .filter(section -> matches(section, reviewStatus, criticalAssumptionsOnly)
+                        || !section.getElements().isEmpty())
+                .toList());
+        review.setElements(draft.getElements().stream()
+                .filter(element -> matches(element, reviewStatus, criticalAssumptionsOnly))
+                .map(draftMapper::toDto).toList());
+        List<DraftPlanElement> unsectioned = draft.getElements().stream()
+                .filter(element -> element.getDraftSection() == null)
+                .sorted(Comparator.comparingInt(DraftPlanElement::getSortOrder).thenComparing(DraftPlanElement::getId))
+                .toList();
+        var unsectionedPositions = new java.util.HashMap<UUID, Integer>();
+        for (int position = 0; position < unsectioned.size(); position++) {
+            unsectionedPositions.put(unsectioned.get(position).getId(), position);
+        }
+        review.setUnsectionedElements(displayOrder(unsectioned, draft.getSortMode()).stream()
+                .filter(element -> matches(element, reviewStatus, criticalAssumptionsOnly))
+                .map(element -> {
+                    var dto = draftMapper.toDto(element);
+                    dto.setManualPosition(unsectionedPositions.get(element.getId()));
+                    return dto;
                 }).toList());
-        review.setElements(draft.getElements().stream().map(draftMapper::toDto).toList());
         var project = draft.getProject();
         review.setCategoryLabel(project.getSubcategory() != null
                 ? project.getSubcategory().getLabel()
@@ -81,18 +115,32 @@ public class DraftReviewService {
 
     @Transactional
     public void acceptElement(UUID projectId, UUID elementId, UUID userId, long version) {
-        DraftPlan draft = editable(projectId, userId, version);
-        var element = draft.getElements().stream().filter(value -> value.getId().equals(elementId))
-                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Entwurfselement nicht gefunden."));
-        element.setReviewStatus(DraftReviewStatus.ACCEPTED);
+        updateElementReviewStatus(projectId, elementId, userId, version, DraftReviewStatus.ACCEPTED);
+    }
+
+    @Transactional
+    public void rejectElement(UUID projectId, UUID elementId, UUID userId, long version) {
+        updateElementReviewStatus(projectId, elementId, userId, version, DraftReviewStatus.REJECTED);
+    }
+
+    @Transactional
+    public void resetElement(UUID projectId, UUID elementId, UUID userId, long version) {
+        updateElementReviewStatus(projectId, elementId, userId, version, DraftReviewStatus.PENDING);
     }
 
     @Transactional
     public void acceptSection(UUID projectId, UUID sectionId, UUID userId, long version) {
-        DraftPlan draft = editable(projectId, userId, version);
-        var section = draft.getSections().stream().filter(value -> value.getId().equals(sectionId))
-                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Entwurfsbereich nicht gefunden."));
-        section.setReviewStatus(DraftReviewStatus.ACCEPTED);
+        updateSectionReviewStatus(projectId, sectionId, userId, version, DraftReviewStatus.ACCEPTED);
+    }
+
+    @Transactional
+    public void rejectSection(UUID projectId, UUID sectionId, UUID userId, long version) {
+        updateSectionReviewStatus(projectId, sectionId, userId, version, DraftReviewStatus.REJECTED);
+    }
+
+    @Transactional
+    public void resetSection(UUID projectId, UUID sectionId, UUID userId, long version) {
+        updateSectionReviewStatus(projectId, sectionId, userId, version, DraftReviewStatus.PENDING);
     }
 
     @Transactional
@@ -112,7 +160,6 @@ public class DraftReviewService {
             section.setDescription(description);
             section.markContentModified();
         }
-        section.setReviewStatus(DraftReviewStatus.PENDING);
     }
 
     @Transactional
@@ -138,7 +185,6 @@ public class DraftReviewService {
         task.setEstimatedHours(form.getEstimatedHours());
         task.setPriority(form.getPriority());
         if (changed) task.markContentModified();
-        task.setReviewStatus(DraftReviewStatus.PENDING);
         validationService.validate(draft);
         // The assumption is immutable in the review form, including forged request parameters.
     }
@@ -154,7 +200,6 @@ public class DraftReviewService {
         milestone.setTitle(title);
         milestone.setDueDate(form.getDueDate());
         if (changed) milestone.markContentModified();
-        milestone.setReviewStatus(DraftReviewStatus.PENDING);
         validationService.validate(draft);
     }
 
@@ -164,13 +209,11 @@ public class DraftReviewService {
         DraftPlan draft = editable(projectId, userId, form.getLockVersion());
         DraftPlanElement element = element(draft, elementId);
         DraftSection source = element.getDraftSection();
-        if (source == null) {
-            throw new DomainValidationException("Das Entwurfselement ist keinem Bereich zugeordnet.");
-        }
-        DraftSection target = section(draft, form.getTargetSectionId());
-        List<DraftPlanElement> sourceOrder = manualOrder(source);
+        DraftSection target = form.getTargetSectionId() == null ? null : section(draft, form.getTargetSectionId());
+        List<DraftPlanElement> sourceOrder = manualOrder(draft, source);
         int currentPosition = sourceOrder.indexOf(element);
-        boolean sameSection = source.getId().equals(target.getId());
+        boolean sameSection = Objects.equals(source == null ? null : source.getId(),
+                target == null ? null : target.getId());
         if (sameSection && draft.getSortMode() == SortMode.DATE && isDated(element)
                 && form.getTargetPosition() != currentPosition) {
             throw new DomainValidationException(
@@ -181,10 +224,12 @@ public class DraftReviewService {
             insert(sourceOrder, element, form.getTargetPosition());
             applyOrder(source, sourceOrder);
         } else {
-            List<DraftPlanElement> targetOrder = manualOrder(target);
+            List<DraftPlanElement> targetOrder = manualOrder(draft, target);
             insert(targetOrder, element, form.getTargetPosition());
-            source.removeElement(element);
-            target.addElement(element);
+            if (source != null) source.removeElement(element);
+            else element.setDraftSection(null);
+            if (target != null) target.addElement(element);
+            else element.setDraftSection(null);
             applyOrder(source, sourceOrder);
             applyOrder(target, targetOrder);
         }
@@ -256,6 +301,14 @@ public class DraftReviewService {
         return order;
     }
 
+    private List<DraftPlanElement> manualOrder(DraftPlan draft, DraftSection section) {
+        if (section != null) return manualOrder(section);
+        return draft.getElements().stream().filter(element -> element.getDraftSection() == null)
+                .sorted(Comparator.comparingInt(DraftPlanElement::getSortOrder)
+                        .thenComparing(DraftPlanElement::getId))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+    }
+
     private List<DraftPlanElement> displayOrder(List<DraftPlanElement> manual, SortMode mode) {
         if (mode != SortMode.DATE) return manual;
         List<DraftPlanElement> dated = manual.stream().filter(this::isDated)
@@ -278,9 +331,32 @@ public class DraftReviewService {
     }
 
     private void applyOrder(DraftSection section, List<DraftPlanElement> order) {
-        section.getElements().clear();
-        section.getElements().addAll(order);
+        if (section != null) {
+            section.getElements().clear();
+            section.getElements().addAll(order);
+        }
         for (int index = 0; index < order.size(); index++) order.get(index).setSortOrder(index);
+    }
+
+    private void updateElementReviewStatus(UUID projectId, UUID elementId, UUID userId, long version,
+                                           DraftReviewStatus status) {
+        element(editable(projectId, userId, version), elementId).setReviewStatus(status);
+    }
+
+    private void updateSectionReviewStatus(UUID projectId, UUID sectionId, UUID userId, long version,
+                                           DraftReviewStatus status) {
+        section(editable(projectId, userId, version), sectionId).setReviewStatus(status);
+    }
+
+    private boolean matches(DraftPlanElement element, DraftReviewStatus status, boolean criticalOnly) {
+        return (status == null || element.getReviewStatus() == status)
+                && (!criticalOnly || element.isHasCriticalAssumption());
+    }
+
+    private boolean matches(de.melinadanhier.projectflow.draft.dto.DraftSectionDto section,
+                            DraftReviewStatus status, boolean criticalOnly) {
+        return (status == null || section.getReviewStatus() == status)
+                && (!criticalOnly || section.isHasCriticalAssumption());
     }
 
     private String normalize(String value) {
