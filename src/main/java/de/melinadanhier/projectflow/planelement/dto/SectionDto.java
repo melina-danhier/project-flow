@@ -20,7 +20,6 @@ public class SectionDto {
     private String description;
     private int sortOrder;
     private ElementOrigin origin;
-    private boolean hasCriticalAssumption;
     private List<PlanElementViewDto> elements = new ArrayList<>();
     private int taskCount;
     private int milestoneCount;

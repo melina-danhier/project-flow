@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kritische Annahmen prüfen – ProjectFlow</title>
+    <link rel="stylesheet" th:href="@{/css/draft-review.css}">
+</head>
+<body><main class="assumption-review">
+<h1>Kritische Annahmen prüfen</h1>
+<p>Bitte prüfe alle Annahmen. Der erzeugte Entwurf wird erst danach angezeigt.</p>
+<p th:if="${review.errorMessage}" th:text="${review.errorMessage}" role="alert" class="error-message"></p>
+<form id="assumption-review-form" th:action="@{/projects/new/ai/assumptions/{id}(id=${review.workflowId})}" method="post">
+    <input type="hidden" name="assumptionCount" th:value="${review.assumptions.size()}">
+    <fieldset class="assumption-card" th:each="assumption : ${review.assumptions}"
+              th:attr="data-correction-required=${assumption.correctionRequiredIfRejected}">
+        <legend th:text="${assumption.statement}"></legend>
+        <label>
+            <input type="radio" th:name="${'decision.' + assumption.index}" value="CONFIRMED" required
+                   th:checked="${assumption.decision?.name() == 'CONFIRMED'}"> Trifft zu
+        </label>
+        <label>
+            <input type="radio" th:name="${'decision.' + assumption.index}" value="REJECTED" required
+                   th:checked="${assumption.decision?.name() == 'REJECTED'}"> Trifft nicht zu
+        </label>
+        <div class="assumption-correction" th:if="${assumption.correctionRequiredIfRejected}">
+            <label th:for="${'correction-' + assumption.index}">Was trifft stattdessen zu?</label>
+            <textarea th:id="${'correction-' + assumption.index}"
+                      th:name="${'correction.' + assumption.index}" maxlength="2000"
+                      th:text="${assumption.correction}"></textarea>
+        </div>
+    </fieldset>
+    <button id="assumption-submit" type="submit" disabled>Entwurf anzeigen</button>
+</form>
+<p><a th:href="@{/projects/drafts}">Abbrechen und zu den Entwürfen</a></p>
+<script th:src="@{/js/assumption-review.js}" defer></script>
+</main></body></html>

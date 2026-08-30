@@ -28,7 +28,6 @@ public class TaskDetailsDto {
     private String description;
     private int sortOrder;
     private ElementOrigin origin;
-    private boolean hasCriticalAssumption;
     private TaskStatus status;
     private TaskPriority priority;
     private LocalDate startDate;

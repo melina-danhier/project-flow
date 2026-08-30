@@ -50,6 +50,15 @@ public class GenerationPromptBuilder {
               optional. Ohne terminierte Planung dürfen alle Datumsfelder null sein. Ergänze keine
               fehlenden Datumswerte durch bloße technische Annahmen.
             - Berücksichtige bestätigte Pre-Check-Warnungen als fachlichen Kontext; ändere deswegen keine Eingabe.
+            - Gib kritische Annahmen ausschließlich global in criticalAssumptions zurück. Verknüpfe sie nicht
+              mit Sections, Aufgaben oder Meilensteinen. Gib nur Annahmen aus, deren Falschheit Inhalt,
+              Umfang, Aufwand, Terminplanung oder Aufbau des Plans wesentlich verändern würde. Allgemeine,
+              nebensächliche oder rein beschreibende Vermutungen sind keine kritischen Annahmen.
+            - Setze correctionRequiredIfRejected nur auf true, wenn die bloße Verneinung der Aussage keine
+              ausreichende Information für eine korrekte Neugenerierung liefert.
+            - Behandle confirmedAssumptions als verbindliche Fakten und gib sie nicht erneut als Annahmen aus.
+              Behandle rejectedAssumptions als falsche Voraussetzungen und berücksichtige ausschließlich dort
+              tatsächlich enthaltene Korrekturen als zusätzliche verbindliche Fakten.
             """;
 
     private final ObjectMapper objectMapper;
@@ -83,6 +92,8 @@ public class GenerationPromptBuilder {
         if (!request.previousValidationIssues().isEmpty()) {
             context.put("previousOutputValidationIssues", request.previousValidationIssues());
         }
+        context.put("confirmedAssumptions", request.confirmedAssumptions());
+        context.put("rejectedAssumptions", request.rejectedAssumptions());
         try {
             return objectMapper.writeValueAsString(context);
         } catch (JacksonException exception) {

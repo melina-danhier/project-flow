@@ -58,10 +58,6 @@ class DraftReviewIntegrationTest {
     @ValueSource(strings = {"  ", "\t\n", "\u2003"})
     void absentAssumptionsStillRequireExplicitPendingConfirmation(String assumption) throws Exception {
         Fixture f = fixture(assumption, null);
-        assertThat(review(f).getElements()).allSatisfy(element -> {
-            assertThat(element.getCriticalAssumption()).isNull();
-            assertThat(element.isHasCriticalAssumption()).isFalse();
-        });
         mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("class=\"assumption-toggle\""))));
@@ -76,31 +72,12 @@ class DraftReviewIntegrationTest {
     }
 
     @Test
-    void markerIsAccessibleAndEscapesUntrustedText() throws Exception {
+    void draftReviewContainsNoElementRelatedAssumptionMarkers() throws Exception {
         Fixture f = fixture("  Material <script>alert(1)</script> ist verfügbar  ", null);
-        var task = review(f).getElements().getFirst();
-        assertThat(task.getCriticalAssumption()).isEqualTo("Material <script>alert(1)</script> ist verfügbar");
         mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(matchesPattern(
-                        "(?s).*<button\\b(?=[^>]*\\baria-label=\"[^\"]+\")(?=[^>]*\\baria-describedby=\"assumption-"
-                                + task.getId() + "\")[^>]*>.*")))
-                .andExpect(content().string(containsString("aria-describedby=\"assumption-" + task.getId())))
-                .andExpect(content().string(containsString("role=\"tooltip\"")))
-                .andExpect(content().string(containsString("&lt;script&gt;")))
-                .andExpect(content().string(not(containsString("<script>alert(1)"))))
+                .andExpect(content().string(not(containsString("assumption-toggle"))))
                 .andDo(result -> writePreview("draft-review.html", result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
-    }
-
-    @Test
-    void legacyWhitespaceDoesNotCreateAMarkerOrRequireConfirmation() throws Exception {
-        Fixture f = fixture("Material ist verfügbar", null);
-        var taskId = review(f).getElements().getFirst().getId();
-        jdbc.update("update draft_plan_elements set critical_assumption = '   ', has_critical_assumption = true where id = ?", taskId);
-        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
-                .andExpect(content().string(not(containsString("class=\"assumption-toggle\""))));
-        application.continueWithPending(f.projectId(), f.owner().userId(), review(f).getLockVersion());
-        assertApplied(f);
     }
 
     @Test
@@ -131,20 +108,12 @@ class DraftReviewIntegrationTest {
         mvc.perform(post(f.url() + "/continue-with-pending")
                         .param("lockVersion", String.valueOf(before.getLockVersion()))
                         .with(user(f.owner())).with(csrf()))
-                .andExpect(status().isOk()).andExpect(view().name("generation/draft-confirmation"))
-                .andExpect(content().string(containsString("Aufgabe 1")))
-                .andExpect(content().string(containsString("Aufgabe 2")))
-                .andExpect(content().string(containsString(before.getElements().get(1).getCriticalAssumption())))
-                .andExpect(content().string(containsString("action=\"" + f.url() + "/confirm-and-apply\"")))
-                .andExpect(content().string(containsString("href=\"" + f.reviewUrl() + "\"")))
-                .andDo(result -> writePreview("draft-confirmation.html", result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
-        mvc.perform(get(f.reviewUrl()).with(user(f.owner()))).andExpect(status().isOk());
-        assertThat(review(f)).usingRecursiveComparison().isEqualTo(before);
-        assertEmptyPlan(f);
+                .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
+        assertApplied(f);
     }
 
     @Test
-    void acceptedElementStillRequiresSeparateCriticalAssumptionConfirmation() throws Exception {
+    void acceptedElementStillRequiresPendingElementConfirmation() throws Exception {
         Fixture f = fixture("Material ist verfügbar", null);
         var draft = review(f);
         mvc.perform(post(f.url() + "/elements/" + draft.getElements().getFirst().getId() + "/accept")
@@ -156,10 +125,6 @@ class DraftReviewIntegrationTest {
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
                 .andExpect(view().name("generation/draft-pending-confirmation"));
         var current = review(f);
-        mvc.perform(post(f.url() + "/continue-with-pending")
-                        .param("lockVersion", String.valueOf(current.getLockVersion()))
-                        .with(user(f.owner())).with(csrf()))
-                .andExpect(view().name("generation/draft-confirmation"));
         mvc.perform(post(f.url() + "/confirm-and-apply")
                         .param("lockVersion", String.valueOf(current.getLockVersion()))
                         .param("includePending", "true").with(user(f.owner())).with(csrf()))
@@ -173,15 +138,10 @@ class DraftReviewIntegrationTest {
         long version = review(f).getLockVersion();
         for (int attempt = 0; attempt < 2; attempt++) {
             mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
-                            .param("includePending", "true")
-                            .param("criticalAssumption", "Manipuliert").with(user(f.owner())).with(csrf()))
+                            .param("includePending", "true").with(user(f.owner())).with(csrf()))
                     .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
         }
         assertApplied(f);
-        assertThat(jdbc.queryForList("select critical_assumption from plan_elements where plan_container_id = ?",
-                String.class, f.projectId())).containsOnlyNulls();
-        assertThat(jdbc.queryForList("select has_critical_assumption from plan_elements where plan_container_id = ?",
-                Boolean.class, f.projectId())).containsOnly(false);
         assertThat(jdbc.queryForList("select status from tasks where id in (select id from plan_elements where plan_container_id = ?)",
                 String.class, f.projectId())).containsOnly("OPEN");
         assertThat(review(f).getElements()).allSatisfy(element ->
@@ -190,7 +150,7 @@ class DraftReviewIntegrationTest {
     }
 
     @Test
-    void editPreservesAssumptionIgnoresForgedFieldsAndInvalidatesOldConfirmation() throws Exception {
+    void editInvalidatesOldConfirmation() throws Exception {
         Fixture f = fixture("Material ist verfügbar", null);
         var before = review(f);
         var taskId = before.getElements().getFirst().getId();
@@ -198,7 +158,7 @@ class DraftReviewIntegrationTest {
         long version = review(f).getLockVersion();
         mvc.perform(post(f.url() + "/tasks/" + taskId)
                         .param("lockVersion", String.valueOf(version)).param("title", "Überarbeitet")
-                        .param("priority", "HIGH").param("criticalAssumption", "Manipuliert")
+                        .param("priority", "HIGH")
                         .param("reviewStatus", "ACCEPTED").with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl(f.reviewUrl()));
         var current = review(f);
@@ -206,7 +166,6 @@ class DraftReviewIntegrationTest {
         assertThat(current.getElements().getFirst().getTitle()).isEqualTo("Überarbeitet");
         assertThat(current.getElements().getFirst().getOrigin())
                 .isEqualTo(de.melinadanhier.projectflow.planelement.model.ElementOrigin.AI_MODIFIED);
-        assertThat(current.getElements().getFirst().getCriticalAssumption()).isEqualTo("Material ist verfügbar");
         assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.ACCEPTED);
         mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
                         .with(user(f.owner())).with(csrf()))
@@ -216,13 +175,12 @@ class DraftReviewIntegrationTest {
     }
 
     @Test
-    void deletingTaskAlsoRemovesItsAssumption() throws Exception {
+    void deletingTaskKeepsDraftConsistent() throws Exception {
         Fixture f = fixture("Material ist verfügbar", null);
         var before = review(f);
         mvc.perform(post(f.url() + "/tasks/" + before.getElements().getFirst().getId() + "/delete")
                         .param("lockVersion", String.valueOf(before.getLockVersion())).with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl(f.reviewUrl()));
-        assertThat(review(f).getUncheckedCriticalTasks()).isEmpty();
         assertThat(review(f).getElements()).hasSize(3);
         assertThat(review(f).getSections().getFirst().getElements())
                 .extracting("sortOrder").containsExactly(0, 1, 2);
@@ -236,15 +194,10 @@ class DraftReviewIntegrationTest {
         var before = review(f);
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
                 .andExpect(view().name("generation/draft-pending-confirmation"));
-        mvc.perform(post(f.url() + "/continue-with-pending")
-                        .param("lockVersion", String.valueOf(before.getLockVersion()))
-                        .with(user(f.owner())).with(csrf()))
-                .andExpect(view().name("generation/draft-confirmation"));
         // Simulate persisted domain-invalid dates, which are legal SQL values.
         jdbc.update("update draft_tasks set start_date = ?, due_date = ? where id = ?",
                 LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 1), before.getElements().getFirst().getId());
-        mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(before.getLockVersion()))
-                        .param("includePending", "true")
+        mvc.perform(post(f.url() + "/continue-with-pending").param("lockVersion", String.valueOf(before.getLockVersion()))
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl(f.reviewUrl())).andExpect(flash().attribute("errorMessage", not(blankOrNullString())));
         assertEmptyPlan(f);
@@ -386,7 +339,7 @@ class DraftReviewIntegrationTest {
     }
 
     @Test
-    void reviewFiltersCombineStatusAndCriticalAssumptionsAndKeepMatchingChildSectionVisible() {
+    void reviewStatusFilterKeepsMatchingChildSectionVisible() {
         Fixture f = fixture("Kritische Annahme", null);
         DraftReviewDto initial = review(f);
         assertThat(initial.getTotalElementCount()).isEqualTo(5);
@@ -400,7 +353,7 @@ class DraftReviewIntegrationTest {
                 f.owner().userId(), afterSection.getLockVersion());
 
         DraftReviewDto pending = reviews.review(
-                f.projectId(), f.owner().userId(), DraftReviewStatus.PENDING, false);
+                f.projectId(), f.owner().userId(), DraftReviewStatus.PENDING);
         assertThat(pending.getElements()).hasSize(3).allMatch(element ->
                 element.getReviewStatus() == DraftReviewStatus.PENDING);
         assertThat(pending.getSections()).singleElement().satisfies(section -> {
@@ -411,7 +364,7 @@ class DraftReviewIntegrationTest {
         assertThat(pending.getTotalElementCount()).isEqualTo(5);
 
         DraftReviewDto rejectedCritical = reviews.review(
-                f.projectId(), f.owner().userId(), DraftReviewStatus.REJECTED, true);
+                f.projectId(), f.owner().userId(), DraftReviewStatus.REJECTED);
         assertThat(rejectedCritical.getElements()).singleElement()
                 .extracting("title").isEqualTo("Aufgabe 1");
         assertThat(rejectedCritical.getSections()).singleElement()
@@ -549,7 +502,6 @@ class DraftReviewIntegrationTest {
             projects.saveAndFlush(project);
             List<GeneratedTask> tasks = IntStream.rangeClosed(1, 4).mapToObj(index -> new GeneratedTask(
                     "task-" + index, "Aufgabe " + index, null, null, null, null,
-                    index == 1 ? firstAssumption : index == 2 ? secondAssumption : null,
                     GeneratedElementOrigin.AI_INFERRED, index)).toList();
             var contents = generatedPlanMapper.map(new GeneratedPlanResponse(List.of(new GeneratedSection(
                     "section", "Section", null, 1, tasks, List.of()))));

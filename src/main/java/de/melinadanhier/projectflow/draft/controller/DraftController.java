@@ -19,7 +19,6 @@ import de.melinadanhier.projectflow.draft.dto.DraftMilestoneForm;
 import de.melinadanhier.projectflow.draft.dto.DraftElementMoveForm;
 import de.melinadanhier.projectflow.draft.dto.DraftSectionMoveForm;
 import de.melinadanhier.projectflow.draft.dto.DraftSortModeForm;
-import de.melinadanhier.projectflow.draft.service.CriticalAssumptionsConfirmationRequiredException;
 import de.melinadanhier.projectflow.draft.service.PendingDraftElementsConfirmationRequiredException;
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
@@ -32,6 +31,8 @@ import jakarta.validation.Valid;
 
 import java.util.Map;
 import java.util.UUID;
+import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 
 @Controller
 @RequiredArgsConstructor
@@ -39,17 +40,20 @@ public class DraftController {
 
     private final DraftReviewService draftReviewService;
     private final DraftApplicationService draftApplicationService;
+    private final AiPlanGenerationWorkflowRepository workflowRepository;
 
     @GetMapping({"/projects/{projectId}/draft", "/projects/{projectId}/draft/review"})
     public String review(@PathVariable UUID projectId,
                          @AuthenticationPrincipal AuthenticatedUser currentUser,
                          @RequestParam(required = false) DraftReviewStatus reviewStatus,
-                         @RequestParam(defaultValue = "false") boolean criticalAssumptions,
                          Model model) {
-        model.addAttribute(
-                "draft",
-                draftReviewService.review(projectId, currentUser.userId(), reviewStatus, criticalAssumptions)
-        );
+        var workflow = workflowRepository.findOwnedByProjectId(projectId, currentUser.userId()).orElse(null);
+        if (workflow != null && workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED
+                && workflow.getStatus() != AiPlanGenerationWorkflowStatus.DRAFT_APPLIED) {
+            return "redirect:/projects/new/ai/status/" + workflow.getId();
+        }
+        var draft = draftReviewService.review(projectId, currentUser.userId(), reviewStatus);
+        model.addAttribute("draft", draft);
         return "generation/draft-review";
     }
 
@@ -212,13 +216,6 @@ public class DraftController {
                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
         draftReviewService.deleteTask(projectId, taskId, currentUser.userId(), lockVersion);
         return reviewRedirect(projectId);
-    }
-
-    @ExceptionHandler(CriticalAssumptionsConfirmationRequiredException.class)
-    public String confirmation(CriticalAssumptionsConfirmationRequiredException exception, Model model) {
-        model.addAttribute("draft", exception.getDraft());
-        model.addAttribute("includePending", exception.isIncludePending());
-        return "generation/draft-confirmation";
     }
 
     @ExceptionHandler(PendingDraftElementsConfirmationRequiredException.class)

@@ -81,11 +81,11 @@ class SdkOpenAiResponsesGatewayTest {
                   "tempId":null,"title":"Section","description":null,"order":1,
                   "tasks":[{
                     "tempId":"task-1","title":"Aufgabe","description":null,"estimatedHours":null,
-                    "startDate":null,"dueDate":null,"criticalAssumption":null,"origin":"AI_INFERRED",
+                    "startDate":null,"dueDate":null,"origin":"AI_INFERRED",
                     "order":1,"prerequisiteTaskTempIds":[],"priority":null
                   }],
                   "milestones":[{"tempId":null,"title":"Meilenstein","date":null,"order":1}]
-                }]}
+                }],"criticalAssumptions":[]}
                 """;
         var output = executeRaw(rawResponse(json), OpenAiGenerationOutput.class);
         assertThat(output.sections()).singleElement().satisfies(section -> {
@@ -96,7 +96,6 @@ class SdkOpenAiResponsesGatewayTest {
                 assertThat(task.estimatedHours()).isEmpty();
                 assertThat(task.startDate()).isEmpty();
                 assertThat(task.dueDate()).isEmpty();
-                assertThat(task.criticalAssumption()).isEmpty();
                 assertThat(task.priority()).isEmpty();
             });
             assertThat(section.milestones()).singleElement().satisfies(milestone -> {

@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Objects;
 import java.time.LocalDate;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
+import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -45,15 +47,15 @@ public class DraftReviewService {
     private final EntityManager entityManager;
     private final Validator validator;
     private final DraftValidationService validationService;
+    private final AiPlanGenerationWorkflowRepository workflowRepository;
 
     @Transactional(readOnly = true)
     public DraftReviewDto review(UUID projectId, UUID userId) {
-        return review(projectId, userId, null, false);
+        return review(projectId, userId, null);
     }
 
     @Transactional(readOnly = true)
-    public DraftReviewDto review(UUID projectId, UUID userId, DraftReviewStatus reviewStatus,
-                                 boolean criticalAssumptionsOnly) {
+    public DraftReviewDto review(UUID projectId, UUID userId, DraftReviewStatus reviewStatus) {
         authorizationService.requireOwner(projectId, userId);
         DraftPlan draft = planDraftRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -61,7 +63,6 @@ public class DraftReviewService {
                 ));
         DraftReviewDto review = draftMapper.toReviewDto(draft);
         review.setActiveReviewStatus(reviewStatus);
-        review.setCriticalAssumptionsOnly(criticalAssumptionsOnly);
         review.setTotalElementCount(draft.getSections().size() + draft.getElements().size());
         review.setReviewedElementCount((int) java.util.stream.Stream.concat(
                         draft.getSections().stream().map(DraftSection::getReviewStatus),
@@ -77,7 +78,7 @@ public class DraftReviewService {
                         manualPositions.put(manualOrder.get(position).getId(), position);
                     }
                     dto.setElements(displayOrder(manualOrder, draft.getSortMode()).stream()
-                            .filter(element -> matches(element, reviewStatus, criticalAssumptionsOnly))
+                            .filter(element -> matches(element, reviewStatus))
                             .map(element -> {
                                 var elementDto = draftMapper.toDto(element);
                                 elementDto.setManualPosition(manualPositions.get(element.getId()));
@@ -85,11 +86,11 @@ public class DraftReviewService {
                             }).toList());
                     return dto;
                 })
-                .filter(section -> matches(section, reviewStatus, criticalAssumptionsOnly)
+                .filter(section -> matches(section, reviewStatus)
                         || !section.getElements().isEmpty())
                 .toList());
         review.setElements(draft.getElements().stream()
-                .filter(element -> matches(element, reviewStatus, criticalAssumptionsOnly))
+                .filter(element -> matches(element, reviewStatus))
                 .map(draftMapper::toDto).toList());
         List<DraftPlanElement> unsectioned = draft.getElements().stream()
                 .filter(element -> element.getDraftSection() == null)
@@ -100,7 +101,7 @@ public class DraftReviewService {
             unsectionedPositions.put(unsectioned.get(position).getId(), position);
         }
         review.setUnsectionedElements(displayOrder(unsectioned, draft.getSortMode()).stream()
-                .filter(element -> matches(element, reviewStatus, criticalAssumptionsOnly))
+                .filter(element -> matches(element, reviewStatus))
                 .map(element -> {
                     var dto = draftMapper.toDto(element);
                     dto.setManualPosition(unsectionedPositions.get(element.getId()));
@@ -348,15 +349,13 @@ public class DraftReviewService {
         section(editable(projectId, userId, version), sectionId).setReviewStatus(status);
     }
 
-    private boolean matches(DraftPlanElement element, DraftReviewStatus status, boolean criticalOnly) {
-        return (status == null || element.getReviewStatus() == status)
-                && (!criticalOnly || element.isHasCriticalAssumption());
+    private boolean matches(DraftPlanElement element, DraftReviewStatus status) {
+        return status == null || element.getReviewStatus() == status;
     }
 
     private boolean matches(de.melinadanhier.projectflow.draft.dto.DraftSectionDto section,
-                            DraftReviewStatus status, boolean criticalOnly) {
-        return (status == null || section.getReviewStatus() == status)
-                && (!criticalOnly || section.isHasCriticalAssumption());
+                            DraftReviewStatus status) {
+        return status == null || section.getReviewStatus() == status;
     }
 
     private String normalize(String value) {
@@ -369,6 +368,7 @@ public class DraftReviewService {
 
     private DraftPlan editable(UUID projectId, UUID userId, long version) {
         authorizationService.requireOwner(projectId, userId);
+        requireReleasedDraft(projectId);
         DraftPlan draft = planDraftRepository.findForUpdateByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Planentwurf nicht gefunden."));
         if (draft.getStatus() != DraftPlanStatus.READY_FOR_REVIEW && draft.getStatus() != DraftPlanStatus.IN_REVIEW) {
@@ -381,6 +381,15 @@ public class DraftReviewService {
         // Child edits must invalidate open confirmation forms, even when the status stays IN_REVIEW.
         entityManager.lock(draft, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
         return draft;
+    }
+
+    private void requireReleasedDraft(UUID projectId) {
+        workflowRepository.findByProjectId(projectId).ifPresent(workflow -> {
+            if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED
+                    && workflow.getStatus() != AiPlanGenerationWorkflowStatus.DRAFT_APPLIED) {
+                throw new ConflictException("Bitte schließe zuerst die Prüfung der kritischen Annahmen ab.");
+            }
+        });
     }
 
     private String categoryLabel(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory category) {

@@ -35,7 +35,7 @@ class AiResponseSchemasTest {
     void generatedPlanUsesSectionsWithoutSectionDates() {
         var planProperties = (Map<String, Object>) AiResponseSchemas.forType(GeneratedPlanResponse.class)
                 .get("properties");
-        assertThat(planProperties).containsOnlyKeys("sections");
+        assertThat(planProperties).containsOnlyKeys("sections", "criticalAssumptions");
         var sections = (Map<String, Object>) planProperties.get("sections");
         var section = (Map<String, Object>) sections.get("items");
         var sectionProperties = (Map<String, Object>) section.get("properties");
@@ -86,6 +86,8 @@ class AiResponseSchemasTest {
             assertThat(schema.get("format")).isEqualTo("date");
         } else if (type == Integer.class || type == int.class) {
             assertThat(schema.get("type")).isEqualTo("integer");
+        } else if (type == boolean.class || type == Boolean.class) {
+            assertThat(schema.get("type")).isEqualTo("boolean");
         } else {
             throw new AssertionError("Schema test must support DTO type: " + type);
         }

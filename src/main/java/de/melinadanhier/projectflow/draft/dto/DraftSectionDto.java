@@ -21,7 +21,6 @@ public class DraftSectionDto {
     private int sortOrder;
     private DraftReviewStatus reviewStatus;
     private ElementOrigin origin;
-    private boolean hasCriticalAssumption;
     private List<DraftPlanElementDto> elements = new ArrayList<>();
 
     public boolean isUserModified() {

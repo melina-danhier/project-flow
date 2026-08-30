@@ -48,6 +48,24 @@ class GenerationResponseValidatorTest {
     }
 
     @Test
+    void validatesGlobalCriticalAssumptions() {
+        var valid = validDatedPlan();
+        var blank = new GeneratedPlanResponse(valid.sections(), List.of(
+                new GeneratedCriticalAssumption("   ", true)));
+        assertCodes(validator.validate(blank, scheduledRequest()),
+                BEAN_VALIDATION_FAILED, CRITICAL_ASSUMPTION_INVALID);
+
+        var duplicate = new GeneratedPlanResponse(valid.sections(), List.of(
+                new GeneratedCriticalAssumption("Externe Dienste sind erlaubt.", false),
+                new GeneratedCriticalAssumption("  EXTERNE   DIENSTE SIND ERLAUBT. ", true)));
+        assertCodes(validator.validate(duplicate, scheduledRequest()), CRITICAL_ASSUMPTION_DUPLICATE);
+
+        var missing = new GeneratedPlanResponse(valid.sections(), null);
+        assertCodes(validator.validate(missing, scheduledRequest()),
+                BEAN_VALIDATION_FAILED, CRITICAL_ASSUMPTIONS_MISSING);
+    }
+
+    @Test
     void beanValidationIsPerformedByGenerationValidator() {
         GeneratedTask invalid = task("task-1", " ", 1, PROJECT_START, PROJECT_START);
         var result = validator.validate(plan(section("section-1", 1, PROJECT_START, PROJECT_END,
@@ -217,7 +235,7 @@ class GenerationResponseValidatorTest {
     @Test
     void rejectsBlankOptionalDescriptionsAndOutOfRangeEffort() {
         GeneratedTask invalidTask = new GeneratedTask("task-1", "Eins", "  ", 10_001,
-                null, null, null, GeneratedElementOrigin.AI_INFERRED, 1, List.of(), TaskPriority.HIGH);
+                null, null, GeneratedElementOrigin.AI_INFERRED, 1, List.of(), TaskPriority.HIGH);
         GeneratedSection section = new GeneratedSection(null, "Section", " ", 1,
                 List.of(invalidTask, task("task-2", "Zwei", 2, null, null),
                         task("task-3", "Drei", 3, null, null)), List.of());
@@ -307,7 +325,7 @@ class GenerationResponseValidatorTest {
 
     private GeneratedTask task(String id, String title, int order, LocalDate start, LocalDate due,
                                List<String> prerequisites) {
-        return new GeneratedTask(id, title, null, 1, start, due, null,
+        return new GeneratedTask(id, title, null, 1, start, due,
                 GeneratedElementOrigin.AI_INFERRED, order, prerequisites);
     }
 

@@ -52,8 +52,12 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px soli
 .status-rejected { background: #f5dddd; color: #742323; }
 .unsectioned { border-style: dashed; }
 .plan-elements { min-height: 2.5rem; }
-.critical-assumption { position: relative; display: inline-block; }
-.assumption-toggle { width: 1.7rem; height: 1.7rem; margin: 0; padding: 0; border: 2px solid #735000; border-radius: 50%; background: #fff3cd; color: #533b00; font-weight: bold; }
-.assumption-text { position: absolute; z-index: 2; inset-block-start: calc(100% + .25rem); inset-inline-start: 0; width: min(25rem, 70vw); max-height: 60vh; overflow: auto; padding: .75rem; border: 1px solid #735000; border-radius: .3rem; background: #fff9e8; color: #302600; box-shadow: 0 2px 8px #0003; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assumption-card { margin-block: 1rem; padding: 1rem; border: 1px solid #d9dde2; border-radius: .5rem; background: #fff; }
+.assumption-card legend { padding-inline: .35rem; font-weight: 650; }
+.assumption-card label { font-weight: 500; }
+.assumption-card input[type="radio"] { width: auto; }
+.assumption-correction[hidden] { display: none; }
+.error-message { padding: .75rem; border-left: .3rem solid #9b2c2c; background: #f5dddd; }
+button:disabled { cursor: not-allowed; opacity: .55; }
 .apply-draft { margin-block-start: 2rem; }
 @media (max-width: 42rem) { .section-heading { display: block; } .section-edit { margin-block-start: 1rem; } }

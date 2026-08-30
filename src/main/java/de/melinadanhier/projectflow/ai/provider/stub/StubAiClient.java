@@ -39,7 +39,7 @@ public class StubAiClient implements AiClient {
 
         return new GeneratedPlanResponse(List.of(
                 preparationSection(scheduleStart, projectEnd),
-                implementationSection(scheduleStart, projectEnd))
+                implementationSection(scheduleStart, projectEnd)), List.of()
         );
     }
 
@@ -109,7 +109,7 @@ public class StubAiClient implements AiClient {
     ) {
         return new GeneratedTask(
                 tempId, title, "Plausibler Beispielschritt für Workflow- und UI-Tests.",
-                2, startDate, dueDate, null, origin, order);
+                2, startDate, dueDate, origin, order);
     }
 
     private LocalDate date(LocalDate projectStart, LocalDate projectEnd, int offsetDays) {

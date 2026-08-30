@@ -240,7 +240,7 @@ class AiPlanGenerationServiceTest {
     }
 
     private GeneratedTask task(String id, int order) {
-        return new GeneratedTask(id, "Aufgabe " + order, null, 1, null, null, null,
+        return new GeneratedTask(id, "Aufgabe " + order, null, 1, null, null,
                 GeneratedElementOrigin.AI_INFERRED, order);
     }
 

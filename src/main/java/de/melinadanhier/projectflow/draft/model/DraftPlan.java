@@ -82,4 +82,9 @@ public class DraftPlan extends MutableEntity {
             element.setDraftPlan(null);
         }
     }
+
+    public void clearContents() {
+        new ArrayList<>(elements).forEach(this::removeElement);
+        new ArrayList<>(sections).forEach(this::removeSection);
+    }
 }

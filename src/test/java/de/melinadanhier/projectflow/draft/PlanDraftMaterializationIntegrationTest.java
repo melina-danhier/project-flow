@@ -10,6 +10,7 @@ import de.melinadanhier.projectflow.draft.model.*;
 import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.draft.service.PlanDraftMaterializationService;
 import de.melinadanhier.projectflow.generation.model.workflow.*;
+import de.melinadanhier.projectflow.generation.dto.*;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.service.coordination.AiPlanGenerationCoordinator;
@@ -70,7 +71,7 @@ class PlanDraftMaterializationIntegrationTest {
         var workflow = workflows.findById(f.workflowId()).orElseThrow();
         assertThat(workflow.getStatus()).isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
         assertThat(workflow.getConfirmedSnapshot()).isEqualTo(snapshot);
-        assertThat(workflow.getGeneratedPlan()).isNull();
+        assertThat(codec.readGeneratedPlan(workflow.getGeneratedPlan())).isEqualTo(generatedPlan());
         assertThat(workflow.getPreCheckResult()).contains("Nur im Pre-Check");
         assertThat(workflow.getAcknowledgedWarningIndices()).containsExactly(0);
         assertNoActivePlan(f);
@@ -88,11 +89,52 @@ class PlanDraftMaterializationIntegrationTest {
     }
 
     @Test
+    void successfulAssumptionRegenerationAtomicallyReplacesExistingDraft() {
+        Fixture f = runningWorkflow();
+        var first = new GeneratedPlanResponse(generatedPlan().sections(), List.of(
+                new GeneratedCriticalAssumption("Material ist vorhanden.", false)));
+        assertThat(workflowService.recordSuccess(f.workflowId(), first)).isTrue();
+        UUID draftId = drafts.findByProjectId(f.projectId()).orElseThrow().getId();
+
+        inTransaction(() -> {
+            var workflow = workflows.findByIdForUpdate(f.workflowId()).orElseThrow();
+            var review = new AssumptionReviewRequest(List.of(
+                    new AssumptionDecisionRequest(0, AssumptionDecision.REJECTED, null)));
+            workflow.prepareAssumptionRegeneration(
+                    codec.writeAssumptionContext(new GenerationAssumptionContext(
+                            List.of(), List.of(new RejectedCriticalAssumption(
+                            "Material ist vorhanden.", null)))),
+                    codec.writeAssumptionReview(review));
+        });
+        assertThat(workflowService.claimWork(f.workflowId())).isPresent();
+
+        var replacement = new GeneratedPlanResponse(List.of(new GeneratedSection(
+                "replacement", "Neu geplant", null, 1,
+                List.of(
+                        task("replacement-1", "Neue Aufgabe 1", 1, null, List.of()),
+                        task("replacement-2", "Neue Aufgabe 2", 2, null, List.of()),
+                        task("replacement-3", "Neue Aufgabe 3", 3, null, List.of())),
+                List.of())), List.of());
+        assertThat(workflowService.recordSuccess(f.workflowId(), replacement)).isTrue();
+
+        readDraft(f, draft -> {
+            assertThat(draft.getId()).isEqualTo(draftId);
+            assertThat(draft.getSections()).extracting(DraftSection::getTitle)
+                    .containsExactly("Neu geplant");
+            assertThat(draft.getElements()).extracting(DraftPlanElement::getTitle)
+                    .containsExactlyInAnyOrder("Neue Aufgabe 1", "Neue Aufgabe 2", "Neue Aufgabe 3");
+        });
+        assertThat(workflows.findById(f.workflowId()).orElseThrow().getStatus())
+                .isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+    }
+
+    @Test
     void directMaterializationJoinsCallerTransactionAndRollsBackWithIt() {
         Fixture f = runningWorkflow();
         var contents = mapper.map(generatedPlan());
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            assertThat(storage.materialize(f.workflowId(), contents)).isTrue();
+            assertThat(storage.materialize(f.workflowId(), contents,
+                    codec.writeGeneratedPlan(generatedPlan()), false)).isTrue();
             assertThat(drafts.findByProjectId(f.projectId())).isPresent();
             assertThat(workflows.findById(f.workflowId()).orElseThrow().getStatus())
                     .isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
@@ -126,7 +168,7 @@ class PlanDraftMaterializationIntegrationTest {
             jdbc.update("insert into draft_task_prerequisites "
                     + "(successor_draft_task_id, prerequisite_draft_task_id) values (null, null)");
             return result;
-        }).when(storage).materialize(eq(f.workflowId()), any());
+        }).when(storage).materialize(eq(f.workflowId()), any(), anyString(), anyBoolean());
         stubGeneration(generatedPlan());
 
         // The failure transaction must commit independently, even if an outer caller rolls back.
@@ -144,7 +186,7 @@ class PlanDraftMaterializationIntegrationTest {
         assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
 
         // After an explicit manual repair/retry, only the existing workflow is reused.
-        doCallRealMethod().when(storage).materialize(eq(f.workflowId()), any());
+        doCallRealMethod().when(storage).materialize(eq(f.workflowId()), any(), anyString(), anyBoolean());
         prepareRetry(f);
         assertThat(workflowService.recordSuccess(f.workflowId(), generatedPlan())).isTrue();
         assertCompleteDraft(f);
@@ -167,7 +209,7 @@ class PlanDraftMaterializationIntegrationTest {
     @Test
     void providerFailureAndRetryUseOnlyWorkflowUntilFirstSuccess() {
         Fixture f = runningWorkflow();
-        when(generation.generatePlan(any(), anyList(), anyInt(), anyString(), any(Runnable.class)))
+        when(generation.generatePlan(any(), anyList(), anyInt(), anyString(), anyList(), anyList(), any(Runnable.class)))
                 .thenThrow(new AiTechnicalException(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, "Nicht erreichbar"));
         coordinator.generateClaimed(work(f));
         assertNoDraft(f);
@@ -270,7 +312,7 @@ class PlanDraftMaterializationIntegrationTest {
     }
 
     private void stubGeneration(GeneratedPlanResponse response) {
-        doReturn(response).when(generation).generatePlan(any(), anyList(), anyInt(), anyString(), any(Runnable.class));
+        doReturn(response).when(generation).generatePlan(any(), anyList(), anyInt(), anyString(), anyList(), anyList(), any(Runnable.class));
     }
 
     private AiGenerationWork work(Fixture f) {
@@ -304,8 +346,6 @@ class PlanDraftMaterializationIntegrationTest {
             assertThat(last.getPrerequisites()).extracting(DraftTask::getId).containsExactly(second.getId());
             assertThat(first.getPriority()).isEqualTo(TaskPriority.MEDIUM);
             assertThat(last.getPriority()).isEqualTo(TaskPriority.HIGH);
-            assertThat(first.getCriticalAssumption()).isEqualTo("Material verfügbar.\nUnverändert übernehmen.");
-            assertThat(first.isHasCriticalAssumption()).isTrue();
             assertThat(first.getAiOrigin()).isEqualTo(GeneratedElementOrigin.USER_INPUT);
             assertThat(last.getAiOrigin()).isEqualTo(GeneratedElementOrigin.AI_INFERRED);
             assertThat(first.getEstimatedHours()).isEqualTo(4);
@@ -323,8 +363,6 @@ class PlanDraftMaterializationIntegrationTest {
                 assertThat(m.getDueDate()).isEqualTo(LocalDate.of(2026, 9, 20));
                 assertThat(m.getDraftSection().getTitle()).isEqualTo("Abschluss");
             });
-            assertThat(draft.getElements()).noneSatisfy(e ->
-                    assertThat(e.getCriticalAssumption()).contains("Nur im Pre-Check"));
         });
     }
 
@@ -360,12 +398,12 @@ class PlanDraftMaterializationIntegrationTest {
                         List.of(task("second", "Zweite Aufgabe", 2, null, List.of("first")),
                                 new GeneratedTask("first", "Erste Aufgabe", "Beschreibung", 4,
                                         LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
-                                        "Material verfügbar.\nUnverändert übernehmen.", GeneratedElementOrigin.USER_INPUT, 1)),
+                                        GeneratedElementOrigin.USER_INPUT, 1)),
                         List.of(new GeneratedMilestone("ready", "Bereit", null, 3)))));
     }
 
     private GeneratedTask task(String key, String title, int order, TaskPriority priority, List<String> prerequisites) {
-        return new GeneratedTask(key, title, null, null, null, null, null,
+        return new GeneratedTask(key, title, null, null, null, null,
                 GeneratedElementOrigin.AI_INFERRED, order, prerequisites, priority);
     }
 

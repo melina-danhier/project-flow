@@ -16,9 +16,7 @@ public interface DraftMapper {
     @Mapping(target = "projectStartDate", source = "project.startDate")
     @Mapping(target = "projectEndDate", source = "project.endDate")
     @Mapping(target = "categoryLabel", ignore = true)
-    @Mapping(target = "uncheckedCriticalTasks", ignore = true)
     @Mapping(target = "activeReviewStatus", ignore = true)
-    @Mapping(target = "criticalAssumptionsOnly", ignore = true)
     @Mapping(target = "reviewedElementCount", ignore = true)
     @Mapping(target = "totalElementCount", ignore = true)
     @Mapping(target = "pendingElementCount", ignore = true)
@@ -36,8 +34,6 @@ public interface DraftMapper {
         target.setSortOrder(source.getSortOrder());
         target.setReviewStatus(source.getReviewStatus());
         target.setOrigin(source.getOrigin());
-        target.setHasCriticalAssumption(source.isHasCriticalAssumption());
-        target.setCriticalAssumption(source.getCriticalAssumption());
         if (source instanceof DraftTask task) {
             target.setPriority(task.getPriority());
             target.setType("TASK");

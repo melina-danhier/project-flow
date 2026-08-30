@@ -38,20 +38,20 @@ class OpenAiProjectFlowAIClientTest {
         var section = new OpenAiGenerationOutput.Section(
                 (Optional<String>) null, "Section", null, 1, List.of(), List.of());
         var task = new OpenAiGenerationOutput.Task(
-                "task-1", "Aufgabe", null, null, null, null, null,
+                "task-1", "Aufgabe", null, null, null, null,
                 GeneratedElementOrigin.AI_INFERRED, 1, List.of(), null);
         var milestone = new OpenAiGenerationOutput.Milestone((Optional<String>) null, "Meilenstein", null, 1);
 
         assertThat(Arrays.asList(
                 section.tempId(), section.description(),
                 task.description(), task.estimatedHours(), task.startDate(), task.dueDate(),
-                task.criticalAssumption(), task.priority(), milestone.tempId(), milestone.date()))
+                task.priority(), milestone.tempId(), milestone.date()))
                 .allSatisfy(value -> assertThat(value).isEmpty());
 
         assertThat(new OpenAiGenerationOutput.Section(
                 (String) null, "Section", null, 1, List.of(), List.of())).isEqualTo(section);
         assertThat(new OpenAiGenerationOutput.Task(
-                "task-1", "Aufgabe", null, null, null, null, null,
+                "task-1", "Aufgabe", null, null, null, null,
                 GeneratedElementOrigin.AI_INFERRED, 1)).isEqualTo(task);
         assertThat(new OpenAiGenerationOutput.Milestone((String) null, "Meilenstein", null, 1))
                 .isEqualTo(milestone);
@@ -64,12 +64,12 @@ class OpenAiProjectFlowAIClientTest {
         var hours = Optional.of(3);
         var section = new OpenAiGenerationOutput.Section(text, "Section", text, 1, List.of(), List.of());
         var task = new OpenAiGenerationOutput.Task(
-                "task-1", "Aufgabe", text, hours, date, date, text,
+                "task-1", "Aufgabe", text, hours, date, date,
                 GeneratedElementOrigin.AI_INFERRED, 1, List.of(), text);
         var milestone = new OpenAiGenerationOutput.Milestone(text, "Meilenstein", date, 1);
 
         assertThat(List.of(section.tempId(), section.description(), task.description(),
-                task.criticalAssumption(), task.priority(), milestone.tempId())).containsOnly(text);
+                task.priority(), milestone.tempId())).containsOnly(text);
         assertThat(List.of(task.startDate(), task.dueDate(), milestone.date()))
                 .containsOnly(date);
         assertThat(task.estimatedHours()).isEqualTo(hours);
@@ -192,7 +192,7 @@ class OpenAiProjectFlowAIClientTest {
                                 "section-1", "Section", null, 1,
                                 List.of(new OpenAiGenerationOutput.Task(
                                         "task-1", "Aufgabe", null, Optional.of(1),
-                                        null, null, null,
+                                        null, null,
                                         GeneratedElementOrigin.AI_INFERRED, 1, List.of(), priority)),
                                 List.of())));
             }

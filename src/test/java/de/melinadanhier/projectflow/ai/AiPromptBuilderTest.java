@@ -9,6 +9,8 @@ import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
+import de.melinadanhier.projectflow.ai.model.generation.RejectedCriticalAssumption;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -57,6 +59,27 @@ class AiPromptBuilderTest {
                 .isEqualTo(objectMapper.valueToTree(snapshot()));
         assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("acknowledgedPreCheckWarnings"))
                 .isEqualTo(objectMapper.valueToTree(warnings));
+    }
+
+    @Test
+    void regenerationPromptContainsBindingAssumptionReviewContext() {
+        var request = new AiGenerationRequest(snapshot(), List.of(), List.of(),
+                List.of("Cloud-Dienste dürfen eingesetzt werden."),
+                List.of(new RejectedCriticalAssumption(
+                        "Zehn Stunden pro Woche stehen bereit.", "Es sind vier Stunden.")),
+                AiPromptVersions.GENERATION_PROMPT);
+
+        var prompt = generationPromptBuilder.build(request);
+
+        assertThat(prompt.systemInstructions())
+                .contains("ausschließlich global", "nicht erneut als Annahmen", "bloße Verneinung");
+        var data = objectMapper.readTree(prompt.confirmedUserData());
+        assertThat(data.at("/confirmedAssumptions/0").asText())
+                .isEqualTo("Cloud-Dienste dürfen eingesetzt werden.");
+        assertThat(data.at("/rejectedAssumptions/0/statement").asText())
+                .isEqualTo("Zehn Stunden pro Woche stehen bereit.");
+        assertThat(data.at("/rejectedAssumptions/0/correction").asText())
+                .isEqualTo("Es sind vier Stunden.");
     }
 
     private AiWizardSnapshot snapshot() {

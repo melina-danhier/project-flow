@@ -270,14 +270,15 @@ class AiOutputParserTest {
                     "tasks":[
                       {"tempId":"task-1","title":"Umzugskartons packen","description":"Zimmerweise packen",
                        "estimatedHours":4,"startDate":"2026-08-25","dueDate":"2026-08-26",
-                       "criticalAssumption":"Kartons sind vorhanden","origin":"USER_INPUT","order":1},
+                       "origin":"USER_INPUT","order":1},
                       {"tempId":"task-2","title":"Transport organisieren","description":"Fahrzeug reservieren",
                        "estimatedHours":2,"startDate":"2026-08-25","dueDate":"2026-08-26",
                        "origin":"AI_INFERRED","order":2}
                     ],
                     "milestones":[{"tempId":"milestone-1","title":"Vorbereitung abgeschlossen",
                                    "date":"2026-08-27","order":1}]
-                  }]
+                  }],
+                  "criticalAssumptions":[{"statement":"Kartons sind vorhanden","correctionRequiredIfRejected":false}]
                 }
                 """;
     }

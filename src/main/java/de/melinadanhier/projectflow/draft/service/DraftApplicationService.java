@@ -12,6 +12,7 @@ import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
@@ -43,27 +44,33 @@ public class DraftApplicationService {
 
     @Transactional
     public UUID apply(UUID projectId, UUID userId) {
-        return apply(projectId, userId, null, false, false);
+        return apply(projectId, userId, null, false);
     }
 
     @Transactional
     public UUID confirmAndApply(UUID projectId, UUID userId, long lockVersion) {
-        return apply(projectId, userId, lockVersion, true, true);
+        return apply(projectId, userId, lockVersion, true);
     }
 
     @Transactional
     public UUID continueWithPending(UUID projectId, UUID userId, long lockVersion) {
-        return apply(projectId, userId, lockVersion, true, false);
+        return apply(projectId, userId, lockVersion, true);
     }
 
     @Transactional
     public UUID confirmAndApply(UUID projectId, UUID userId, long lockVersion, boolean includePending) {
-        return apply(projectId, userId, lockVersion, includePending, true);
+        return apply(projectId, userId, lockVersion, includePending);
     }
 
     private UUID apply(UUID projectId, UUID userId, Long confirmedVersion,
-                       boolean includePending, boolean criticalAssumptionsConfirmed) {
+                       boolean includePending) {
         authorizationService.requireOwner(projectId, userId);
+        workflowRepository.findByProjectId(projectId).ifPresent(workflow -> {
+            if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED
+                    && workflow.getStatus() != AiPlanGenerationWorkflowStatus.DRAFT_APPLIED) {
+                throw new ConflictException("Bitte schließe zuerst die Prüfung der kritischen Annahmen ab.");
+            }
+        });
         DraftPlan draft = planDraftRepository.findForUpdateByProjectId(projectId)
                 .orElseThrow(() -> new ConflictException(
                         "Für dieses Projekt ist kein Planentwurf vorhanden."));
@@ -90,9 +97,6 @@ public class DraftApplicationService {
         var review = fullReview(draft);
         if (!includePending && review.getPendingElementCount() > 0) {
             throw new PendingDraftElementsConfirmationRequiredException(review);
-        }
-        if (!criticalAssumptionsConfirmed && !review.getUncheckedCriticalTasks().isEmpty()) {
-            throw new CriticalAssumptionsConfirmationRequiredException(review, includePending);
         }
         validationService.validate(draft);
 

@@ -52,7 +52,7 @@ public class DraftValidationService {
             validationSections.add(validationSection("unsectioned-review-elements", "Ohne Bereich", null,
                     validationOrder, unsectioned));
         }
-        var plan = new GeneratedPlanResponse(validationSections);
+        var plan = new GeneratedPlanResponse(validationSections, java.util.List.of());
         var result = generationValidator.validatePlan(plan, snapshot);
         if (!result.isValid()) {
             throw new DomainValidationException("Der Entwurf kann noch nicht übernommen werden: "
@@ -62,7 +62,7 @@ public class DraftValidationService {
 
     private GeneratedTask task(DraftTask task) {
         return new GeneratedTask(task.getId().toString(), task.getTitle(), task.getDescription(),
-                task.getEstimatedHours(), task.getStartDate(), task.getDueDate(), task.getCriticalAssumption(),
+                task.getEstimatedHours(), task.getStartDate(), task.getDueDate(),
                 generatedOrigin(task), task.getSortOrder() + 1, task.getPrerequisites().stream()
                 .map(prerequisite -> prerequisite.getId().toString()).toList(), task.getPriority());
     }
