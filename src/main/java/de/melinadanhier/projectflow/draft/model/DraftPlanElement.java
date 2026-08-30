@@ -61,22 +61,6 @@ public abstract class DraftPlanElement extends MutableEntity {
     @Column(name = "ai_origin", nullable = false, length = 20)
     private ElementOrigin origin = ElementOrigin.AI;
 
-    @Column(name = "has_critical_assumption", nullable = false)
-    private boolean hasCriticalAssumption;
-
-    @Size(max = 2000)
-    @Column(name = "critical_assumption", length = 2000)
-    private String criticalAssumption;
-
-    public void setCriticalAssumption(String value) {
-        criticalAssumption = value == null || value.isBlank() ? null : value.strip();
-        hasCriticalAssumption = criticalAssumption != null;
-    }
-
-    public boolean isHasCriticalAssumption() {
-        return criticalAssumption != null && !criticalAssumption.isBlank();
-    }
-
     public void markContentModified() {
         origin = origin.modifiedByUser();
     }

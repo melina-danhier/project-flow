@@ -101,6 +101,14 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     @ColumnTransformer(write = "CAST(? AS JSONB)")
     private String generatedPlan;
 
+    @Column(name = "generation_assumption_context", columnDefinition = "jsonb")
+    @ColumnTransformer(write = "CAST(? AS JSONB)")
+    private String generationAssumptionContext;
+
+    @Column(name = "pending_assumption_review", columnDefinition = "jsonb")
+    @ColumnTransformer(write = "CAST(? AS JSONB)")
+    private String pendingAssumptionReview;
+
     @NotBlank
     @Size(max = 100)
     @Column(name = "generation_prompt_version", nullable = false, updatable = false, length = 100)
@@ -227,10 +235,53 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         generationTotalAttemptCount++;
     }
 
-    public void recordGenerationCompleted() {
+    public void recordGenerationCompleted(String serializedPlan, boolean assumptionsNeedReview) {
         requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
+        generatedPlan = serializedPlan;
+        pendingAssumptionReview = null;
+        clearError();
+        status = assumptionsNeedReview
+                ? AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING
+                : AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
+    }
+
+    public void confirmAssumptions() {
+        requireStatus(AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING);
+        pendingAssumptionReview = null;
+        status = AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
+    }
+
+    public void confirmAssumptionsAfterFailedRegeneration() {
+        requireFailedAssumptionRegeneration();
+        pendingAssumptionReview = null;
         clearError();
         status = AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
+    }
+
+    public void prepareAssumptionRegeneration(String serializedContext, String serializedReview) {
+        requireStatus(AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING);
+        generationAssumptionContext = serializedContext;
+        pendingAssumptionReview = serializedReview;
+        generationRoundAttemptCount = 0;
+        clearError();
+        status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
+    }
+
+    public void prepareFailedAssumptionRegeneration(String serializedContext, String serializedReview) {
+        requireFailedAssumptionRegeneration();
+        generationAssumptionContext = serializedContext;
+        pendingAssumptionReview = serializedReview;
+        generationRoundAttemptCount = 0;
+        clearError();
+        status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
+    }
+
+    private void requireFailedAssumptionRegeneration() {
+        if ((status != AiPlanGenerationWorkflowStatus.GENERATION_FAILED
+                && status != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
+                || pendingAssumptionReview == null) {
+            throw new IllegalStateException("Es liegt keine fehlgeschlagene Annahmen-Neugenerierung vor.");
+        }
     }
 
     public void recordGenerationFailure(AiTechnicalError error) {

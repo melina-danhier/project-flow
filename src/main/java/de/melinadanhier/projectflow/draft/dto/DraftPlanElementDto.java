@@ -24,8 +24,6 @@ public class DraftPlanElementDto {
     private int manualPosition;
     private DraftReviewStatus reviewStatus;
     private ElementOrigin origin;
-    private boolean hasCriticalAssumption;
-    private String criticalAssumption;
     private String type;
     private LocalDate startDate;
     private LocalDate dueDate;

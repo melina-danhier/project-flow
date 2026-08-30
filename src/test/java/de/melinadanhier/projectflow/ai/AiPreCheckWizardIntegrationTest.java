@@ -99,7 +99,7 @@ class AiPreCheckWizardIntegrationTest {
         verify(aiClient).preCheck(any());
         verify(aiClient).generatePlan(any());
         assertThat(workflowRepository.findById(workflowId).orElseThrow().getGeneratedPlan())
-                .isNull();
+                .contains("criticalAssumptions");
         UUID projectId = workflowRepository.findById(workflowId).orElseThrow().getProject().getId();
         mockMvc.perform(get(statusUrl(workflowId)).with(user(new AuthenticatedUser(
                         owner.getId(), owner.getEmail(), owner.getPasswordHash(), true))))
@@ -361,7 +361,7 @@ class AiPreCheckWizardIntegrationTest {
     private GeneratedTask generatedTask(String id, String title, int order) {
         return new GeneratedTask(id, title, null, 1,
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20),
-                null, GeneratedElementOrigin.AI_INFERRED, order);
+                GeneratedElementOrigin.AI_INFERRED, order);
     }
 
     private AiWizardSnapshot snapshot() {

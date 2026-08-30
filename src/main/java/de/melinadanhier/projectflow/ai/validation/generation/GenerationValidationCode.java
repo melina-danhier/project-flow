@@ -12,6 +12,9 @@ public enum GenerationValidationCode {
     REQUEST_MISSING("Die zugehörige Generierungsanfrage fehlt."),
     WIZARD_DATA_MISSING("Die bestätigten Wizard-Daten fehlen."),
     BEAN_VALIDATION_FAILED("Eine Angabe verletzt die Validierungsregeln."),
+    CRITICAL_ASSUMPTIONS_MISSING("Die globale Liste kritischer Annahmen fehlt."),
+    CRITICAL_ASSUMPTION_INVALID("Eine kritische Annahme fehlt oder ist leer."),
+    CRITICAL_ASSUMPTION_DUPLICATE("Eine kritische Annahme wird mehrfach ausgegeben."),
 
     SECTION_MISSING("Es wurde kein Bereich erzeugt."),
     SECTION_INVALID("Der Plan enthält einen leeren Bereich."),

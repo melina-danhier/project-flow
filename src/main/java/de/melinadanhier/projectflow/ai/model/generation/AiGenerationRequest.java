@@ -14,6 +14,8 @@ public record AiGenerationRequest(
         @NotNull @Valid AiWizardSnapshot confirmedWizardData,
         List<@Valid AiPreCheckProblem> acknowledgedWarnings,
         List<String> previousValidationIssues,
+        List<String> confirmedAssumptions,
+        List<RejectedCriticalAssumption> rejectedAssumptions,
         @NotNull String promptVersion
 ) {
     public AiGenerationRequest {
@@ -29,13 +31,15 @@ public record AiGenerationRequest(
         previousValidationIssues = previousValidationIssues == null
                 ? List.of()
                 : List.copyOf(previousValidationIssues);
+        confirmedAssumptions = confirmedAssumptions == null ? List.of() : List.copyOf(confirmedAssumptions);
+        rejectedAssumptions = rejectedAssumptions == null ? List.of() : List.copyOf(rejectedAssumptions);
     }
 
     public AiGenerationRequest(
             AiWizardSnapshot confirmedWizardData,
             List<AiPreCheckProblem> acknowledgedWarnings
     ) {
-        this(confirmedWizardData, acknowledgedWarnings, List.of(), AiPromptVersions.GENERATION_PROMPT);
+        this(confirmedWizardData, acknowledgedWarnings, List.of(), List.of(), List.of(), AiPromptVersions.GENERATION_PROMPT);
     }
 
     public AiGenerationRequest(
@@ -43,6 +47,6 @@ public record AiGenerationRequest(
             List<AiPreCheckProblem> acknowledgedWarnings,
             List<String> previousValidationIssues
     ) {
-        this(confirmedWizardData, acknowledgedWarnings, previousValidationIssues, AiPromptVersions.GENERATION_PROMPT);
+        this(confirmedWizardData, acknowledgedWarnings, previousValidationIssues, List.of(), List.of(), AiPromptVersions.GENERATION_PROMPT);
     }
 }

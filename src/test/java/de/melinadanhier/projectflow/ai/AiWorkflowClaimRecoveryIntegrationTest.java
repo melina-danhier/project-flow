@@ -53,7 +53,7 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         workflowRepository.saveAndFlush(completed);
         workflowRepository.claimGeneration(completed.getId(), Instant.now());
         completed = workflowRepository.findById(completed.getId()).orElseThrow();
-        completed.recordGenerationCompleted();
+        completed.recordGenerationCompleted("{\"sections\":[],\"criticalAssumptions\":[]}", false);
         workflowRepository.saveAndFlush(completed);
         jdbcTemplate.update("update ai_plan_generation_workflows set updated_at = ? where id = ?", old, completed.getId());
 

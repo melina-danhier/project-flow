@@ -179,17 +179,25 @@ class DraftPostgresMigrationTest {
                               String category, String legacy, String expected) {}
 
     @Test
-    void allMigrationsAndHibernateValidationPreserveNullableDraftAssumptions() {
+    void allMigrationsRemoveElementAssumptionsAndAddWorkflowContext() {
         assertThat(jdbc.queryForObject("""
-                select character_maximum_length from information_schema.columns
+                select count(*) from information_schema.columns
                 where table_schema = 'public' and table_name = 'draft_plan_elements'
                 and column_name = 'critical_assumption'
-                """, Integer.class)).isEqualTo(2000);
+                """, Integer.class)).isZero();
         assertThat(jdbc.queryForObject("""
-                select is_nullable from information_schema.columns
-                where table_schema = 'public' and table_name = 'draft_plan_elements'
-                and column_name = 'critical_assumption'
-                """, String.class)).isEqualTo("YES");
+                select count(*) from information_schema.columns
+                where table_schema = 'public' and table_name = 'ai_plan_generation_workflows'
+                and column_name in ('generation_assumption_context', 'pending_assumption_review')
+                """, Integer.class)).isEqualTo(2);
+        String statusConstraint = jdbc.queryForObject("""
+                select pg_get_constraintdef(oid)
+                from pg_constraint
+                where conname = 'ck_ai_workflows_status'
+                """, String.class);
+        assertThat(statusConstraint)
+                .contains("ASSUMPTIONS_REVIEW_PENDING")
+                .doesNotContain("PRE_CHECK_PASSED");
         assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success = false", Integer.class)).isZero();
     }
 }

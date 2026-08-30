@@ -19,7 +19,6 @@ public record GeneratedTask(
         @Positive @Max(MAX_ESTIMATED_HOURS) Integer estimatedHours,
         LocalDate startDate,
         LocalDate dueDate,
-        @Size(max = MAX_DESCRIPTION_LENGTH) String criticalAssumption,
         @NotNull GeneratedElementOrigin origin,
         @Positive int order,
         @NotNull List<@NotBlank @Size(max = 100) String> prerequisiteTaskTempIds,
@@ -29,24 +28,22 @@ public record GeneratedTask(
         tempId = trim(tempId);
         title = trim(title);
         description = trim(description);
-        criticalAssumption = criticalAssumption == null || criticalAssumption.isBlank() ? null
-                : criticalAssumption.strip();
         prerequisiteTaskTempIds = prerequisiteTaskTempIds == null ? null
                 : prerequisiteTaskTempIds.stream().map(GeneratedTask::trim).toList();
     }
 
     public GeneratedTask(String tempId, String title, String description, Integer estimatedHours,
-                         LocalDate startDate, LocalDate dueDate, String criticalAssumption,
+                         LocalDate startDate, LocalDate dueDate,
                          GeneratedElementOrigin origin, int order) {
-        this(tempId, title, description, estimatedHours, startDate, dueDate, criticalAssumption,
+        this(tempId, title, description, estimatedHours, startDate, dueDate,
                 origin, order, List.of(), null);
     }
 
     public GeneratedTask(String tempId, String title, String description, Integer estimatedHours,
-                         LocalDate startDate, LocalDate dueDate, String criticalAssumption,
+                         LocalDate startDate, LocalDate dueDate,
                          GeneratedElementOrigin origin, int order,
                          List<String> prerequisiteTaskTempIds) {
-        this(tempId, title, description, estimatedHours, startDate, dueDate, criticalAssumption,
+        this(tempId, title, description, estimatedHours, startDate, dueDate,
                 origin, order, prerequisiteTaskTempIds, null);
     }
 

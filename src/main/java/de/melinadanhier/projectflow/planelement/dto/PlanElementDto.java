@@ -19,5 +19,4 @@ public class PlanElementDto {
     private String description;
     private int sortOrder;
     private ElementOrigin origin;
-    private boolean hasCriticalAssumption;
 }

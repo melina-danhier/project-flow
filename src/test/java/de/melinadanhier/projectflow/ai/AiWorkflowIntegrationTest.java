@@ -153,10 +153,10 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getConsentConfirmedAt()).isNotNull();
         assertThat(workflow.getConsentVersion()).isEqualTo(AiWorkflowInitializationService.CONSENT_VERSION);
         assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo("1.0");
-        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("2.0");
+        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("3.0");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
         assertThat(workflow.getPreCheckRetryCount()).isZero();
-        assertThat(workflow.getGeneratedPlan()).isNull();
+        assertThat(snapshotCodec.readGeneratedPlan(workflow.getGeneratedPlan())).isEqualTo(generatedPlan());
         assertThat(transactionActiveDuringAiCall).isFalse();
         assertThat(transactionActiveDuringGenerationCall).isFalse();
         assertThat(committedWorkflowVisibleDuringAiCall).isTrue();
@@ -455,7 +455,7 @@ class AiWorkflowIntegrationTest {
     private GeneratedTask generatedTask(String id, String title, int order) {
         return new GeneratedTask(id, title, null, 1,
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20),
-                null, GeneratedElementOrigin.AI_INFERRED, order);
+                GeneratedElementOrigin.AI_INFERRED, order);
     }
 
     private User saveUser(String email) {

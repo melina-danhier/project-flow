@@ -130,6 +130,20 @@ public interface AiPlanGenerationWorkflowRepository
 
     Optional<AiPlanGenerationWorkflow> findByProjectId(UUID projectId);
 
+    @Query("""
+            select workflow
+            from AiPlanGenerationWorkflow workflow
+            join workflow.project.memberships membership
+            where workflow.project.id = :projectId
+              and membership.user.id = :userId
+              and membership.active = true
+              and membership.role = de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole.OWNER
+            """)
+    Optional<AiPlanGenerationWorkflow> findOwnedByProjectId(
+            @Param("projectId") UUID projectId,
+            @Param("userId") UUID userId
+    );
+
     @Query("select workflow.id from AiPlanGenerationWorkflow workflow where workflow.status = :status")
     List<UUID> findIdsByStatus(@Param("status") AiPlanGenerationWorkflowStatus status);
 

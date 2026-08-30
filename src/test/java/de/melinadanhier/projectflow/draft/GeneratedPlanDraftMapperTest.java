@@ -67,7 +67,7 @@ class GeneratedPlanDraftMapperTest {
     }
 
     private GeneratedTask task(String id, List<String> prerequisites) {
-        return new GeneratedTask(id, "Aufgabe", null, null, null, null, null,
+        return new GeneratedTask(id, "Aufgabe", null, null, null, null,
                 GeneratedElementOrigin.AI_INFERRED, 1, prerequisites);
     }
 }

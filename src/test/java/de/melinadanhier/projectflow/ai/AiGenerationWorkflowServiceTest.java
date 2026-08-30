@@ -35,14 +35,16 @@ class AiGenerationWorkflowServiceTest {
         UUID workflowId = UUID.randomUUID();
         MappedDraft contents = new MappedDraft(List.of(), List.of());
         when(mapper.map(result)).thenReturn(contents);
-        when(materializationService.materialize(workflowId, contents)).thenReturn(true);
+        when(result.criticalAssumptions()).thenReturn(List.of());
+        when(payloadCodec.writeGeneratedPlan(result)).thenReturn("{}");
+        when(materializationService.materialize(workflowId, contents, "{}", false)).thenReturn(true);
 
         assertThat(service().recordSuccess(workflowId, result)).isTrue();
 
         var order = inOrder(mapper, materializationService);
         order.verify(mapper).map(result);
-        order.verify(materializationService).materialize(workflowId, contents);
-        verifyNoInteractions(workflowRepository, payloadCodec);
+        order.verify(materializationService).materialize(workflowId, contents, "{}", false);
+        verifyNoInteractions(workflowRepository);
     }
 
     @Test
@@ -58,7 +60,9 @@ class AiGenerationWorkflowServiceTest {
         UUID workflowId = UUID.randomUUID();
         MappedDraft contents = new MappedDraft(List.of(), List.of());
         when(mapper.map(result)).thenReturn(contents);
-        when(materializationService.materialize(workflowId, contents))
+        when(result.criticalAssumptions()).thenReturn(List.of());
+        when(payloadCodec.writeGeneratedPlan(result)).thenReturn("{}");
+        when(materializationService.materialize(workflowId, contents, "{}", false))
                 .thenThrow(new IllegalStateException("Draft konnte nicht gespeichert werden"));
         assertThatThrownBy(() -> service().recordSuccess(workflowId, result))
                 .isInstanceOf(IllegalStateException.class);

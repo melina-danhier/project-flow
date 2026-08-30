@@ -102,7 +102,6 @@ public class GeneratedPlanDraftMapper {
         task.setEstimatedHours(generated.estimatedHours());
         task.setPriority(generated.priority() == null ? TaskPriority.MEDIUM : generated.priority());
         task.setSortOrder(generated.order());
-        task.setCriticalAssumption(generated.criticalAssumption());
         task.setAiOrigin(generated.origin());
         section.addElement(task);
         elements.add(task);

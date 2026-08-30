@@ -29,7 +29,6 @@ public class DraftReviewDto {
     private Instant generatedAt;
     private SortMode sortMode;
     private DraftReviewStatus activeReviewStatus;
-    private boolean criticalAssumptionsOnly;
     private int reviewedElementCount;
     private int totalElementCount;
     private List<DraftSectionDto> sections = new ArrayList<>();
@@ -40,12 +39,4 @@ public class DraftReviewDto {
         return totalElementCount - reviewedElementCount;
     }
 
-    public List<DraftPlanElementDto> getUncheckedCriticalTasks() {
-        return elements.stream()
-                .filter(element -> "TASK".equals(element.getType()))
-                .filter(element -> element.getReviewStatus() != DraftReviewStatus.REJECTED)
-                .filter(element -> element.getCriticalAssumption() != null
-                        && !element.getCriticalAssumption().isBlank())
-                .toList();
-    }
 }

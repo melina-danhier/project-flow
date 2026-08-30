@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import de.melinadanhier.projectflow.ai.model.generation.RejectedCriticalAssumption;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +36,7 @@ public class AiPlanGenerationService {
             List<AiPreCheckProblem> acknowledgedWarnings
     ) {
         return generatePlan(confirmedSnapshot, acknowledgedWarnings, 0,
-                AiPromptVersions.GENERATION_PROMPT, () -> { });
+                AiPromptVersions.GENERATION_PROMPT, List.of(), List.of(), () -> { });
     }
 
     public GeneratedPlanResponse generatePlan(
@@ -43,10 +44,13 @@ public class AiPlanGenerationService {
             List<AiPreCheckProblem> acknowledgedWarnings,
             int alreadyUsedAttempts,
             String promptVersion,
+            List<String> confirmedAssumptions,
+            List<RejectedCriticalAssumption> rejectedAssumptions,
             Runnable beforeProviderCall
     ) {
         AiGenerationRequest request = new AiGenerationRequest(
-                confirmedSnapshot, acknowledgedWarnings, List.of(), promptVersion);
+                confirmedSnapshot, acknowledgedWarnings, List.of(), confirmedAssumptions,
+                rejectedAssumptions, promptVersion);
         int attempts = alreadyUsedAttempts;
         int maxAttempts = executionProperties.getMaxAttempts();
         while (true) {
@@ -73,6 +77,17 @@ public class AiPlanGenerationService {
                 waitBeforeRetry(attempts);
             }
         }
+    }
+
+    public GeneratedPlanResponse generatePlan(
+            AiWizardSnapshot confirmedSnapshot,
+            List<AiPreCheckProblem> acknowledgedWarnings,
+            int alreadyUsedAttempts,
+            String promptVersion,
+            Runnable beforeProviderCall
+    ) {
+        return generatePlan(confirmedSnapshot, acknowledgedWarnings, alreadyUsedAttempts,
+                promptVersion, List.of(), List.of(), beforeProviderCall);
     }
 
     private AiOutputValidationException invalidResponse(

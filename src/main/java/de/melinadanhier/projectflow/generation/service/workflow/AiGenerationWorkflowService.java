@@ -43,6 +43,7 @@ public class AiGenerationWorkflowService {
         AiPlanGenerationWorkflow workflow = require(workflowId);
         AiPreCheckResult result = payloadCodec.readPreCheckResult(workflow.getPreCheckResult());
         var acknowledgedIndices = workflow.getAcknowledgedWarningIndices();
+        var assumptionContext = payloadCodec.readAssumptionContext(workflow.getGenerationAssumptionContext());
         if (result.hasErrors()) {
             throw new IllegalStateException("Ein Workflow mit Pre-Check-Fehlern darf nicht generiert werden.");
         }
@@ -59,6 +60,8 @@ public class AiGenerationWorkflowService {
                 result.problems().stream()
                         .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
                         .toList(),
+                assumptionContext.confirmedAssumptions(),
+                assumptionContext.rejectedAssumptions(),
                 workflow.getGenerationRoundAttemptCount(),
                 workflow.getGenerationPromptVersion()));
     }
@@ -75,7 +78,9 @@ public class AiGenerationWorkflowService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public boolean recordSuccess(UUID workflowId, GeneratedPlanResponse result) {
         var contents = draftMapper.map(result);
-        return draftMaterializationService.materialize(workflowId, contents);
+        return draftMaterializationService.materialize(
+                workflowId, contents, payloadCodec.writeGeneratedPlan(result),
+                !result.criticalAssumptions().isEmpty());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

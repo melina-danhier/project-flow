@@ -149,7 +149,6 @@ public class ProjectService {
             copy.setDescription(source.getDescription());
             copy.setSortOrder(source.getSortOrder());
             copy.setOrigin(ElementOrigin.TEMPLATE);
-            copy.setHasCriticalAssumption(source.isHasCriticalAssumption());
             project.addSection(copy);
             sections.put(source, copy);
         }
@@ -197,7 +196,6 @@ public class ProjectService {
         copy.setDescription(source.getDescription());
         copy.setSortOrder(source.getSortOrder());
         copy.setOrigin(ElementOrigin.TEMPLATE);
-        copy.setHasCriticalAssumption(source.isHasCriticalAssumption());
         return copy;
     }
 

@@ -55,10 +55,4 @@ public abstract class PlanElement extends MutableEntity {
     @Column(name = "origin", nullable = false, length = 20)
     private ElementOrigin origin;
 
-    @Column(name = "has_critical_assumption", nullable = false)
-    private boolean hasCriticalAssumption;
-
-    @Size(max = 2000)
-    @Column(name = "critical_assumption", length = 2000)
-    private String criticalAssumption;
 }

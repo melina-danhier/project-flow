@@ -30,7 +30,7 @@ public class AiPlanGenerationCoordinator {
         try {
             GeneratedPlanResponse result = generationService.generatePlan(
                     work.snapshot(), work.acknowledgedWarnings(), work.roundAttemptCount(),
-                    work.promptVersion(),
+                    work.promptVersion(), work.confirmedAssumptions(), work.rejectedAssumptions(),
                     () -> workflowService.recordProviderCall(workflowId));
             workflowService.recordSuccess(workflowId, result);
         } catch (AiOutputValidationException exception) {

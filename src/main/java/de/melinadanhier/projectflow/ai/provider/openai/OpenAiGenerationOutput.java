@@ -9,8 +9,15 @@ import java.util.Optional;
 /** Provider-DTO für die automatische Schema-Erzeugung des OpenAI-SDKs. */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public record OpenAiGenerationOutput(
-        List<Section> sections
+        List<Section> sections,
+        List<CriticalAssumption> criticalAssumptions
 ) {
+    public OpenAiGenerationOutput(List<Section> sections) {
+        this(sections, List.of());
+    }
+
+    public record CriticalAssumption(String statement, boolean correctionRequiredIfRejected) {}
+
     public record Section(
             Optional<String> tempId,
             String title,
@@ -37,7 +44,6 @@ public record OpenAiGenerationOutput(
             Optional<Integer> estimatedHours,
             Optional<LocalDate> startDate,
             Optional<LocalDate> dueDate,
-            Optional<String> criticalAssumption,
             GeneratedElementOrigin origin,
             int order,
             List<String> prerequisiteTaskTempIds,
@@ -48,16 +54,15 @@ public record OpenAiGenerationOutput(
             estimatedHours = emptyIfNull(estimatedHours);
             startDate = emptyIfNull(startDate);
             dueDate = emptyIfNull(dueDate);
-            criticalAssumption = emptyIfNull(criticalAssumption);
             priority = emptyIfNull(priority);
         }
 
         public Task(String tempId, String title, Optional<String> description,
                     Optional<Integer> estimatedHours, Optional<LocalDate> startDate,
-                    Optional<LocalDate> dueDate, Optional<String> criticalAssumption,
+                    Optional<LocalDate> dueDate,
                     GeneratedElementOrigin origin, int order) {
             this(tempId, title, description, estimatedHours, startDate, dueDate,
-                    criticalAssumption, origin, order, List.of(), Optional.empty());
+                    origin, order, List.of(), Optional.empty());
         }
     }
 

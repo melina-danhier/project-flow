@@ -44,8 +44,16 @@ public final class AiResponseSchemas {
     }
 
     private static Map<String, Object> generatedPlanSchema() {
+        return object(Map.ofEntries(
+                entry("sections", array(sectionSchema(), MIN_SECTIONS, MAX_SECTIONS)),
+                entry("criticalAssumptions", array(criticalAssumptionSchema(), 0, MAX_CRITICAL_ASSUMPTIONS))
+        ));
+    }
+
+    private static Map<String, Object> criticalAssumptionSchema() {
         return object(Map.of(
-                "sections", array(sectionSchema(), MIN_SECTIONS, MAX_SECTIONS)
+                "statement", string(),
+                "correctionRequiredIfRejected", Map.of("type", "boolean")
         ));
     }
 
@@ -68,7 +76,6 @@ public final class AiResponseSchemas {
                 entry("estimatedHours", nullable(positiveInteger(MAX_ESTIMATED_HOURS))),
                 entry("startDate", nullable(date())),
                 entry("dueDate", nullable(date())),
-                entry("criticalAssumption", nullable(string())),
                 entry("origin", enumeration(GeneratedElementOrigin.class)),
                 entry("order", positiveInteger()),
                 entry("prerequisiteTaskTempIds", array(string(), 0, MAX_DEPENDENCIES)),

@@ -54,9 +54,6 @@ public class PlanSection extends MutableEntity {
     @Column(name = "origin", nullable = false, length = 20)
     private ElementOrigin origin;
 
-    @Column(name = "has_critical_assumption", nullable = false)
-    private boolean hasCriticalAssumption;
-
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "planSection")
     @OrderBy("sortOrder ASC")

@@ -59,9 +59,6 @@ public class DraftSection extends MutableEntity {
     @Column(name = "origin", nullable = false, length = 20)
     private ElementOrigin origin = ElementOrigin.AI;
 
-    @Column(name = "has_critical_assumption", nullable = false)
-    private boolean hasCriticalAssumption;
-
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "draftSection")
     @OrderBy("sortOrder ASC")

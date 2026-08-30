@@ -27,7 +27,6 @@
                 <label><input type="radio" name="reviewStatus" value="ACCEPTED" th:checked="${draft.activeReviewStatus != null and draft.activeReviewStatus.name() == 'ACCEPTED'}"> Übernommen</label>
                 <label><input type="radio" name="reviewStatus" value="REJECTED" th:checked="${draft.activeReviewStatus != null and draft.activeReviewStatus.name() == 'REJECTED'}"> Verworfen</label>
             </fieldset>
-            <label><input type="checkbox" name="criticalAssumptions" value="true" th:checked="${draft.criticalAssumptionsOnly}"> Nur mit kritischen Annahmen</label>
             <button type="submit">Filter anwenden</button>
         </form>
         <form class="sort-mode" th:if="${draft.status.name() != 'APPLIED'}" th:action="@{/projects/{projectId}/draft/sort-mode(projectId=${draft.projectId})}" method="post">
@@ -60,7 +59,6 @@
             <ol class="plan-elements" th:attr="data-section-id=${section.id}">
                 <li class="plan-element" th:each="element : ${section.elements}" th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-section-id=${section.id},data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
                     <div class="element-heading"><button type="button" class="drag-handle element-drag-handle" title="Element verschieben" aria-label="Element verschieben">↕</button><span class="element-icon" aria-hidden="true" th:text="${element.type == 'TASK' ? '☐' : '◆'}"></span><strong th:text="${element.title}"></strong><span class="element-type" th:text="${element.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span><span class="element-origin" th:text="${element.originLabel}"></span><span class="review-status" th:classappend="${' status-' + #strings.toLowerCase(element.reviewStatus.name())}" th:text="${element.reviewStatus.name() == 'PENDING' ? 'Offen' : (element.reviewStatus.name() == 'ACCEPTED' ? 'Übernommen' : 'Verworfen')}"></span>
-                        <span class="critical-assumption" th:if="${element.type == 'TASK' and element.criticalAssumption != null and !element.criticalAssumption.isBlank()}"><button type="button" class="assumption-toggle" aria-label="Kritische Annahme anzeigen" aria-expanded="false" th:attr="aria-controls=${'assumption-' + element.id},aria-describedby=${'assumption-' + element.id}"><span aria-hidden="true">!</span></button><span class="assumption-text" role="tooltip" tabindex="0" th:id="${'assumption-' + element.id}" th:text="${element.criticalAssumption}" hidden></span><noscript><span th:text="${element.criticalAssumption}"></span></noscript></span>
                     </div>
                     <div class="review-actions" th:if="${draft.status.name() != 'APPLIED'}">
                         <form th:if="${element.reviewStatus.name() != 'ACCEPTED'}" th:action="@{/projects/{projectId}/draft/elements/{elementId}/accept(projectId=${draft.projectId},elementId=${element.id})}" method="post"><input type="hidden" name="lockVersion" th:value="${draft.lockVersion}"><button type="submit">Übernehmen</button></form>
@@ -80,12 +78,11 @@
             </ol>
         </section>
     </div>
-    <section class="draft-section unsectioned" th:if="${!draft.unsectionedElements.isEmpty() or (draft.activeReviewStatus == null and !draft.criticalAssumptionsOnly)}">
+    <section class="draft-section unsectioned" th:if="${!draft.unsectionedElements.isEmpty() or draft.activeReviewStatus == null}">
         <div class="section-heading"><div class="section-title"><h2>Ohne Bereich</h2><p>Diese Elemente werden ohne persistierten Bereich übernommen.</p></div></div>
         <ol class="plan-elements" data-section-id="">
             <li class="plan-element" th:each="element : ${draft.unsectionedElements}" th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-section-id='',data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
                 <div class="element-heading"><button type="button" class="drag-handle element-drag-handle" title="Element verschieben" aria-label="Element verschieben">↕</button><span class="element-icon" aria-hidden="true" th:text="${element.type == 'TASK' ? '☐' : '◆'}"></span><strong th:text="${element.title}"></strong><span class="element-type" th:text="${element.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span><span class="element-origin" th:text="${element.originLabel}"></span><span class="review-status" th:classappend="${' status-' + #strings.toLowerCase(element.reviewStatus.name())}" th:text="${element.reviewStatus.name() == 'PENDING' ? 'Offen' : (element.reviewStatus.name() == 'ACCEPTED' ? 'Übernommen' : 'Verworfen')}"></span>
-                    <span class="critical-assumption" th:if="${element.criticalAssumption != null and !element.criticalAssumption.isBlank()}"><button type="button" class="assumption-toggle" aria-label="Kritische Annahme anzeigen" aria-expanded="false" th:attr="aria-controls=${'assumption-' + element.id},aria-describedby=${'assumption-' + element.id}"><span aria-hidden="true">!</span></button><span class="assumption-text" role="tooltip" tabindex="0" th:id="${'assumption-' + element.id}" th:text="${element.criticalAssumption}" hidden></span></span>
                 </div>
                 <p th:if="${element.description}" th:text="${element.description}"></p>
                 <div class="review-actions" th:if="${draft.status.name() != 'APPLIED'}">
