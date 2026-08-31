@@ -28,11 +28,16 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.validation.BindingResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.io.IOException;
 
 import java.util.Map;
 import java.util.UUID;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
+import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
+import de.melinadanhier.projectflow.draft.service.DraftVersionConflictException;
+import org.springframework.dao.DataAccessException;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Controller
 @RequiredArgsConstructor
@@ -41,6 +46,7 @@ public class DraftController {
     private final DraftReviewService draftReviewService;
     private final DraftApplicationService draftApplicationService;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
+    private final AiGenerationWorkflowService generationWorkflowService;
 
     @GetMapping({"/projects/{projectId}/draft", "/projects/{projectId}/draft/review"})
     public String review(@PathVariable UUID projectId,
@@ -48,8 +54,7 @@ public class DraftController {
                          @RequestParam(required = false) DraftReviewStatus reviewStatus,
                          Model model) {
         var workflow = workflowRepository.findOwnedByProjectId(projectId, currentUser.userId()).orElse(null);
-        if (workflow != null && workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED
-                && workflow.getStatus() != AiPlanGenerationWorkflowStatus.DRAFT_APPLIED) {
+        if (workflow != null && workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
             return "redirect:/projects/new/ai/status/" + workflow.getId();
         }
         var draft = draftReviewService.review(projectId, currentUser.userId(), reviewStatus);
@@ -75,21 +80,24 @@ public class DraftController {
     @PostMapping("/projects/{projectId}/draft/apply")
     public String apply(@PathVariable UUID projectId,
                         @AuthenticationPrincipal AuthenticatedUser currentUser,
-                        RedirectAttributes redirectAttributes) {
-        draftApplicationService.apply(projectId, currentUser.userId());
-        redirectAttributes.addFlashAttribute(
-                "successMessage",
-                "Der KI-Entwurf wurde übernommen."
-        );
-        return "redirect:/projects/" + projectId + "/plan";
+                        Model model) {
+        model.addAttribute("summary", draftApplicationService.summarize(projectId, currentUser.userId()));
+        return "generation/draft-pending-confirmation";
     }
 
     @PostMapping("/projects/{projectId}/draft/confirm-and-apply")
-    public String confirmAndApply(@PathVariable UUID projectId, @RequestParam long lockVersion,
-                                  @RequestParam(defaultValue = "false") boolean includePending,
+    public String confirmAndApply(@PathVariable UUID projectId,
+                                  @RequestParam(required = false) UUID draftId,
+                                  @RequestParam long lockVersion,
+                                  @RequestParam(defaultValue = "false") boolean allowEmpty,
                                   @AuthenticationPrincipal AuthenticatedUser currentUser,
                                   RedirectAttributes redirectAttributes) {
-        draftApplicationService.confirmAndApply(projectId, currentUser.userId(), lockVersion, includePending);
+        if (draftId == null) {
+            draftApplicationService.confirmAndApply(projectId, currentUser.userId(), lockVersion, false);
+        } else {
+            draftApplicationService.confirmAndApply(
+                    projectId, draftId, currentUser.userId(), lockVersion, allowEmpty);
+        }
         redirectAttributes.addFlashAttribute(
                 "successMessage",
                 "Der KI-Entwurf wurde übernommen."
@@ -168,6 +176,16 @@ public class DraftController {
         return "redirect:/projects/" + projectId + "/plan";
     }
 
+    @PostMapping("/projects/{projectId}/draft/regenerate")
+    public String regenerate(@PathVariable UUID projectId,
+                             @RequestParam UUID draftId,
+                             @RequestParam long lockVersion,
+                             @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        UUID workflowId = generationWorkflowService.regenerateDraft(
+                projectId, draftId, currentUser.userId(), lockVersion);
+        return "redirect:/projects/new/ai/status/" + workflowId;
+    }
+
     @PostMapping("/projects/{projectId}/draft/milestones/{milestoneId}")
     public String updateMilestone(@PathVariable UUID projectId, @PathVariable UUID milestoneId,
                                   @Valid @ModelAttribute DraftMilestoneForm milestoneForm,
@@ -220,8 +238,39 @@ public class DraftController {
 
     @ExceptionHandler(PendingDraftElementsConfirmationRequiredException.class)
     public String pendingConfirmation(PendingDraftElementsConfirmationRequiredException exception, Model model) {
-        model.addAttribute("draft", exception.getDraft());
+        var draft = exception.getDraft();
+        model.addAttribute("summary", new de.melinadanhier.projectflow.draft.dto.DraftApplicationSummary(
+                draft.getId(), draft.getProjectId(), draft.getProjectTitle(), draft.getLockVersion(),
+                draft.getPendingElementCount(), 0, 0, draft.getTotalElementCount()));
         return "generation/draft-pending-confirmation";
+    }
+
+    @ExceptionHandler(DraftVersionConflictException.class)
+    public String staleConfirmation(DraftVersionConflictException exception,
+                                    @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                    HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    Model model) throws IOException {
+        var variables = (Map<?, ?>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        UUID projectId = UUID.fromString(variables.get("projectId").toString());
+        if (!exception.isReviewAvailable()) {
+            response.sendError(HttpServletResponse.SC_CONFLICT, exception.getMessage());
+            return null;
+        }
+        response.setStatus(HttpServletResponse.SC_CONFLICT);
+        model.addAttribute("errorMessage", exception.getMessage());
+        model.addAttribute("draft", draftReviewService.review(projectId, currentUser.userId(), null));
+        return "generation/draft-review";
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public String persistenceFailure(DataAccessException exception,
+                                     RedirectAttributes attributes,
+                                     HttpServletRequest request) {
+        var variables = (Map<?, ?>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        attributes.addFlashAttribute("errorMessage",
+                "Die Übernahme konnte nicht gespeichert werden. Der Entwurf blieb unverändert und kann erneut übernommen werden.");
+        return "redirect:/projects/" + variables.get("projectId") + "/draft/review";
     }
 
     @ExceptionHandler({DomainValidationException.class, ConflictException.class})

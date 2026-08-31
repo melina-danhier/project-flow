@@ -52,6 +52,7 @@ public class PlanDraftMaterializationService {
         contents.sections().forEach(draft::addSection);
         contents.elements().forEach(draft::addElement);
         draft.setGeneratedAt(Instant.now(clock));
+        draft.setAppliedAt(null);
         draft.setStatus(DraftPlanStatus.READY_FOR_REVIEW);
         workflow.recordGenerationCompleted(serializedPlan, assumptionsNeedReview);
         // Cascade persists sections and elements; prerequisite links reference these same task entities.

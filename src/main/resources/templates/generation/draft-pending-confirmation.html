@@ -1,16 +1,39 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Offene Elemente bestätigen – ProjectFlow</title>
+    <title>Entwurf übernehmen – ProjectFlow</title>
     <link rel="stylesheet" th:href="@{/css/draft-review.css}">
 </head>
 <body><main>
-<h1>Review mit offenen Elementen abschließen?</h1>
-<p><strong th:text="${draft.pendingElementCount + ' Elemente wurden noch nicht überprüft.'}"></strong></p>
-<p>Wenn du trotzdem fortfährst, werden diese offenen Elemente ebenfalls in den finalen Projektplan übernommen.</p>
-<form th:action="@{/projects/{projectId}/draft/continue-with-pending(projectId=${draft.projectId})}" method="post">
-    <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
-    <button type="submit">Offene Elemente mit übernehmen</button>
+<h1 th:text="${summary.empty ? 'Vollständig verworfenen Entwurf abschließen' : 'Entwurf übernehmen?'}">Entwurf übernehmen?</h1>
+<p th:if="${!summary.empty}">Aus dem geprüften Entwurf wird jetzt der erste aktive Plan für
+    <strong th:text="${summary.projectTitle}">Projekt</strong> erstellt.</p>
+<p th:if="${summary.pendingElementCount > 0}" role="status">
+    <strong th:text="${summary.pendingElementCount + ' ungeprüfte Elemente werden bei der Übernahme automatisch akzeptiert.'}"></strong>
+</p>
+<p th:if="${summary.omittedDependencyCount > 0}" role="status">
+    <strong th:text="${summary.omittedDependencyCount + ' Abhängigkeiten werden nicht übernommen, da zugehörige Aufgaben verworfen wurden.'}"></strong>
+</p>
+
+<section th:if="${summary.empty}">
+    <p>Alle Bereiche, Aufgaben und Meilensteine wurden verworfen. Du kannst einen neuen KI-Entwurf erzeugen oder das vorhandene Projekt ohne Planelemente aktivieren.</p>
+    <form th:action="@{/projects/{projectId}/draft/regenerate(projectId=${summary.projectId})}" method="post">
+        <input type="hidden" name="draftId" th:value="${summary.draftId}">
+        <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
+        <button type="submit">Neu generieren</button>
+    </form>
+    <form th:action="@{/projects/{projectId}/draft/confirm-and-apply(projectId=${summary.projectId})}" method="post">
+        <input type="hidden" name="draftId" th:value="${summary.draftId}">
+        <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
+        <input type="hidden" name="allowEmpty" value="true">
+        <button type="submit">Leeres Projekt erstellen</button>
+    </form>
+</section>
+
+<form th:if="${!summary.empty}" th:action="@{/projects/{projectId}/draft/confirm-and-apply(projectId=${summary.projectId})}" method="post">
+    <input type="hidden" name="draftId" th:value="${summary.draftId}">
+    <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
+    <button type="submit">Entwurf jetzt übernehmen</button>
 </form>
-<a th:href="@{/projects/{projectId}/draft/review(projectId=${draft.projectId},reviewStatus='PENDING')}">Zurück zum Review</a>
+<a th:href="@{/projects/{projectId}/draft/review(projectId=${summary.projectId})}">Zurück zum Review</a>
 </main></body></html>

@@ -169,7 +169,9 @@ class DraftReviewIntegrationTest {
         assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.ACCEPTED);
         mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
                         .with(user(f.owner())).with(csrf()))
-                .andExpect(redirectedUrl(f.reviewUrl())).andExpect(flash().attribute("errorMessage", not(blankOrNullString())));
+                .andExpect(status().isConflict())
+                .andExpect(view().name("generation/draft-review"))
+                .andExpect(model().attribute("errorMessage", not(blankOrNullString())));
         assertEmptyPlan(f);
         verifyNoInteractions(aiClient);
     }
