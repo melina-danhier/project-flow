@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -29,6 +30,7 @@ class AiWorkflowClaimRecoveryIntegrationTest {
     @Autowired AiPlanGenerationWorkflowRepository workflowRepository;
     @Autowired ProjectRepository projectRepository;
     @Autowired JdbcTemplate jdbcTemplate;
+    @Autowired AiWorkflowControlService controlService;
 
     @Test
     void preCheckClaimIsAtomicAndRejectsDuplicateClaim() {
@@ -50,6 +52,7 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         workflowRepository.claimPreCheck(completed.getId(), Instant.now());
         completed = workflowRepository.findById(completed.getId()).orElseThrow();
         completed.recordPreCheckResult("{}", false);
+        completed.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         workflowRepository.saveAndFlush(completed);
         workflowRepository.claimGeneration(completed.getId(), Instant.now());
         completed = workflowRepository.findById(completed.getId()).orElseThrow();
@@ -57,12 +60,13 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         workflowRepository.saveAndFlush(completed);
         jdbcTemplate.update("update ai_plan_generation_workflows set updated_at = ? where id = ?", old, completed.getId());
 
-        int released = workflowRepository.releaseStalePreChecks(
-                Instant.now().minus(5, ChronoUnit.MINUTES), Instant.now());
+        jdbcTemplate.update("update ai_plan_generation_workflows set run_expires_at = ? where id = ?",
+                Instant.now().minusSeconds(1), stale.getId());
+        boolean released = controlService.expire(stale.getId());
 
-        assertThat(released).isEqualTo(1);
+        assertThat(released).isTrue();
         assertThat(workflowRepository.findById(stale.getId())).get()
-                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING);
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
         assertThat(workflowRepository.findById(completed.getId())).get()
                 .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
     }
@@ -73,6 +77,7 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         workflowRepository.claimPreCheck(workflow.getId(), Instant.now());
         workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
         workflow.recordPreCheckResult("{}", false);
+        workflow.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         workflowRepository.saveAndFlush(workflow);
         assertThat(workflowRepository.claimGeneration(workflow.getId(), Instant.now())).isEqualTo(1);
         assertThat(workflowRepository.claimGeneration(workflow.getId(), Instant.now())).isZero();
@@ -103,15 +108,14 @@ class AiWorkflowClaimRecoveryIntegrationTest {
     void releasesOnlyStaleRunningGenerations() {
         var stale = generationRunningWorkflow();
         var recent = generationRunningWorkflow();
-        Instant old = Instant.now().minus(10, ChronoUnit.MINUTES);
-        jdbcTemplate.update("update ai_plan_generation_workflows set updated_at = ? where id = ?", old, stale.getId());
+        jdbcTemplate.update("update ai_plan_generation_workflows set run_expires_at = ? where id = ?",
+                Instant.now().minusSeconds(1), stale.getId());
 
-        int released = workflowRepository.releaseStaleGenerations(
-                Instant.now().minus(5, ChronoUnit.MINUTES), Instant.now());
+        boolean released = controlService.expire(stale.getId());
 
-        assertThat(released).isEqualTo(1);
+        assertThat(released).isTrue();
         assertThat(workflowRepository.findById(stale.getId())).get()
-                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_PENDING);
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
         assertThat(workflowRepository.findById(recent.getId())).get()
                 .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
     }
@@ -121,6 +125,7 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         workflowRepository.claimPreCheck(workflow.getId(), Instant.now());
         workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
         workflow.recordPreCheckResult("{}", false);
+        workflow.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         workflowRepository.saveAndFlush(workflow);
         workflowRepository.claimGeneration(workflow.getId(), Instant.now());
         return workflowRepository.findById(workflow.getId()).orElseThrow();

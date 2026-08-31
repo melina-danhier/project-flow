@@ -7,6 +7,7 @@ import de.melinadanhier.projectflow.plancontainer.template.service.TemplateServi
 import de.melinadanhier.projectflow.wizard.service.AiWizardCompletionService;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
+import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.wizard.dto.AiProcessingConsentForm;
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
@@ -38,6 +39,7 @@ public class ProjectWizardController {
     private final TemplateService templateService;
     private final AiWizardCompletionService aiWizardCompletionService;
     private final AiPreCheckReviewService aiPreCheckReviewService;
+    private final AiWorkflowControlService aiWorkflowControlService;
 
     @GetMapping("/projects/new")
     public String basics(
@@ -235,6 +237,29 @@ public class ProjectWizardController {
         // unveränderlichen Workflow statt den vorhandenen Snapshot umzuschreiben.
         wizardService.restoreFromSnapshot(snapshot, currentUser.userId(), session);
         return "redirect:/projects/new/ai/summary";
+    }
+
+    @PostMapping("/projects/new/ai/status/{workflowId}/cancel")
+    public String cancelAiRun(@PathVariable UUID workflowId,
+                              @AuthenticationPrincipal AuthenticatedUser currentUser,
+                              HttpSession session,
+                              RedirectAttributes redirectAttributes) {
+        var cancellation = aiWorkflowControlService.cancel(workflowId, currentUser.userId());
+        if (cancellation.operation() == de.melinadanhier.projectflow.ai.model.AiOperation.PRE_CHECK) {
+            if (cancellation.snapshot() != null) {
+                wizardService.restoreFromSnapshot(cancellation.snapshot(), currentUser.userId(), session);
+            }
+            redirectAttributes.addFlashAttribute("successMessage",
+                    cancellation.changed() ? "Die KI-Vorprüfung wurde abgebrochen."
+                            : "Die KI-Vorprüfung war bereits beendet.");
+            return cancellation.snapshot() != null
+                    ? "redirect:/projects/new/ai/summary"
+                    : "redirect:/projects/new/ai/status/" + workflowId;
+        }
+        redirectAttributes.addFlashAttribute("successMessage",
+                cancellation.changed() ? "Die Plangenerierung wurde abgebrochen. Das Ergebnis der Vorprüfung bleibt gültig."
+                        : "Die Plangenerierung war bereits beendet.");
+        return "redirect:/projects/new/ai/problems/" + workflowId;
     }
 
     private String createManualProject(

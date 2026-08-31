@@ -31,22 +31,32 @@ public class AiPlanGenerationCoordinator {
             GeneratedPlanResponse result = generationService.generatePlan(
                     work.snapshot(), work.acknowledgedWarnings(), work.roundAttemptCount(),
                     work.promptVersion(), work.confirmedAssumptions(), work.rejectedAssumptions(),
-                    () -> workflowService.recordProviderCall(workflowId));
-            workflowService.recordSuccess(workflowId, result);
+                    () -> {
+                        if (work.runId() == null) workflowService.recordProviderCall(workflowId);
+                        else workflowService.recordProviderCall(workflowId, work.runId());
+                    });
+            if (work.runId() != null && !workflowService.isActive(workflowId, work.runId())) {
+                return;
+            }
+            if (work.runId() == null) workflowService.recordSuccess(workflowId, result);
+            else workflowService.recordSuccess(workflowId, work.runId(), result);
         } catch (AiOutputValidationException exception) {
             var error = classify(exception);
             log.warn("Plangenerierung für Workflow {} endete ohne valide Modellausgabe.",
                     workflowId, error.cause());
-            workflowService.recordGenerationFailure(workflowId, error);
+            if (work.runId() == null) workflowService.recordGenerationFailure(workflowId, error);
+            else workflowService.recordGenerationFailure(workflowId, work.runId(), error);
         } catch (AiTechnicalException exception) {
             var error = classify(exception);
             log.warn("Plangenerierung für Workflow {} ist technisch fehlgeschlagen (Fehlercode {}).",
                     workflowId, error.errorCode(), error.cause());
-            workflowService.recordTechnicalFailure(workflowId, error);
+            if (work.runId() == null) workflowService.recordTechnicalFailure(workflowId, error);
+            else workflowService.recordTechnicalFailure(workflowId, work.runId(), error);
         } catch (RuntimeException exception) {
             log.error("Plangenerierung für Workflow {} ist technisch fehlgeschlagen (Fehlertyp {}).",
                     workflowId, exception.getClass().getSimpleName(), exception);
-            workflowService.recordTechnicalFailure(workflowId, classify(exception));
+            if (work.runId() == null) workflowService.recordTechnicalFailure(workflowId, classify(exception));
+            else workflowService.recordTechnicalFailure(workflowId, work.runId(), classify(exception));
         }
     }
 

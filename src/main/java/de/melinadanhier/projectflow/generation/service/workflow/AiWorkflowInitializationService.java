@@ -22,6 +22,7 @@ import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepo
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
+import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ public class AiWorkflowInitializationService {
     private final AiWorkflowPayloadCodec snapshotCodec;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final AiExecutionProperties executionProperties;
 
     @Transactional
     public AiWorkflowCompletion create(
@@ -76,18 +78,22 @@ public class AiWorkflowInitializationService {
         project.addMembership(membership);
         projectRepository.save(project);
 
+        Instant startedAt = Instant.now(clock);
+        UUID runId = UUID.randomUUID();
         AiPlanGenerationWorkflow workflow = AiPlanGenerationWorkflow.create(
                 project,
                 snapshotCodec.writeSnapshot(snapshot),
                 SNAPSHOT_VERSION,
                 completionToken,
-                Instant.now(clock),
+                startedAt,
                 CONSENT_VERSION,
-                AiPromptVersions.GENERATION_PROMPT
+                AiPromptVersions.GENERATION_PROMPT,
+                runId,
+                startedAt.plus(executionProperties.getMaxRunTime())
         );
         workflowRepository.saveAndFlush(workflow);
         completionTokenRepository.saveAndFlush(AiWorkflowCompletionToken.create(completionToken, workflow));
-        eventPublisher.publishEvent(new AiPreCheckRequestedEvent(workflow.getId()));
+        eventPublisher.publishEvent(new AiPreCheckRequestedEvent(workflow.getId(), runId));
         return new AiWorkflowCompletion(workflow.getId(), project.getId());
     }
 

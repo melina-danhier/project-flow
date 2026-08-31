@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
+import java.time.Clock;
+import java.time.Instant;
 
 import java.util.*;
 
@@ -24,6 +27,8 @@ public class CriticalAssumptionReviewService {
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final AiWorkflowPayloadCodec payloadCodec;
     private final ApplicationEventPublisher eventPublisher;
+    private final AiExecutionProperties executionProperties;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public AssumptionReviewDto getReview(UUID workflowId, UUID userId) {
@@ -101,7 +106,10 @@ public class CriticalAssumptionReviewService {
         String review = payloadCodec.writeAssumptionReview(request);
         if (failedRegeneration) workflow.prepareFailedAssumptionRegeneration(context, review);
         else workflow.prepareAssumptionRegeneration(context, review);
-        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId));
+        UUID runId = UUID.randomUUID();
+        workflow.activatePendingGenerationRun(runId,
+                Instant.now(clock).plus(executionProperties.getMaxRunTime()));
+        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId, runId));
         return true;
     }
 

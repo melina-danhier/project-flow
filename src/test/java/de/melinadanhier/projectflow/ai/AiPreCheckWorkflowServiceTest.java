@@ -72,7 +72,7 @@ class AiPreCheckWorkflowServiceTest {
     }
 
     @Test
-    void resultWithoutProblemsMovesToGenerationAndPublishesEvent() {
+    void resultWithoutProblemsWaitsForExplicitGenerationStart() {
         UUID workflowId = UUID.randomUUID();
         AiPreCheckResult result = AiPreCheckResult.withoutIssues();
         when(workflowRepository.findById(workflowId)).thenReturn(Optional.of(workflow));
@@ -82,7 +82,7 @@ class AiPreCheckWorkflowServiceTest {
         assertThat(service().recordResult(workflowId, result)).isTrue();
 
         verify(workflow).recordPreCheckResult("{}", false);
-        verify(eventPublisher).publishEvent(new AiGenerationRequestedEvent(workflowId));
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test

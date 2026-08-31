@@ -19,4 +19,8 @@ public record AiPreCheckReviewDto(
         return problems.stream()
                 .anyMatch(problem -> problem.isWarning() && !problem.acknowledged());
     }
+
+    public boolean canGenerate() {
+        return !hasErrors() && !hasWarnings();
+    }
 }

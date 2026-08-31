@@ -20,6 +20,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Clock;
+import de.melinadanhier.projectflow.ai.config.AiExecutionProperties;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -39,7 +41,8 @@ class CriticalAssumptionReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CriticalAssumptionReviewService(workflows, codec, events);
+        service = new CriticalAssumptionReviewService(workflows, codec, events,
+                new AiExecutionProperties(), Clock.systemUTC());
         when(workflows.findOwnedByIdForUpdate(workflowId, userId)).thenReturn(Optional.of(workflow));
         lenient().when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING);
         lenient().when(workflow.getGeneratedPlan()).thenReturn("plan");
@@ -72,7 +75,8 @@ class CriticalAssumptionReviewServiceTest {
         assertThat(context.getValue().rejectedAssumptions()).containsExactly(
                 new RejectedCriticalAssumption("Zehn Stunden stehen bereit.", "Vier Stunden pro Woche."));
         verify(workflow).prepareAssumptionRegeneration("context", "review");
-        verify(events).publishEvent(new AiGenerationRequestedEvent(workflowId));
+        verify(workflow).activatePendingGenerationRun(any(UUID.class), any(java.time.Instant.class));
+        verify(events).publishEvent(any(AiGenerationRequestedEvent.class));
     }
 
     @Test

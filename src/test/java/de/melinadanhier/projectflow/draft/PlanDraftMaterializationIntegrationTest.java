@@ -298,6 +298,7 @@ class PlanDraftMaterializationIntegrationTest {
                     new AiPreCheckProblem(AiPreCheckSeverity.WARNING, "Nur im Pre-Check", "Ignoriert")))), true);
             workflow.acknowledgeWarning(0);
             workflow.approvePreCheck();
+            workflow.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         });
         assertThat(workflows.claimGeneration(workflowId, Instant.now())).isEqualTo(1);
         var workflow = workflows.findById(workflowId).orElseThrow();

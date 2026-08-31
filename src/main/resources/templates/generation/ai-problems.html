@@ -13,7 +13,7 @@
     Mindestens ein schwerwiegender Widerspruch blockiert die Plangenerierung. Passe deine Eingaben an und starte die Prüfung erneut.
 </p>
 <p th:unless="${review.hasErrors()}">
-    Du kannst Warnungen einzeln akzeptieren. Nach der letzten Warnung startet die Plangenerierung automatisch.
+    Prüfe die Hinweise und starte die Plangenerierung anschließend ausdrücklich.
 </p>
 
 <section th:each="problem : ${review.problems}" th:unless="${problem.acknowledged}"
@@ -28,6 +28,12 @@
     </form>
     <p th:unless="${problem.warning}"><strong>Dieser Fehler kann nicht akzeptiert werden.</strong></p>
 </section>
+
+<form th:if="${review.canGenerate()}"
+      th:action="@{/projects/new/ai/status/{workflowId}/generate(workflowId=${review.workflowId})}"
+      method="post" onsubmit="this.querySelector('button').disabled=true">
+    <button type="submit">Planentwurf generieren</button>
+</form>
 
 <form th:action="@{/projects/new/ai/problems/{workflowId}/edit(workflowId=${review.workflowId})}" method="post">
     <button type="submit">Eingaben ändern</button>

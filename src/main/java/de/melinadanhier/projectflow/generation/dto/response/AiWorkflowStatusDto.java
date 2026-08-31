@@ -41,4 +41,17 @@ public record AiWorkflowStatusDto(
                 && (status == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
                 || status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
     }
+
+    public boolean canCancel() {
+        return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
+                || status == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING;
+    }
+
+    public boolean isPreCheckRun() {
+        return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING
+                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
+                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING
+                || (status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
+                && errorOperation == AiOperation.PRE_CHECK);
+    }
 }
