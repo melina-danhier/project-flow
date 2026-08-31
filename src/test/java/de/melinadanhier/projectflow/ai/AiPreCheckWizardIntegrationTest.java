@@ -89,11 +89,16 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     @Test
-    void noProblemsStartsGenerationImmediately() throws Exception {
+    void noProblemsWaitsForExplicitGenerationStart() throws Exception {
         User owner = saveUser("precheck-clear@example.org");
         when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
 
         UUID workflowId = start(owner);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED);
+        verify(aiClient, never()).generatePlan(any());
+        mockMvc.perform(post(statusUrl(workflowId) + "/generate")
+                        .with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection());
         awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
 
         verify(aiClient).preCheck(any());
@@ -107,7 +112,7 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     @Test
-    void warningsAreShownAndIgnoredIndividuallyBeforeAutomaticGeneration() throws Exception {
+    void warningsAreShownAndGenerationStartsOnlyAfterExplicitPost() throws Exception {
         User owner = saveUser("precheck-warnings@example.org");
         long activeSectionsBefore = planSectionRepository.count();
         long activeTasksBefore = taskRepository.count();
@@ -158,6 +163,11 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(statusUrl(workflowId)));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)).isLessThan(1000);
+        assertThat(workflowRepository.findById(workflowId).orElseThrow().getStatus())
+                .isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED);
+        mockMvc.perform(post(statusUrl(workflowId) + "/generate")
+                        .session(session).with(user(principal)).with(csrf()))
+                .andExpect(status().is3xxRedirection());
         assertThat(generationStarted.await(2, TimeUnit.SECONDS)).isTrue();
         releaseGeneration.countDown();
         awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
@@ -283,7 +293,7 @@ class AiPreCheckWizardIntegrationTest {
                 .andReturn().getResponse().getRedirectedUrl();
         UUID restartedWorkflowId = UUID.fromString(redirect.substring(redirect.lastIndexOf('/') + 1));
         assertThat(restartedWorkflowId).isNotEqualTo(oldWorkflowId);
-        awaitStatus(restartedWorkflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        awaitStatus(restartedWorkflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED);
         assertThat(workflowRepository.findById(oldWorkflowId)).get()
                 .extracting("status")
                 .isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);

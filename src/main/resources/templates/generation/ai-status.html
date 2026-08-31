@@ -4,21 +4,29 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta th:if="${workflow.processing}" http-equiv="refresh" content="3">
-    <title>KI-Prüfung – ProjectFlow</title>
+    <title>KI-Ausführung – ProjectFlow</title>
 </head>
 <body><main>
-<h1>Deine Angaben werden geprüft und dein KI-Entwurf vorbereitet</h1>
+<h1 th:if="${workflow.preCheckRun}">Deine Projektangaben werden geprüft</h1>
+<h1 th:unless="${workflow.preCheckRun}">Dein KI-Planentwurf wird erstellt</h1>
 <h2 th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}">Der Planentwurf wurde erstellt</h2>
 <h2 th:if="${workflow.status.name() == 'GENERATION_FAILED'}">Der Planentwurf konnte nicht erstellt werden</h2>
 <h2 th:if="${workflow.status.name() == 'TECHNICAL_FAILURE' and workflow.errorOperation?.name() == 'PRE_CHECK'}">Die KI-Prüfung konnte nicht abgeschlossen werden</h2>
 <h2 th:if="${workflow.status.name() == 'TECHNICAL_FAILURE' and workflow.errorOperation?.name() == 'PLAN_GENERATION'}">Der Planentwurf konnte nicht erstellt werden</h2>
 <h2 th:if="${workflow.status.name() == 'TECHNICAL_FAILURE' and workflow.errorOperation == null}">Der KI-Vorgang konnte nicht abgeschlossen werden</h2>
 
-<p th:if="${workflow.processing}">Die KI prüft deine bestätigten Projektangaben und erstellt anschließend den Planentwurf. Diese Seite wird automatisch aktualisiert.</p>
+<p th:if="${workflow.processing and workflow.preCheckRun}">Die KI prüft deine bestätigten Projektangaben. Diese Seite wird automatisch aktualisiert.</p>
+<p th:if="${workflow.processing and !workflow.preCheckRun}">Die KI erstellt den Planentwurf auf Grundlage der bestätigten Vorprüfung. Diese Seite wird automatisch aktualisiert.</p>
 <p th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}">Die Generierung ist abgeschlossen. Der Entwurf bleibt getrennt vom aktiven Projekt und kann im nächsten Schritt überprüft werden.</p>
 <p th:if="${workflow.status.name() == 'GENERATION_FAILED'}">Deine bestätigten Angaben bleiben erhalten. Bitte versuche es später erneut.</p>
 <p th:if="${workflow.status.name() == 'TECHNICAL_FAILURE'}">Deine bestätigten Angaben bleiben erhalten. Ein erneuter Start kann später mit demselben Stand erfolgen.</p>
 <p th:if="${workflow.errorDiagnosis}" th:text="${workflow.errorDiagnosis}" role="alert"></p>
+
+<form th:if="${workflow.canCancel()}" id="cancel-ai-run"
+      th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${workflow.workflowId})}"
+      method="post">
+    <button type="submit">Abbrechen</button>
+</form>
 
 <form th:if="${workflow.canRetry()}"
       th:action="@{/projects/new/ai/status/{workflowId}/retry(workflowId=${workflow.workflowId})}"
@@ -29,4 +37,10 @@
 <a th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}"
    th:href="@{/projects/{id}/draft/review(id=${workflow.projectId})}">Entwurf jetzt prüfen</a>
 <a th:unless="${workflow.status.name() == 'GENERATION_COMPLETED'}" th:href="@{/projects/drafts}">Zu den Entwürfen</a>
+<script>
+    const cancelForm = document.getElementById('cancel-ai-run');
+    cancelForm?.addEventListener('submit', () => {
+        cancelForm.querySelector('button').disabled = true;
+    });
+</script>
 </main></body></html>

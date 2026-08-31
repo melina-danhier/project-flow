@@ -30,11 +30,13 @@ public class PlanDraftMaterializationService {
      * callers retain ownership of the commit; materialization must not commit independently.
      */
     @Transactional
-    public boolean materialize(UUID workflowId, MappedDraft contents,
+    public boolean materialize(UUID workflowId, UUID runId, MappedDraft contents,
                                String serializedPlan, boolean assumptionsNeedReview) {
         var workflow = workflowRepository.findByIdForUpdate(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
+        UUID effectiveRunId = runId != null ? runId : workflow.getActiveRunId();
+        if (!workflow.isActiveRun(effectiveRunId, Instant.now(clock),
+                AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)) {
             return false;
         }
         UUID projectId = workflow.getProject().getId();
@@ -58,5 +60,11 @@ public class PlanDraftMaterializationService {
         // Cascade persists sections and elements; prerequisite links reference these same task entities.
         planDraftRepository.saveAndFlush(draft);
         return true;
+    }
+
+    @Transactional
+    public boolean materialize(UUID workflowId, MappedDraft contents,
+                               String serializedPlan, boolean assumptionsNeedReview) {
+        return materialize(workflowId, null, contents, serializedPlan, assumptionsNeedReview);
     }
 }

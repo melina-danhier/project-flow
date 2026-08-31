@@ -22,6 +22,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -36,6 +37,8 @@ import de.melinadanhier.projectflow.draft.service.DraftVersionConflictException;
 @Service
 @RequiredArgsConstructor
 public class AiGenerationWorkflowService {
+    @Value("${projectflow.ai.max-run-time:5m}")
+    private java.time.Duration maxRunTime;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final AiWorkflowPayloadCodec payloadCodec;
     private final PlanDraftMaterializationService draftMaterializationService;
@@ -47,8 +50,9 @@ public class AiGenerationWorkflowService {
     private final ProjectAuthorizationService authorizationService;
 
     @Transactional
-    public Optional<AiGenerationWork> claimWork(UUID workflowId) {
-        if (workflowRepository.claimGeneration(workflowId, Instant.now(clock)) != 1) {
+    public Optional<AiGenerationWork> claimWork(UUID workflowId, UUID runId) {
+        UUID effectiveRunId = runId != null ? runId : require(workflowId).getActiveRunId();
+        if (workflowRepository.claimGeneration(workflowId, effectiveRunId, Instant.now(clock)) != 1) {
             return Optional.empty();
         }
         AiPlanGenerationWorkflow workflow = require(workflowId);
@@ -67,6 +71,7 @@ public class AiGenerationWorkflowService {
         }
         return Optional.of(new AiGenerationWork(
                 workflowId,
+                effectiveRunId,
                 payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()),
                 result.problems().stream()
                         .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
@@ -77,13 +82,36 @@ public class AiGenerationWorkflowService {
                 workflow.getGenerationPromptVersion()));
     }
 
+    public Optional<AiGenerationWork> claimWork(UUID workflowId) {
+        return claimWork(workflowId, null);
+    }
+
     @Transactional
-    public void recordProviderCall(UUID workflowId) {
-        AiPlanGenerationWorkflow workflow = require(workflowId);
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
+    public void recordProviderCall(UUID workflowId, UUID runId) {
+        AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
+        if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+                AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)) {
             throw new ConflictException("Die Generierung ist nicht mehr aktiv.");
         }
         workflow.recordGenerationAttempt();
+    }
+
+    @Transactional
+    public void recordProviderCall(UUID workflowId) { recordProviderCall(workflowId, null); }
+
+    @Transactional
+    public boolean isActive(UUID workflowId, UUID runId) {
+        var workflow = requireForUpdate(workflowId);
+        return workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+                AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public boolean recordSuccess(UUID workflowId, UUID runId, GeneratedPlanResponse result) {
+        var contents = draftMapper.map(result);
+        return draftMaterializationService.materialize(
+                workflowId, runId, contents, payloadCodec.writeGeneratedPlan(result),
+                !result.criticalAssumptions().isEmpty());
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -95,9 +123,10 @@ public class AiGenerationWorkflowService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public boolean recordGenerationFailure(UUID workflowId, AiTechnicalError error) {
+    public boolean recordGenerationFailure(UUID workflowId, UUID runId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
+        if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+                AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)) {
             return false;
         }
         workflow.recordGenerationFailure(error);
@@ -105,21 +134,38 @@ public class AiGenerationWorkflowService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public boolean recordTechnicalFailure(UUID workflowId, AiTechnicalError error) {
+    public boolean recordGenerationFailure(UUID workflowId, AiTechnicalError error) {
+        return recordGenerationFailure(workflowId, null, error);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean recordTechnicalFailure(UUID workflowId, UUID runId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
+        if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+                AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)) {
             return false;
         }
         workflow.recordTechnicalFailure(error);
         return true;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean recordTechnicalFailure(UUID workflowId, AiTechnicalError error) {
+        return recordTechnicalFailure(workflowId, null, error);
+    }
+
     @Transactional
     public boolean retry(UUID workflowId, UUID userId) {
-        if (workflowRepository.retryGeneration(workflowId, userId, Instant.now(clock)) != 1) {
+        var workflow = workflowRepository.findOwnedByIdForUpdate(workflowId, userId).orElse(null);
+        if (workflow == null || (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_FAILED
+                && workflow.getStatus() != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
+                || !Boolean.TRUE.equals(workflow.getLastErrorRetryable())) {
             return false;
         }
-        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId));
+        Instant now = Instant.now(clock);
+        UUID runId = UUID.randomUUID();
+        workflow.startGeneration(runId, now.plus(maxRunTime != null ? maxRunTime : java.time.Duration.ofMinutes(5)));
+        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId, runId));
         return true;
     }
 
@@ -155,21 +201,29 @@ public class AiGenerationWorkflowService {
                                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."))
                                 .getId())
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
-        workflow.prepareDraftRegeneration();
         project.attachDraft(null);
         planDraftRepository.delete(draft);
-        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflow.getId()));
+        UUID runId = UUID.randomUUID();
+        workflow.startGeneration(runId, Instant.now(clock).plus(
+                maxRunTime != null ? maxRunTime : java.time.Duration.ofMinutes(5)));
+        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflow.getId(), runId));
         return workflow.getId();
     }
 
     /** Technical entry point after repairing the server-side AI client configuration; not exposed in the user UI. */
     @Transactional
     public boolean retryAfterAdministrativeFix(UUID workflowId) {
-        if (workflowRepository.retryGenerationAfterClientConfigurationFix(
-                workflowId, Instant.now(clock)) != 1) {
+        var workflow = workflowRepository.findByIdForUpdate(workflowId).orElse(null);
+        if (workflow == null
+                || workflow.getStatus() != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
+                || workflow.getLastTechnicalError()
+                != de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR) {
             return false;
         }
-        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId));
+        Instant now = Instant.now(clock);
+        UUID runId = UUID.randomUUID();
+        workflow.startGeneration(runId, now.plus(maxRunTime != null ? maxRunTime : java.time.Duration.ofMinutes(5)));
+        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId, runId));
         return true;
     }
 

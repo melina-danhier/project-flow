@@ -23,6 +23,9 @@ public class AiExecutionProperties {
     private Duration staleWorkflowTimeout = Duration.ofMinutes(5);
 
     @NotNull
+    private Duration maxRunTime = Duration.ofMinutes(5);
+
+    @NotNull
     private Duration retryInitialDelay = Duration.ofSeconds(1);
 
 }

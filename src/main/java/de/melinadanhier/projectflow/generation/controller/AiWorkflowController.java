@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowQueryService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
+import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class AiWorkflowController {
     private final AiPreCheckReviewService reviewService;
     private final AiGenerationWorkflowService generationWorkflowService;
     private final CriticalAssumptionReviewService assumptionReviewService;
+    private final AiWorkflowControlService workflowControlService;
 
     @GetMapping("/status/{workflowId}")
     public String status(
@@ -45,7 +47,9 @@ public class AiWorkflowController {
         AiWorkflowStatusDto workflow = workflowQueryService.getOwnedStatus(
                 workflowId, currentUser.userId()
         );
-        if (workflow.status() == AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW) {
+        if (workflow.status() == AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW
+                || workflow.status() == AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED
+                || workflow.status() == AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED) {
             return "redirect:/projects/new/ai/problems/" + workflowId;
         }
         if (workflow.status() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
@@ -57,6 +61,13 @@ public class AiWorkflowController {
         }
         model.addAttribute("workflow", workflow);
         return "generation/ai-status";
+    }
+
+    @PostMapping("/status/{workflowId}/generate")
+    public String startGeneration(@PathVariable UUID workflowId,
+                                  @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        workflowControlService.startGeneration(workflowId, currentUser.userId());
+        return "redirect:/projects/new/ai/status/" + workflowId;
     }
 
     @GetMapping("/assumptions/{workflowId}")

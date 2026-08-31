@@ -22,6 +22,7 @@ import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCode
 import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowInitializationService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
+import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
@@ -50,7 +51,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
@@ -104,6 +107,9 @@ class AiWorkflowIntegrationTest {
     @Autowired
     private AiGenerationWorkflowService generationWorkflowService;
 
+    @Autowired
+    private AiWorkflowControlService workflowControlService;
+
     @MockitoBean
     private AiClient aiClient;
 
@@ -143,6 +149,7 @@ class AiWorkflowIntegrationTest {
         long tasksBefore = taskRepository.count();
         long milestonesBefore = milestoneRepository.count();
         AiWorkflowCompletion completion = completionService.complete(token, owner.getId(), () -> snapshot);
+        startGenerationAfterPreCheck(completion.workflowId(), owner.getId());
         await(() -> workflowRepository.findById(completion.workflowId())
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
                 .orElse(false));
@@ -226,6 +233,7 @@ class AiWorkflowIntegrationTest {
         AiWorkflowCompletion second = completionService.complete(token, owner.getId(), () -> {
             throw new AssertionError("Der Wizard-Snapshot darf beim Retry nicht erneut gelesen werden.");
         });
+        startGenerationAfterPreCheck(first.workflowId(), owner.getId());
         await(() -> workflowRepository.findById(first.workflowId())
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
                 .orElse(false));
@@ -319,6 +327,7 @@ class AiWorkflowIntegrationTest {
 
         AiWorkflowCompletion completion = completionService.complete(
                 UUID.randomUUID(), owner.getId(), this::snapshot);
+        startGenerationAfterPreCheck(completion.workflowId(), owner.getId());
         await(() -> workflowRepository.findById(completion.workflowId())
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_FAILED)
                 .orElse(false));
@@ -344,6 +353,7 @@ class AiWorkflowIntegrationTest {
 
         AiWorkflowCompletion completion = completionService.complete(
                 UUID.randomUUID(), owner.getId(), this::snapshot);
+        startGenerationAfterPreCheck(completion.workflowId(), owner.getId());
         await(() -> workflowRepository.findById(completion.workflowId())
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
                 .orElse(false));
@@ -380,6 +390,7 @@ class AiWorkflowIntegrationTest {
 
         AiWorkflowCompletion completion = completionService.complete(
                 UUID.randomUUID(), owner.getId(), this::snapshot);
+        startGenerationAfterPreCheck(completion.workflowId(), owner.getId());
         await(() -> workflowRepository.findById(completion.workflowId())
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
                 .orElse(false));
@@ -473,5 +484,107 @@ class AiWorkflowIntegrationTest {
             Thread.sleep(25);
         }
         assertThat(condition.getAsBoolean()).isTrue();
+    }
+
+    @Test
+    void latePreCheckResponseAfterCancellationIsDiscarded() throws Exception {
+        User owner = saveUser("ai-cancel-precheck@example.org");
+        CountDownLatch providerStarted = new CountDownLatch(1);
+        CountDownLatch releaseProvider = new CountDownLatch(1);
+        when(aiClient.preCheck(any())).thenAnswer(invocation -> {
+            providerStarted.countDown();
+            if (!releaseProvider.await(5, TimeUnit.SECONDS)) {
+                throw new AssertionError("Vorprüfung wurde im Test nicht freigegeben.");
+            }
+            return AiPreCheckResult.withoutIssues();
+        });
+
+        var completion = completionService.complete(UUID.randomUUID(), owner.getId(), this::snapshot);
+        assertThat(providerStarted.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(workflowControlService.cancel(completion.workflowId(), owner.getId()).changed()).isTrue();
+        releaseProvider.countDown();
+
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED)
+                .orElse(false));
+        assertThat(workflowRepository.findById(completion.workflowId()).orElseThrow().getPreCheckResult()).isNull();
+        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
+    }
+
+    @Test
+    void parallelGenerationStartsReuseOneRunAndInvokeProviderOnce() throws Exception {
+        User owner = saveUser("ai-parallel-start@example.org");
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        CountDownLatch providerStarted = new CountDownLatch(1);
+        CountDownLatch releaseProvider = new CountDownLatch(1);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            providerStarted.countDown();
+            if (!releaseProvider.await(5, TimeUnit.SECONDS)) {
+                throw new AssertionError("Generierung wurde im Test nicht freigegeben.");
+            }
+            return generatedPlan();
+        }).when(aiClient).generatePlan(any());
+
+        var completion = completionService.complete(UUID.randomUUID(), owner.getId(), this::snapshot);
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED)
+                .orElse(false));
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> workflowControlService.startGeneration(
+                    completion.workflowId(), owner.getId()));
+            var second = executor.submit(() -> workflowControlService.startGeneration(
+                    completion.workflowId(), owner.getId()));
+            assertThat(first.get(5, TimeUnit.SECONDS)).isEqualTo(second.get(5, TimeUnit.SECONDS));
+        }
+
+        assertThat(providerStarted.await(2, TimeUnit.SECONDS)).isTrue();
+        verify(aiClient, times(1)).generatePlan(any());
+        releaseProvider.countDown();
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
+                .orElse(false));
+        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isPresent();
+    }
+
+    @Test
+    void cancelledOldGenerationCannotOverwriteNewSuccessfulRun() throws Exception {
+        User owner = saveUser("ai-cancel-generation@example.org");
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        CountDownLatch oldProviderStarted = new CountDownLatch(1);
+        CountDownLatch releaseOldProvider = new CountDownLatch(1);
+        AtomicInteger calls = new AtomicInteger();
+        org.mockito.Mockito.doAnswer(invocation -> {
+            if (calls.incrementAndGet() == 1) {
+                oldProviderStarted.countDown();
+                if (!releaseOldProvider.await(5, TimeUnit.SECONDS)) {
+                    throw new AssertionError("Alte Generierung wurde im Test nicht freigegeben.");
+                }
+            }
+            return generatedPlan();
+        }).when(aiClient).generatePlan(any());
+
+        var completion = completionService.complete(UUID.randomUUID(), owner.getId(), this::snapshot);
+        startGenerationAfterPreCheck(completion.workflowId(), owner.getId());
+        assertThat(oldProviderStarted.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(workflowControlService.cancel(completion.workflowId(), owner.getId()).changed()).isTrue();
+        workflowControlService.startGeneration(completion.workflowId(), owner.getId());
+        await(() -> workflowRepository.findById(completion.workflowId())
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
+                .orElse(false));
+        releaseOldProvider.countDown();
+
+        await(() -> calls.get() == 2);
+        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isPresent();
+        assertThat(planDraftRepository.count()).isGreaterThanOrEqualTo(1);
+        assertThat(workflowRepository.findById(completion.workflowId())).get()
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+    }
+
+    private void startGenerationAfterPreCheck(UUID workflowId, UUID userId) throws Exception {
+        await(() -> workflowRepository.findById(workflowId)
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED)
+                .orElse(false));
+        workflowControlService.startGeneration(workflowId, userId);
     }
 }

@@ -9,6 +9,7 @@ import de.melinadanhier.projectflow.ai.model.generation.RejectedCriticalAssumpti
 
 public record AiGenerationWork(
         UUID workflowId,
+        UUID runId,
         AiWizardSnapshot snapshot,
         List<AiPreCheckProblem> acknowledgedWarnings,
         List<String> confirmedAssumptions,
@@ -16,10 +17,17 @@ public record AiGenerationWork(
         int roundAttemptCount,
         String promptVersion
 ) {
+    public AiGenerationWork(UUID workflowId, UUID runId, AiWizardSnapshot snapshot,
+                            List<AiPreCheckProblem> acknowledgedWarnings,
+                            int roundAttemptCount, String promptVersion) {
+        this(workflowId, runId, snapshot, acknowledgedWarnings, List.of(), List.of(),
+                roundAttemptCount, promptVersion);
+    }
+
     public AiGenerationWork(UUID workflowId, AiWizardSnapshot snapshot,
                             List<AiPreCheckProblem> acknowledgedWarnings,
                             int roundAttemptCount, String promptVersion) {
-        this(workflowId, snapshot, acknowledgedWarnings, List.of(), List.of(),
+        this(workflowId, null, snapshot, acknowledgedWarnings, List.of(), List.of(),
                 roundAttemptCount, promptVersion);
     }
 }

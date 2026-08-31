@@ -15,9 +15,13 @@ import java.util.UUID;
 public class AiWorkflowQueryService {
 
     private final AiPlanGenerationWorkflowRepository workflowRepository;
+    private final AiWorkflowControlService controlService;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AiWorkflowStatusDto getOwnedStatus(UUID workflowId, UUID userId) {
+        workflowRepository.findOwnedById(workflowId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        controlService.expire(workflowId);
         AiPlanGenerationWorkflow workflow = workflowRepository.findOwnedById(workflowId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
         return new AiWorkflowStatusDto(

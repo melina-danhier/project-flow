@@ -24,6 +24,50 @@ class DraftPostgresMigrationTest {
     @Autowired JdbcTemplate jdbc;
 
     @Test
+    void hardensAiRunsWithExpiryAndOneActiveRunPerProject() throws Exception {
+        String schema = "ai_run_test_" + java.util.UUID.randomUUID().toString().replace("-", "");
+        var dataSource = java.util.Objects.requireNonNull(jdbc.getDataSource());
+        jdbc.execute("CREATE SCHEMA " + schema);
+        try (var connection = dataSource.getConnection()) {
+            String originalSchema = connection.getSchema();
+            try {
+                org.flywaydb.core.Flyway.configure().dataSource(dataSource)
+                        .schemas(schema).defaultSchema(schema).load().migrate();
+                connection.setSchema(schema);
+                var scoped = new JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(connection, true));
+
+                assertThat(scoped.queryForList("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_schema = ? AND table_name = 'ai_plan_generation_workflows'
+                          AND column_name IN ('active_run_id', 'run_expires_at')
+                        ORDER BY column_name
+                        """, String.class, schema))
+                        .containsExactly("active_run_id", "run_expires_at");
+                assertThat(scoped.queryForObject("""
+                        SELECT indexdef FROM pg_indexes
+                        WHERE schemaname = ? AND indexname = 'uk_ai_workflows_active_project'
+                        """, String.class, schema))
+                        .contains("UNIQUE INDEX")
+                        .contains("WHERE")
+                        .contains("GENERATION_RUNNING")
+                        .contains("PRE_CHECK_RUNNING");
+                assertThat(scoped.queryForObject("""
+                        SELECT pg_get_constraintdef(c.oid)
+                        FROM pg_constraint c
+                        JOIN pg_namespace n ON n.oid = c.connamespace
+                        WHERE n.nspname = ? AND c.conname = 'ck_ai_workflows_active_run'
+                        """, String.class, schema))
+                        .contains("active_run_id IS NOT NULL")
+                        .contains("run_expires_at IS NOT NULL");
+            } finally {
+                connection.setSchema(originalSchema);
+            }
+        } finally {
+            jdbc.execute("DROP SCHEMA " + schema + " CASCADE");
+        }
+    }
+
+    @Test
     void removesOnlySectionDateColumnsAndPreservesExistingSectionData() throws Exception {
         String schema = "section_test_" + java.util.UUID.randomUUID().toString().replace("-", "");
         var dataSource = java.util.Objects.requireNonNull(jdbc.getDataSource());

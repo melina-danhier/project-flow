@@ -19,7 +19,10 @@ public class AiGenerationRequestedEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void startAfterCommit(AiGenerationRequestedEvent event) {
-        workflowService.claimWork(event.workflowId())
+        var claimed = event.runId() == null
+                ? workflowService.claimWork(event.workflowId())
+                : workflowService.claimWork(event.workflowId(), event.runId());
+        claimed
                 .ifPresent(generationCoordinator::generateClaimed);
     }
 }

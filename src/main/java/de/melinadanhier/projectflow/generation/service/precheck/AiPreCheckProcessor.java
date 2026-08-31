@@ -36,19 +36,21 @@ public class AiPreCheckProcessor {
     public void startAfterCommit(AiPreCheckRequestedEvent event) {
         AiWizardSnapshot snapshot;
         try {
-            var claimed = workflowService.claimAndReadSnapshot(event.workflowId());
+            var claimed = event.runId() == null
+                    ? workflowService.claimAndReadSnapshot(event.workflowId())
+                    : workflowService.claimAndReadSnapshot(event.workflowId(), event.runId());
             if (claimed.isEmpty()) {
                 return;
             }
             snapshot = claimed.get();
         } catch (RuntimeException exception) {
-            finishWithTechnicalFailure(event.workflowId(), classify(exception));
+            finishWithTechnicalFailure(event.workflowId(), event.runId(), classify(exception));
             return;
         }
         try {
             executePreCheck(event, snapshot);
         } catch (RuntimeException exception) {
-            finishWithTechnicalFailure(event.workflowId(), classify(exception));
+            finishWithTechnicalFailure(event.workflowId(), event.runId(), classify(exception));
         }
     }
 
@@ -58,8 +60,12 @@ public class AiPreCheckProcessor {
         while (true) {
             try {
                 AiPreCheckResult result = aiClient.preCheck(request);
+                if (event.runId() != null && !workflowService.isActive(event.workflowId(), event.runId())) {
+                    return;
+                }
                 resultValidator.validate(result);
-                workflowService.recordResult(event.workflowId(), result);
+                if (event.runId() == null) workflowService.recordResult(event.workflowId(), result);
+                else workflowService.recordResult(event.workflowId(), event.runId(), result);
                 return;
             } catch (AiTechnicalException exception) {
                 AiTechnicalError error = classify(exception);
@@ -69,10 +75,12 @@ public class AiPreCheckProcessor {
                         de.melinadanhier.projectflow.ai.model.AiSchemaVersions.PRE_CHECK, error.errorCode());
                 if (!error.isRetryable()
                         || attemptNumber >= executionProperties.getMaxAttempts()) {
-                    finishWithTechnicalFailure(event.workflowId(), error);
+                    finishWithTechnicalFailure(event.workflowId(), event.runId(), error);
                     return;
                 }
-                var recordedRetry = workflowService.recordRetry(event.workflowId(), error);
+                var recordedRetry = event.runId() == null
+                        ? workflowService.recordRetry(event.workflowId(), error)
+                        : workflowService.recordRetry(event.workflowId(), event.runId(), error);
                 if (recordedRetry.isEmpty()) {
                     return;
                 }
@@ -81,17 +89,20 @@ public class AiPreCheckProcessor {
                     backoff.waitBeforeRetry(completedRetries);
                 } catch (InterruptedException interruptedException) {
                     Thread.currentThread().interrupt();
-                    finishWithTechnicalFailure(event.workflowId(), classify(
+                    finishWithTechnicalFailure(event.workflowId(), event.runId(), classify(
                             new AiTechnicalException(
                                     AiTechnicalErrorCode.RETRY_INTERRUPTED,
                                     "Der KI-Pre-Check-Retry wurde unterbrochen.", interruptedException)));
                     return;
                 }
-                if (workflowService.claimAndReadSnapshot(event.workflowId()).isEmpty()) {
+                var reclaimed = event.runId() == null
+                        ? workflowService.claimAndReadSnapshot(event.workflowId())
+                        : workflowService.claimAndReadSnapshot(event.workflowId(), event.runId());
+                if (reclaimed.isEmpty()) {
                     return;
                 }
             } catch (RuntimeException exception) {
-                finishWithTechnicalFailure(event.workflowId(), classify(exception));
+                finishWithTechnicalFailure(event.workflowId(), event.runId(), classify(exception));
                 return;
             }
         }
@@ -101,12 +112,14 @@ public class AiPreCheckProcessor {
         return AiTechnicalError.from(exception, AiOperation.PRE_CHECK);
     }
 
-    private void finishWithTechnicalFailure(java.util.UUID workflowId, AiTechnicalError error) {
+    private void finishWithTechnicalFailure(java.util.UUID workflowId, java.util.UUID runId,
+                                            AiTechnicalError error) {
         log.error("KI-Pre-Check beendet workflowId={} schemaVersion={} errorCode={}.",
                 workflowId, de.melinadanhier.projectflow.ai.model.AiSchemaVersions.PRE_CHECK,
                 error.errorCode(), error.cause());
         try {
-            workflowService.recordFailure(workflowId, error);
+            if (runId == null) workflowService.recordFailure(workflowId, error);
+            else workflowService.recordFailure(workflowId, runId, error);
         } catch (RuntimeException persistenceException) {
             log.error("Technischer KI-Fehlerstatus konnte nicht gespeichert werden workflowId={} errorCode={}.",
                     workflowId, error.errorCode(), persistenceException);

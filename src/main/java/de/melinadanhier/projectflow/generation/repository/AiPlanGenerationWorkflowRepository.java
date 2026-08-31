@@ -59,11 +59,19 @@ public interface AiPlanGenerationWorkflowRepository
             set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING,
                 workflow.updatedAt = :now
             where workflow.id = :workflowId
+              and workflow.activeRunId = :runId
+              and workflow.runExpiresAt > :now
               and workflow.status in (
                 de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING,
                 de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING)
             """)
-    int claimPreCheck(@Param("workflowId") UUID workflowId, @Param("now") Instant now);
+    int claimPreCheck(@Param("workflowId") UUID workflowId, @Param("runId") UUID runId,
+                      @Param("now") Instant now);
+
+    default int claimPreCheck(UUID workflowId, Instant now) {
+        return findById(workflowId).map(workflow -> claimPreCheck(workflowId, workflow.getActiveRunId(), now))
+                .orElse(0);
+    }
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
@@ -72,9 +80,17 @@ public interface AiPlanGenerationWorkflowRepository
             set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_RUNNING,
                 workflow.updatedAt = :now
             where workflow.id = :workflowId
+              and workflow.activeRunId = :runId
+              and workflow.runExpiresAt > :now
               and workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING
             """)
-    int claimGeneration(@Param("workflowId") UUID workflowId, @Param("now") Instant now);
+    int claimGeneration(@Param("workflowId") UUID workflowId, @Param("runId") UUID runId,
+                        @Param("now") Instant now);
+
+    default int claimGeneration(UUID workflowId, Instant now) {
+        return findById(workflowId).map(workflow -> claimGeneration(workflowId, workflow.getActiveRunId(), now))
+                .orElse(0);
+    }
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
@@ -146,6 +162,10 @@ public interface AiPlanGenerationWorkflowRepository
 
     @Query("select workflow.id from AiPlanGenerationWorkflow workflow where workflow.status = :status")
     List<UUID> findIdsByStatus(@Param("status") AiPlanGenerationWorkflowStatus status);
+
+    @Query("select workflow.id from AiPlanGenerationWorkflow workflow where workflow.runExpiresAt <= :now and workflow.status in :statuses")
+    List<UUID> findExpiredIds(@Param("now") Instant now,
+                              @Param("statuses") List<AiPlanGenerationWorkflowStatus> statuses);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
