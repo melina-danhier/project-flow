@@ -8,6 +8,9 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.service.PlanDraftMaterializationService;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
+import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
+import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
+import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiGenerationWork;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
@@ -24,6 +27,11 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
+import de.melinadanhier.projectflow.draft.service.DraftVersionConflictException;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +42,9 @@ public class AiGenerationWorkflowService {
     private final GeneratedPlanDraftMapper draftMapper;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
+    private final ProjectRepository projectRepository;
+    private final PlanDraftRepository planDraftRepository;
+    private final ProjectAuthorizationService authorizationService;
 
     @Transactional
     public Optional<AiGenerationWork> claimWork(UUID workflowId) {
@@ -110,6 +121,45 @@ public class AiGenerationWorkflowService {
         }
         eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId));
         return true;
+    }
+
+    @Transactional
+    public UUID regenerateDraft(UUID projectId, UUID draftId, UUID userId, long lockVersion) {
+        projectRepository.findForUpdate(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        authorizationService.requireOwner(projectId, userId);
+        var draft = planDraftRepository.findForUpdateByProjectId(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Planentwurf nicht gefunden."));
+        if (!draftId.equals(draft.getId()) || draft.getLockVersion() != lockVersion) {
+            throw new DraftVersionConflictException(
+                    "Der Entwurf wurde zwischenzeitlich geändert. Bitte prüfe ihn erneut.");
+        }
+        if (draft.getStatus() != DraftPlanStatus.READY_FOR_REVIEW
+                && draft.getStatus() != DraftPlanStatus.IN_REVIEW) {
+            throw new ConflictException("Der Entwurf kann in diesem Zustand nicht neu generiert werden.");
+        }
+        boolean hasIncludedContent = java.util.stream.Stream.concat(
+                        draft.getSections().stream().map(section -> section.getReviewStatus()),
+                        draft.getElements().stream().map(element -> element.getReviewStatus()))
+                .anyMatch(status -> status != DraftReviewStatus.REJECTED);
+        if (hasIncludedContent) {
+            throw new ConflictException("Nur ein vollständig verworfener Entwurf kann neu generiert werden.");
+        }
+        var project = draft.getProject();
+        if (project.getStatus() != ProjectStatus.DRAFT || project.getLocation() != ProjectLocation.DRAFT
+                || !project.getSections().isEmpty() || !project.getElements().isEmpty()) {
+            throw new ConflictException("Das Projekt wurde bereits aktiviert.");
+        }
+        var workflow = workflowRepository.findByIdForUpdate(
+                        workflowRepository.findByProjectId(projectId)
+                                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."))
+                                .getId())
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        workflow.prepareDraftRegeneration();
+        project.attachDraft(null);
+        planDraftRepository.delete(draft);
+        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflow.getId()));
+        return workflow.getId();
     }
 
     /** Technical entry point after repairing the server-side AI client configuration; not exposed in the user UI. */

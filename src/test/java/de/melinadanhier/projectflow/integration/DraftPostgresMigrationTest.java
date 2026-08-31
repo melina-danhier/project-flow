@@ -197,7 +197,13 @@ class DraftPostgresMigrationTest {
                 """, String.class);
         assertThat(statusConstraint)
                 .contains("ASSUMPTIONS_REVIEW_PENDING")
+                .doesNotContain("DRAFT_APPLIED")
                 .doesNotContain("PRE_CHECK_PASSED");
+        assertThat(jdbc.queryForObject("""
+                select count(*) from information_schema.columns
+                where table_schema = 'public' and table_name = 'plan_drafts'
+                and column_name = 'applied_at'
+                """, Integer.class)).isOne();
         assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success = false", Integer.class)).isZero();
     }
 }

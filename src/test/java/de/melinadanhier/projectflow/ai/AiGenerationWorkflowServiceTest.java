@@ -28,6 +28,9 @@ class AiGenerationWorkflowServiceTest {
     @Mock PlanDraftMaterializationService materializationService;
     @Mock GeneratedPlanDraftMapper mapper;
     @Mock ApplicationEventPublisher eventPublisher;
+    @Mock de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository projectRepository;
+    @Mock de.melinadanhier.projectflow.draft.repository.PlanDraftRepository planDraftRepository;
+    @Mock de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService authorizationService;
     @Mock GeneratedPlanResponse result;
 
     @Test
@@ -70,6 +73,7 @@ class AiGenerationWorkflowServiceTest {
 
     private AiGenerationWorkflowService service() {
         return new AiGenerationWorkflowService(
-                workflowRepository, payloadCodec, materializationService, mapper, Clock.systemUTC(), eventPublisher);
+                workflowRepository, payloadCodec, materializationService, mapper, Clock.systemUTC(), eventPublisher,
+                projectRepository, planDraftRepository, authorizationService);
     }
 }

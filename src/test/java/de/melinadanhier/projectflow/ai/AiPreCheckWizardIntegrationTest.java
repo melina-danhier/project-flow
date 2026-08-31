@@ -203,7 +203,7 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(planDraftRepository.findById(draft.getId())).get()
                 .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(workflowRepository.findById(workflowId)).get()
-                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.DRAFT_APPLIED);
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
 
         mockMvc.perform(post("/projects/" + projectId + "/draft/apply").with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection());

@@ -203,7 +203,7 @@ class AiWorkflowIntegrationTest {
         assertThat(planDraftRepository.findById(draft.getId())).get()
                 .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(workflowRepository.findById(completion.workflowId())).get()
-                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.DRAFT_APPLIED);
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
         assertThat(projectRepository.findById(completion.projectId())).get().satisfies(project -> {
             assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);

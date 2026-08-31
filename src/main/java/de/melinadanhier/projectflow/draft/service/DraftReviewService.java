@@ -385,8 +385,7 @@ public class DraftReviewService {
 
     private void requireReleasedDraft(UUID projectId) {
         workflowRepository.findByProjectId(projectId).ifPresent(workflow -> {
-            if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED
-                    && workflow.getStatus() != AiPlanGenerationWorkflowStatus.DRAFT_APPLIED) {
+            if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
                 throw new ConflictException("Bitte schließe zuerst die Prüfung der kritischen Annahmen ab.");
             }
         });

@@ -308,9 +308,11 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
     }
 
-    public void markDraftApplied() {
+    public void prepareDraftRegeneration() {
         requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
-        status = AiPlanGenerationWorkflowStatus.DRAFT_APPLIED;
+        generationRoundAttemptCount = 0;
+        clearError();
+        status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
     }
 
     private void clearError() {

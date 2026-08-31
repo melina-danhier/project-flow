@@ -44,6 +44,9 @@ public class DraftPlan extends MutableEntity {
     @Column(name = "generated_at")
     private Instant generatedAt;
 
+    @Column(name = "applied_at")
+    private Instant appliedAt;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "sort_mode", nullable = false, length = 20)
