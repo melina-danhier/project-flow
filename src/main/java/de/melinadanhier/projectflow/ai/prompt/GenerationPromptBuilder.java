@@ -4,9 +4,6 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
-import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
-import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -72,14 +69,8 @@ public class GenerationPromptBuilder {
     }
 
     public AiPrompt build(AiGenerationRequest request) {
-        if (!AiPromptVersions.GENERATION_PROMPT.equals(request.promptVersion())) {
-            throw new AiTechnicalException(
-                    AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
-                    "Die gespeicherte Generation-Prompt-Version wird serverseitig nicht unterstützt."
-            );
-        }
         return new AiPrompt(
-                request.promptVersion(),
+                AiPromptVersions.GENERATION_PROMPT,
                 SYSTEM_INSTRUCTIONS_TEMPLATE,
                 serializeRequestData(request)
         );

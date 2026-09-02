@@ -31,11 +31,11 @@ public enum AiTechnicalErrorCode {
     );
 
     private final boolean retryable;
-    private final String diagnosis;
+    private final String userMessage;
 
-    AiTechnicalErrorCode(boolean retryable, String diagnosis) {
+    AiTechnicalErrorCode(boolean retryable, String userMessage) {
         this.retryable = retryable;
-        this.diagnosis = diagnosis;
+        this.userMessage = userMessage;
     }
 
 }

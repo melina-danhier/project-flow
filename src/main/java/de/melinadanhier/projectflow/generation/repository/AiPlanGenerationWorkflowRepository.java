@@ -101,7 +101,6 @@ public interface AiPlanGenerationWorkflowRepository
                 workflow.lastTechnicalError = null,
                 workflow.lastAiOperation = null,
                 workflow.lastErrorRetryable = null,
-                workflow.lastErrorDiagnosis = null,
                 workflow.updatedAt = :now
             where workflow.id = :workflowId
               and workflow.lastErrorRetryable = true
@@ -132,7 +131,6 @@ public interface AiPlanGenerationWorkflowRepository
                 workflow.lastTechnicalError = null,
                 workflow.lastAiOperation = null,
                 workflow.lastErrorRetryable = null,
-                workflow.lastErrorDiagnosis = null,
                 workflow.updatedAt = :now
             where workflow.id = :workflowId
               and workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE

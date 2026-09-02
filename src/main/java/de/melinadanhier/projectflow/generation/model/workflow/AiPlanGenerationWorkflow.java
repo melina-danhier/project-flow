@@ -3,8 +3,6 @@ package de.melinadanhier.projectflow.generation.model.workflow;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.AiOperation;
-import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
-import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
 import de.melinadanhier.projectflow.common.model.MutableEntity;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import jakarta.persistence.Column;
@@ -115,23 +113,24 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     @ColumnTransformer(write = "CAST(? AS JSONB)")
     private String pendingAssumptionReview;
 
-    @NotBlank
     @Size(max = 100)
-    @Column(name = "generation_prompt_version", nullable = false, updatable = false, length = 100)
+    @Column(name = "pre_check_prompt_version", length = 100)
+    private String preCheckPromptVersion;
+
+    @Size(max = 100)
+    @Column(name = "generation_prompt_version", length = 100)
     private String generationPromptVersion;
 
     @Size(max = 100)
     @Column(name = "model_name", length = 100)
     private String modelName;
 
-    @NotBlank
-    @Size(max = 20)
-    @Column(name = "pre_check_schema_version", nullable = false, updatable = false, length = 20)
+    @Size(max = 50)
+    @Column(name = "pre_check_schema_version", length = 50)
     private String preCheckSchemaVersion;
 
-    @NotBlank
-    @Size(max = 20)
-    @Column(name = "generation_schema_version", nullable = false, updatable = false, length = 20)
+    @Size(max = 50)
+    @Column(name = "generation_schema_version", length = 50)
     private String generationSchemaVersion;
 
     @PositiveOrZero
@@ -144,10 +143,6 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
 
     @Column(name = "last_error_retryable")
     private Boolean lastErrorRetryable;
-
-    @Size(max = 500)
-    @Column(name = "last_error_diagnosis", length = 500)
-    private String lastErrorDiagnosis;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
@@ -164,7 +159,6 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
             UUID completionToken,
             Instant consentConfirmedAt,
             String consentVersion,
-            String generationPromptVersion,
             UUID runId,
             Instant expiresAt
     ) {
@@ -175,34 +169,17 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         workflow.completionToken = completionToken;
         workflow.consentConfirmedAt = consentConfirmedAt;
         workflow.consentVersion = consentVersion;
-        workflow.generationPromptVersion = generationPromptVersion;
         workflow.activeRunId = runId;
         workflow.runExpiresAt = expiresAt;
-        workflow.preCheckSchemaVersion = AiSchemaVersions.PRE_CHECK;
-        workflow.generationSchemaVersion = AiSchemaVersions.GENERATING_PLAN;
         return workflow;
     }
 
     public static AiPlanGenerationWorkflow create(
             Project project, String confirmedSnapshot, String snapshotVersion,
-            UUID completionToken, Instant consentConfirmedAt, String consentVersion,
-            String generationPromptVersion
+            UUID completionToken, Instant consentConfirmedAt, String consentVersion
     ) {
         return create(project, confirmedSnapshot, snapshotVersion, completionToken,
-                consentConfirmedAt, consentVersion, generationPromptVersion,
-                UUID.randomUUID(), consentConfirmedAt.plusSeconds(300));
-    }
-
-    public static AiPlanGenerationWorkflow create(
-            Project project,
-            String confirmedSnapshot,
-            String snapshotVersion,
-            UUID completionToken,
-            Instant consentConfirmedAt,
-            String consentVersion
-    ) {
-        return create(project, confirmedSnapshot, snapshotVersion, completionToken,
-                consentConfirmedAt, consentVersion, AiPromptVersions.GENERATION_PROMPT,
+                consentConfirmedAt, consentVersion,
                 UUID.randomUUID(), consentConfirmedAt.plusSeconds(300));
     }
 
@@ -315,10 +292,25 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         return acknowledgedWarningIndices.add(problemIndex);
     }
 
-    public void recordGenerationAttempt() {
+    public void recordPreCheckAttempt(String promptVersion, String schemaVersion) {
+        requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
+        preCheckPromptVersion = requireVersion(promptVersion, "Pre-Check-Prompt-Version");
+        preCheckSchemaVersion = requireVersion(schemaVersion, "Pre-Check-Schema-Version");
+    }
+
+    public void recordGenerationAttempt(String promptVersion, String schemaVersion) {
         requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
+        generationPromptVersion = requireVersion(promptVersion, "Generierungs-Prompt-Version");
+        generationSchemaVersion = requireVersion(schemaVersion, "Generierungs-Schema-Version");
         generationRoundAttemptCount++;
         generationTotalAttemptCount++;
+    }
+
+    private String requireVersion(String version, String field) {
+        if (version == null || version.isBlank()) {
+            throw new IllegalArgumentException(field + " darf nicht leer sein.");
+        }
+        return version;
     }
 
     public void recordGenerationCompleted(String serializedPlan, boolean assumptionsNeedReview) {
@@ -405,14 +397,12 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         lastTechnicalError = null;
         lastAiOperation = null;
         lastErrorRetryable = null;
-        lastErrorDiagnosis = null;
     }
 
     private void recordError(AiTechnicalError error) {
         lastTechnicalError = error.errorCode();
         lastAiOperation = error.operation();
         lastErrorRetryable = error.isRetryable();
-        lastErrorDiagnosis = sanitizeDiagnosis(error.diagnosis());
     }
 
     private void requireOperation(AiTechnicalError error, AiOperation expected) {
@@ -420,14 +410,6 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
             throw new IllegalArgumentException(
                     "Ungültige KI-Operation " + error.operation() + "; erwartet wurde " + expected + ".");
         }
-    }
-
-    private String sanitizeDiagnosis(String diagnosis) {
-        if (diagnosis == null || diagnosis.isBlank()) {
-            return null;
-        }
-        String compact = diagnosis.replaceAll("[\\r\\n\\t]+", " ").trim();
-        return compact.substring(0, Math.min(compact.length(), 500));
     }
 
     private void requireStatus(AiPlanGenerationWorkflowStatus expected) {

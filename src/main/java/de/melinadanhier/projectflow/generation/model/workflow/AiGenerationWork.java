@@ -14,20 +14,19 @@ public record AiGenerationWork(
         List<AiPreCheckProblem> acknowledgedWarnings,
         List<String> confirmedAssumptions,
         List<RejectedCriticalAssumption> rejectedAssumptions,
-        int roundAttemptCount,
-        String promptVersion
+        int roundAttemptCount
 ) {
     public AiGenerationWork(UUID workflowId, UUID runId, AiWizardSnapshot snapshot,
                             List<AiPreCheckProblem> acknowledgedWarnings,
-                            int roundAttemptCount, String promptVersion) {
+                            int roundAttemptCount) {
         this(workflowId, runId, snapshot, acknowledgedWarnings, List.of(), List.of(),
-                roundAttemptCount, promptVersion);
+                roundAttemptCount);
     }
 
     public AiGenerationWork(UUID workflowId, AiWizardSnapshot snapshot,
                             List<AiPreCheckProblem> acknowledgedWarnings,
-                            int roundAttemptCount, String promptVersion) {
+                            int roundAttemptCount) {
         this(workflowId, null, snapshot, acknowledgedWarnings, List.of(), List.of(),
-                roundAttemptCount, promptVersion);
+                roundAttemptCount);
     }
 }

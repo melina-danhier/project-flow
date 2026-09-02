@@ -24,10 +24,10 @@ class AiTechnicalErrorTest {
         assertThat(generation.operation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(preCheck.errorCode()).isEqualTo(AiTechnicalErrorCode.PROVIDER_TIMEOUT);
         assertThat(preCheck.cause()).isSameAs(providerCause);
-        assertThat(preCheck.message()).isEqualTo("Timeout");
+        assertThat(preCheck.technicalMessage()).isEqualTo("Timeout");
         assertThat(preCheck.isRetryable()).isTrue();
-        assertThat(preCheck.diagnosis()).isEqualTo(
-                AiTechnicalErrorCode.PROVIDER_TIMEOUT.getDiagnosis());
+        assertThat(preCheck.userMessage()).isEqualTo(
+                AiTechnicalErrorCode.PROVIDER_TIMEOUT.getUserMessage());
     }
 
     @Test
@@ -37,7 +37,7 @@ class AiTechnicalErrorTest {
         AiTechnicalError error = AiTechnicalError.from(exception, AiOperation.PRE_CHECK);
 
         assertThat(error.errorCode()).isEqualTo(AiTechnicalErrorCode.UNKNOWN_AI_ERROR);
-        assertThat(error.message()).isNotBlank();
+        assertThat(error.technicalMessage()).isNotBlank();
         assertThat(error.cause()).isSameAs(exception);
         assertThat(error.isRetryable()).isFalse();
     }

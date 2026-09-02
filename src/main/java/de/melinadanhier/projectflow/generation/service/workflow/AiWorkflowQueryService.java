@@ -6,7 +6,6 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -17,7 +16,6 @@ public class AiWorkflowQueryService {
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final AiWorkflowControlService controlService;
 
-    @Transactional
     public AiWorkflowStatusDto getOwnedStatus(UUID workflowId, UUID userId) {
         workflowRepository.findOwnedById(workflowId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
@@ -32,7 +30,6 @@ public class AiWorkflowQueryService {
                 workflow.getLastTechnicalError(),
                 workflow.getLastAiOperation(),
                 workflow.getLastErrorRetryable(),
-                workflow.getLastErrorDiagnosis(),
                 workflow.getPendingAssumptionReview() != null && !workflow.getPendingAssumptionReview().isBlank());
     }
 }

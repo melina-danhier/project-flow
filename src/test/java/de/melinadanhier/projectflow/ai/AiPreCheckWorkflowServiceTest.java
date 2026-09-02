@@ -58,6 +58,20 @@ class AiPreCheckWorkflowServiceTest {
     }
 
     @Test
+    void recordsVersionsOnlyForAnActiveProviderCall() {
+        UUID workflowId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+        when(workflowRepository.findByIdForUpdate(workflowId)).thenReturn(Optional.of(workflow));
+        when(workflow.isActiveRun(runId, NOW, AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING))
+                .thenReturn(true);
+
+        service().recordProviderCall(
+                workflowId, runId, "precheck-v1", "precheck-schema-v1");
+
+        verify(workflow).recordPreCheckAttempt("precheck-v1", "precheck-schema-v1");
+    }
+
+    @Test
     void stalePreCheckResultCannotOverwriteCurrentState() {
         UUID workflowId = UUID.randomUUID();
         AiPreCheckResult result = AiPreCheckResult.withoutIssues();

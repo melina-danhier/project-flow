@@ -11,7 +11,6 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompleti
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletionToken;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.repository.AiWorkflowCompletionTokenRepository;
-import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
@@ -87,7 +86,6 @@ public class AiWorkflowInitializationService {
                 completionToken,
                 startedAt,
                 CONSENT_VERSION,
-                AiPromptVersions.GENERATION_PROMPT,
                 runId,
                 startedAt.plus(executionProperties.getMaxRunTime())
         );

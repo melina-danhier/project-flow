@@ -12,7 +12,6 @@ import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
-import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationResponseValidator;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.service.plan.AiPlanGenerationService;
@@ -46,7 +45,7 @@ class AiPlanGenerationServiceTest {
         var error = new AiPreCheckProblem(AiPreCheckSeverity.ERROR, "Unmöglich", "Ziel ändern");
 
         assertThatThrownBy(() -> service(client, backoff, 3).generatePlan(snapshot(), List.of(error),
-                0, AiPromptVersions.GENERATION_PROMPT, beforeProviderCall))
+                0, beforeProviderCall))
                 .isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(client, backoff, beforeProviderCall);
     }

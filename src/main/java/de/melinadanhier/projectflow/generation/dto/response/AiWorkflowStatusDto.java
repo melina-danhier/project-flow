@@ -16,17 +16,12 @@ public record AiWorkflowStatusDto(
         AiTechnicalErrorCode errorCode,
         AiOperation errorOperation,
         Boolean errorRetryable,
-        String errorDiagnosis,
         boolean pendingAssumptionReview
 ) {
-    public AiWorkflowStatusDto(UUID workflowId, UUID projectId,
-                               AiPlanGenerationWorkflowStatus status,
-                               int preCheckRetryCount, int generationRoundAttemptCount,
-                               int generationTotalAttemptCount, AiTechnicalErrorCode errorCode,
-                               AiOperation errorOperation, Boolean errorRetryable, String errorDiagnosis) {
-        this(workflowId, projectId, status, preCheckRetryCount, generationRoundAttemptCount,
-                generationTotalAttemptCount, errorCode, errorOperation, errorRetryable, errorDiagnosis, false);
+    public String errorMessage() {
+        return errorCode == null ? null : errorCode.getUserMessage();
     }
+
     public boolean isProcessing() {
         return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING
                 || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING

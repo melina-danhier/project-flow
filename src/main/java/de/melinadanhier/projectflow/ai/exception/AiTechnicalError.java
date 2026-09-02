@@ -8,16 +8,16 @@ import java.util.Objects;
 public record AiTechnicalError(
         AiTechnicalErrorCode errorCode,
         AiOperation operation,
-        String message,
+        String technicalMessage,
         Throwable cause
 ) {
     public AiTechnicalError {
         Objects.requireNonNull(errorCode, "errorCode darf nicht null sein");
         Objects.requireNonNull(operation, "operation darf nicht null sein");
-        Objects.requireNonNull(message, "message darf nicht null sein");
+        Objects.requireNonNull(technicalMessage, "technicalMessage darf nicht null sein");
         Objects.requireNonNull(cause, "cause darf nicht null sein");
-        if (message.isBlank()) {
-            throw new IllegalArgumentException("message darf nicht leer sein");
+        if (technicalMessage.isBlank()) {
+            throw new IllegalArgumentException("technicalMessage darf nicht leer sein");
         }
     }
 
@@ -29,22 +29,22 @@ public record AiTechnicalError(
                 ? technicalException.getErrorCode()
                 : AiTechnicalErrorCode.UNKNOWN_AI_ERROR;
         Throwable cause = exception.getCause() != null ? exception.getCause() : exception;
-        String message = exception.getMessage();
-        if (message == null || message.isBlank()) {
-            message = exception.getClass().getSimpleName();
+        String technicalMessage = exception.getMessage();
+        if (technicalMessage == null || technicalMessage.isBlank()) {
+            technicalMessage = exception.getClass().getSimpleName();
         }
-        if (message.isBlank()) {
-            message = "Unbekannter technischer KI-Fehler";
+        if (technicalMessage.isBlank()) {
+            technicalMessage = "Unbekannter technischer KI-Fehler";
         }
 
-        return new AiTechnicalError(errorCode, operation, message, cause);
+        return new AiTechnicalError(errorCode, operation, technicalMessage, cause);
     }
 
     public boolean isRetryable() {
         return errorCode.isRetryable();
     }
 
-    public String diagnosis() {
-        return errorCode.getDiagnosis();
+    public String userMessage() {
+        return errorCode.getUserMessage();
     }
 }

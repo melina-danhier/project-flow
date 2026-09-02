@@ -78,8 +78,7 @@ public class AiGenerationWorkflowService {
                         .toList(),
                 assumptionContext.confirmedAssumptions(),
                 assumptionContext.rejectedAssumptions(),
-                workflow.getGenerationRoundAttemptCount(),
-                workflow.getGenerationPromptVersion()));
+                workflow.getGenerationRoundAttemptCount()));
     }
 
     public Optional<AiGenerationWork> claimWork(UUID workflowId) {
@@ -87,17 +86,20 @@ public class AiGenerationWorkflowService {
     }
 
     @Transactional
-    public void recordProviderCall(UUID workflowId, UUID runId) {
+    public void recordProviderCall(UUID workflowId, UUID runId,
+                                   String promptVersion, String schemaVersion) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
         if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)) {
             throw new ConflictException("Die Generierung ist nicht mehr aktiv.");
         }
-        workflow.recordGenerationAttempt();
+        workflow.recordGenerationAttempt(promptVersion, schemaVersion);
     }
 
     @Transactional
-    public void recordProviderCall(UUID workflowId) { recordProviderCall(workflowId, null); }
+    public void recordProviderCall(UUID workflowId, String promptVersion, String schemaVersion) {
+        recordProviderCall(workflowId, null, promptVersion, schemaVersion);
+    }
 
     @Transactional
     public boolean isActive(UUID workflowId, UUID runId) {

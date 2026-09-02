@@ -209,7 +209,7 @@ class PlanDraftMaterializationIntegrationTest {
     @Test
     void providerFailureAndRetryUseOnlyWorkflowUntilFirstSuccess() {
         Fixture f = runningWorkflow();
-        when(generation.generatePlan(any(), anyList(), anyInt(), anyString(), anyList(), anyList(), any(Runnable.class)))
+        when(generation.generatePlan(any(), anyList(), anyInt(), anyList(), anyList(), any(Runnable.class)))
                 .thenThrow(new AiTechnicalException(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, "Nicht erreichbar"));
         coordinator.generateClaimed(work(f));
         assertNoDraft(f);
@@ -313,11 +313,12 @@ class PlanDraftMaterializationIntegrationTest {
     }
 
     private void stubGeneration(GeneratedPlanResponse response) {
-        doReturn(response).when(generation).generatePlan(any(), anyList(), anyInt(), anyString(), anyList(), anyList(), any(Runnable.class));
+        doReturn(response).when(generation).generatePlan(
+                any(), anyList(), anyInt(), anyList(), anyList(), any(Runnable.class));
     }
 
     private AiGenerationWork work(Fixture f) {
-        return new AiGenerationWork(f.workflowId(), null, List.of(), 0, "generation-v1");
+        return new AiGenerationWork(f.workflowId(), null, List.of(), 0);
     }
 
     private void assertCompleteDraft(Fixture f) {

@@ -8,6 +8,8 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.generation.model.workflow.AiGenerationWork;
+import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
+import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,10 +32,14 @@ public class AiPlanGenerationCoordinator {
         try {
             GeneratedPlanResponse result = generationService.generatePlan(
                     work.snapshot(), work.acknowledgedWarnings(), work.roundAttemptCount(),
-                    work.promptVersion(), work.confirmedAssumptions(), work.rejectedAssumptions(),
+                    work.confirmedAssumptions(), work.rejectedAssumptions(),
                     () -> {
-                        if (work.runId() == null) workflowService.recordProviderCall(workflowId);
-                        else workflowService.recordProviderCall(workflowId, work.runId());
+                        if (work.runId() == null) workflowService.recordProviderCall(
+                                workflowId, AiPromptVersions.GENERATION_PROMPT,
+                                AiSchemaVersions.GENERATING_PLAN);
+                        else workflowService.recordProviderCall(
+                                workflowId, work.runId(), AiPromptVersions.GENERATION_PROMPT,
+                                AiSchemaVersions.GENERATING_PLAN);
                     });
             if (work.runId() != null && !workflowService.isActive(workflowId, work.runId())) {
                 return;

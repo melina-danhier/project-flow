@@ -15,7 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -32,6 +34,22 @@ class AiGenerationWorkflowServiceTest {
     @Mock de.melinadanhier.projectflow.draft.repository.PlanDraftRepository planDraftRepository;
     @Mock de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService authorizationService;
     @Mock GeneratedPlanResponse result;
+
+    @Test
+    void recordsAttemptAndActualVersionsOnlyForAnActiveProviderCall() {
+        UUID workflowId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+        var workflow = mock(de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow.class);
+        when(workflowRepository.findByIdForUpdate(workflowId)).thenReturn(Optional.of(workflow));
+        when(workflow.isActiveRun(eq(runId), any(Instant.class), eq(
+                de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)))
+                .thenReturn(true);
+
+        service().recordProviderCall(
+                workflowId, runId, "generation-v1", "generation-schema-v1");
+
+        verify(workflow).recordGenerationAttempt("generation-v1", "generation-schema-v1");
+    }
 
     @Test
     void mapsBeforeOpeningStorageTransactionWithoutSerializingTheResponse() {
