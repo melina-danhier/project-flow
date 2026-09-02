@@ -66,8 +66,7 @@ class AiPromptBuilderTest {
         var request = new AiGenerationRequest(snapshot(), List.of(), List.of(),
                 List.of("Cloud-Dienste dürfen eingesetzt werden."),
                 List.of(new RejectedCriticalAssumption(
-                        "Zehn Stunden pro Woche stehen bereit.", "Es sind vier Stunden.")),
-                AiPromptVersions.GENERATION_PROMPT);
+                        "Zehn Stunden pro Woche stehen bereit.", "Es sind vier Stunden.")));
 
         var prompt = generationPromptBuilder.build(request);
 

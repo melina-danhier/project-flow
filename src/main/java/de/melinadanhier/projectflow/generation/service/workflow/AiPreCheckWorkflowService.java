@@ -58,6 +58,23 @@ public class AiPreCheckWorkflowService {
     }
 
     @Transactional
+    public void recordProviderCall(UUID workflowId, UUID runId,
+                                   String promptVersion, String schemaVersion) {
+        AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
+        if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING)) {
+            throw new de.melinadanhier.projectflow.common.exception.ConflictException(
+                    "Der KI-Pre-Check ist nicht mehr aktiv.");
+        }
+        workflow.recordPreCheckAttempt(promptVersion, schemaVersion);
+    }
+
+    @Transactional
+    public void recordProviderCall(UUID workflowId, String promptVersion, String schemaVersion) {
+        recordProviderCall(workflowId, null, promptVersion, schemaVersion);
+    }
+
+    @Transactional
     public OptionalInt recordRetry(UUID workflowId, UUID runId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
         if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),

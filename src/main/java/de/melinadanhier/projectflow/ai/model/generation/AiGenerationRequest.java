@@ -3,24 +3,19 @@ package de.melinadanhier.projectflow.ai.model.generation;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 
 public record AiGenerationRequest(
-        @NotNull @Valid AiWizardSnapshot confirmedWizardData,
-        List<@Valid AiPreCheckProblem> acknowledgedWarnings,
+        AiWizardSnapshot confirmedWizardData,
+        List<AiPreCheckProblem> acknowledgedWarnings,
         List<String> previousValidationIssues,
         List<String> confirmedAssumptions,
-        List<RejectedCriticalAssumption> rejectedAssumptions,
-        @NotNull String promptVersion
+        List<RejectedCriticalAssumption> rejectedAssumptions
 ) {
     public AiGenerationRequest {
         Objects.requireNonNull(confirmedWizardData, "confirmedWizardData darf nicht null sein");
-        Objects.requireNonNull(promptVersion,"promptVersion darf nicht null sein");
         acknowledgedWarnings = acknowledgedWarnings == null
                 ? List.of()
                 : List.copyOf(acknowledgedWarnings);
@@ -39,7 +34,8 @@ public record AiGenerationRequest(
             AiWizardSnapshot confirmedWizardData,
             List<AiPreCheckProblem> acknowledgedWarnings
     ) {
-        this(confirmedWizardData, acknowledgedWarnings, List.of(), List.of(), List.of(), AiPromptVersions.GENERATION_PROMPT);
+        this(confirmedWizardData, acknowledgedWarnings, List.of(),
+                List.of(), List.of());
     }
 
     public AiGenerationRequest(
@@ -47,6 +43,7 @@ public record AiGenerationRequest(
             List<AiPreCheckProblem> acknowledgedWarnings,
             List<String> previousValidationIssues
     ) {
-        this(confirmedWizardData, acknowledgedWarnings, previousValidationIssues, List.of(), List.of(), AiPromptVersions.GENERATION_PROMPT);
+        this(confirmedWizardData, acknowledgedWarnings, previousValidationIssues,
+                List.of(), List.of());
     }
 }

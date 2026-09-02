@@ -142,7 +142,7 @@ class DraftApplicationIntegrationTest {
         UUID workflowId = new TransactionTemplate(transactionManager).execute(status -> {
             Project project = projects.findById(fixture.projectId()).orElseThrow();
             var workflow = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow.create(
-                    project, "{}", "test", UUID.randomUUID(), Instant.now(), "v1", "generation-v3");
+                    project, "{}", "test", UUID.randomUUID(), Instant.now(), "v1");
             workflows.saveAndFlush(workflow);
             jdbc.update("update ai_plan_generation_workflows set status = 'GENERATION_COMPLETED' where id = ?", workflow.getId());
             return workflow.getId();

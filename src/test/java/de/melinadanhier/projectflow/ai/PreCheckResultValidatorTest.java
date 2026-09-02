@@ -6,6 +6,9 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.validation.precheck.PreCheckResultValidator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 
@@ -22,6 +25,15 @@ class PreCheckResultValidatorTest {
         assertThatCode(() -> validator.validate(new AiPreCheckResult(List.of(
                 new AiPreCheckProblem(AiPreCheckSeverity.WARNING, "Zeitraum knapp", "Umfang reduzieren")))))
                 .doesNotThrowAnyException();
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "   ")
+    void rejectsProblemsWithoutConcreteSuggestion(String suggestion) {
+        assertThatThrownBy(() -> validator.validate(new AiPreCheckResult(List.of(
+                new AiPreCheckProblem(AiPreCheckSeverity.WARNING, "Zeitraum knapp", suggestion)))))
+                .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test

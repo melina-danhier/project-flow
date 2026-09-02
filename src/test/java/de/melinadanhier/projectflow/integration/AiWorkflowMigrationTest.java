@@ -14,6 +14,88 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AiWorkflowMigrationTest {
 
     @Test
+    void resetsPreviouslyAssumedVersionsAndAllowsRecordingActualCallVersions() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:actual-ai-versions;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            UUID workflowId = UUID.randomUUID();
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        CREATE TABLE ai_plan_generation_workflows (
+                            id UUID PRIMARY KEY,
+                            generation_prompt_version VARCHAR(100) NOT NULL DEFAULT 'generation-v1',
+                            pre_check_schema_version VARCHAR(20) NOT NULL DEFAULT '1.0',
+                            generation_schema_version VARCHAR(20) NOT NULL DEFAULT '1.0')
+                        """);
+                statement.execute("""
+                        INSERT INTO ai_plan_generation_workflows (id)
+                        VALUES ('%s')
+                        """.formatted(workflowId));
+            }
+
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V25__record_actual_ai_versions.sql"));
+
+            try (var statement = connection.createStatement();
+                 var result = statement.executeQuery("""
+                         SELECT pre_check_prompt_version, pre_check_schema_version,
+                                generation_prompt_version, generation_schema_version
+                         FROM ai_plan_generation_workflows
+                         WHERE id = '%s'
+                         """.formatted(workflowId))) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getString("pre_check_prompt_version")).isNull();
+                assertThat(result.getString("pre_check_schema_version")).isNull();
+                assertThat(result.getString("generation_prompt_version")).isNull();
+                assertThat(result.getString("generation_schema_version")).isNull();
+            }
+
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        UPDATE ai_plan_generation_workflows
+                        SET pre_check_prompt_version = 'precheck-v1',
+                            pre_check_schema_version = 'precheck-schema-v1',
+                            generation_prompt_version = 'generation-v1',
+                            generation_schema_version = 'generation-schema-v1'
+                        WHERE id = '%s'
+                        """.formatted(workflowId));
+            }
+        }
+    }
+
+    @Test
+    void removesRedundantErrorDiagnosisWithoutRemovingTheStableErrorCode() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:remove-ai-error-diagnosis;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        CREATE TABLE ai_plan_generation_workflows (
+                            id UUID PRIMARY KEY,
+                            last_technical_error VARCHAR(50),
+                            last_error_diagnosis VARCHAR(500))
+                        """);
+                statement.execute("""
+                        INSERT INTO ai_plan_generation_workflows (
+                            id, last_technical_error, last_error_diagnosis
+                        ) VALUES (RANDOM_UUID(), 'PROVIDER_TIMEOUT', 'Veraltete Meldung')
+                        """);
+            }
+
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V24__remove_redundant_ai_error_diagnosis.sql"));
+
+            try (var statement = connection.createStatement();
+                 var result = statement.executeQuery(
+                         "SELECT last_technical_error FROM ai_plan_generation_workflows")) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getString("last_technical_error")).isEqualTo("PROVIDER_TIMEOUT");
+                assertThatThrownBy(() -> statement.executeQuery(
+                        "SELECT last_error_diagnosis FROM ai_plan_generation_workflows"))
+                        .isInstanceOf(SQLException.class);
+            }
+        }
+    }
+
+    @Test
     void movesGenerationMetadataAndRemovesOnlyEmptyLegacyDrafts() throws Exception {
         try (var connection = DriverManager.getConnection(
                 "jdbc:h2:mem:draft-lifecycle;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {

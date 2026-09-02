@@ -17,7 +17,7 @@ public class AiExecutionProperties {
 
     @Min(1)
     @Max(10)
-    private int maxAttempts = 3;
+    private int maxAttempts = 3; // Inklusive erstem Versuch
 
     @NotNull
     private Duration staleWorkflowTimeout = Duration.ofMinutes(5);
