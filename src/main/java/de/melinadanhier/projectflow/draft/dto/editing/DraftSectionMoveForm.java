@@ -1,16 +1,13 @@
-package de.melinadanhier.projectflow.draft.dto;
+package de.melinadanhier.projectflow.draft.dto.editing;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
-
 @Getter
 @Setter
-public class DraftElementMoveForm {
+public class DraftSectionMoveForm {
     @NotNull private Long lockVersion;
-    private UUID targetSectionId;
     @PositiveOrZero private int targetPosition;
 }

@@ -4,7 +4,7 @@ import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
 import de.melinadanhier.projectflow.draft.service.DraftReviewService;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
@@ -40,7 +40,7 @@ class DraftServicesIntegrationTest {
     private DraftApplicationService applicationService;
 
     @Autowired
-    private PlanDraftRepository draftRepository;
+    private DraftRepository draftRepository;
 
     @Autowired
     private ProjectRepository projectRepository;

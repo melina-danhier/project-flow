@@ -1,12 +1,13 @@
 package de.melinadanhier.projectflow.draft.service;
 
 import de.melinadanhier.projectflow.common.exception.ConflictException;
-import de.melinadanhier.projectflow.draft.dto.DraftReviewDto;
-import de.melinadanhier.projectflow.draft.dto.DraftSectionForm;
-import de.melinadanhier.projectflow.draft.dto.DraftMilestoneForm;
-import de.melinadanhier.projectflow.draft.dto.DraftElementMoveForm;
-import de.melinadanhier.projectflow.draft.dto.DraftSectionMoveForm;
-import de.melinadanhier.projectflow.draft.dto.DraftSortModeForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftElementMoveForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftMilestoneForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionMoveForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftSortModeForm;
+import de.melinadanhier.projectflow.draft.dto.review.DraftReviewDto;
+import de.melinadanhier.projectflow.draft.dto.review.DraftSectionDto;
 import de.melinadanhier.projectflow.draft.mapper.DraftMapper;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
@@ -15,13 +16,13 @@ import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.draft.model.DraftMilestone;
 import de.melinadanhier.projectflow.draft.model.DraftPlanElement;
 import de.melinadanhier.projectflow.draft.model.DraftSection;
-import de.melinadanhier.projectflow.draft.dto.DraftTaskForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftTaskForm;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.validation.Validator;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,7 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 @RequiredArgsConstructor
 public class DraftReviewService {
 
-    private final PlanDraftRepository planDraftRepository;
+    private final DraftRepository draftRepository;
     private final DraftMapper draftMapper;
     private final ProjectAuthorizationService authorizationService;
     private final EntityManager entityManager;
@@ -57,7 +58,7 @@ public class DraftReviewService {
     @Transactional(readOnly = true)
     public DraftReviewDto review(UUID projectId, UUID userId, DraftReviewStatus reviewStatus) {
         authorizationService.requireOwner(projectId, userId);
-        DraftPlan draft = planDraftRepository.findByProjectId(projectId)
+        DraftPlan draft = draftRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Für dieses Projekt ist kein Planentwurf vorhanden."
                 ));
@@ -155,7 +156,8 @@ public class DraftReviewService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Entwurfsbereich nicht gefunden."));
         String title = form.getTitle().strip();
-        String description = normalize(form.getDescription());
+        String description = form.getDescription() == null || form.getDescription().isBlank()
+                ? null : form.getDescription().strip();
         if (!Objects.equals(section.getTitle(), title) || !Objects.equals(section.getDescription(), description)) {
             section.setTitle(title);
             section.setDescription(description);
@@ -172,7 +174,8 @@ public class DraftReviewService {
         DraftPlan draft = editable(projectId, userId, form.getLockVersion());
         DraftTask task = task(draft, taskId);
         String title = form.getTitle().strip();
-        String description = normalize(form.getDescription());
+        String description = form.getDescription() == null || form.getDescription().isBlank()
+                ? null : form.getDescription().strip();
         boolean changed = !Objects.equals(task.getTitle(), title)
                 || !Objects.equals(task.getDescription(), description)
                 || !Objects.equals(task.getStartDate(), form.getStartDate())
@@ -353,13 +356,9 @@ public class DraftReviewService {
         return status == null || element.getReviewStatus() == status;
     }
 
-    private boolean matches(de.melinadanhier.projectflow.draft.dto.DraftSectionDto section,
+    private boolean matches(DraftSectionDto section,
                             DraftReviewStatus status) {
         return status == null || section.getReviewStatus() == status;
-    }
-
-    private String normalize(String value) {
-        return value == null || value.isBlank() ? null : value.strip();
     }
 
     private void requireValid(Object form, String message) {
@@ -369,7 +368,7 @@ public class DraftReviewService {
     private DraftPlan editable(UUID projectId, UUID userId, long version) {
         authorizationService.requireOwner(projectId, userId);
         requireReleasedDraft(projectId);
-        DraftPlan draft = planDraftRepository.findForUpdateByProjectId(projectId)
+        DraftPlan draft = draftRepository.findForUpdateByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Planentwurf nicht gefunden."));
         if (draft.getStatus() != DraftPlanStatus.READY_FOR_REVIEW && draft.getStatus() != DraftPlanStatus.IN_REVIEW) {
             throw new ConflictException("Dieser Entwurf kann nicht mehr bearbeitet werden.");

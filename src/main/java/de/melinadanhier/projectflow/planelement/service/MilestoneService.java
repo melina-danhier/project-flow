@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.planelement.service;
 
 import de.melinadanhier.projectflow.common.exception.ConflictException;
+import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
@@ -35,7 +36,7 @@ public class MilestoneService {
 
     @Transactional
     public MilestoneDetailsDto createMilestone(UUID projectId, MilestoneForm form, UUID userId) {
-        Project project = authorizationService.requireEditableMember(projectId, userId).getProject();
+        Project project = authorizationService.requireEditableMemberForUpdate(projectId, userId).getProject();
         PlanSection section = resolveSection(projectId, form.getPlanSectionId());
         Milestone milestone = new Milestone();
         milestone.setPlanContainer(project);
@@ -44,7 +45,8 @@ public class MilestoneService {
         milestone.setRelativeDueDay(null);
         apply(milestone, form);
         List<PlanElement> siblings = loadSiblings(projectId, section);
-        siblings.add(boundedPosition(form.getSortOrder(), siblings.size()), milestone);
+        siblings.add(form.getSortOrder() == null
+                ? siblings.size() : Math.min(form.getSortOrder(), siblings.size()), milestone);
         resequence(siblings);
         return planElementMapper.toDetailsDto(milestoneRepository.save(milestone));
     }
@@ -92,7 +94,7 @@ public class MilestoneService {
             MilestoneForm form,
             UUID userId
     ) {
-        authorizationService.requireEditableMember(projectId, userId);
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
         Milestone milestone = requireMilestone(projectId, milestoneId);
         requireCurrentVersion(milestone.getLockVersion(), form.getLockVersion());
         PlanSection oldSection = milestone.getPlanSection();
@@ -102,17 +104,21 @@ public class MilestoneService {
         List<PlanElement> oldSiblings = loadSiblings(projectId, oldSection);
         oldSiblings.removeIf(element -> element.getId().equals(milestone.getId()));
         resequence(oldSiblings);
-        List<PlanElement> targetSiblings = sameSection(oldSection, newSection)
+        boolean sectionUnchanged = oldSection == null
+                ? newSection == null
+                : newSection != null && oldSection.getId().equals(newSection.getId());
+        List<PlanElement> targetSiblings = sectionUnchanged
                 ? oldSiblings : loadSiblings(projectId, newSection);
         milestone.setPlanSection(newSection);
-        targetSiblings.add(boundedPosition(form.getSortOrder(), targetSiblings.size()), milestone);
+        targetSiblings.add(form.getSortOrder() == null
+                ? targetSiblings.size() : Math.min(form.getSortOrder(), targetSiblings.size()), milestone);
         resequence(targetSiblings);
         return planElementMapper.toDetailsDto(milestone);
     }
 
     @Transactional
     public void deleteMilestone(UUID projectId, UUID milestoneId, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
         Milestone milestone = requireMilestone(projectId, milestoneId);
         PlanSection section = milestone.getPlanSection();
         milestoneRepository.delete(milestone);
@@ -156,14 +162,6 @@ public class MilestoneService {
                         projectId, section.getId()));
     }
 
-    private boolean sameSection(PlanSection first, PlanSection second) {
-        return first == null ? second == null : second != null && first.getId().equals(second.getId());
-    }
-
-    private int boundedPosition(Integer requested, int size) {
-        return requested == null ? size : Math.min(requested, size);
-    }
-
     private void resequence(List<PlanElement> elements) {
         for (int index = 0; index < elements.size(); index++) {
             elements.get(index).setSortOrder(index);
@@ -171,7 +169,10 @@ public class MilestoneService {
     }
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {
-        if (submittedVersion != null && submittedVersion != actualVersion) {
+        if (submittedVersion == null) {
+            throw new DomainValidationException("Die Versionsnummer des Meilensteins fehlt.");
+        }
+        if (submittedVersion != actualVersion) {
             throw new ConflictException("Der Meilenstein wurde zwischenzeitlich geändert. Bitte lade die Seite neu.");
         }
     }

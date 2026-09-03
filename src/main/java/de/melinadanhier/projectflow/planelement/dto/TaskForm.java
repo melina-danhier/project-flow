@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.planelement.dto;
 
+import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import jakarta.validation.constraints.NotBlank;
@@ -43,5 +44,6 @@ public class TaskForm {
     private UUID assigneeId;
 
     @PositiveOrZero
+    @NotNull(groups = UpdateValidation.class)
     private Long lockVersion;
 }

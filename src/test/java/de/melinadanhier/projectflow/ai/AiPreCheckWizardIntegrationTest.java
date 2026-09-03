@@ -12,7 +12,7 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameTy
 import de.melinadanhier.projectflow.wizard.service.AiWizardCompletionService;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
@@ -72,7 +72,7 @@ class AiPreCheckWizardIntegrationTest {
     @Autowired private AiWizardCompletionService completionService;
     @Autowired private AiPlanGenerationWorkflowRepository workflowRepository;
     @Autowired private UserRepository userRepository;
-    @Autowired private PlanDraftRepository planDraftRepository;
+    @Autowired private DraftRepository draftRepository;
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private PlanSectionRepository planSectionRepository;
     @Autowired private TaskRepository taskRepository;
@@ -178,7 +178,7 @@ class AiPreCheckWizardIntegrationTest {
             assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(1);
         });
         UUID projectId = workflowRepository.findById(workflowId).orElseThrow().getProject().getId();
-        var draft = planDraftRepository.findByProjectId(projectId).orElseThrow();
+        var draft = draftRepository.findByProjectId(projectId).orElseThrow();
         assertThat(draft.getStatus()).isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
         assertThat(jdbcTemplate.queryForList(
                 "select title from draft_sections where plan_draft_id = ? order by sort_order",
@@ -200,6 +200,7 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/draft-pending-confirmation"));
         mockMvc.perform(post("/projects/" + projectId + "/draft/continue-with-pending")
+                        .param("draftId", draft.getId().toString())
                         .param("lockVersion", String.valueOf(draft.getLockVersion()))
                         .with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
@@ -210,7 +211,7 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(milestoneRepository.count()).isEqualTo(activeMilestonesBefore + 1);
         assertThat(projectRepository.findById(projectId)).get()
                 .extracting("status").isEqualTo(ProjectStatus.ACTIVE);
-        assertThat(planDraftRepository.findById(draft.getId())).get()
+        assertThat(draftRepository.findById(draft.getId())).get()
                 .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(workflowRepository.findById(workflowId)).get()
                 .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);

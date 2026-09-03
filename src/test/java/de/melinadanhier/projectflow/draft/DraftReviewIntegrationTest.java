@@ -2,9 +2,9 @@ package de.melinadanhier.projectflow.draft;
 
 import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.model.generation.*;
-import de.melinadanhier.projectflow.draft.dto.DraftReviewDto;
+import de.melinadanhier.projectflow.draft.dto.review.DraftReviewDto;
 import de.melinadanhier.projectflow.draft.model.*;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.*;
 import de.melinadanhier.projectflow.plancontainer.project.model.*;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -45,7 +45,8 @@ class DraftReviewIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ProjectRepository projects;
     @Autowired UserRepository users;
-    @Autowired PlanDraftRepository drafts;
+    @Autowired
+    DraftRepository drafts;
     @Autowired de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper generatedPlanMapper;
     @Autowired DraftReviewService reviews;
     @Autowired DraftApplicationService application;
@@ -64,6 +65,7 @@ class DraftReviewIntegrationTest {
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
                 .andExpect(status().isOk()).andExpect(view().name("generation/draft-pending-confirmation"));
         mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("draftId", review(f).getId().toString())
                         .param("lockVersion", String.valueOf(review(f).getLockVersion()))
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
@@ -78,6 +80,17 @@ class DraftReviewIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("assumption-toggle"))))
                 .andDo(result -> writePreview("draft-review.html", result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    void planPageRedirectsOwnerBackToDraftReviewWhileProjectIsStillADraft() throws Exception {
+        Fixture draft = fixture(null, null);
+        AuthenticatedUser outsider = fixture(null, null).owner();
+
+        mvc.perform(get("/projects/" + draft.projectId() + "/plan").with(user(draft.owner())))
+                .andExpect(redirectedUrl(draft.reviewUrl()));
+        mvc.perform(get("/projects/" + draft.projectId() + "/plan").with(user(outsider)))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -106,6 +119,7 @@ class DraftReviewIntegrationTest {
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
                 .andExpect(status().isOk()).andExpect(view().name("generation/draft-pending-confirmation"));
         mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("draftId", before.getId().toString())
                         .param("lockVersion", String.valueOf(before.getLockVersion()))
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
@@ -125,10 +139,32 @@ class DraftReviewIntegrationTest {
         mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
                 .andExpect(view().name("generation/draft-pending-confirmation"));
         var current = review(f);
-        mvc.perform(post(f.url() + "/confirm-and-apply")
+        mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("draftId", current.getId().toString())
                         .param("lockVersion", String.valueOf(current.getLockVersion()))
-                        .param("includePending", "true").with(user(f.owner())).with(csrf()))
+                        .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
+        assertApplied(f);
+    }
+
+    @Test
+    void fullyReviewedDraftSkipsConfirmationAndOpensProjectPlan() throws Exception {
+        Fixture f = fixture(null, null);
+        DraftReviewDto initial = review(f);
+        for (var section : initial.getSections()) {
+            DraftReviewDto current = review(f);
+            reviews.acceptSection(f.projectId(), section.getId(), f.owner().userId(), current.getLockVersion());
+        }
+        for (var element : initial.getElements()) {
+            DraftReviewDto current = review(f);
+            reviews.acceptElement(f.projectId(), element.getId(), f.owner().userId(), current.getLockVersion());
+        }
+
+        assertThat(review(f).getPendingElementCount()).isZero();
+        mvc.perform(post(f.url() + "/apply").with(user(f.owner())).with(csrf()))
+                .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"))
+                .andExpect(flash().attribute("successMessage", "Der KI-Entwurf wurde übernommen."));
+
         assertApplied(f);
     }
 
@@ -137,8 +173,10 @@ class DraftReviewIntegrationTest {
         Fixture f = fixture("Material ist verfügbar", "Raum ist frei");
         long version = review(f).getLockVersion();
         for (int attempt = 0; attempt < 2; attempt++) {
-            mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
-                            .param("includePending", "true").with(user(f.owner())).with(csrf()))
+            mvc.perform(post(f.url() + "/continue-with-pending")
+                            .param("draftId", review(f).getId().toString())
+                            .param("lockVersion", String.valueOf(version))
+                            .with(user(f.owner())).with(csrf()))
                     .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
         }
         assertApplied(f);
@@ -167,7 +205,9 @@ class DraftReviewIntegrationTest {
         assertThat(current.getElements().getFirst().getOrigin())
                 .isEqualTo(de.melinadanhier.projectflow.planelement.model.ElementOrigin.AI_MODIFIED);
         assertThat(current.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.ACCEPTED);
-        mvc.perform(post(f.url() + "/confirm-and-apply").param("lockVersion", String.valueOf(version))
+        mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("draftId", current.getId().toString())
+                        .param("lockVersion", String.valueOf(version))
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(status().isConflict())
                 .andExpect(view().name("generation/draft-review"))
@@ -186,7 +226,8 @@ class DraftReviewIntegrationTest {
         assertThat(review(f).getElements()).hasSize(3);
         assertThat(review(f).getSections().getFirst().getElements())
                 .extracting("sortOrder").containsExactly(0, 1, 2);
-        application.continueWithPending(f.projectId(), f.owner().userId(), review(f).getLockVersion());
+        application.continueWithPending(
+                f.projectId(), review(f).getId(), f.owner().userId(), review(f).getLockVersion());
         assertThat(elementCount(f)).isEqualTo(3);
     }
 
@@ -199,7 +240,9 @@ class DraftReviewIntegrationTest {
         // Simulate persisted domain-invalid dates, which are legal SQL values.
         jdbc.update("update draft_tasks set start_date = ?, due_date = ? where id = ?",
                 LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 1), before.getElements().getFirst().getId());
-        mvc.perform(post(f.url() + "/continue-with-pending").param("lockVersion", String.valueOf(before.getLockVersion()))
+        mvc.perform(post(f.url() + "/continue-with-pending")
+                        .param("draftId", before.getId().toString())
+                        .param("lockVersion", String.valueOf(before.getLockVersion()))
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(redirectedUrl(f.reviewUrl())).andExpect(flash().attribute("errorMessage", not(blankOrNullString())));
         assertEmptyPlan(f);
@@ -215,7 +258,7 @@ class DraftReviewIntegrationTest {
         var taskId = review(f).getElements().getFirst().getId();
         jdbc.update("insert into draft_task_prerequisites (successor_draft_task_id, prerequisite_draft_task_id) values (?, ?)", taskId, taskId);
         assertThatThrownBy(() -> application.continueWithPending(
-                f.projectId(), f.owner().userId(), review(f).getLockVersion()))
+                f.projectId(), review(f).getId(), f.owner().userId(), review(f).getLockVersion()))
                 .isInstanceOf(de.melinadanhier.projectflow.common.exception.DomainValidationException.class);
         assertEmptyPlan(f);
     }
@@ -230,7 +273,7 @@ class DraftReviewIntegrationTest {
         var milestoneId = UUID.randomUUID();
         mvc.perform(get(f.reviewUrl()).with(user(outsider))).andExpect(status().isNotFound());
         mvc.perform(get(f.reviewUrl())).andExpect(status().is3xxRedirection());
-        for (String suffix : List.of("/apply", "/confirm-and-apply", "/continue-with-pending",
+        for (String suffix : List.of("/apply", "/continue-with-pending", "/confirm-empty",
                 "/elements/" + task.getId() + "/accept", "/elements/" + task.getId() + "/reject",
                 "/elements/" + task.getId() + "/reset", "/sections/" + section.getId() + "/accept",
                 "/sections/" + section.getId() + "/reject", "/sections/" + section.getId() + "/reset",
@@ -238,14 +281,15 @@ class DraftReviewIntegrationTest {
                 "/tasks/" + task.getId() + "/delete", "/tasks/" + task.getId(),
                 "/milestones/" + milestoneId, "/elements/" + task.getId() + "/move",
                 "/sections/" + section.getId() + "/move", "/sort-mode")) {
-            mvc.perform(post(f.url() + suffix).param("lockVersion", "0").param("title", "Titel").param("priority", "LOW")
+            mvc.perform(post(f.url() + suffix).param("draftId", draft.getId().toString())
+                            .param("lockVersion", "0").param("title", "Titel").param("priority", "LOW")
                             .param("targetSectionId", section.getId().toString()).param("targetPosition", "0")
                             .param("sortMode", "MANUAL")
                             .with(user(outsider)).with(csrf())).andExpect(status().isNotFound());
             mvc.perform(post(f.url() + suffix).param("lockVersion", "0").with(user(f.owner())))
                     .andExpect(status().isForbidden());
         }
-        mvc.perform(get(f.url() + "/confirm-and-apply").with(user(f.owner())))
+        mvc.perform(get(f.url() + "/continue-with-pending").with(user(f.owner())))
                 .andExpect(status().isMethodNotAllowed());
         assertEmptyPlan(f);
     }
@@ -420,7 +464,7 @@ class DraftReviewIntegrationTest {
             current = review(f);
         }
 
-        var move = new de.melinadanhier.projectflow.draft.dto.DraftElementMoveForm();
+        var move = new de.melinadanhier.projectflow.draft.dto.editing.DraftElementMoveForm();
         move.setLockVersion(current.getLockVersion());
         move.setTargetSectionId(null);
         move.setTargetPosition(0);

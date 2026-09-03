@@ -1,8 +1,9 @@
 package de.melinadanhier.projectflow.draft;
 
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
+import de.melinadanhier.projectflow.draft.dto.application.DraftApplyStatus;
 import de.melinadanhier.projectflow.draft.model.*;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
 import de.melinadanhier.projectflow.plancontainer.project.model.*;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -18,6 +19,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -39,7 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class DraftApplicationIntegrationTest {
     @Autowired DraftApplicationService applications;
-    @Autowired PlanDraftRepository drafts;
+    @Autowired
+    DraftRepository drafts;
     @Autowired ProjectRepository projects;
     @Autowired UserRepository users;
     @Autowired JdbcTemplate jdbc;
@@ -58,6 +61,11 @@ class DraftApplicationIntegrationTest {
         assertThat(summary.omittedDependencyCount()).isEqualTo(1);
         assertThat(summary.includedSectionCount()).isEqualTo(2);
         assertThat(summary.includedElementCount()).isEqualTo(5);
+        assertThat(applications.apply(fixture.projectId(), fixture.ownerId()))
+                .satisfies(result -> {
+                    assertThat(result.status()).isEqualTo(DraftApplyStatus.PENDING_CONFIRMATION_REQUIRED);
+                    assertThat(result.summary()).isEqualTo(summary);
+                });
 
         applications.confirmAndApply(fixture.projectId(), fixture.draftId(), fixture.ownerId(),
                 summary.lockVersion(), false);
@@ -85,6 +93,8 @@ class DraftApplicationIntegrationTest {
         assertThat(applied.getStatus()).isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(applied.getAppliedAt()).isNotNull();
         assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        assertThat(applications.apply(fixture.projectId(), fixture.ownerId()).status())
+                .isEqualTo(DraftApplyStatus.APPLIED);
 
         applications.confirmAndApply(fixture.projectId(), fixture.draftId(), fixture.ownerId(),
                 summary.lockVersion(), false);
@@ -94,7 +104,7 @@ class DraftApplicationIntegrationTest {
         User owner = users.findById(fixture.ownerId()).orElseThrow();
         var principal = new de.melinadanhier.projectflow.security.service.AuthenticatedUser(
                 owner.getId(), owner.getEmail(), owner.getPasswordHash(), true);
-        assertThat(mvc.perform(post("/projects/" + fixture.projectId() + "/draft/confirm-and-apply")
+        assertThat(mvc.perform(post("/projects/" + fixture.projectId() + "/draft/continue-with-pending")
                         .param("draftId", UUID.randomUUID().toString())
                         .param("lockVersion", String.valueOf(summary.lockVersion()))
                         .with(user(principal)).with(csrf()))
@@ -109,14 +119,19 @@ class DraftApplicationIntegrationTest {
         Fixture fixture = rejectedFixture();
         var summary = applications.summarize(fixture.projectId(), fixture.ownerId());
         assertThat(summary.empty()).isTrue();
+        assertThat(applications.apply(fixture.projectId(), fixture.ownerId()))
+                .satisfies(result -> {
+                    assertThat(result.status()).isEqualTo(DraftApplyStatus.EMPTY_DRAFT_CONFIRMATION_REQUIRED);
+                    assertThat(result.summary()).isEqualTo(summary);
+                });
 
         assertThatThrownBy(() -> applications.confirmAndApply(fixture.projectId(), fixture.draftId(),
                 fixture.ownerId(), summary.lockVersion(), false)).isInstanceOf(DomainValidationException.class);
         assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.DRAFT);
         assertThat(drafts.findById(fixture.draftId()).orElseThrow().getStatus()).isNotEqualTo(DraftPlanStatus.APPLIED);
 
-        applications.confirmAndApply(fixture.projectId(), fixture.draftId(), fixture.ownerId(),
-                summary.lockVersion(), true);
+        applications.confirmEmpty(fixture.projectId(), fixture.draftId(), fixture.ownerId(),
+                summary.lockVersion());
         assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.ACTIVE);
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isZero();
@@ -133,7 +148,8 @@ class DraftApplicationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/draft-pending-confirmation"))
                 .andExpect(content().string(containsString("Neu generieren")))
-                .andExpect(content().string(containsString("Leeres Projekt erstellen")));
+                .andExpect(content().string(containsString("Leeres Projekt erstellen")))
+                .andExpect(content().string(containsString("/draft/confirm-empty")));
     }
 
     @Test
@@ -174,6 +190,36 @@ class DraftApplicationIntegrationTest {
         } finally {
             reset(adoptionFactory);
         }
+        assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
+                Integer.class, fixture.projectId())).isZero();
+        assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.DRAFT);
+        assertThat(drafts.findById(fixture.draftId()).orElseThrow().getStatus())
+                .isIn(DraftPlanStatus.READY_FOR_REVIEW, DraftPlanStatus.IN_REVIEW);
+    }
+
+    @Test
+    void persistenceFailureDuringApplicationReturnsToUnchangedDraft() throws Exception {
+        Fixture fixture = richFixture();
+        var summary = applications.summarize(fixture.projectId(), fixture.ownerId());
+        User owner = users.findById(fixture.ownerId()).orElseThrow();
+        var principal = new de.melinadanhier.projectflow.security.service.AuthenticatedUser(
+                owner.getId(), owner.getEmail(), owner.getPasswordHash(), true);
+        doAnswer(invocation -> {
+            invocation.callRealMethod();
+            throw new DataIntegrityViolationException("simulierter Persistenzfehler");
+        }).when(adoptionFactory).adopt(any(), any());
+
+        try {
+            mvc.perform(post("/projects/" + fixture.projectId() + "/draft/continue-with-pending")
+                            .param("draftId", fixture.draftId().toString())
+                            .param("lockVersion", String.valueOf(summary.lockVersion()))
+                            .with(user(principal)).with(csrf()))
+                    .andExpect(redirectedUrl("/projects/" + fixture.projectId() + "/draft/review"))
+                    .andExpect(flash().attribute("errorMessage", containsString("Entwurf blieb unverändert")));
+        } finally {
+            reset(adoptionFactory);
+        }
+
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isZero();
         assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.DRAFT);

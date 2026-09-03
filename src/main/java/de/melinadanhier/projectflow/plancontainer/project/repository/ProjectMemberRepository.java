@@ -1,10 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.project.repository;
 
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
@@ -37,16 +34,4 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
     @Query("delete from ProjectMember membership where membership.project.id = :projectId")
     int deleteAllByProjectId(@Param("projectId") UUID projectId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            select membership
-            from ProjectMember membership
-            where membership.project.id = :projectId
-              and membership.role = :role
-              and membership.active = true
-            """)
-    Optional<ProjectMember> findActiveOwnerForUpdate(
-            @Param("projectId") UUID projectId,
-            @Param("role") ProjectMemberRole role
-    );
 }

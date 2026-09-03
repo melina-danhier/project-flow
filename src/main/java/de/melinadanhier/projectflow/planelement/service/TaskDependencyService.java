@@ -26,7 +26,7 @@ public class TaskDependencyService {
 
     @Transactional
     public TaskDependencyDto createDependency(UUID projectId, TaskDependencyForm form, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
         Task prerequisite = requireTask(projectId, form.getPrerequisiteTaskId());
         Task successor = requireTask(projectId, form.getSuccessorTaskId());
         if (prerequisite.getId().equals(successor.getId())) {
@@ -55,7 +55,7 @@ public class TaskDependencyService {
             UUID prerequisiteTaskId,
             UUID userId
     ) {
-        authorizationService.requireEditableMember(projectId, userId);
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
         Task successor = requireTask(projectId, successorTaskId);
         Task prerequisite = requireTask(projectId, prerequisiteTaskId);
         boolean removed = successor.getPrerequisites().removeIf(

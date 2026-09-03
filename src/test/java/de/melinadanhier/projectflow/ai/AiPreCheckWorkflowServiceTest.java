@@ -3,14 +3,13 @@ package de.melinadanhier.projectflow.ai;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
-import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.service.workflow.AiPreCheckWorkflowService;
-import de.melinadanhier.projectflow.draft.service.PlanDraftMaterializationService;
+import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,7 +37,8 @@ class AiPreCheckWorkflowServiceTest {
     @Mock AiPlanGenerationWorkflowRepository workflowRepository;
     @Mock AiWorkflowPayloadCodec payloadCodec;
     @Mock ApplicationEventPublisher eventPublisher;
-    @Mock PlanDraftMaterializationService materializationService;
+    @Mock
+    DraftMaterializationService materializationService;
     @Mock AiPlanGenerationWorkflow workflow;
     @Mock AiWizardSnapshot snapshot;
 

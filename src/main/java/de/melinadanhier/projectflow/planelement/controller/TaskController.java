@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.planelement.controller;
 
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
+import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.planelement.dto.TaskDependencyForm;
 import de.melinadanhier.projectflow.planelement.dto.TaskCommentForm;
 import de.melinadanhier.projectflow.planelement.dto.TaskDetailsDto;
@@ -16,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -133,7 +135,8 @@ public class TaskController {
     public String update(
             @PathVariable UUID projectId,
             @PathVariable UUID taskId,
-            @Valid @ModelAttribute("taskForm") TaskForm form,
+            @Validated({jakarta.validation.groups.Default.class, UpdateValidation.class})
+            @ModelAttribute("taskForm") TaskForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model,
@@ -163,7 +166,7 @@ public class TaskController {
     ) {
         taskService.deleteTask(projectId, taskId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Aufgabe wurde endgültig gelöscht.");
-        return planRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @PostMapping("/projects/{projectId}/tasks/{taskId}/dependencies")
@@ -243,7 +246,4 @@ public class TaskController {
         return "redirect:/projects/" + projectId + "/tasks/" + taskId;
     }
 
-    private String planRedirect(UUID projectId) {
-        return "redirect:/projects/" + projectId + "/plan";
-    }
 }

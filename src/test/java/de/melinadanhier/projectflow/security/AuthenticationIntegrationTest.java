@@ -6,7 +6,7 @@ import de.melinadanhier.projectflow.user.repository.UserRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
@@ -73,7 +73,7 @@ class AuthenticationIntegrationTest {
     private ProjectMemberRepository projectMemberRepository;
 
     @Autowired
-    private PlanDraftRepository planDraftRepository;
+    private DraftRepository draftRepository;
 
     @Autowired
     private SectionService sectionService;
@@ -232,7 +232,7 @@ class AuthenticationIntegrationTest {
 
         long projectsBefore = projectRepository.count();
         long membersBefore = projectMemberRepository.count();
-        long draftsBefore = planDraftRepository.count();
+        long draftsBefore = draftRepository.count();
         mockMvc.perform(post("/projects/new")
                         .session(ownerSession)
                         .with(csrf())
@@ -249,7 +249,7 @@ class AuthenticationIntegrationTest {
 
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
-        assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
+        assertThat(draftRepository.count()).isEqualTo(draftsBefore);
         assertThat(ownerSession.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
                 .isInstanceOfSatisfying(ProjectWizardState.class, state -> {
                     assertThat(state.getCreationType()).isNull();
@@ -281,7 +281,7 @@ class AuthenticationIntegrationTest {
 
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(projectMemberRepository.count()).isEqualTo(membersBefore);
-        assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
+        assertThat(draftRepository.count()).isEqualTo(draftsBefore);
         assertThat(ownerSession.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
                 .isInstanceOfSatisfying(ProjectWizardState.class,
                         state -> assertThat(state.getCreationType()).isEqualTo(CreationType.AI));
@@ -483,11 +483,13 @@ class AuthenticationIntegrationTest {
         Project draft = saveDraftProject(owner);
 
         mockMvc.perform(get("/projects/{projectId}/plan", draft.getId()).session(session))
-                .andExpect(status().isNotFound());
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + draft.getId() + "/draft/review"));
         mockMvc.perform(get("/projects/{projectId}/members", draft.getId()).session(session))
                 .andExpect(status().isConflict());
         mockMvc.perform(post("/projects/{projectId}/edit", draft.getId())
-                        .session(session).with(csrf()).param("title", "Manipuliert").param("category", "EDUCATION").param("collaborationMode", "INDIVIDUAL"))
+                        .session(session).with(csrf()).param("title", "Manipuliert").param("category", "EDUCATION")
+                        .param("collaborationMode", "INDIVIDUAL").param("lockVersion", String.valueOf(draft.getLockVersion())))
                 .andExpect(status().isConflict());
         mockMvc.perform(post("/projects/{projectId}/trash", draft.getId())
                         .session(session).with(csrf()))
@@ -606,25 +608,31 @@ class AuthenticationIntegrationTest {
                         .param("creationType", "EMPTY"))
                 .andExpect(status().is3xxRedirection());
         var id = projectRepository.findAllAccessibleByUserId(user.getId()).getFirst().getId();
+        var lockVersion = projectRepository.findById(id).orElseThrow().getLockVersion();
         mockMvc.perform(get("/projects/{id}/edit", id).session(session))
                 .andExpect(status().isOk())
                 .andExpect(result -> assertThat(subcategoryDropdown(result)).containsPattern(
                         "<option[^>]*value=\"MOVING\"[^>]*selected=\"selected\""));
         mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
-                        .param("title", "Mein Umzug").param("category", "HOME").param("subcategory", "THESIS"))
+                        .param("title", "Mein Umzug").param("category", "HOME").param("subcategory", "THESIS")
+                        .param("lockVersion", String.valueOf(lockVersion)))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeHasFieldErrors("projectForm", "subcategory"));
         assertThat(projectRepository.findById(id).orElseThrow().getSubcategory()).isEqualTo(ProjectSubCategory.MOVING);
         mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
-                        .param("title", "Meine Arbeit").param("category", "EDUCATION").param("subcategory", "THESIS"))
+                        .param("title", "Meine Arbeit").param("category", "EDUCATION").param("subcategory", "THESIS")
+                        .param("lockVersion", String.valueOf(lockVersion)))
                 .andExpect(status().is3xxRedirection());
         assertThat(projectRepository.findById(id).orElseThrow().getSubcategory()).isEqualTo(ProjectSubCategory.THESIS);
+        lockVersion = projectRepository.findById(id).orElseThrow().getLockVersion();
         mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
-                        .param("title", "Anderes").param("category", "OTHER").param("subcategory", ""))
+                        .param("title", "Anderes").param("category", "OTHER").param("subcategory", "")
+                        .param("lockVersion", String.valueOf(lockVersion)))
                 .andExpect(model().attributeHasFieldErrors("projectForm", "otherProjectTypeDescription"));
         mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
                         .param("title", "Anderes").param("category", "OTHER").param("subcategory", "")
-                        .param("otherProjectTypeDescription", "Besonderes Vorhaben"))
+                        .param("otherProjectTypeDescription", "Besonderes Vorhaben")
+                        .param("lockVersion", String.valueOf(lockVersion)))
                 .andExpect(status().is3xxRedirection());
         assertThat(projectRepository.findById(id).orElseThrow().getSubcategory()).isNull();
     }

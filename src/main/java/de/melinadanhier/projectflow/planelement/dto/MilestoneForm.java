@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.planelement.dto;
 
+import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -33,5 +34,6 @@ public class MilestoneForm {
     private boolean completed;
 
     @PositiveOrZero
+    @NotNull(groups = UpdateValidation.class)
     private Long lockVersion;
 }

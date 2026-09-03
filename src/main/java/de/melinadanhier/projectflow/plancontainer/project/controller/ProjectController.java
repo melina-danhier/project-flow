@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project.controller;
 
+import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -86,7 +88,8 @@ public class ProjectController {
     @PostMapping("/projects/{projectId}/edit")
     public String updateProject(
             @PathVariable UUID projectId,
-            @Valid @ModelAttribute("projectForm") ProjectUpdateForm form,
+            @Validated({jakarta.validation.groups.Default.class, UpdateValidation.class})
+            @ModelAttribute("projectForm") ProjectUpdateForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model,
@@ -172,7 +175,7 @@ public class ProjectController {
             return "projects/members";
         }
         redirectAttributes.addFlashAttribute("successMessage", "Projektmitglied wurde hinzugefügt.");
-        return membersRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/members";
     }
 
     @PostMapping("/projects/{projectId}/members/{memberId}/remove")
@@ -184,16 +187,12 @@ public class ProjectController {
     ) {
         membershipService.removeMember(projectId, memberId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projektmitglied wurde entfernt.");
-        return membersRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/members";
     }
 
     private void populateMembers(Model model, UUID projectId, UUID userId) {
         model.addAttribute("members", membershipService.getMembersForManagement(projectId, userId));
         model.addAttribute("project", projectService.getProject(projectId, userId));
-    }
-
-    private String membersRedirect(UUID projectId) {
-        return "redirect:/projects/" + projectId + "/members";
     }
 
 }

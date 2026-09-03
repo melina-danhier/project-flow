@@ -149,7 +149,7 @@ public class TaskService {
 
     @Transactional
     public void deleteTask(UUID projectId, UUID taskId, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
         PlanSection section = task.getPlanSection();
@@ -164,7 +164,8 @@ public class TaskService {
 
     private void apply(Task task, TaskForm form, ProjectMember assignee) {
         String title = form.getTitle().trim();
-        String description = normalizeOptional(form.getDescription());
+        String description = form.getDescription() == null || form.getDescription().isBlank()
+                ? null : form.getDescription().trim();
         if (!java.util.Objects.equals(task.getTitle(), title)
                 || !java.util.Objects.equals(task.getDescription(), description)
                 || task.getPriority() != form.getPriority()
@@ -181,11 +182,9 @@ public class TaskService {
         task.setRelativeStartDay(null);
         task.setRelativeDueDay(null);
         task.setAssignee(assignee);
-        task.setStatus(form.getStatus() == null ? defaultStatus(task) : form.getStatus());
-    }
-
-    private TaskStatus defaultStatus(Task task) {
-        return task.getId() == null ? TaskStatus.OPEN : task.getStatus();
+        task.setStatus(form.getStatus() == null
+                ? task.getId() == null ? TaskStatus.OPEN : task.getStatus()
+                : form.getStatus());
     }
 
     private PlanSection resolveSection(UUID projectId, UUID sectionId) {
@@ -211,7 +210,7 @@ public class TaskService {
 
     private void insertAtRequestedPosition(Task task, UUID projectId, PlanSection section, Integer requested) {
         List<PlanElement> siblings = loadSiblings(projectId, section);
-        int position = boundedPosition(requested, siblings.size());
+        int position = requested == null ? siblings.size() : Math.min(requested, siblings.size());
         siblings.add(position, task);
         resequence(siblings);
     }
@@ -227,17 +226,16 @@ public class TaskService {
         oldSiblings.removeIf(element -> element.getId().equals(task.getId()));
         resequence(oldSiblings);
 
-        List<PlanElement> targetSiblings = sameSection(oldSection, newSection)
+        boolean sectionUnchanged = oldSection == null
+                ? newSection == null
+                : newSection != null && oldSection.getId().equals(newSection.getId());
+        List<PlanElement> targetSiblings = sectionUnchanged
                 ? oldSiblings
                 : loadSiblings(projectId, newSection);
         task.setPlanSection(newSection);
-        int position = boundedPosition(requested, targetSiblings.size());
+        int position = requested == null ? targetSiblings.size() : Math.min(requested, targetSiblings.size());
         targetSiblings.add(position, task);
         resequence(targetSiblings);
-    }
-
-    private boolean sameSection(PlanSection first, PlanSection second) {
-        return first == null ? second == null : second != null && first.getId().equals(second.getId());
     }
 
     private List<PlanElement> loadSiblings(UUID projectId, PlanSection section) {
@@ -245,10 +243,6 @@ public class TaskService {
                 ? planElementRepository.findAllByPlanContainerIdAndPlanSectionIsNullOrderBySortOrderAsc(projectId)
                 : planElementRepository.findAllByPlanContainerIdAndPlanSectionIdOrderBySortOrderAsc(
                         projectId, section.getId()));
-    }
-
-    private int boundedPosition(Integer requested, int size) {
-        return requested == null ? size : Math.min(requested, size);
     }
 
     private void resequence(List<PlanElement> elements) {
@@ -264,12 +258,12 @@ public class TaskService {
     }
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {
-        if (submittedVersion != null && submittedVersion != actualVersion) {
+        if (submittedVersion == null) {
+            throw new DomainValidationException("Die Versionsnummer der Aufgabe fehlt.");
+        }
+        if (submittedVersion != actualVersion) {
             throw new ConflictException("Die Aufgabe wurde zwischenzeitlich geändert. Bitte lade die Seite neu.");
         }
     }
 
-    private String normalizeOptional(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
 }

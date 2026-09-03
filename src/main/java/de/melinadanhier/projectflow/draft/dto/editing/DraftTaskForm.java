@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.draft.dto;
+package de.melinadanhier.projectflow.draft.dto.editing;
 
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import jakarta.validation.constraints.*;

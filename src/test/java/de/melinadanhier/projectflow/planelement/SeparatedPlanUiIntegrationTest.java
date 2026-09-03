@@ -246,7 +246,8 @@ class SeparatedPlanUiIntegrationTest {
         mockMvc.perform(post("/projects/{projectId}/sections/{sectionId}",
                                 secondProject.getId(), firstSection.getId())
                         .session(session).with(csrf())
-                        .param("title", "Manipulation"))
+                        .param("title", "Manipulation")
+                        .param("lockVersion", String.valueOf(firstSection.getLockVersion())))
                 .andExpect(status().isNotFound());
         mockMvc.perform(post("/projects/{projectId}/tasks/{taskId}/dependencies",
                                 firstProject.getId(), firstTask.getId())
@@ -411,6 +412,7 @@ class SeparatedPlanUiIntegrationTest {
         projectRepository.saveAndFlush(project);
         var task = createTask(project, owner, null, "Meine Aufgabe");
         var membership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), owner.getId()).orElseThrow();
+        long projectVersion = projectRepository.findById(project.getId()).orElseThrow().getLockVersion();
         var session = login(owner.getEmail());
         mockMvc.perform(get("/projects/{id}/plan", project.getId()).session(session))
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Mitglieder verwalten"))))
@@ -430,7 +432,8 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(model().attributeExists("errorMessage"));
         mockMvc.perform(post("/projects/{id}/tasks/{taskId}", project.getId(), task.getId()).session(session).with(csrf())
                         .param("title", "Manipuliert").param("priority", "MEDIUM")
-                        .param("assigneeId", membership.getId().toString()))
+                        .param("assigneeId", membership.getId().toString())
+                        .param("lockVersion", String.valueOf(task.getLockVersion())))
                 .andExpect(model().attributeExists("errorMessage"));
         assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee()).isNull();
         assertThat(taskRepository.findPlanTasks(project.getId())).hasSize(1);
@@ -440,10 +443,12 @@ class SeparatedPlanUiIntegrationTest {
                         org.hamcrest.Matchers.hasProperty("collaborationMode",
                                 org.hamcrest.Matchers.is(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.INDIVIDUAL))));
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(session).with(csrf())
-                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION").param("collaborationMode", "BOTH"))
+                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION").param("collaborationMode", "BOTH")
+                        .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(model().attributeHasFieldErrors("projectForm", "projectCollaborationModeValid"));
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(session).with(csrf())
-                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION").param("collaborationMode", "GROUP"))
+                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION").param("collaborationMode", "GROUP")
+                        .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().is3xxRedirection());
         mockMvc.perform(get("/projects/{id}/members", project.getId()).session(session)).andExpect(status().isOk());
         mockMvc.perform(get("/projects/{id}/tasks/new", project.getId()).session(session))
@@ -465,12 +470,15 @@ class SeparatedPlanUiIntegrationTest {
         var membership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), member.getId()).orElseThrow();
         task.setAssignee(membership);
         taskRepository.saveAndFlush(task);
+        long projectVersion = projectRepository.findById(project.getId()).orElseThrow().getLockVersion();
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(memberSession).with(csrf())
                         .param("title", "Solo").param("category", "EDUCATION")
-                        .param("collaborationMode", "INDIVIDUAL").param("confirmIndividualConversion", "true"))
+                        .param("collaborationMode", "INDIVIDUAL").param("confirmIndividualConversion", "true")
+                        .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(ownerSession).with(csrf())
-                        .param("title", "Solo").param("category", "EDUCATION").param("collaborationMode", "INDIVIDUAL"))
+                        .param("title", "Solo").param("category", "EDUCATION").param("collaborationMode", "INDIVIDUAL")
+                        .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().isOk()).andExpect(view().name("projects/edit"))
                 .andExpect(model().attributeHasErrors("projectForm"))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Bitte bestätige")));
@@ -479,7 +487,8 @@ class SeparatedPlanUiIntegrationTest {
 
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(ownerSession).with(csrf())
                         .param("title", "Solo").param("category", "EDUCATION")
-                        .param("collaborationMode", "INDIVIDUAL").param("confirmIndividualConversion", "true"))
+                        .param("collaborationMode", "INDIVIDUAL").param("confirmIndividualConversion", "true")
+                        .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().is3xxRedirection());
         assertThat(projectMemberRepository.findById(membership.getId())).isEmpty();
         assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee()).isNull();
@@ -487,6 +496,51 @@ class SeparatedPlanUiIntegrationTest {
         mockMvc.perform(get("/projects/{id}/tasks/{taskId}", project.getId(), task.getId()).session(ownerSession))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Zuständigkeit"))));
+    }
+
+    @Test
+    void updateRequestsRequireLockVersionWhileCreateRequestsRemainValidWithoutIt() throws Exception {
+        User owner = saveUser("required-version-owner@example.org");
+        Project project = saveProject("Versionsschutz", owner);
+        project.setCategory(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.EDUCATION);
+        projectRepository.saveAndFlush(project);
+        MockHttpSession session = login(owner.getEmail());
+
+        mockMvc.perform(post("/projects/{projectId}/sections", project.getId())
+                        .session(session).with(csrf()).param("title", "Ohne Version erstellbar"))
+                .andExpect(status().is3xxRedirection());
+        var section = sectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(project.getId()).getFirst();
+        Task task = createTask(project, owner, section.getId(), "Aufgabe");
+        Milestone milestone = createMilestone(project, owner, section.getId(), "Meilenstein");
+
+        mockMvc.perform(post("/projects/{projectId}/sections/{sectionId}", project.getId(), section.getId())
+                        .session(session).with(csrf()).param("title", "Manipulierter Bereich"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("sectionForm", "lockVersion"));
+        mockMvc.perform(post("/projects/{projectId}/tasks/{taskId}", project.getId(), task.getId())
+                        .session(session).with(csrf())
+                        .param("title", "Manipulierte Aufgabe").param("priority", "MEDIUM"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("taskForm", "lockVersion"));
+        mockMvc.perform(post("/projects/{projectId}/milestones/{milestoneId}",
+                                project.getId(), milestone.getId())
+                        .session(session).with(csrf()).param("title", "Manipulierter Meilenstein"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("milestoneForm", "lockVersion"));
+        mockMvc.perform(post("/projects/{projectId}/edit", project.getId())
+                        .session(session).with(csrf())
+                        .param("title", "Manipuliertes Projekt")
+                        .param("category", "EDUCATION")
+                        .param("subcategory", "THESIS")
+                        .param("collaborationMode", "GROUP"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("projectForm", "lockVersion"));
+
+        assertThat(sectionRepository.findById(section.getId()).orElseThrow().getTitle())
+                .isEqualTo("Ohne Version erstellbar");
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getTitle()).isEqualTo("Aufgabe");
+        assertThat(milestoneRepository.findById(milestone.getId()).orElseThrow().getTitle()).isEqualTo("Meilenstein");
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().getTitle()).isEqualTo("Versionsschutz");
     }
 
     private User saveUser(String email) {

@@ -5,9 +5,10 @@ import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper.MappedDraft;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +19,11 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class PlanDraftMaterializationService {
+public class DraftMaterializationService {
 
-    private final PlanDraftRepository planDraftRepository;
+    private final DraftRepository draftRepository;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
+    private final ProjectRepository projectRepository;
     private final Clock clock;
 
     /**
@@ -32,6 +34,11 @@ public class PlanDraftMaterializationService {
     @Transactional
     public boolean materialize(UUID workflowId, UUID runId, MappedDraft contents,
                                String serializedPlan, boolean assumptionsNeedReview) {
+        UUID projectId = workflowRepository.findProjectIdById(workflowId)
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        projectRepository.findForUpdate(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
+        var existingDraft = draftRepository.findForUpdateByProjectId(projectId);
         var workflow = workflowRepository.findByIdForUpdate(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
         UUID effectiveRunId = runId != null ? runId : workflow.getActiveRunId();
@@ -39,8 +46,6 @@ public class PlanDraftMaterializationService {
                 AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)) {
             return false;
         }
-        UUID projectId = workflow.getProject().getId();
-        var existingDraft = planDraftRepository.findByProjectId(projectId);
         if (existingDraft.isPresent() && workflow.getPendingAssumptionReview() == null) {
             throw new ConflictException("Für dieses Projekt existiert bereits ein Planentwurf.");
         }
@@ -58,7 +63,7 @@ public class PlanDraftMaterializationService {
         draft.setStatus(DraftPlanStatus.READY_FOR_REVIEW);
         workflow.recordGenerationCompleted(serializedPlan, assumptionsNeedReview);
         // Cascade persists sections and elements; prerequisite links reference these same task entities.
-        planDraftRepository.saveAndFlush(draft);
+        draftRepository.saveAndFlush(draft);
         return true;
     }
 

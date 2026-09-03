@@ -48,10 +48,9 @@ public class ProjectMembershipService {
 
     @Transactional
     public ProjectMember addMember(UUID projectId, String email, UUID actingUserId) {
-        authorizationService.requireEditableOwnerForUpdate(projectId, actingUserId);
-        Project project = lockActiveOwner(projectId).getProject();
+        Project project = authorizationService.requireEditableOwnerForUpdate(projectId, actingUserId).getProject();
         requireGroupProject(project);
-        User user = userRepository.findByEmail(normalizeEmail(email))
+        User user = userRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
                 .orElseThrow(() -> new ResourceNotFoundException("Unter dieser E-Mail-Adresse wurde kein Konto gefunden."));
 
         ProjectMember existingMembership = projectMemberRepository
@@ -79,7 +78,6 @@ public class ProjectMembershipService {
     @Transactional
     public void removeMember(UUID projectId, UUID memberUserId, UUID actingOwnerId) {
         requireGroupProject(authorizationService.requireEditableOwnerForUpdate(projectId, actingOwnerId).getProject());
-        lockActiveOwner(projectId);
         ProjectMember membership = projectMemberRepository
                 .findByIdAndProjectIdAndActiveTrue(memberUserId, projectId)
                 .orElseGet(() -> requireActiveMembership(projectId, memberUserId));
@@ -89,7 +87,6 @@ public class ProjectMembershipService {
     @Transactional
     public void leaveProject(UUID projectId, UUID userId) {
         requireGroupProject(authorizationService.requireEditableMemberForUpdate(projectId, userId).getProject());
-        lockActiveOwner(projectId);
         ProjectMember membership = requireActiveMembership(projectId, userId);
         deactivateMember(membership);
     }
@@ -107,18 +104,10 @@ public class ProjectMembershipService {
                 .orElseThrow(() -> new ResourceNotFoundException("Projektmitglied wurde nicht gefunden."));
     }
 
-    private ProjectMember lockActiveOwner(UUID projectId) {
-        return projectMemberRepository.findActiveOwnerForUpdate(projectId, ProjectMemberRole.OWNER)
-                .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
-    }
-
     private void requireGroupProject(Project project) {
         if (!project.isGroupProject()) {
             throw new ResourceNotFoundException("Die Mitgliederverwaltung steht nur bei Gruppenprojekten zur Verfügung.");
         }
     }
 
-    private String normalizeEmail(String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
-    }
 }

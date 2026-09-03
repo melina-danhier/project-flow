@@ -1,11 +1,11 @@
 package de.melinadanhier.projectflow.draft;
 
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
-import de.melinadanhier.projectflow.draft.dto.DraftElementMoveForm;
-import de.melinadanhier.projectflow.draft.dto.DraftSectionMoveForm;
-import de.melinadanhier.projectflow.draft.dto.DraftSortModeForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftElementMoveForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionMoveForm;
+import de.melinadanhier.projectflow.draft.dto.editing.DraftSortModeForm;
 import de.melinadanhier.projectflow.draft.model.*;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftReviewService;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.project.model.*;
@@ -28,7 +28,8 @@ import static org.assertj.core.api.Assertions.*;
 @Transactional
 class DraftOrderingIntegrationTest {
     @Autowired DraftReviewService reviews;
-    @Autowired PlanDraftRepository drafts;
+    @Autowired
+    DraftRepository drafts;
     @Autowired ProjectRepository projects;
     @Autowired UserRepository users;
 

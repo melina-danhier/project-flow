@@ -3,7 +3,7 @@ package de.melinadanhier.projectflow.wizard;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -57,7 +57,7 @@ class AiWizardSummaryIntegrationTest {
     private ProjectRepository projectRepository;
 
     @Autowired
-    private PlanDraftRepository planDraftRepository;
+    private DraftRepository draftRepository;
 
     @Autowired
     private AiPlanGenerationWorkflowRepository workflowRepository;
@@ -152,7 +152,7 @@ class AiWizardSummaryIntegrationTest {
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk());
         long projectsBefore = projectRepository.count();
-        long draftsBefore = planDraftRepository.count();
+        long draftsBefore = draftRepository.count();
 
         mockMvc.perform(post("/projects/new/ai/confirm")
                         .session(request.session()).with(user(request.user())).with(csrf()))
@@ -163,7 +163,7 @@ class AiWizardSummaryIntegrationTest {
 
         assertThat(request.session().getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isSameAs(request.state());
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
-        assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
+        assertThat(draftRepository.count()).isEqualTo(draftsBefore);
     }
 
     @Test
