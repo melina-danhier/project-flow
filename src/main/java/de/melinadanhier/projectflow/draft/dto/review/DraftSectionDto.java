@@ -1,38 +1,27 @@
-package de.melinadanhier.projectflow.draft.dto;
+package de.melinadanhier.projectflow.draft.dto.review;
 
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
-import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
-import java.time.LocalDate;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class DraftPlanElementDto {
+public class DraftSectionDto {
 
     private UUID id;
-    private UUID draftSectionId;
     private String title;
     private String description;
     private int sortOrder;
-    private int manualPosition;
     private DraftReviewStatus reviewStatus;
     private ElementOrigin origin;
-    private String type;
-    private LocalDate startDate;
-    private LocalDate dueDate;
-    private Integer estimatedHours;
-    private TaskPriority priority;
-
-    public GeneratedElementOrigin getAiOrigin() {
-        return origin == ElementOrigin.USER ? GeneratedElementOrigin.USER_INPUT : GeneratedElementOrigin.AI_INFERRED;
-    }
+    private List<DraftPlanElementDto> elements = new ArrayList<>();
 
     public boolean isUserModified() {
         return origin == ElementOrigin.AI_MODIFIED || origin == ElementOrigin.TEMPLATE_MODIFIED;

@@ -3,9 +3,11 @@ package de.melinadanhier.projectflow.draft.service;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.draft.dto.DraftApplicationSummary;
+import de.melinadanhier.projectflow.draft.dto.application.DraftApplyResult;
+import de.melinadanhier.projectflow.draft.dto.application.DraftApplyStatus;
+import de.melinadanhier.projectflow.draft.dto.application.DraftApplicationSummary;
 import de.melinadanhier.projectflow.draft.model.*;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
@@ -26,7 +28,7 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 public class DraftApplicationService {
-    private final PlanDraftRepository planDraftRepository;
+    private final DraftRepository draftRepository;
     private final ProjectRepository projectRepository;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final ProjectAuthorizationService authorizationService;
@@ -39,29 +41,33 @@ public class DraftApplicationService {
     public DraftApplicationSummary summarize(UUID projectId, UUID userId) {
         authorizationService.requireOwner(projectId, userId);
         requireReleasedDraft(projectId);
-        DraftPlan draft = planDraftRepository.findByProjectId(projectId)
+        DraftPlan draft = draftRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Für dieses Projekt ist kein Planentwurf vorhanden."));
         if (!editable(draft.getStatus())) {
             throw new ConflictException("Der Planentwurf kann in diesem Zustand nicht übernommen werden.");
         }
+        requireEmptyDraftProject(draft.getProject());
         return summary(draft);
     }
 
-    /** Compatibility entry point for callers which have not opened the confirmation page yet. */
+    /** Applies a reviewed draft immediately or requests explicit confirmation for pending/empty drafts. */
     @Transactional
-    public UUID apply(UUID projectId, UUID userId) {
+    public DraftApplyResult apply(UUID projectId, UUID userId) {
         authorizationService.requireOwner(projectId, userId);
-        var existing = planDraftRepository.findByProjectId(projectId);
-        if (existing.isPresent() && existing.get().getStatus() == DraftPlanStatus.APPLIED
-                && existing.get().getProject().getStatus() == ProjectStatus.ACTIVE
-                && existing.get().getProject().getLocation() == ProjectLocation.OVERVIEW) {
-            return projectId;
+        if (alreadyApplied(projectId)) {
+            return DraftApplyResult.applied();
         }
         DraftApplicationSummary summary = summarize(projectId, userId);
-        if (summary.pendingElementCount() > 0) {
-            throw new PendingDraftElementsConfirmationRequiredException(legacyReview(summary));
+        if (summary.empty()) {
+            return DraftApplyResult.confirmationRequired(
+                    DraftApplyStatus.EMPTY_DRAFT_CONFIRMATION_REQUIRED, summary);
         }
-        return confirmAndApply(projectId, summary.draftId(), userId, summary.lockVersion(), false);
+        if (summary.pendingElementCount() > 0) {
+            return DraftApplyResult.confirmationRequired(
+                    DraftApplyStatus.PENDING_CONFIRMATION_REQUIRED, summary);
+        }
+        confirmAndApply(projectId, summary.draftId(), userId, summary.lockVersion(), false);
+        return DraftApplyResult.applied();
     }
 
     @Transactional
@@ -70,13 +76,29 @@ public class DraftApplicationService {
     }
 
     @Transactional
-    public UUID continueWithPending(UUID projectId, UUID userId, long lockVersion) {
-        return confirmAndApply(projectId, null, userId, lockVersion, false);
+    public UUID continueWithPending(UUID projectId, UUID draftId, UUID userId, long lockVersion) {
+        authorizationService.requireOwner(projectId, userId);
+        if (alreadyApplied(projectId)) {
+            return confirmAndApply(projectId, draftId, userId, lockVersion, false);
+        }
+        DraftApplicationSummary summary = summarize(projectId, userId);
+        if (summary.pendingElementCount() == 0) {
+            throw new DomainValidationException("Es gibt keine ungeprüften Elemente zu bestätigen.");
+        }
+        return confirmAndApply(projectId, draftId, userId, lockVersion, false);
     }
 
     @Transactional
-    public UUID confirmAndApply(UUID projectId, UUID userId, long lockVersion, boolean ignoredIncludePending) {
-        return confirmAndApply(projectId, null, userId, lockVersion, false);
+    public UUID confirmEmpty(UUID projectId, UUID draftId, UUID userId, long lockVersion) {
+        authorizationService.requireOwner(projectId, userId);
+        if (alreadyApplied(projectId)) {
+            return confirmAndApply(projectId, draftId, userId, lockVersion, true);
+        }
+        DraftApplicationSummary summary = summarize(projectId, userId);
+        if (!summary.empty()) {
+            throw new DomainValidationException("Der Entwurf ist nicht leer und kann nicht als leer bestätigt werden.");
+        }
+        return confirmAndApply(projectId, draftId, userId, lockVersion, true);
     }
 
     @Transactional
@@ -85,7 +107,7 @@ public class DraftApplicationService {
         projectRepository.findForUpdate(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
         authorizationService.requireOwner(projectId, userId);
-        DraftPlan draft = planDraftRepository.findForUpdateByProjectId(projectId)
+        DraftPlan draft = draftRepository.findForUpdateByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Für dieses Projekt ist kein Planentwurf vorhanden."));
         Project project = draft.getProject();
         if (project == null || !projectId.equals(project.getId())) {
@@ -158,22 +180,31 @@ public class DraftApplicationService {
         return status == DraftPlanStatus.READY_FOR_REVIEW || status == DraftPlanStatus.IN_REVIEW;
     }
 
+    private boolean alreadyApplied(UUID projectId) {
+        return draftRepository.findByProjectId(projectId)
+                .filter(draft -> draft.getStatus() == DraftPlanStatus.APPLIED)
+                .map(DraftPlan::getProject)
+                .filter(project -> project.getStatus() == ProjectStatus.ACTIVE)
+                .filter(project -> project.getLocation() == ProjectLocation.OVERVIEW)
+                .isPresent();
+    }
+
+    private void requireEmptyDraftProject(Project project) {
+        if (project == null
+                || project.getStatus() != ProjectStatus.DRAFT
+                || project.getLocation() != ProjectLocation.DRAFT
+                || !project.getSections().isEmpty()
+                || !project.getElements().isEmpty()) {
+            throw new ConflictException("Das Projekt enthält bereits einen Plan und kann den Entwurf nicht übernehmen.");
+        }
+    }
+
     private void requireReleasedDraft(UUID projectId) {
         workflowRepository.findByProjectId(projectId).ifPresent(workflow -> {
             if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
                 throw new ConflictException("Bitte schließe zuerst die Prüfung der kritischen Annahmen ab.");
             }
         });
-    }
-
-    private de.melinadanhier.projectflow.draft.dto.DraftReviewDto legacyReview(DraftApplicationSummary summary) {
-        var dto = new de.melinadanhier.projectflow.draft.dto.DraftReviewDto();
-        dto.setId(summary.draftId());
-        dto.setProjectId(summary.projectId());
-        dto.setProjectTitle(summary.projectTitle());
-        dto.setLockVersion(summary.lockVersion());
-        dto.setTotalElementCount(summary.pendingElementCount());
-        return dto;
     }
 
     private record Dependency(DraftTask successor, DraftTask prerequisite) { }

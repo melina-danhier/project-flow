@@ -4,7 +4,8 @@ import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper.MappedDraft;
-import de.melinadanhier.projectflow.draft.service.PlanDraftMaterializationService;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
+import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -27,11 +29,13 @@ import static org.mockito.Mockito.*;
 class AiGenerationWorkflowServiceTest {
     @Mock AiPlanGenerationWorkflowRepository workflowRepository;
     @Mock AiWorkflowPayloadCodec payloadCodec;
-    @Mock PlanDraftMaterializationService materializationService;
+    @Mock
+    DraftMaterializationService materializationService;
     @Mock GeneratedPlanDraftMapper mapper;
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository projectRepository;
-    @Mock de.melinadanhier.projectflow.draft.repository.PlanDraftRepository planDraftRepository;
+    @Mock
+    DraftRepository draftRepository;
     @Mock de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService authorizationService;
     @Mock GeneratedPlanResponse result;
 
@@ -89,9 +93,40 @@ class AiGenerationWorkflowServiceTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
+    @Test
+    void draftRegenerationLocksProjectThenDraftThenWorkflow() {
+        UUID projectId = UUID.randomUUID();
+        UUID draftId = UUID.randomUUID();
+        UUID workflowId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        var project = new de.melinadanhier.projectflow.plancontainer.project.model.Project();
+        project.setStatus(de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus.DRAFT);
+        project.setLocation(de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation.DRAFT);
+        var draft = new de.melinadanhier.projectflow.draft.model.DraftPlan();
+        draft.setProject(project);
+        var workflow = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow.create(
+                project, "{}", "v1", UUID.randomUUID(), Instant.now(), "v1");
+        ReflectionTestUtils.setField(draft, "id", draftId);
+        ReflectionTestUtils.setField(workflow, "id", workflowId);
+        ReflectionTestUtils.setField(workflow, "status",
+                de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        when(projectRepository.findForUpdate(projectId)).thenReturn(Optional.of(projectId));
+        when(draftRepository.findForUpdateByProjectId(projectId)).thenReturn(Optional.of(draft));
+        when(workflowRepository.findByProjectId(projectId)).thenReturn(Optional.of(workflow));
+        when(workflowRepository.findByIdForUpdate(workflowId)).thenReturn(Optional.of(workflow));
+
+        service().regenerateDraft(projectId, draftId, userId, draft.getLockVersion());
+
+        var order = inOrder(projectRepository, draftRepository, workflowRepository);
+        order.verify(projectRepository).findForUpdate(projectId);
+        order.verify(draftRepository).findForUpdateByProjectId(projectId);
+        order.verify(workflowRepository).findByProjectId(projectId);
+        order.verify(workflowRepository).findByIdForUpdate(workflowId);
+    }
+
     private AiGenerationWorkflowService service() {
         return new AiGenerationWorkflowService(
                 workflowRepository, payloadCodec, materializationService, mapper, Clock.systemUTC(), eventPublisher,
-                projectRepository, planDraftRepository, authorizationService);
+                projectRepository, draftRepository, authorizationService);
     }
 }

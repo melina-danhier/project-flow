@@ -4,7 +4,7 @@ import de.melinadanhier.projectflow.common.exception.ForbiddenOperationException
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.ProjectNotEditableException;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
@@ -27,7 +27,7 @@ public class ProjectAuthorizationService {
 
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
-    private final PlanDraftRepository planDraftRepository;
+    private final DraftRepository draftRepository;
     private final PlanSectionRepository planSectionRepository;
     private final PlanElementRepository planElementRepository;
 
@@ -88,14 +88,14 @@ public class ProjectAuthorizationService {
 
     @Transactional(readOnly = true)
     public DraftPlan requireDraftOwner(UUID draftId, UUID userId) {
-        DraftPlan draft = planDraftRepository.findById(draftId).orElseThrow(this::notAccessible);
+        DraftPlan draft = draftRepository.findById(draftId).orElseThrow(this::notAccessible);
         requireOwner(draft.getProject().getId(), userId);
         return draft;
     }
 
     @Transactional(readOnly = true)
     public DraftPlan requireDraftOwner(UUID projectId, UUID draftId, UUID userId) {
-        DraftPlan draft = planDraftRepository.findByIdAndProjectId(draftId, projectId)
+        DraftPlan draft = draftRepository.findByIdAndProjectId(draftId, projectId)
                 .orElseThrow(this::notAccessible);
         requireOwner(projectId, userId);
         return draft;

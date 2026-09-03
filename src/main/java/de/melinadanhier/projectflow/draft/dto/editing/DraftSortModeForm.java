@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.draft.dto;
+package de.melinadanhier.projectflow.draft.dto.editing;
 
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import jakarta.validation.constraints.NotNull;

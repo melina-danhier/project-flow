@@ -9,7 +9,7 @@ import jakarta.persistence.LockModeType;
 import java.util.UUID;
 import java.util.Optional;
 
-public interface PlanDraftRepository extends JpaRepository<DraftPlan, UUID> {
+public interface DraftRepository extends JpaRepository<DraftPlan, UUID> {
 
     Optional<DraftPlan> findByIdAndProjectId(UUID draftId, UUID projectId);
 

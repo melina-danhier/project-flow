@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.draft.dto;
+package de.melinadanhier.projectflow.draft.dto.editing;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;

@@ -6,11 +6,11 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.draft.service.PlanDraftMaterializationService;
+import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiGenerationWork;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
@@ -41,12 +41,12 @@ public class AiGenerationWorkflowService {
     private java.time.Duration maxRunTime;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final AiWorkflowPayloadCodec payloadCodec;
-    private final PlanDraftMaterializationService draftMaterializationService;
+    private final DraftMaterializationService draftMaterializationService;
     private final GeneratedPlanDraftMapper draftMapper;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
     private final ProjectRepository projectRepository;
-    private final PlanDraftRepository planDraftRepository;
+    private final DraftRepository draftRepository;
     private final ProjectAuthorizationService authorizationService;
 
     @Transactional
@@ -176,7 +176,7 @@ public class AiGenerationWorkflowService {
         projectRepository.findForUpdate(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
         authorizationService.requireOwner(projectId, userId);
-        var draft = planDraftRepository.findForUpdateByProjectId(projectId)
+        var draft = draftRepository.findForUpdateByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Planentwurf nicht gefunden."));
         if (!draftId.equals(draft.getId()) || draft.getLockVersion() != lockVersion) {
             throw new DraftVersionConflictException(
@@ -204,7 +204,7 @@ public class AiGenerationWorkflowService {
                                 .getId())
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
         project.attachDraft(null);
-        planDraftRepository.delete(draft);
+        draftRepository.delete(draft);
         UUID runId = UUID.randomUUID();
         workflow.startGeneration(runId, Instant.now(clock).plus(
                 maxRunTime != null ? maxRunTime : java.time.Duration.ofMinutes(5)));

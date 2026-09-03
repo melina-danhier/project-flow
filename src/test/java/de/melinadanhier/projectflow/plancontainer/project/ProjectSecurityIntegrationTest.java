@@ -7,7 +7,7 @@ import de.melinadanhier.projectflow.common.exception.ForbiddenOperationException
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.ProjectNotEditableException;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectUpdateForm;
 import de.melinadanhier.projectflow.plancontainer.project.mapper.ProjectMapperImpl;
@@ -91,7 +91,7 @@ class ProjectSecurityIntegrationTest {
     private PlanSectionRepository planSectionRepository;
 
     @Autowired
-    private PlanDraftRepository planDraftRepository;
+    private DraftRepository draftRepository;
 
     @Autowired
     private TemplateRepository templateRepository;
@@ -156,7 +156,7 @@ class ProjectSecurityIntegrationTest {
                 .isInstanceOf(DomainValidationException.class);
         assertThat(projectRepository.findAll()).isEmpty();
         assertThat(projectMemberRepository.count()).isZero();
-        assertThat(planDraftRepository.count()).isZero();
+        assertThat(draftRepository.count()).isZero();
     }
 
     @Test
@@ -333,7 +333,7 @@ class ProjectSecurityIntegrationTest {
         addMembership(project, member, ProjectMemberRole.MEMBER, true);
         DraftPlan draft = new DraftPlan();
         draft.setProject(project);
-        planDraftRepository.saveAndFlush(draft);
+        draftRepository.saveAndFlush(draft);
 
         assertThat(authorizationService.requireDraftOwner(draft.getId(), owner.getId()).getId())
                 .isEqualTo(draft.getId());
@@ -458,7 +458,7 @@ class ProjectSecurityIntegrationTest {
         var otherMembership = addMembership(otherProject, member, ProjectMemberRole.MEMBER, true);
         var otherTask = saveTask(otherProject, "Unverändert", TaskStatus.OPEN, otherMembership);
 
-        var form = updateForm(CollaborationMode.INDIVIDUAL);
+        var form = updateForm(CollaborationMode.INDIVIDUAL, project.getLockVersion());
         assertThatThrownBy(() -> projectService.updateProject(project.getId(), form, owner.getId()))
                 .isInstanceOf(DomainValidationException.class).hasMessageContaining("bestätige");
         assertThat(project.getCollaborationMode()).isEqualTo(CollaborationMode.GROUP);
@@ -489,7 +489,8 @@ class ProjectSecurityIntegrationTest {
                 .isInstanceOf(ResourceNotFoundException.class);
         assertThat(authorizationService.requireOwner(project.getId(), owner.getId())).isNotNull();
 
-        projectService.updateProject(project.getId(), updateForm(CollaborationMode.GROUP), owner.getId());
+        var currentVersion = projectRepository.findById(project.getId()).orElseThrow().getLockVersion();
+        projectService.updateProject(project.getId(), updateForm(CollaborationMode.GROUP, currentVersion), owner.getId());
         entityManager.flush();
         entityManager.clear();
         assertThat(projectMemberRepository.findAllByProjectId(project.getId())).hasSize(1);
@@ -511,20 +512,21 @@ class ProjectSecurityIntegrationTest {
                 .isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> planElementService.assignTask(project.getId(), task.getId(), owner.getId(), owner.getId()))
                 .isInstanceOf(DomainValidationException.class);
-        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(CollaborationMode.BOTH), owner.getId()))
+        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(CollaborationMode.BOTH, project.getLockVersion()), owner.getId()))
                 .isInstanceOf(DomainValidationException.class);
-        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(null), owner.getId()))
+        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(null, project.getLockVersion()), owner.getId()))
                 .isInstanceOf(DomainValidationException.class);
-        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(CollaborationMode.GROUP), other.getId()))
+        assertThatThrownBy(() -> projectService.updateProject(project.getId(), updateForm(CollaborationMode.GROUP, project.getLockVersion()), other.getId()))
                 .isInstanceOf(ResourceNotFoundException.class);
         assertThat(projectMemberRepository.findAllByProjectId(project.getId())).hasSize(1);
     }
 
-    private ProjectUpdateForm updateForm(CollaborationMode mode) {
+    private ProjectUpdateForm updateForm(CollaborationMode mode, Long lockVersion) {
         var form = new ProjectUpdateForm();
         form.setTitle("Projekt aktualisiert");
         form.setCategory(TemplateCategory.EDUCATION);
         form.setCollaborationMode(mode);
+        form.setLockVersion(lockVersion);
         return form;
     }
 

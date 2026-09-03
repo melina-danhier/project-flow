@@ -1,6 +1,8 @@
 package de.melinadanhier.projectflow.plancontainer.project.controller;
 
+import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.plancontainer.project.service.DraftProjectPlanAccessException;
 import de.melinadanhier.projectflow.planelement.dto.DeleteSectionForm;
 import de.melinadanhier.projectflow.planelement.dto.SectionForm;
 import de.melinadanhier.projectflow.planelement.service.SectionService;
@@ -9,9 +11,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,14 +56,15 @@ public class PlanController {
         }
         sectionService.createSection(projectId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projektbereich wurde angelegt.");
-        return planRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @PostMapping("/projects/{projectId}/sections/{sectionId}")
     public String updateSection(
             @PathVariable UUID projectId,
             @PathVariable UUID sectionId,
-            @Valid @ModelAttribute("sectionForm") SectionForm form,
+            @Validated({jakarta.validation.groups.Default.class, UpdateValidation.class})
+            @ModelAttribute("sectionForm") SectionForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model,
@@ -72,7 +77,7 @@ public class PlanController {
         }
         sectionService.updateSection(projectId, sectionId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projektbereich wurde aktualisiert.");
-        return planRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @PostMapping("/projects/{projectId}/sections/{sectionId}/delete")
@@ -93,14 +98,15 @@ public class PlanController {
         }
         sectionService.deleteSection(projectId, sectionId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projektbereich wurde gelöscht.");
-        return planRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     private void populatePlan(Model model, UUID projectId, UUID userId) {
         model.addAttribute("plan", projectService.getProjectPlan(projectId, userId));
     }
 
-    private String planRedirect(UUID projectId) {
-        return "redirect:/projects/" + projectId + "/plan";
+    @ExceptionHandler(DraftProjectPlanAccessException.class)
+    public String redirectDraftProject(DraftProjectPlanAccessException exception) {
+        return "redirect:/projects/" + exception.getProjectId() + "/draft/review";
     }
 }

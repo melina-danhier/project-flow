@@ -8,10 +8,11 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.provider.AiClient;
+import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
@@ -81,7 +82,7 @@ class AiWorkflowIntegrationTest {
     private ProjectMemberRepository projectMemberRepository;
 
     @Autowired
-    private PlanDraftRepository planDraftRepository;
+    private DraftRepository draftRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -130,18 +131,18 @@ class AiWorkflowIntegrationTest {
         AtomicBoolean transactionActiveDuringGenerationCall = new AtomicBoolean(true);
         AtomicBoolean committedWorkflowVisibleDuringAiCall = new AtomicBoolean(false);
         long workflowsBefore = workflowRepository.count();
-        long draftsBefore = planDraftRepository.count();
+        long draftsBefore = draftRepository.count();
         when(aiClient.preCheck(any())).thenAnswer(invocation -> {
             transactionActiveDuringAiCall.set(
                     TransactionSynchronizationManager.isActualTransactionActive());
             committedWorkflowVisibleDuringAiCall.set(workflowRepository.count() == workflowsBefore + 1);
-            assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
+            assertThat(draftRepository.count()).isEqualTo(draftsBefore);
             return AiPreCheckResult.withoutIssues();
         });
         org.mockito.Mockito.doAnswer(invocation -> {
             transactionActiveDuringGenerationCall.set(
                     TransactionSynchronizationManager.isActualTransactionActive());
-            assertThat(planDraftRepository.count()).isEqualTo(draftsBefore);
+            assertThat(draftRepository.count()).isEqualTo(draftsBefore);
             return generatedPlan();
         }).when(aiClient).generatePlan(any());
 
@@ -159,9 +160,9 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getCompletionToken()).isEqualTo(token);
         assertThat(workflow.getConsentConfirmedAt()).isNotNull();
         assertThat(workflow.getConsentVersion()).isEqualTo(AiWorkflowInitializationService.CONSENT_VERSION);
-        assertThat(workflow.getPreCheckPromptVersion()).isEqualTo("precheck-v1");
+        assertThat(workflow.getPreCheckPromptVersion()).isEqualTo(AiPromptVersions.PRE_CHECK_PROMPT);
         assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo("precheck-schema-v1");
-        assertThat(workflow.getGenerationPromptVersion()).isEqualTo("generation-v1");
+        assertThat(workflow.getGenerationPromptVersion()).isEqualTo(AiPromptVersions.GENERATION_PROMPT);
         assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("generation-schema-v1");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
         assertThat(workflow.getPreCheckRetryCount()).isZero();
@@ -191,8 +192,8 @@ class AiWorkflowIntegrationTest {
         assertThat(planSectionRepository.count()).isEqualTo(sectionsBefore);
         assertThat(taskRepository.count()).isEqualTo(tasksBefore);
         assertThat(milestoneRepository.count()).isEqualTo(milestonesBefore);
-        assertThat(planDraftRepository.count()).isEqualTo(draftsBefore + 1);
-        var draft = planDraftRepository.findByProjectId(completion.projectId()).orElseThrow();
+        assertThat(draftRepository.count()).isEqualTo(draftsBefore + 1);
+        var draft = draftRepository.findByProjectId(completion.projectId()).orElseThrow();
         assertThat(draft.getStatus()).isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
         assertThat(jdbcTemplate.queryForList(
                 "select title from draft_sections where plan_draft_id = ? order by sort_order",
@@ -209,7 +210,7 @@ class AiWorkflowIntegrationTest {
         assertThat(planSectionRepository.count()).isEqualTo(sectionsBefore + 1);
         assertThat(taskRepository.count()).isEqualTo(tasksBefore + 3);
         assertThat(milestoneRepository.count()).isEqualTo(milestonesBefore + 1);
-        assertThat(planDraftRepository.findById(draft.getId())).get()
+        assertThat(draftRepository.findById(draft.getId())).get()
                 .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(workflowRepository.findById(completion.workflowId())).get()
                 .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
@@ -340,7 +341,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getLastTechnicalError()).isEqualTo(AiTechnicalErrorCode.INVALID_AI_RESPONSE);
         assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(workflow.getLastErrorRetryable()).isFalse();
-        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
+        assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(projectRepository.findById(completion.projectId())).get()
                 .extracting("status").isEqualTo(ProjectStatus.DRAFT);
     }
@@ -365,7 +366,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(1);
         assertThat(workflow.getLastTechnicalError())
                 .isEqualTo(AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR);
-        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
+        assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(workflow.getLastErrorRetryable()).isFalse();
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
@@ -403,7 +404,7 @@ class AiWorkflowIntegrationTest {
         assertThat(failed.getLastTechnicalError()).isEqualTo(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
         assertThat(failed.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(failed.getLastErrorRetryable()).isTrue();
-        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
+        assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(generationWorkflowService.retry(completion.workflowId(), outsider.getId())).isFalse();
 
         CountDownLatch generationStarted = new CountDownLatch(1);
@@ -418,7 +419,7 @@ class AiWorkflowIntegrationTest {
 
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isTrue();
         assertThat(generationStarted.await(2, TimeUnit.SECONDS)).isTrue();
-        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
+        assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
         releaseGeneration.countDown();
         await(() -> workflowRepository.findById(completion.workflowId())
@@ -430,7 +431,7 @@ class AiWorkflowIntegrationTest {
         assertThat(completed.getGenerationTotalAttemptCount()).isEqualTo(4);
         assertThat(completed.getLastTechnicalError()).isNull();
         assertThat(completed.getLastErrorRetryable()).isNull();
-        assertThat(planDraftRepository.findByProjectId(completion.projectId())).get()
+        assertThat(draftRepository.findByProjectId(completion.projectId())).get()
                 .extracting("status").isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
         assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
     }
@@ -510,7 +511,7 @@ class AiWorkflowIntegrationTest {
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED)
                 .orElse(false));
         assertThat(workflowRepository.findById(completion.workflowId()).orElseThrow().getPreCheckResult()).isNull();
-        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isEmpty();
+        assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
     }
 
     @Test
@@ -546,7 +547,7 @@ class AiWorkflowIntegrationTest {
         await(() -> workflowRepository.findById(completion.workflowId())
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
                 .orElse(false));
-        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isPresent();
+        assertThat(draftRepository.findByProjectId(completion.projectId())).isPresent();
     }
 
     @Test
@@ -577,8 +578,8 @@ class AiWorkflowIntegrationTest {
         releaseOldProvider.countDown();
 
         await(() -> calls.get() == 2);
-        assertThat(planDraftRepository.findByProjectId(completion.projectId())).isPresent();
-        assertThat(planDraftRepository.count()).isGreaterThanOrEqualTo(1);
+        assertThat(draftRepository.findByProjectId(completion.projectId())).isPresent();
+        assertThat(draftRepository.count()).isGreaterThanOrEqualTo(1);
         assertThat(workflowRepository.findById(completion.workflowId())).get()
                 .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
     }

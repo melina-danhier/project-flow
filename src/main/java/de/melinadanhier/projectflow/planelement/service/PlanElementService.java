@@ -4,7 +4,6 @@ import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.planelement.model.Task;
@@ -33,8 +32,6 @@ public class PlanElementService {
             throw new DomainValidationException(
                     "Aufgabenzuständigkeiten sind nur bei Gruppenprojekten möglich.");
         }
-        lockMembershipChanges(projectId);
-        authorizationService.requireEditableMember(projectId, actingUserId);
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
         ProjectMember assignee = projectMemberRepository
@@ -50,15 +47,9 @@ public class PlanElementService {
             throw new DomainValidationException(
                     "Aufgabenzuständigkeiten sind nur bei Gruppenprojekten möglich.");
         }
-        lockMembershipChanges(projectId);
-        authorizationService.requireEditableMember(projectId, actingUserId);
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
         task.setAssignee(null);
     }
 
-    private void lockMembershipChanges(UUID projectId) {
-        projectMemberRepository.findActiveOwnerForUpdate(projectId, ProjectMemberRole.OWNER)
-                .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
-    }
 }

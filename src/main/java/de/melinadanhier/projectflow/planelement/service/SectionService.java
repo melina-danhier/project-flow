@@ -37,35 +37,37 @@ public class SectionService {
 
     @Transactional
     public SectionDto createSection(UUID projectId, SectionForm form, UUID userId) {
-        Project project = authorizationService.requireEditableMember(projectId, userId).getProject();
+        Project project = authorizationService.requireEditableMemberForUpdate(projectId, userId).getProject();
         PlanSection section = new PlanSection();
         section.setPlanContainer(project);
         section.setOrigin(ElementOrigin.USER);
         apply(section, form);
         List<PlanSection> sections = new ArrayList<>(
                 planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId));
-        sections.add(boundedPosition(form.getSortOrder(), sections.size()), section);
+        sections.add(form.getSortOrder() == null
+                ? sections.size() : Math.min(form.getSortOrder(), sections.size()), section);
         resequenceSections(sections);
         return planElementMapper.toDto(planSectionRepository.save(section));
     }
 
     @Transactional
     public SectionDto updateSection(UUID projectId, UUID sectionId, SectionForm form, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
         PlanSection section = requireSection(projectId, sectionId);
         requireCurrentVersion(section.getLockVersion(), form.getLockVersion());
         apply(section, form);
         List<PlanSection> sections = new ArrayList<>(
                 planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId));
         sections.removeIf(candidate -> candidate.getId().equals(sectionId));
-        sections.add(boundedPosition(form.getSortOrder(), sections.size()), section);
+        sections.add(form.getSortOrder() == null
+                ? sections.size() : Math.min(form.getSortOrder(), sections.size()), section);
         resequenceSections(sections);
         return planElementMapper.toDto(section);
     }
 
     @Transactional
     public void deleteSection(UUID projectId, UUID sectionId, DeleteSectionForm form, UUID userId) {
-        authorizationService.requireEditableMember(projectId, userId);
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
         PlanSection section = requireSection(projectId, sectionId);
         List<PlanElement> contents = new ArrayList<>(
                 planElementRepository.findAllByPlanContainerIdAndPlanSectionIdOrderBySortOrderAsc(
@@ -140,10 +142,6 @@ public class SectionService {
         section.setDescription(description);
     }
 
-    private int boundedPosition(Integer requested, int size) {
-        return requested == null ? size : Math.min(requested, size);
-    }
-
     private void resequenceSections(List<PlanSection> sections) {
         for (int index = 0; index < sections.size(); index++) {
             sections.get(index).setSortOrder(index);
@@ -151,7 +149,10 @@ public class SectionService {
     }
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {
-        if (submittedVersion != null && submittedVersion != actualVersion) {
+        if (submittedVersion == null) {
+            throw new DomainValidationException("Die Versionsnummer des Projektbereichs fehlt.");
+        }
+        if (submittedVersion != actualVersion) {
             throw new ConflictException("Der Projektbereich wurde zwischenzeitlich geändert. Bitte lade die Seite neu.");
         }
     }

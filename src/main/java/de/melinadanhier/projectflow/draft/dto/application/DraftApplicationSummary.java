@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.draft.dto;
+package de.melinadanhier.projectflow.draft.dto.application;
 
 import java.util.UUID;
 

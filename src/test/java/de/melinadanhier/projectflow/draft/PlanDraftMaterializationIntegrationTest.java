@@ -7,8 +7,8 @@ import de.melinadanhier.projectflow.ai.model.precheck.*;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
 import de.melinadanhier.projectflow.draft.model.*;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
-import de.melinadanhier.projectflow.draft.service.PlanDraftMaterializationService;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
+import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import de.melinadanhier.projectflow.generation.model.workflow.*;
 import de.melinadanhier.projectflow.generation.dto.*;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
@@ -55,8 +55,10 @@ class PlanDraftMaterializationIntegrationTest {
     @Autowired AiWorkflowPayloadCodec codec;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired JdbcTemplate jdbc;
-    @Autowired PlanDraftRepository drafts;
-    @MockitoSpyBean PlanDraftMaterializationService storage;
+    @Autowired
+    DraftRepository drafts;
+    @MockitoSpyBean
+    DraftMaterializationService storage;
     @MockitoSpyBean GeneratedPlanDraftMapper mapper;
     @MockitoBean AiPlanGenerationService generation;
 

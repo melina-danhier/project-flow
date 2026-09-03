@@ -22,15 +22,14 @@
         <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
         <button type="submit">Neu generieren</button>
     </form>
-    <form th:action="@{/projects/{projectId}/draft/confirm-and-apply(projectId=${summary.projectId})}" method="post">
+    <form th:action="@{/projects/{projectId}/draft/confirm-empty(projectId=${summary.projectId})}" method="post">
         <input type="hidden" name="draftId" th:value="${summary.draftId}">
         <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
-        <input type="hidden" name="allowEmpty" value="true">
         <button type="submit">Leeres Projekt erstellen</button>
     </form>
 </section>
 
-<form th:if="${!summary.empty}" th:action="@{/projects/{projectId}/draft/confirm-and-apply(projectId=${summary.projectId})}" method="post">
+<form th:if="${!summary.empty}" th:action="@{/projects/{projectId}/draft/continue-with-pending(projectId=${summary.projectId})}" method="post">
     <input type="hidden" name="draftId" th:value="${summary.draftId}">
     <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
     <button type="submit">Entwurf jetzt übernehmen</button>

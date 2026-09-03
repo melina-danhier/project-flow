@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project.dto;
 
+import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -53,5 +54,6 @@ public class ProjectUpdateForm implements ProjectClassification {
     private SortMode sortMode;
 
     @PositiveOrZero
+    @NotNull(groups = UpdateValidation.class)
     private Long lockVersion;
 }

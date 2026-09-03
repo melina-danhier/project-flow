@@ -4,7 +4,7 @@ import de.melinadanhier.projectflow.plancontainer.project.validation.ProjectClas
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.draft.repository.PlanDraftRepository;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectDetailsDto;
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectSummaryDto;
@@ -63,7 +63,7 @@ public class ProjectService {
     private final PlanSectionRepository planSectionRepository;
     private final TaskRepository taskRepository;
     private final PlanElementMapper planElementMapper;
-    private final PlanDraftRepository planDraftRepository;
+    private final DraftRepository draftRepository;
     private final PlanElementRepository planElementRepository;
     private final ProjectStateService projectStateService;
 
@@ -233,6 +233,9 @@ public class ProjectService {
         ProjectMember currentMembership = authorizationService.requireMember(projectId, userId);
         Project project = projectRepository.findPlanProjectById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
+        if (project.getStatus() == ProjectStatus.DRAFT) {
+            throw new DraftProjectPlanAccessException(projectId);
+        }
         requireRegularProject(project);
         List<PlanElement> planElements = planElementRepository.findPlanElements(projectId);
         List<Task> tasks = taskRepository.findPlanTasks(projectId);
@@ -382,9 +385,9 @@ public class ProjectService {
                 planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId));
         planSectionRepository.flush();
         if (project.getCurrentDraft() != null) {
-            planDraftRepository.delete(project.getCurrentDraft());
+            draftRepository.delete(project.getCurrentDraft());
             project.setCurrentDraft(null);
-            planDraftRepository.flush();
+            draftRepository.flush();
         }
         projectMemberRepository.deleteAllByProjectId(projectId);
         Project projectToDelete = projectRepository.findById(projectId)
@@ -421,7 +424,10 @@ public class ProjectService {
     }
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {
-        if (submittedVersion != null && submittedVersion != actualVersion) {
+        if (submittedVersion == null) {
+            throw new DomainValidationException("Die Versionsnummer des Projekts fehlt.");
+        }
+        if (submittedVersion != actualVersion) {
             throw new ConflictException("Das Projekt wurde zwischenzeitlich geändert. Bitte lade die Seite neu.");
         }
     }

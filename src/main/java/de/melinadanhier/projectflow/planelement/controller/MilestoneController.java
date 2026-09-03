@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.planelement.controller;
 
+import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneDetailsDto;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.service.MilestoneService;
@@ -8,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,7 +53,7 @@ public class MilestoneController {
         }
         milestoneService.createMilestone(projectId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Meilenstein wurde angelegt.");
-        return planRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @GetMapping("/projects/{projectId}/milestones/{milestoneId}/edit")
@@ -72,7 +74,8 @@ public class MilestoneController {
     public String update(
             @PathVariable UUID projectId,
             @PathVariable UUID milestoneId,
-            @Valid @ModelAttribute("milestoneForm") MilestoneForm form,
+            @Validated({jakarta.validation.groups.Default.class, UpdateValidation.class})
+            @ModelAttribute("milestoneForm") MilestoneForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model,
@@ -88,7 +91,7 @@ public class MilestoneController {
         }
         milestoneService.updateMilestone(projectId, milestoneId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Meilenstein wurde aktualisiert.");
-        return planRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @PostMapping("/projects/{projectId}/milestones/{milestoneId}/delete")
@@ -100,7 +103,7 @@ public class MilestoneController {
     ) {
         milestoneService.deleteMilestone(projectId, milestoneId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Meilenstein wurde endgültig gelöscht.");
-        return planRedirect(projectId);
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     private void populateFormModel(Model model, MilestoneDetailsDto context, boolean editing) {
@@ -122,7 +125,4 @@ public class MilestoneController {
         return form;
     }
 
-    private String planRedirect(UUID projectId) {
-        return "redirect:/projects/" + projectId + "/plan";
-    }
 }
