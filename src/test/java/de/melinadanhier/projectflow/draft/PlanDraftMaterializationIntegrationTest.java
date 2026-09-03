@@ -327,7 +327,7 @@ class PlanDraftMaterializationIntegrationTest {
         readDraft(f, draft -> {
             assertThat(draft.getStatus()).isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
             assertThat(draft.getGeneratedAt()).isNotNull();
-            assertThat(draft.getSections()).extracting(DraftSection::getSortOrder).containsExactly(1, 2);
+            assertThat(draft.getSections()).extracting(DraftSection::getSortOrder).containsExactly(0, 1);
             assertThat(draft.getSections()).extracting(DraftSection::getTitle).containsExactly("Vorbereitung", "Abschluss");
             assertThat(draft.getSections()).extracting(DraftSection::getReviewStatus)
                     .containsOnly(DraftReviewStatus.PENDING);
@@ -361,7 +361,7 @@ class PlanDraftMaterializationIntegrationTest {
                     .map(DraftMilestone.class::cast).filter(m -> m.getTitle().equals("Fertig")))
                     .singleElement().satisfies(m -> {
                 assertThat(m.getTitle()).isEqualTo("Fertig");
-                assertThat(m.getSortOrder()).isEqualTo(3);
+                assertThat(m.getSortOrder()).isEqualTo(1);
                 assertThat(m.getDueDate()).isEqualTo(LocalDate.of(2026, 9, 20));
                 assertThat(m.getDraftSection().getTitle()).isEqualTo("Abschluss");
             });
