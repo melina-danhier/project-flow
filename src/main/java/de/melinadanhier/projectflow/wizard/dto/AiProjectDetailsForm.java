@@ -6,10 +6,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Getter
 @Setter
 @NoArgsConstructor
 public class AiProjectDetailsForm {
+
+    private Map<String, String> answers = new LinkedHashMap<>();
 
     @Size(max = 2000, message = "Das Projektziel darf höchstens 2000 Zeichen lang sein.")
     private String projectGoal;
@@ -25,6 +30,7 @@ public class AiProjectDetailsForm {
         form.setProjectGoal(state.getProjectGoal());
         form.setConstraints(state.getConstraints());
         form.setAdditionalInformation(state.getAdditionalInformation());
+        form.setAnswers(new LinkedHashMap<>(state.getProjectSpecificAnswers()));
         return form;
     }
 }

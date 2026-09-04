@@ -21,7 +21,7 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
-@ValidProjectClassification
+@ValidProjectClassification(requireOtherDescription = false)
 public class ProjectCreateForm implements ProjectClassification {
 
     @NotBlank

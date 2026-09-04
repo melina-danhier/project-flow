@@ -15,6 +15,7 @@ import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectCreationMethodForm;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
+import de.melinadanhier.projectflow.wizard.service.AiProjectQuestionCatalog;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -156,6 +157,8 @@ public class ProjectWizardController {
         ProjectWizardState state = wizardService.requireOwnedFor(
                 CreationType.AI, currentUser.userId(), session);
         model.addAttribute("wizardState", state);
+        model.addAttribute("questions", AiProjectQuestionCatalog.questionsFor(
+                state.getCategory(), state.getSubcategory()));
         model.addAttribute("aiProjectDetailsForm", AiProjectDetailsForm.from(state));
         return "generation/ai-details";
     }
@@ -170,8 +173,31 @@ public class ProjectWizardController {
     ) {
         ProjectWizardState state = wizardService.requireOwnedFor(
                 CreationType.AI, currentUser.userId(), session);
+        var questions = AiProjectQuestionCatalog.questionsFor(state.getCategory(), state.getSubcategory());
+        var submittedAnswers = form.getAnswers() == null ? java.util.Map.<String, String>of() : form.getAnswers();
+        if (hasText(form.getProjectGoal()) || hasText(form.getConstraints())
+                || hasText(form.getAdditionalInformation())) {
+            bindingResult.reject("ai.answers.obsolete",
+                    "Die übermittelten Zusatzangaben verwenden nicht den aktuellen Fragenkatalog.");
+        }
+        if (AiProjectQuestionCatalog.containsUnknownKey(
+                state.getCategory(), state.getSubcategory(), submittedAnswers)) {
+            bindingResult.reject("ai.answers.unknown",
+                    "Die übermittelten Zusatzangaben passen nicht zur gewählten Projektart.");
+        }
+        questions.forEach(question -> {
+            String value = submittedAnswers.get(question.key());
+            if (value != null && value.length() > question.maxLength()) {
+                bindingResult.reject("ai.answers.tooLong",
+                        "Eine Zusatzangabe ist länger als erlaubt.");
+            }
+            if (question.required() && (value == null || value.isBlank())) {
+                bindingResult.reject("ai.answers.required", "Bitte fülle alle Pflichtangaben aus.");
+            }
+        });
         if (bindingResult.hasErrors()) {
             model.addAttribute("wizardState", state);
+            model.addAttribute("questions", questions);
             return "generation/ai-details";
         }
         wizardService.saveAiDetails(form, currentUser.userId(), session);
@@ -276,5 +302,9 @@ public class ProjectWizardController {
     private void populateAiSummary(Model model, UUID userId, HttpSession session) {
         model.addAttribute("summary", wizardService.aiSummary(userId, session));
         model.addAttribute("wizardState", wizardService.requireOwnedFor(CreationType.AI, userId, session));
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

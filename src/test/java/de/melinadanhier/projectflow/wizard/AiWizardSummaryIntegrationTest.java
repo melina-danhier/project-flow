@@ -117,32 +117,74 @@ class AiWizardSummaryIntegrationTest {
     @Test
     void editingAiDetailsKeepsAllOtherWizardDataAndPrefillsSavedValues() throws Exception {
         WizardRequest request = wizardRequest(true);
+        request.state().getProjectSpecificAnswers().put("movingSituation", "Von Berlin nach Hamburg");
+        request.state().getProjectSpecificAnswers().put("specialConditions", "Budget 2.000 Euro");
 
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Bis zum Monatsende umziehen")))
+                .andExpect(content().string(containsString("Von Berlin nach Hamburg")))
                 .andExpect(content().string(containsString("Budget 2.000 Euro")));
 
         mockMvc.perform(post("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())).with(csrf())
-                        .param("projectGoal", "  Neuer Zieltext  ")
-                        .param("constraints", "  ")
-                        .param("additionalInformation", "Helfer sind verfügbar"))
+                        .param("answers[movingSituation]", "  Neuer Ausgangs- und Zielort  ")
+                        .param("answers[specialConditions]", "Helfer sind verfügbar"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/ai/summary"));
 
         assertThat(request.state()).satisfies(state -> {
             assertThat(state.getTitle()).isEqualTo("Umzug planen");
             assertThat(state.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 21));
-            assertThat(state.getProjectGoal()).isEqualTo("Neuer Zieltext");
-            assertThat(state.getConstraints()).isNull();
-            assertThat(state.getAdditionalInformation()).isEqualTo("Helfer sind verfügbar");
+            assertThat(state.getProjectSpecificAnswers())
+                    .containsEntry("movingSituation", "Neuer Ausgangs- und Zielort")
+                    .containsEntry("specialConditions", "Helfer sind verfügbar");
         });
         mockMvc.perform(get("/projects/new/ai/summary")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(content().string(containsString("href=\"/projects/new/ai/details\"")))
                 .andExpect(content().string(containsString("href=\"/projects/new\"")));
+    }
+
+    @Test
+    void rendersOnlyQuestionsForTheSelectedProjectType() throws Exception {
+        WizardRequest request = wizardRequest(false);
+        request.state().setSubcategory(ProjectSubCategory.RENOVATION_OR_HOME_PROJECT);
+
+        mockMvc.perform(get("/projects/new/ai/details")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Betroffene Räume oder Fläche")))
+                .andExpect(content().string(containsString("Konkret geplante Arbeiten")))
+                .andExpect(content().string(not(containsString("Festgelegte Technologien"))));
+
+        request.state().setCategory(TemplateCategory.SOFTWARE_TECHNOLOGY);
+        request.state().setSubcategory(ProjectSubCategory.SOFTWARE_PROJECT);
+        mockMvc.perform(get("/projects/new/ai/details")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Ziel und Funktionsumfang")))
+                .andExpect(content().string(containsString("Festgelegte Technologien")))
+                .andExpect(content().string(not(containsString("Betroffene Räume oder Fläche"))));
+    }
+
+    @Test
+    void rejectsManipulatedQuestionKeysWithoutChangingWizardState() throws Exception {
+        WizardRequest request = wizardRequest(false);
+        request.state().setCategory(TemplateCategory.SOFTWARE_TECHNOLOGY);
+        request.state().setSubcategory(ProjectSubCategory.SOFTWARE_PROJECT);
+        request.state().getProjectSpecificAnswers().put("technologies", "Java");
+
+        mockMvc.perform(post("/projects/new/ai/details")
+                        .session(request.session()).with(user(request.user())).with(csrf())
+                        .param("answers[goalAndScope]", "Webanwendung")
+                        .param("answers[affectedRooms]", "Wohnzimmer"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/ai-details"))
+                .andExpect(model().attributeHasErrors("aiProjectDetailsForm"));
+
+        assertThat(request.state().getProjectSpecificAnswers())
+                .containsExactlyEntriesOf(java.util.Map.of("technologies", "Java"));
     }
 
     @Test

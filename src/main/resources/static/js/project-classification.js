@@ -3,7 +3,7 @@
     const subcategory = document.getElementById('subcategory');
     const options = document.getElementById('subcategory-options');
     const otherDescription = document.getElementById('otherProjectTypeDescription');
-    if (!category || !subcategory || !options || !otherDescription) return;
+    if (!category || !subcategory || !options) return;
 
     const update = () => {
         const selected = subcategory.value;
@@ -19,9 +19,12 @@
             ? selected : '';
         subcategory.disabled = isOther;
         document.getElementById('subcategory-fields').hidden = isOther;
-        document.getElementById('other-project-type-fields').hidden = !isOther;
-        otherDescription.disabled = !isOther;
-        otherDescription.required = isOther;
+        const otherFields = document.getElementById('other-project-type-fields');
+        if (otherFields && otherDescription) {
+            otherFields.hidden = !isOther;
+            otherDescription.disabled = !isOther;
+            otherDescription.required = isOther;
+        }
     };
     category.addEventListener('change', update);
     update();

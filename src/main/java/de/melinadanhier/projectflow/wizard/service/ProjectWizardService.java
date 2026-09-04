@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,8 +32,12 @@ public class ProjectWizardService {
 
     public ProjectWizardState saveBasics(ProjectBasicsForm form, UUID userId, HttpSession session) {
         ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
-                form.getOtherProjectTypeDescription());
+                form.isOtherCategory() && (form.getOtherProjectTypeDescription() == null
+                        || form.getOtherProjectTypeDescription().isBlank())
+                        ? "Sonstiges Projekt" : form.getOtherProjectTypeDescription());
         ProjectWizardState state = findOwned(userId, session).orElseGet(ProjectWizardState::new);
+        boolean classificationChanged = state.getCategory() != form.getCategory()
+                || state.getSubcategory() != form.getSubcategory();
         state.setUserId(userId);
         state.setTitle(form.getTitle().trim());
         state.setDescription(normalizeOptionalText(form.getDescription()));
@@ -47,6 +52,10 @@ public class ProjectWizardService {
         state.setStartDate(timeFrame.startDate());
         state.setEndDate(timeFrame.endDate());
         state.setCompletionToken(null);
+        if (classificationChanged) {
+            state.getProjectSpecificAnswers().clear();
+            state.setAiDetailsCompleted(false);
+        }
         session.setAttribute(SESSION_ATTRIBUTE, state);
         return state;
     }
@@ -63,9 +72,8 @@ public class ProjectWizardService {
     public ProjectWizardState saveAiDetails(
             AiProjectDetailsForm form, UUID userId, HttpSession session) {
         ProjectWizardState state = requireOwnedFor(CreationType.AI, userId, session);
-        state.setProjectGoal(normalizeOptionalText(form.getProjectGoal()));
-        state.setConstraints(normalizeOptionalText(form.getConstraints()));
-        state.setAdditionalInformation(normalizeOptionalText(form.getAdditionalInformation()));
+        state.setProjectSpecificAnswers(new java.util.LinkedHashMap<>(
+                AiProjectQuestionCatalog.sanitize(state.getCategory(), state.getSubcategory(), form.getAnswers())));
         state.setAiDetailsCompleted(true);
         state.setCompletionToken(null);
         session.setAttribute(SESSION_ATTRIBUTE, state);
@@ -77,11 +85,18 @@ public class ProjectWizardService {
         if (!state.isAiDetailsCompleted()) {
             throw new ResourceNotFoundException("Die KI-Angaben wurden noch nicht abgeschlossen.");
         }
+        List<AiWizardSummary.Answer> answers = AiProjectQuestionCatalog
+                .questionsFor(state.getCategory(), state.getSubcategory()).stream()
+                .filter(question -> state.getProjectSpecificAnswers().containsKey(question.key()))
+                .map(question -> new AiWizardSummary.Answer(question.key(), question.label(),
+                        state.getProjectSpecificAnswers().get(question.key())))
+                .toList();
         return new AiWizardSummary(
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
                 state.getCollaborationMode() == CollaborationMode.GROUP,
                 categoryLabel(state.getCategory(), state.getProjectTypeLabel()),
-                state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation());
+                "KI-generierter Plan",
+                state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(), answers);
     }
 
     public UUID completionToken(UUID userId, HttpSession session) {
@@ -107,7 +122,8 @@ public class ProjectWizardService {
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
                 state.getCollaborationMode(), state.getCategory(), state.getSubcategory(), state.getOtherProjectTypeDescription(),
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(),
-                AiProjectTimeFrameType.valueOf(state.getTimeFrameType().name()), state.getDurationDays());
+                AiProjectTimeFrameType.valueOf(state.getTimeFrameType().name()), state.getDurationDays(),
+                state.getProjectSpecificAnswers());
     }
 
     public ProjectWizardState requireOwned(UUID userId, HttpSession session) {
@@ -163,6 +179,7 @@ public class ProjectWizardService {
         state.setProjectGoal(snapshot.projectGoal());
         state.setConstraints(snapshot.constraints());
         state.setAdditionalInformation(snapshot.additionalInformation());
+        state.setProjectSpecificAnswers(new java.util.LinkedHashMap<>(snapshot.projectSpecificAnswers()));
         state.setAiDetailsCompleted(true);
         state.setCompletionToken(null);
         session.setAttribute(SESSION_ATTRIBUTE, state);

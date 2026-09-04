@@ -403,8 +403,17 @@ public class ProjectService {
     }
 
     private void validateGeneralProjectData(ProjectCreateForm form) {
+        if (form.getCategory() == de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.OTHER
+                && (form.getDescription() == null || form.getDescription().isBlank())
+                && (form.getOtherProjectTypeDescription() == null
+                    || form.getOtherProjectTypeDescription().isBlank())) {
+            throw new DomainValidationException("Bitte beschreibe dein sonstiges Projekt.");
+        }
         ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
-                form.getOtherProjectTypeDescription());
+                form.getCategory() == de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.OTHER
+                        && (form.getOtherProjectTypeDescription() == null
+                            || form.getOtherProjectTypeDescription().isBlank())
+                        ? "Sonstiges Projekt" : form.getOtherProjectTypeDescription());
         validateDateRange(form.getStartDate(), form.getEndDate());
         if (form.getCategory() == null) {
             throw new DomainValidationException("Bitte wähle eine Oberkategorie aus.");

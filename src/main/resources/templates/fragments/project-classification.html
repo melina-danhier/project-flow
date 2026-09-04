@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<body><div th:fragment="fields">
+<body><div th:fragment="fields(requireOtherDescription)">
     <label for="category">Oberkategorie</label>
     <select id="category" th:field="*{category}" required>
         <option value="OTHER">Sonstiges</option>
@@ -23,7 +23,7 @@
 
     </div>
         <p th:if="${#fields.hasErrors('subcategory')}" th:errors="*{subcategory}" role="alert"></p>
-    <div id="other-project-type-fields" th:hidden="*{!otherCategory}">
+    <div id="other-project-type-fields" th:if="${requireOtherDescription}" th:hidden="*{!otherCategory}">
         <label for="otherProjectTypeDescription">Was für ein Projekt ist es?</label>
         <input id="otherProjectTypeDescription" th:field="*{otherProjectTypeDescription}" maxlength="100"
                placeholder="z. B. privater Flohmarkt" th:required="*{otherCategory}" th:disabled="*{!otherCategory}">

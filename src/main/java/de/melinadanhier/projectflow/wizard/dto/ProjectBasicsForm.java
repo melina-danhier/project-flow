@@ -21,7 +21,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @ValidProjectBasics
-@ValidProjectClassification
+@ValidProjectClassification(requireOtherDescription = false)
 public class ProjectBasicsForm implements ProjectClassification {
 
     @NotBlank(message = "Bitte gib deinem Projekt einen Titel.")

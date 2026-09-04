@@ -4,6 +4,7 @@
 <body><main>
 <p>Letzter Schritt des KI-Wizards</p>
 <h1>Angaben prüfen und KI-Verarbeitung bestätigen</h1>
+<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
 
 <section aria-labelledby="general-project-data">
     <h2 id="general-project-data">Allgemeine Projektdaten</h2>
@@ -16,8 +17,9 @@
             th:text="${#temporals.format(summary.startDate, 'dd.MM.yyyy')}"></dd>
         <dd th:if="${summary.startDate != null and summary.startDate != summary.endDate}"
             th:text="|${#temporals.format(summary.startDate, 'dd.MM.yyyy')} bis ${#temporals.format(summary.endDate, 'dd.MM.yyyy')}|"></dd>
-        <dt>Gruppenprojekt</dt><dd th:text="${summary.groupProject ? 'Ja' : 'Nein'}"></dd>
+        <dt>Projektart</dt><dd th:text="${summary.groupProject ? 'Gruppenprojekt' : 'Einzelprojekt'}"></dd>
         <dt>Kategorie</dt><dd th:text="${summary.category}"></dd>
+        <dt>Art der Erstellung</dt><dd th:text="${summary.creationType}"></dd>
     </dl>
     <a th:href="@{/projects/new}">Allgemeine Projektdaten bearbeiten</a>
 </section>
@@ -25,8 +27,9 @@
 <section aria-labelledby="ai-only-data">
     <h2 id="ai-only-data">Zusätzliche Angaben für die KI</h2>
     <p><strong>Diese Angaben sind nur für die KI-Verarbeitung bestimmt und werden nicht als eigene Projektfelder übernommen.</strong></p>
-    <p th:if="${summary.projectGoal == null and summary.constraints == null and summary.additionalInformation == null}">Keine zusätzlichen Angaben gemacht.</p>
+    <p th:if="${#lists.isEmpty(summary.projectSpecificAnswers) and summary.projectGoal == null and summary.constraints == null and summary.additionalInformation == null}">Keine zusätzlichen Angaben gemacht.</p>
     <dl>
+        <th:block th:each="answer : ${summary.projectSpecificAnswers}"><dt th:text="${answer.label}"></dt><dd th:text="${answer.value}"></dd></th:block>
         <th:block th:if="${summary.projectGoal != null}"><dt>Projektziel</dt><dd th:text="${summary.projectGoal}"></dd></th:block>
         <th:block th:if="${summary.constraints != null}"><dt>Rahmenbedingungen</dt><dd th:text="${summary.constraints}"></dd></th:block>
         <th:block th:if="${summary.additionalInformation != null}"><dt>Weitere Hinweise</dt><dd th:text="${summary.additionalInformation}"></dd></th:block>

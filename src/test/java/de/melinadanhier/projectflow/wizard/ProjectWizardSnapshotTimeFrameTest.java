@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 class ProjectWizardSnapshotTimeFrameTest {
 
@@ -85,6 +86,36 @@ class ProjectWizardSnapshotTimeFrameTest {
         assertThat(form.getSubcategoryOptions()).contains(subcategory);
         assertThat(service.projectData(userId, session).getSubcategory()).isEqualTo(subcategory);
         assertThat(form.getProjectTypeLabel()).isEqualTo(subcategory.getLabel());
+    }
+
+    @Test
+    void rejectsContradictoryTypedTimeFrames() {
+        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
+                LocalDate.of(2026, 9, 1), null, AiProjectTimeFrameType.NONE, null));
+        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
+                AiProjectTimeFrameType.START_AND_END, 10));
+        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 9),
+                AiProjectTimeFrameType.START_AND_DURATION, 10));
+        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
+                LocalDate.of(2026, 9, 2), LocalDate.of(2026, 9, 10),
+                AiProjectTimeFrameType.END_AND_DURATION, 10));
+    }
+
+    @Test
+    void acceptsCalculatedBoundsForDurationTimeFrames() {
+        assertThat(snapshot(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
+                AiProjectTimeFrameType.START_AND_DURATION, 10).durationDays()).isEqualTo(10);
+        assertThat(snapshot(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
+                AiProjectTimeFrameType.END_AND_DURATION, 10).durationDays()).isEqualTo(10);
+    }
+
+    private AiWizardSnapshot snapshot(LocalDate start, LocalDate end,
+                                      AiProjectTimeFrameType type, Integer durationDays) {
+        return new AiWizardSnapshot("Projekt", null, start, end,
+                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                null, null, null, type, durationDays, java.util.Map.of());
     }
 
     private ProjectBasicsForm form(ProjectTimeFrameType mode) {

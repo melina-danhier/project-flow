@@ -119,6 +119,16 @@ class ProjectBasicsFormTest {
     }
 
     @Test
+    void requiresAnIndividualOrGroupProjectSelection() {
+        ProjectBasicsForm form = validForm();
+        form.setCollaborationMode(null);
+        assertThat(violatedProperties(form)).contains("collaborationMode");
+
+        form.setCollaborationMode(CollaborationMode.GROUP);
+        assertThat(validator.validate(form)).isEmpty();
+    }
+
+    @Test
     void rejectsContradictoryTimeInformationAtTheSelectedMode() {
         ProjectBasicsForm form = validForm();
         form.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);

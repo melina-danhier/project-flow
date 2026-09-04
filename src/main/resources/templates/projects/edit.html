@@ -9,7 +9,7 @@
     <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
     <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
     <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
-    <div th:replace="~{fragments/project-classification :: fields}"></div>
+    <div th:replace="~{fragments/project-classification :: fields(true)}"></div>
     <fieldset>
         <legend>Wer arbeitet am Projekt?</legend>
         <label><input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required> Nur ich</label>
