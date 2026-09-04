@@ -1,24 +1,70 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Anmelden – ProjectFlow</title>
+    <th:block th:replace="~{fragments/layout :: head('Anmelden')}" />
 </head>
 <body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
 <main>
-    <h1>Bei ProjectFlow anmelden</h1>
-    <p th:if="${param.error}" role="alert">E-Mail-Adresse oder Passwort ist nicht korrekt.</p>
-    <p th:if="${param.logout}">Du wurdest abgemeldet.</p>
-    <p th:if="${param.registered}">Dein Konto wurde erstellt. Du kannst dich jetzt anmelden.</p>
-    <form th:action="@{/login}" method="post">
-        <label for="email">E-Mail-Adresse</label>
-        <input id="email" name="email" type="email" autocomplete="username" required maxlength="254">
-        <label for="password">Passwort</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required>
-        <button type="submit">Anmelden</button>
-    </form>
-    <a th:href="@{/register}">Konto erstellen</a>
+    <div class="pf-auth-container">
+        <div class="pf-auth-card">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div class="brand__mark" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </div>
+                <h1>Willkommen zurück</h1>
+                <p class="subtitle">Melde dich bei deinem ProjectFlow-Arbeitsbereich an.</p>
+            </div>
+
+            <div th:if="${param.error}" class="pf-alert pf-alert--error" role="alert">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>E-Mail-Adresse oder Passwort ist nicht korrekt.</span>
+            </div>
+            
+            <div th:if="${param.logout}" class="pf-alert pf-alert--info" role="status">
+                <span>Du wurdest erfolgreich abgemeldet.</span>
+            </div>
+            
+            <div th:if="${param.registered}" class="pf-alert pf-alert--success" role="status">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>Dein Konto wurde erstellt! Du kannst dich jetzt anmelden.</span>
+            </div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="pf-form-group">
+                    <label for="email" class="pf-label">E-Mail-Adresse</label>
+                    <input id="email" name="email" type="email" autocomplete="username" required maxlength="254" class="pf-input" placeholder="name@beispiel.de">
+                </div>
+                
+                <div class="pf-form-group">
+                    <label for="password" class="pf-label">Passwort</label>
+                    <input id="password" name="password" type="password" autocomplete="current-password" required class="pf-input" placeholder="••••••••">
+                </div>
+
+                <button type="submit" class="pf-btn pf-btn--primary" style="width: 100%; margin-top: 1.25rem;">
+                    Anmelden
+                </button>
+            </form>
+
+            <div class="pf-auth-footer">
+                Noch kein Konto? <a th:href="@{/register}">Jetzt registrieren →</a>
+            </div>
+        </div>
+    </div>
 </main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>
 </html>

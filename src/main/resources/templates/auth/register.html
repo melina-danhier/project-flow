@@ -1,33 +1,63 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Registrieren – ProjectFlow</title>
+    <th:block th:replace="~{fragments/layout :: head('Registrieren')}" />
 </head>
 <body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
 <main>
-    <h1>Konto erstellen</h1>
-    <form th:action="@{/register}" th:object="${registrationForm}" method="post">
-        <label for="displayName">Anzeigename</label>
-        <input id="displayName" type="text" th:field="*{displayName}" required maxlength="100">
-        <p th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}" role="alert"></p>
+    <div class="pf-auth-container">
+        <div class="pf-auth-card">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div class="brand__mark" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </div>
+                <h1>Konto erstellen</h1>
+                <p class="subtitle">Erstelle deinen persönlichen ProjectFlow-Arbeitsbereich.</p>
+            </div>
 
-        <label for="email">E-Mail-Adresse</label>
-        <input id="email" type="email" th:field="*{email}" required maxlength="254">
-        <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" role="alert"></p>
+            <form th:action="@{/register}" th:object="${registrationForm}" method="post">
+                <div class="pf-form-group">
+                    <label for="displayName" class="pf-label">Anzeigename</label>
+                    <input id="displayName" class="pf-input" type="text" th:field="*{displayName}" required maxlength="100" placeholder="z. B. Alex Miller">
+                    <div th:if="${#fields.hasErrors('displayName')}" class="pf-alert pf-alert--error" th:errors="*{displayName}" role="alert"></div>
+                </div>
 
-        <label for="password">Passwort</label>
-        <input id="password" type="password" th:field="*{password}" autocomplete="new-password" required minlength="8" maxlength="128">
-        <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}" role="alert"></p>
+                <div class="pf-form-group">
+                    <label for="email" class="pf-label">E-Mail-Adresse</label>
+                    <input id="email" class="pf-input" type="email" th:field="*{email}" required maxlength="254" placeholder="alex@beispiel.de">
+                    <div th:if="${#fields.hasErrors('email')}" class="pf-alert pf-alert--error" th:errors="*{email}" role="alert"></div>
+                </div>
 
-        <label for="passwordConfirmation">Passwort wiederholen</label>
-        <input id="passwordConfirmation" type="password" th:field="*{passwordConfirmation}" autocomplete="new-password" required>
-        <p th:if="${#fields.hasErrors('passwordConfirmation')}" th:errors="*{passwordConfirmation}" role="alert"></p>
+                <div class="pf-form-group">
+                    <label for="password" class="pf-label">Passwort</label>
+                    <input id="password" class="pf-input" type="password" th:field="*{password}" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="Mind. 8 Zeichen">
+                    <div th:if="${#fields.hasErrors('password')}" class="pf-alert pf-alert--error" th:errors="*{password}" role="alert"></div>
+                </div>
 
-        <button type="submit">Registrieren</button>
-    </form>
-    <a th:href="@{/login}">Zur Anmeldung</a>
+                <div class="pf-form-group">
+                    <label for="passwordConfirmation" class="pf-label">Passwort wiederholen</label>
+                    <input id="passwordConfirmation" class="pf-input" type="password" th:field="*{passwordConfirmation}" autocomplete="new-password" required placeholder="Passwort bestätigen">
+                    <div th:if="${#fields.hasErrors('passwordConfirmation')}" class="pf-alert pf-alert--error" th:errors="*{passwordConfirmation}" role="alert"></div>
+                </div>
+
+                <button type="submit" class="pf-btn pf-btn--primary" style="width: 100%; margin-top: 1.25rem;">
+                    Jetzt registrieren
+                </button>
+            </form>
+
+            <div class="pf-auth-footer">
+                Bereits registriert? <a th:href="@{/login}">Zur Anmeldung →</a>
+            </div>
+        </div>
+    </div>
 </main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>
 </html>
