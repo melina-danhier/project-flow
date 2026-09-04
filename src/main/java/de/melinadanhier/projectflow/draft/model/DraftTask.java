@@ -59,10 +59,21 @@ public class DraftTask extends DraftPlanElement {
     private Set<DraftTask> prerequisites = new LinkedHashSet<>();
 
     public void addPrerequisite(DraftTask prerequisite) {
+        if (prerequisite == null) throw new IllegalArgumentException("Voraussetzung darf nicht null sein.");
+        if (getDraftPlan() != null && prerequisite.getDraftPlan() != null
+                && !sameEntity(getDraftPlan(), prerequisite.getDraftPlan())) {
+            throw new IllegalArgumentException("Aufgabenabhängigkeiten dürfen keinen anderen Entwurf referenzieren.");
+        }
         prerequisites.add(prerequisite);
     }
 
     public void removePrerequisite(DraftTask prerequisite) {
         prerequisites.remove(prerequisite);
+    }
+
+    private boolean sameEntity(de.melinadanhier.projectflow.common.model.MutableEntity left,
+                               de.melinadanhier.projectflow.common.model.MutableEntity right) {
+        if (left == right) return true;
+        return left != null && right != null && left.getId() != null && left.getId().equals(right.getId());
     }
 }

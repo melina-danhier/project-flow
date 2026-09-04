@@ -32,6 +32,7 @@ import java.util.List;
 public class DraftSection extends MutableEntity {
 
     @NotNull
+    @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "plan_draft_id", nullable = false)
     private DraftPlan draftPlan;
@@ -65,18 +66,30 @@ public class DraftSection extends MutableEntity {
     private List<DraftPlanElement> elements = new ArrayList<>();
 
     public void addElement(DraftPlanElement element) {
-        elements.add(element);
+        if (element == null) throw new IllegalArgumentException("Entwurfselement darf nicht null sein.");
+        if (draftPlan != null && element.getDraftPlan() != null
+                && !sameEntity(draftPlan, element.getDraftPlan())) {
+            throw new IllegalArgumentException("Bereich und Element gehören zu unterschiedlichen Entwürfen.");
+        }
+        DraftSection previous = element.getDraftSection();
+        if (previous != null && !sameEntity(previous, this)) previous.removeElement(element);
+        if (elements.stream().noneMatch(candidate -> sameEntity(candidate, element))) elements.add(element);
         element.setDraftSection(this);
     }
 
     public void removeElement(DraftPlanElement element) {
-        elements.remove(element);
-        if (element.getDraftSection() == this) {
+        elements.removeIf(candidate -> sameEntity(candidate, element));
+        if (sameEntity(element.getDraftSection(), this)) {
             element.setDraftSection(null);
         }
     }
 
     public void markContentModified() {
         origin = origin.modifiedByUser();
+    }
+
+    private boolean sameEntity(MutableEntity left, MutableEntity right) {
+        if (left == right) return true;
+        return left != null && right != null && left.getId() != null && left.getId().equals(right.getId());
     }
 }
