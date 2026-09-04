@@ -22,8 +22,6 @@ Die zentrale Forschungsfrage lautet:
 - Verwaltung von Aufgaben und Projektbereichen
 - einfache gemeinsame Bearbeitung von Projekten in Kleingruppen
 - Generierung von Projektplänen aus den Wizard-Eingaben
-- Beantwortung einfacher Fragen zu einem bestehenden Projekt
-- Feedback zu KI-generierten Vorschlägen
 - Registrierung und Login
 
 ## Technische Umsetzung
