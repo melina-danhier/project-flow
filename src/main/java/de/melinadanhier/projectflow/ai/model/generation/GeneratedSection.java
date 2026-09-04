@@ -19,14 +19,10 @@ public record GeneratedSection(
         @NotNull @Size(max = MAX_MILESTONES) List<@Valid GeneratedMilestone> milestones
 ) {
     public GeneratedSection {
-        tempId = trim(tempId);
-        title = trim(title);
-        description = trim(description);
+        tempId = tempId == null ? null : tempId.trim();
+        title = title == null ? null : title.trim();
+        description = description == null ? null : description.trim();
         tasks = tasks == null ? null : List.copyOf(tasks);
         milestones = milestones == null ? null : List.copyOf(milestones);
-    }
-
-    private static String trim(String value) {
-        return value == null ? null : value.trim();
     }
 }

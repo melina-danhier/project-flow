@@ -62,14 +62,10 @@ final class GenerationDateValidator {
     }
 
     private void inProjectRange(GenerationValidationCode code, LocalDate date) {
-        if (outsideRange(date, projectStart, projectEnd)) {
+        if (date != null && (projectStart != null && date.isBefore(projectStart)
+                || projectEnd != null && date.isAfter(projectEnd))) {
             addIssue(code);
         }
-    }
-
-    private boolean outsideRange(LocalDate date, LocalDate start, LocalDate end) {
-        return date != null &&
-                ((start != null && date.isBefore(start)) || (end != null && date.isAfter(end)));
     }
 
     private void addIssue(GenerationValidationCode code, String path) {

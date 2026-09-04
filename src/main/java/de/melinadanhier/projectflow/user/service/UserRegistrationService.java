@@ -23,7 +23,7 @@ public class UserRegistrationService {
 
     @Transactional
     public User register(RegistrationForm form) {
-        String normalizedEmail = normalizeEmail(form.getEmail());
+        String normalizedEmail = form.getEmail().trim().toLowerCase(Locale.ROOT);
         if (!Objects.equals(form.getPassword(), form.getPasswordConfirmation())) {
             throw new DomainValidationException("Die Passwörter stimmen nicht überein.");
         }
@@ -43,7 +43,4 @@ public class UserRegistrationService {
         }
     }
 
-    private String normalizeEmail(String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
-    }
 }
