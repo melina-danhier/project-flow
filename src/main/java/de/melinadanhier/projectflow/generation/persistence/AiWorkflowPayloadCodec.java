@@ -66,7 +66,8 @@ public class AiWorkflowPayloadCodec {
             throw new GenerationException(errorMessage + " Die gespeicherte Payload ist leer.");
         }
         try {
-            String normalized = normalizeLegacyJsonString(json);
+            // Unterstützt Payloads, die vor der direkten JSONB-Speicherung als JSON-String abgelegt wurden.
+            String normalized = json.startsWith("\"") ? objectMapper.readValue(json, String.class) : json;
             return objectMapper.readValue(normalized, type);
         } catch (JacksonException exception) {
             throw new GenerationException(errorMessage, exception);
@@ -82,10 +83,5 @@ public class AiWorkflowPayloadCodec {
         } catch (JacksonException exception) {
             throw new GenerationException(errorMessage, exception);
         }
-    }
-
-    /** Unterstützt Payloads, die vor der direkten JSONB-Speicherung als JSON-String abgelegt wurden. */
-    private String normalizeLegacyJsonString(String json) throws JacksonException {
-        return json.startsWith("\"") ? objectMapper.readValue(json, String.class) : json;
     }
 }

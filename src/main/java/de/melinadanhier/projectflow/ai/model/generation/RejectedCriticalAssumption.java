@@ -2,11 +2,7 @@ package de.melinadanhier.projectflow.ai.model.generation;
 
 public record RejectedCriticalAssumption(String statement, String correction) {
     public RejectedCriticalAssumption {
-        statement = normalize(statement);
-        correction = normalize(correction);
-    }
-
-    private static String normalize(String value) {
-        return value == null || value.isBlank() ? null : value.strip();
+        statement = statement == null || statement.isBlank() ? null : statement.strip();
+        correction = correction == null || correction.isBlank() ? null : correction.strip();
     }
 }

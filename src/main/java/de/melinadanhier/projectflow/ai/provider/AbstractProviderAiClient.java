@@ -60,11 +60,13 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
         try {
             R result = requireOutput(invocation.get());
             log.info("KI-Aufruf provider={} model={} promptVersion={} schemaVersion={} type={} durationMs={} result=success",
-                    provider, model, prompt.version(), schemaVersion, operation, elapsedMillis(startedAt));
+                    provider, model, prompt.version(), schemaVersion, operation,
+                    (System.nanoTime() - startedAt) / 1_000_000);
             return result;
         } catch (AiTechnicalException exception) {
             log.warn("KI-Aufruf provider={} model={} promptVersion={} schemaVersion={} type={} durationMs={} errorCode={}",
-                    provider, model, prompt.version(), schemaVersion, operation, elapsedMillis(startedAt),
+                    provider, model, prompt.version(), schemaVersion, operation,
+                    (System.nanoTime() - startedAt) / 1_000_000,
                     exception.getErrorCode());
             throw exception;
         }
@@ -75,9 +77,5 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
             case PRE_CHECK -> AiSchemaVersions.PRE_CHECK;
             case PLAN_GENERATION -> AiSchemaVersions.GENERATING_PLAN;
         };
-    }
-
-    private long elapsedMillis(long startedAt) {
-        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 }
