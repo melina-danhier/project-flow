@@ -310,7 +310,7 @@ class AuthenticationIntegrationTest {
                 .andExpect(content().string(matchesPattern(
                         "(?s).*<select\\b(?=[^>]*\\bid=\"subcategory\")(?=[^>]*\\bdisabled(?:\\s|=|>))[^>]*>.*")))
                 .andExpect(content().string(matchesPattern(
-                        "(?s).*<input\\b(?=[^>]*\\bname=\"otherProjectTypeDescription\")(?=[^>]*\\brequired(?:\\s|=|>))[^>]*>.*")));
+                        "(?s).*<textarea\\b(?=[^>]*\\bname=\"description\")(?=[^>]*\\brequired(?:\\s|=|>))[^>]*>.*")));
 
         long projectsBefore = projectRepository.count();
         mockMvc.perform(post("/projects/new")
@@ -323,14 +323,14 @@ class AuthenticationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("wizard/basics"))
                 .andExpect(model().attributeHasFieldErrors(
-                        "projectBasicsForm", "otherProjectTypeDescription"));
+                        "projectBasicsForm", "description"));
 
         mockMvc.perform(post("/projects/new")
                         .session(session)
                         .with(csrf())
                         .param("title", "Anderes Projekt")
                         .param("category", "OTHER")
-                        .param("otherProjectTypeDescription", "Privaten Flohmarkt organisieren")
+                        .param("description", "Privaten Flohmarkt organisieren")
                         .param("collaborationMode", "INDIVIDUAL")
                         .param("timeFrameType", "NONE"))
                 .andExpect(status().is3xxRedirection())
@@ -340,7 +340,8 @@ class AuthenticationIntegrationTest {
         assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
                 .isInstanceOfSatisfying(ProjectWizardState.class, saved -> {
                     assertThat(saved.getCategory()).isEqualTo(TemplateCategory.OTHER);
-                    assertThat(saved.getOtherProjectTypeDescription()).isEqualTo("Privaten Flohmarkt organisieren");
+                    assertThat(saved.getDescription()).isEqualTo("Privaten Flohmarkt organisieren");
+                    assertThat(saved.getOtherProjectTypeDescription()).isNull();
                 });
         mockMvc.perform(get("/projects/new").session(session))
                 .andExpect(status().isOk())

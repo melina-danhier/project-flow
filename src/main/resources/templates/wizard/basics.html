@@ -9,10 +9,10 @@
     <label for="title">Projekttitel</label>
     <input id="title" th:field="*{title}" required maxlength="100">
     <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
-    <label for="description">Ziel oder kurze Beschreibung <span>(optional)</span></label>
-    <textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
+    <label for="description">Beschreibung <span>(bei „Sonstiges“ erforderlich)</span></label>
+    <textarea id="description" th:field="*{description}" maxlength="2000" th:required="*{otherCategory}"></textarea>
     <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
-    <div th:replace="~{fragments/project-classification :: fields}"></div>
+    <div th:replace="~{fragments/project-classification :: fields(false)}"></div>
     <fieldset>
         <legend>Wer arbeitet am Projekt?</legend>
         <label><input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required> Nur ich</label>
@@ -50,6 +50,11 @@
 <form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Abbrechen</button></form>
 <script>
     (() => {
+        const category = document.getElementById('category');
+        const description = document.getElementById('description');
+        const updateDescriptionRequirement = () => description.required = category.value === 'OTHER';
+        category.addEventListener('change', updateDescriptionRequirement);
+        updateDescriptionRequirement();
         const startField = document.getElementById('start-date-field');
         const startInput = document.getElementById('startDate');
         const endField = document.getElementById('end-date-field');

@@ -15,12 +15,24 @@ public class ProjectBasicsValidator implements ConstraintValidator<ValidProjectB
             return true;
         }
 
-        return switch (form.getTimeFrameType()) {
+        boolean valid = true;
+        if (form.getCategory() == de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.OTHER
+                && (form.getDescription() == null || form.getDescription().isBlank())
+                && (form.getOtherProjectTypeDescription() == null
+                    || form.getOtherProjectTypeDescription().isBlank())) {
+            addViolation(context, "description", "Bitte beschreibe dein sonstiges Projekt.");
+            addViolation(context, "otherProjectTypeDescription",
+                    "Bitte beschreibe kurz, um welche Art von Projekt es sich handelt.");
+            valid = false;
+        }
+
+        boolean timeValid = switch (form.getTimeFrameType()) {
             case START_AND_END -> validateStartAndEnd(form, context);
             case START_AND_DURATION -> validateStartAndDuration(form, context);
             case END_AND_DURATION -> validateEndAndDuration(form, context);
             case NONE -> validateNoTimeInformation(form, context);
         };
+        return valid && timeValid;
     }
 
     private boolean validateStartAndEnd(ProjectBasicsForm form, ConstraintValidatorContext context) {

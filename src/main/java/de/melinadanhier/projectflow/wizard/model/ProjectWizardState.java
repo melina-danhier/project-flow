@@ -17,6 +17,8 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -24,7 +26,7 @@ import java.util.UUID;
 public class ProjectWizardState implements Serializable, ProjectClassification {
 
     @Serial
-    private static final long serialVersionUID = 2L;
+    private static final long serialVersionUID = 3L;
 
     private UUID userId;
     private String title;
@@ -45,7 +47,15 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
     private String constraints;
     private String additionalInformation;
     private boolean aiDetailsCompleted;
+    private Map<String, String> projectSpecificAnswers = new LinkedHashMap<>();
     private UUID completionToken;
+
+    public Map<String, String> getProjectSpecificAnswers() {
+        if (projectSpecificAnswers == null) {
+            projectSpecificAnswers = new LinkedHashMap<>();
+        }
+        return projectSpecificAnswers;
+    }
 
     public ProjectCreateForm toProjectCreateForm() {
         ProjectCreateForm form = new ProjectCreateForm();
