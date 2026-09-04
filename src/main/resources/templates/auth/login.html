@@ -59,7 +59,10 @@
             </form>
 
             <div class="pf-auth-footer">
-                Noch kein Konto? <a th:href="@{/register}">Jetzt registrieren →</a>
+                <div style="margin-bottom: 0.75rem; color: var(--pf-text-secondary);">Noch kein Konto bei ProjectFlow?</div>
+                <a th:href="@{/register}" class="pf-btn pf-btn--secondary" style="width: 100%; text-decoration: none; display: inline-flex; justify-content: center;">
+                    Neues Konto registrieren →
+                </a>
             </div>
         </div>
     </div>

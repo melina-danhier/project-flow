@@ -23,60 +23,56 @@
 
     <div class="pf-stack" style="max-width: 820px;">
         <!-- General Project Data Card -->
-        <div class="pf-card" aria-labelledby="general-project-data">
+        <section class="pf-card" aria-labelledby="general-project-data">
             <div class="pf-card__header">
                 <h2 id="general-project-data" style="margin: 0; font-size: 1.15rem;">Allgemeine Projektdaten</h2>
                 <a th:href="@{/projects/new}" class="pf-btn pf-btn--sm pf-btn--secondary">Bearbeiten</a>
             </div>
-            <div class="project-facts">
-                <div><dt>Titel</dt><dd th:text="${summary.title}">Projekt</dd></div>
-                <div th:if="${summary.description != null}"><dt>Beschreibung</dt><dd th:text="${summary.description}"></dd></div>
-                <div>
-                    <dt>Zeitraum</dt>
-                    <dd th:if="${summary.startDate == null and summary.endDate == null}">Noch nicht festgelegt</dd>
-                    <dd th:if="${summary.startDate != null and summary.startDate == summary.endDate}"
-                        th:text="${#temporals.format(summary.startDate, 'dd.MM.yyyy')}"></dd>
-                    <dd th:if="${summary.startDate != null and summary.startDate != summary.endDate}"
-                        th:text="|${#temporals.format(summary.startDate, 'dd.MM.yyyy')} bis ${#temporals.format(summary.endDate, 'dd.MM.yyyy')}|"></dd>
-                </div>
-                <div><dt>Projektart</dt><dd th:text="${summary.groupProject ? 'Gruppenprojekt' : 'Einzelprojekt'}"></dd></div>
-                <div><dt>Kategorie</dt><dd th:text="${summary.category}"></dd></div>
-                <div><dt>Art der Erstellung</dt><dd th:text="${summary.creationType}"></dd></div>
-            </div>
-        </div>
+            <dl>
+                <dt>Titel</dt><dd th:text="${summary.title}">Projekt</dd>
+                <th:block th:if="${summary.description != null}"><dt>Beschreibung</dt><dd th:text="${summary.description}"></dd></th:block>
+                <dt>Zeitraum</dt>
+                <dd th:if="${summary.startDate == null and summary.endDate == null}">Noch nicht festgelegt</dd>
+                <dd th:if="${summary.startDate != null and summary.startDate == summary.endDate}"
+                    th:text="${#temporals.format(summary.startDate, 'dd.MM.yyyy')}"></dd>
+                <dd th:if="${summary.startDate != null and summary.startDate != summary.endDate}"
+                    th:text="|${#temporals.format(summary.startDate, 'dd.MM.yyyy')} bis ${#temporals.format(summary.endDate, 'dd.MM.yyyy')}|"></dd>
+                <dt>Projektart</dt><dd th:text="${summary.groupProject ? 'Gruppenprojekt' : 'Einzelprojekt'}"></dd>
+                <dt>Kategorie</dt><dd th:text="${summary.category}"></dd>
+                <dt>Art der Erstellung</dt><dd th:text="${summary.creationType}"></dd>
+            </dl>
+        </section>
 
         <!-- AI-Specific Data Card -->
-        <div class="pf-card pf-card--tint" aria-labelledby="ai-only-data">
+        <section class="pf-card pf-card--tint" aria-labelledby="ai-only-data">
             <div class="pf-card__header">
                 <h2 id="ai-only-data" style="margin: 0; font-size: 1.15rem;">Zusätzliche Angaben für die KI</h2>
                 <a th:href="@{/projects/new/ai/details}" class="pf-btn pf-btn--sm pf-btn--secondary">KI-Angaben bearbeiten</a>
             </div>
             <p style="font-size: 0.85rem; color: var(--pf-text-muted); margin-bottom: 0.75rem;">
-                Diese Angaben sind nur für die KI-Verarbeitung bestimmt und werden nicht als eigene Projektfelder übernommen.
+                <strong>Diese Angaben sind nur für die KI-Verarbeitung bestimmt und werden nicht als eigene Projektfelder übernommen.</strong>
             </p>
-            <p th:if="${#lists.isEmpty(summary.projectSpecificAnswers) and summary.projectGoal == null and summary.constraints == null and summary.additionalInformation == null}" style="color: var(--pf-text-muted);">
+            <p th:if="${#lists.isEmpty(summary.projectSpecificAnswers) and summary.projectGoal == null and summary.constraints == null and summary.additionalInformation == null}" style="color: var(--pf-text-muted); margin: 0.5rem 0;">
                 Keine zusätzlichen Angaben gemacht.
             </p>
-            <div class="project-facts" th:unless="${#lists.isEmpty(summary.projectSpecificAnswers) and summary.projectGoal == null and summary.constraints == null and summary.additionalInformation == null}">
-                <div th:each="answer : ${summary.projectSpecificAnswers}">
-                    <dt th:text="${answer.label}">Frage</dt>
-                    <dd th:text="${answer.value}">Antwort</dd>
-                </div>
-                <div th:if="${summary.projectGoal != null}"><dt>Projektziel</dt><dd th:text="${summary.projectGoal}"></dd></div>
-                <div th:if="${summary.constraints != null}"><dt>Rahmenbedingungen</dt><dd th:text="${summary.constraints}"></dd></div>
-                <div th:if="${summary.additionalInformation != null}"><dt>Weitere Hinweise</dt><dd th:text="${summary.additionalInformation}"></dd></div>
-            </div>
-        </div>
+            <dl>
+                <th:block th:each="answer : ${summary.projectSpecificAnswers}"><dt th:text="${answer.label}"></dt><dd th:text="${answer.value}"></dd></th:block>
+                <th:block th:if="${summary.projectGoal != null}"><dt>Projektziel</dt><dd th:text="${summary.projectGoal}"></dd></th:block>
+                <th:block th:if="${summary.constraints != null}"><dt>Rahmenbedingungen</dt><dd th:text="${summary.constraints}"></dd></th:block>
+                <th:block th:if="${summary.additionalInformation != null}"><dt>Weitere Hinweise</dt><dd th:text="${summary.additionalInformation}"></dd></th:block>
+            </dl>
+        </section>
 
         <!-- Workflow Info Notice -->
-        <div class="pf-card" aria-labelledby="ai-processing-information">
+        <section class="pf-card" aria-labelledby="ai-processing-information">
             <h2 id="ai-processing-information" style="margin-top: 0; font-size: 1.15rem;">Was als Nächstes passiert</h2>
             <ul style="padding-left: 1.25rem; margin: 0; color: var(--pf-text-secondary); font-size: 0.9rem;">
-                <li>Die KI prüft deine Angaben zuerst auf logische Widersprüche und erstellt danach den Planentwurf.</li>
-                <li>Übermittelt werden nur die oben angezeigten Projektdaten. Es werden keine sensiblen Mitgliederdaten übermittelt.</li>
-                <li>Es entsteht zunächst ein überprüfbarer Entwurf, den du anpassen, einzelne Teile verwerfen oder komplett übernehmen kannst.</li>
+                <li>Die KI prüft deine Angaben zuerst auf erkennbare Probleme und erstellt danach einen Projektplan, sofern fortgefahren werden kann.</li>
+                <li>Übermittelt werden die oben angezeigten Projektdaten und KI-Zusatzangaben. Mitgliederdaten werden nicht übermittelt.</li>
+                <li>Die KI kann Bereiche, Aufgaben, Meilensteine und weitere Planinformationen vorschlagen. Das Ergebnis kann unvollständig, unpassend oder fehlerhaft sein.</li>
+                <li>Es entsteht zunächst nur ein überprüfbarer Entwurf und kein automatisch aktiver Projektplan.</li>
             </ul>
-        </div>
+        </section>
 
         <!-- Confirmation Form -->
         <div class="pf-card" style="border: 2px solid var(--pf-purple-border);">
@@ -88,7 +84,7 @@
                     <input id="consent" type="checkbox" th:field="*{consent}" style="margin-top: 0.25rem;">
                     <span>Ich stimme zu, dass die angezeigten Angaben wie beschrieben zur KI-Verarbeitung übermittelt werden.</span>
                 </label>
-                <div th:if="${#fields.hasErrors('consent')}" th:errors="*{consent}" class="pf-alert pf-alert--error" role="alert"></div>
+                <p th:if="${#fields.hasErrors('consent')}" th:errors="*{consent}" class="pf-alert pf-alert--error" role="alert"></p>
 
                 <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                     <button id="ai-confirmation-submit" type="submit" class="pf-btn pf-btn--primary" disabled>
