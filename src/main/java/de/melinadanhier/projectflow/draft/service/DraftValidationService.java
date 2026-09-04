@@ -43,13 +43,26 @@ public class DraftValidationService {
 
     private void requireConsistentGraph(DraftPlan draft) {
         // Do not silently omit orphaned or foreign elements when projecting the draft.
-        if (draft.getSections().stream().anyMatch(section -> section.getDraftPlan() != draft)
-                || draft.getElements().stream().anyMatch(element -> element.getDraftPlan() != draft
-                || element.getDraftSection() != null && (!draft.getSections().contains(element.getDraftSection())
-                || !element.getDraftSection().getElements().contains(element)))
+        if (draft.getSections().stream().anyMatch(section -> !sameEntity(section.getDraftPlan(), draft))
+                || draft.getElements().stream().anyMatch(element -> !sameEntity(element.getDraftPlan(), draft)
+                || element.getDraftSection() != null && (!containsEntity(draft.getSections(), element.getDraftSection())
+                || !containsEntity(element.getDraftSection().getElements(), element)))
                 || draft.getSections().stream().flatMap(section -> section.getElements().stream())
-                .anyMatch(element -> !draft.getElements().contains(element))) {
+                .anyMatch(element -> !containsEntity(draft.getElements(), element))) {
             throw new DomainValidationException("Die Zuordnung der Entwurfselemente zu den Bereichen ist ungültig.");
+        }
+        var draftTasks = draft.getElements().stream()
+                .filter(DraftTask.class::isInstance)
+                .map(DraftTask.class::cast)
+                .toList();
+        boolean invalidDependency = draftTasks.stream()
+                .flatMap(task -> task.getPrerequisites().stream())
+                .anyMatch(prerequisite -> prerequisite == null
+                        || !sameEntity(prerequisite.getDraftPlan(), draft)
+                        || draftTasks.stream().noneMatch(candidate -> sameEntity(candidate, prerequisite)));
+        if (invalidDependency) {
+            throw new DomainValidationException(
+                    "Eine Aufgabenabhängigkeit verweist auf eine Aufgabe außerhalb dieses Entwurfs.");
         }
     }
 
@@ -129,7 +142,8 @@ public class DraftValidationService {
                 throw new DomainValidationException("Ein übernommener Termin liegt außerhalb des Projektzeitraums.");
             }
             if (element instanceof DraftTask task && task.getStartDate() != null
-                    && project.getStartDate() != null && task.getStartDate().isBefore(project.getStartDate())) {
+                    && (project.getStartDate() != null && task.getStartDate().isBefore(project.getStartDate())
+                    || project.getEndDate() != null && task.getStartDate().isAfter(project.getEndDate()))) {
                 throw new DomainValidationException("Ein übernommener Aufgabenstart liegt außerhalb des Projektzeitraums.");
             }
         }
@@ -166,6 +180,17 @@ public class DraftValidationService {
     private GeneratedElementOrigin generatedOrigin(DraftPlanElement element) {
         return element.getOrigin() == de.melinadanhier.projectflow.planelement.model.ElementOrigin.USER
                 ? GeneratedElementOrigin.USER_INPUT : GeneratedElementOrigin.AI_INFERRED;
+    }
+
+    private boolean sameEntity(de.melinadanhier.projectflow.common.model.MutableEntity left,
+                               de.melinadanhier.projectflow.common.model.MutableEntity right) {
+        if (left == right) return true;
+        return left != null && right != null && left.getId() != null && left.getId().equals(right.getId());
+    }
+
+    private boolean containsEntity(java.util.Collection<? extends de.melinadanhier.projectflow.common.model.MutableEntity> values,
+                                   de.melinadanhier.projectflow.common.model.MutableEntity expected) {
+        return values.stream().anyMatch(value -> sameEntity(value, expected));
     }
 
     private void requireValidBean(Object value) {

@@ -63,25 +63,39 @@ public class DraftPlan extends MutableEntity {
     private List<DraftPlanElement> elements = new ArrayList<>();
 
     public void addSection(DraftSection section) {
-        sections.add(section);
+        if (section == null) throw new IllegalArgumentException("Entwurfsbereich darf nicht null sein.");
+        if (section.getDraftPlan() != null && !sameEntity(section.getDraftPlan(), this)) {
+            throw new IllegalArgumentException("Der Bereich gehört bereits zu einem anderen Entwurf.");
+        }
+        if (sections.stream().noneMatch(candidate -> sameEntity(candidate, section))) sections.add(section);
         section.setDraftPlan(this);
     }
 
     public void removeSection(DraftSection section) {
-        sections.remove(section);
-        if (section.getDraftPlan() == this) {
+        new ArrayList<>(section.getElements()).forEach(section::removeElement);
+        sections.removeIf(candidate -> sameEntity(candidate, section));
+        if (sameEntity(section.getDraftPlan(), this)) {
             section.setDraftPlan(null);
         }
     }
 
     public void addElement(DraftPlanElement element) {
-        elements.add(element);
+        if (element == null) throw new IllegalArgumentException("Entwurfselement darf nicht null sein.");
+        if (element.getDraftPlan() != null && !sameEntity(element.getDraftPlan(), this)) {
+            throw new IllegalArgumentException("Das Element gehört bereits zu einem anderen Entwurf.");
+        }
+        if (element.getDraftSection() != null && element.getDraftSection().getDraftPlan() != null
+                && !sameEntity(element.getDraftSection().getDraftPlan(), this)) {
+            throw new IllegalArgumentException("Element und Bereich gehören zu unterschiedlichen Entwürfen.");
+        }
+        if (elements.stream().noneMatch(candidate -> sameEntity(candidate, element))) elements.add(element);
         element.setDraftPlan(this);
     }
 
     public void removeElement(DraftPlanElement element) {
-        elements.remove(element);
-        if (element.getDraftPlan() == this) {
+        if (element.getDraftSection() != null) element.getDraftSection().removeElement(element);
+        elements.removeIf(candidate -> sameEntity(candidate, element));
+        if (sameEntity(element.getDraftPlan(), this)) {
             element.setDraftPlan(null);
         }
     }
@@ -89,5 +103,10 @@ public class DraftPlan extends MutableEntity {
     public void clearContents() {
         new ArrayList<>(elements).forEach(this::removeElement);
         new ArrayList<>(sections).forEach(this::removeSection);
+    }
+
+    private boolean sameEntity(MutableEntity left, MutableEntity right) {
+        if (left == right) return true;
+        return left != null && right != null && left.getId() != null && left.getId().equals(right.getId());
     }
 }

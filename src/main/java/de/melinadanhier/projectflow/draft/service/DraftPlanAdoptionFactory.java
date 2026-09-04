@@ -84,10 +84,16 @@ public class DraftPlanAdoptionFactory {
                 .filter(this::included)
                 .forEach(successor -> {
                     Task adoptedSuccessor = adoptedTasks.get(successor.getId());
+                    if (adoptedSuccessor == null) {
+                        throw inconsistentDependency();
+                    }
                     successor.getPrerequisites().stream()
                             .filter(this::included)
-                            .map(prerequisite -> adoptedTasks.get(prerequisite.getId()))
-                            .filter(java.util.Objects::nonNull)
+                            .map(prerequisite -> {
+                                Task adoptedPrerequisite = adoptedTasks.get(prerequisite.getId());
+                                if (adoptedPrerequisite == null) throw inconsistentDependency();
+                                return adoptedPrerequisite;
+                            })
                             .forEach(adoptedSuccessor::addPrerequisite);
                 });
     }
@@ -137,5 +143,9 @@ public class DraftPlanAdoptionFactory {
 
     private boolean included(DraftReviewStatus status) {
         return status == DraftReviewStatus.ACCEPTED || status == DraftReviewStatus.PENDING;
+    }
+
+    private IllegalStateException inconsistentDependency() {
+        return new IllegalStateException("Der Entwurf enthält eine unbekannte Aufgabenabhängigkeit.");
     }
 }

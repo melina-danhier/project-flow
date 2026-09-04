@@ -167,7 +167,6 @@ public class DraftReviewService {
 
     @Transactional
     public void updateTask(UUID projectId, UUID taskId, UUID userId, DraftTaskForm form) {
-        authorizationService.requireOwner(projectId, userId);
         if (!validator.validate(form).isEmpty()) {
             throw new DomainValidationException("Bitte prüfe die Aufgabenangaben.");
         }
@@ -231,9 +230,7 @@ public class DraftReviewService {
             List<DraftPlanElement> targetOrder = manualOrder(draft, target);
             insert(targetOrder, element, form.getTargetPosition());
             if (source != null) source.removeElement(element);
-            else element.setDraftSection(null);
             if (target != null) target.addElement(element);
-            else element.setDraftSection(null);
             applyOrder(source, sourceOrder);
             applyOrder(target, targetOrder);
         }
