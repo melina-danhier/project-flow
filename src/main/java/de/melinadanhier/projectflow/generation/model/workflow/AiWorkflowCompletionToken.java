@@ -21,6 +21,7 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiWorkflowCompletionToken extends MutableEntity {
 
+    /** Durable idempotency lookup; the schema intentionally permits historical aliases per workflow. */
     @Column(name = "completion_token", nullable = false, unique = true, updatable = false)
     private UUID completionToken;
 

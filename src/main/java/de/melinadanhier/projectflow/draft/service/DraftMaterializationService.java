@@ -41,8 +41,7 @@ public class DraftMaterializationService {
         var existingDraft = draftRepository.findForUpdateByProjectId(projectId);
         var workflow = workflowRepository.findByIdForUpdate(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
-        UUID effectiveRunId = runId != null ? runId : workflow.getActiveRunId();
-        if (!workflow.isActiveRun(effectiveRunId, Instant.now(clock),
+        if (!workflow.isActiveRun(runId, Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)) {
             return false;
         }
@@ -65,11 +64,5 @@ public class DraftMaterializationService {
         // Cascade persists sections and elements; prerequisite links reference these same task entities.
         draftRepository.saveAndFlush(draft);
         return true;
-    }
-
-    @Transactional
-    public boolean materialize(UUID workflowId, MappedDraft contents,
-                               String serializedPlan, boolean assumptionsNeedReview) {
-        return materialize(workflowId, null, contents, serializedPlan, assumptionsNeedReview);
     }
 }

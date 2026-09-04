@@ -24,6 +24,19 @@ class AiWorkflowStatusDtoTest {
                 .isEqualTo(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE.getUserMessage());
     }
 
+    @Test
+    void pendingAndRunningWorkCanBeCancelled() {
+        for (var cancellable : new AiPlanGenerationWorkflowStatus[] {
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING,
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING,
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING,
+                AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
+                AiPlanGenerationWorkflowStatus.GENERATION_RUNNING}) {
+            assertThat(status(cancellable).canCancel()).isTrue();
+        }
+        assertThat(status(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED).canCancel()).isFalse();
+    }
+
     private AiWorkflowStatusDto status(AiOperation operation) {
         return new AiWorkflowStatusDto(
                 UUID.randomUUID(), UUID.randomUUID(),
@@ -31,5 +44,11 @@ class AiWorkflowStatusDtoTest {
                 0, 1, 1,
                 AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
                 operation, true, false);
+    }
+
+    private AiWorkflowStatusDto status(AiPlanGenerationWorkflowStatus status) {
+        return new AiWorkflowStatusDto(
+                UUID.randomUUID(), UUID.randomUUID(), status,
+                0, 0, 0, null, null, null, false);
     }
 }

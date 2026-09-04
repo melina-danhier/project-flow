@@ -30,6 +30,6 @@ public class AiWorkflowQueryService {
                 workflow.getLastTechnicalError(),
                 workflow.getLastAiOperation(),
                 workflow.getLastErrorRetryable(),
-                workflow.getPendingAssumptionReview() != null && !workflow.getPendingAssumptionReview().isBlank());
+                workflow.hasFailedAssumptionRegeneration());
     }
 }

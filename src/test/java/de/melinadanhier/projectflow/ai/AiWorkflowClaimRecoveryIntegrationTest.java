@@ -19,7 +19,11 @@ import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowContro
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,26 +39,62 @@ class AiWorkflowClaimRecoveryIntegrationTest {
     @Test
     void preCheckClaimIsAtomicAndRejectsDuplicateClaim() {
         var workflow = pendingWorkflow();
-        assertThat(workflowRepository.claimPreCheck(workflow.getId(), Instant.now())).isEqualTo(1);
-        assertThat(workflowRepository.claimPreCheck(workflow.getId(), Instant.now())).isZero();
+        assertThat(workflowRepository.claimPreCheck(
+                workflow.getId(), workflow.getActiveRunId(), Instant.now())).isEqualTo(1);
+        assertThat(workflowRepository.claimPreCheck(
+                workflow.getId(), workflow.getActiveRunId(), Instant.now())).isZero();
         assertThat(workflowRepository.findById(workflow.getId())).get()
                 .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
     }
 
     @Test
+    void parallelPreCheckClaimsHaveExactlyOneWinner() throws Exception {
+        var workflow = pendingWorkflow();
+        UUID runId = workflow.getActiveRunId();
+        var barrier = new CyclicBarrier(2);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> {
+                barrier.await(5, TimeUnit.SECONDS);
+                return workflowRepository.claimPreCheck(workflow.getId(), runId, Instant.now());
+            });
+            var second = executor.submit(() -> {
+                barrier.await(5, TimeUnit.SECONDS);
+                return workflowRepository.claimPreCheck(workflow.getId(), runId, Instant.now());
+            });
+
+            assertThat(List.of(first.get(10, TimeUnit.SECONDS), second.get(10, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(1, 0);
+        }
+    }
+
+    @Test
+    void stalePreCheckRunCannotBeClaimed() {
+        var workflow = pendingWorkflow();
+
+        assertThat(workflowRepository.claimPreCheck(
+                workflow.getId(), UUID.randomUUID(), Instant.now())).isZero();
+        assertThat(workflowRepository.findById(workflow.getId())).get()
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING);
+    }
+
+    @Test
     void releasesStaleWorkButNeverCompletedWorkflows() {
         var stale = pendingWorkflow();
-        assertThat(workflowRepository.claimPreCheck(stale.getId(), Instant.now())).isEqualTo(1);
+        assertThat(workflowRepository.claimPreCheck(
+                stale.getId(), stale.getActiveRunId(), Instant.now())).isEqualTo(1);
         Instant old = Instant.now().minus(1, ChronoUnit.HOURS);
         jdbcTemplate.update("update ai_plan_generation_workflows set updated_at = ? where id = ?", old, stale.getId());
 
         var completed = pendingWorkflow();
-        workflowRepository.claimPreCheck(completed.getId(), Instant.now());
+        workflowRepository.claimPreCheck(
+                completed.getId(), completed.getActiveRunId(), Instant.now());
         completed = workflowRepository.findById(completed.getId()).orElseThrow();
         completed.recordPreCheckResult("{}", false);
         completed.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         workflowRepository.saveAndFlush(completed);
-        workflowRepository.claimGeneration(completed.getId(), Instant.now());
+        workflowRepository.claimGeneration(
+                completed.getId(), completed.getActiveRunId(), Instant.now());
         completed = workflowRepository.findById(completed.getId()).orElseThrow();
         completed.recordGenerationCompleted("{\"sections\":[],\"criticalAssumptions\":[]}", false);
         workflowRepository.saveAndFlush(completed);
@@ -74,19 +114,54 @@ class AiWorkflowClaimRecoveryIntegrationTest {
     @Test
     void generationClaimIsAtomic() {
         var workflow = pendingWorkflow();
-        workflowRepository.claimPreCheck(workflow.getId(), Instant.now());
+        workflowRepository.claimPreCheck(
+                workflow.getId(), workflow.getActiveRunId(), Instant.now());
         workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
         workflow.recordPreCheckResult("{}", false);
         workflow.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         workflowRepository.saveAndFlush(workflow);
-        assertThat(workflowRepository.claimGeneration(workflow.getId(), Instant.now())).isEqualTo(1);
-        assertThat(workflowRepository.claimGeneration(workflow.getId(), Instant.now())).isZero();
+        assertThat(workflowRepository.claimGeneration(
+                workflow.getId(), workflow.getActiveRunId(), Instant.now())).isEqualTo(1);
+        assertThat(workflowRepository.claimGeneration(
+                workflow.getId(), workflow.getActiveRunId(), Instant.now())).isZero();
+    }
+
+    @Test
+    void parallelGenerationClaimsHaveExactlyOneWinner() throws Exception {
+        var workflow = generationPendingWorkflow();
+        UUID runId = workflow.getActiveRunId();
+        var barrier = new CyclicBarrier(2);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> {
+                barrier.await(5, TimeUnit.SECONDS);
+                return workflowRepository.claimGeneration(workflow.getId(), runId, Instant.now());
+            });
+            var second = executor.submit(() -> {
+                barrier.await(5, TimeUnit.SECONDS);
+                return workflowRepository.claimGeneration(workflow.getId(), runId, Instant.now());
+            });
+
+            assertThat(List.of(first.get(10, TimeUnit.SECONDS), second.get(10, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(1, 0);
+        }
+    }
+
+    @Test
+    void staleGenerationRunCannotBeClaimed() {
+        var workflow = generationPendingWorkflow();
+
+        assertThat(workflowRepository.claimGeneration(
+                workflow.getId(), UUID.randomUUID(), Instant.now())).isZero();
+        assertThat(workflowRepository.findById(workflow.getId())).get()
+                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_PENDING);
     }
 
     @Test
     void newPreCheckResultClearsPersistedWarningAcknowledgements() {
         var workflow = pendingWorkflow();
-        workflowRepository.claimPreCheck(workflow.getId(), Instant.now());
+        workflowRepository.claimPreCheck(
+                workflow.getId(), workflow.getActiveRunId(), Instant.now());
         workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
         workflow.recordPreCheckResult("{}", true);
         workflow.acknowledgeWarning(0);
@@ -121,13 +196,20 @@ class AiWorkflowClaimRecoveryIntegrationTest {
     }
 
     private AiPlanGenerationWorkflow generationRunningWorkflow() {
+        var workflow = generationPendingWorkflow();
+        workflowRepository.claimGeneration(
+                workflow.getId(), workflow.getActiveRunId(), Instant.now());
+        return workflowRepository.findById(workflow.getId()).orElseThrow();
+    }
+
+    private AiPlanGenerationWorkflow generationPendingWorkflow() {
         var workflow = pendingWorkflow();
-        workflowRepository.claimPreCheck(workflow.getId(), Instant.now());
+        workflowRepository.claimPreCheck(
+                workflow.getId(), workflow.getActiveRunId(), Instant.now());
         workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
         workflow.recordPreCheckResult("{}", false);
         workflow.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         workflowRepository.saveAndFlush(workflow);
-        workflowRepository.claimGeneration(workflow.getId(), Instant.now());
         return workflowRepository.findById(workflow.getId()).orElseThrow();
     }
 

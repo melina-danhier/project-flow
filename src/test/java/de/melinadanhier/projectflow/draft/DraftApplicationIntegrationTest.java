@@ -172,7 +172,7 @@ class DraftApplicationIntegrationTest {
         assertThat(drafts.findById(fixture.draftId())).isEmpty();
         assertThat(workflows.findById(workflowId).orElseThrow().getStatus())
                 .isEqualTo(de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING);
-        verify(generationListener).startAfterCommit(
+        verify(generationListener).onGenerationRequested(
                 any(de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent.class));
     }
 

@@ -8,6 +8,7 @@
 <body><main>
 <p>KI-Prüfung der Projektangaben</p>
 <h1>Bitte prüfe diese Hinweise</h1>
+<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
 
 <p th:if="${review.hasErrors()}" role="alert">
     Mindestens ein schwerwiegender Widerspruch blockiert die Plangenerierung. Passe deine Eingaben an und starte die Prüfung erneut.

@@ -11,22 +11,25 @@
 <p>Bitte prüfe alle Annahmen. Der erzeugte Entwurf wird erst danach angezeigt.</p>
 <p th:if="${review.errorMessage}" th:text="${review.errorMessage}" role="alert" class="error-message"></p>
 <form id="assumption-review-form" th:action="@{/projects/new/ai/assumptions/{id}(id=${review.workflowId})}" method="post">
-    <input type="hidden" name="assumptionCount" th:value="${review.assumptions.size()}">
     <fieldset class="assumption-card" th:each="assumption : ${review.assumptions}"
               th:attr="data-correction-required=${assumption.correctionRequiredIfRejected}">
         <legend th:text="${assumption.statement}"></legend>
+        <input type="hidden" th:name="${'decisions[' + assumption.index + '].assumptionIndex'}"
+               th:value="${assumption.index}">
         <label>
-            <input type="radio" th:name="${'decision.' + assumption.index}" value="CONFIRMED" required
+            <input type="radio" th:name="${'decisions[' + assumption.index + '].decision'}"
+                   value="CONFIRMED" required
                    th:checked="${assumption.decision?.name() == 'CONFIRMED'}"> Trifft zu
         </label>
         <label>
-            <input type="radio" th:name="${'decision.' + assumption.index}" value="REJECTED" required
+            <input type="radio" th:name="${'decisions[' + assumption.index + '].decision'}"
+                   value="REJECTED" required
                    th:checked="${assumption.decision?.name() == 'REJECTED'}"> Trifft nicht zu
         </label>
         <div class="assumption-correction" th:if="${assumption.correctionRequiredIfRejected}">
             <label th:for="${'correction-' + assumption.index}">Was trifft stattdessen zu?</label>
             <textarea th:id="${'correction-' + assumption.index}"
-                      th:name="${'correction.' + assumption.index}" maxlength="2000"
+                      th:name="${'decisions[' + assumption.index + '].correction'}" maxlength="2000"
                       th:text="${assumption.correction}"></textarea>
         </div>
     </fieldset>

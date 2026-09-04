@@ -1,12 +1,17 @@
 package de.melinadanhier.projectflow.ai;
 
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper.MappedDraft;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
+import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
 import org.junit.jupiter.api.Test;
@@ -58,24 +63,25 @@ class AiGenerationWorkflowServiceTest {
     @Test
     void mapsBeforeOpeningStorageTransactionWithoutSerializingTheResponse() {
         UUID workflowId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
         MappedDraft contents = new MappedDraft(List.of(), List.of());
         when(mapper.map(result)).thenReturn(contents);
         when(result.criticalAssumptions()).thenReturn(List.of());
         when(payloadCodec.writeGeneratedPlan(result)).thenReturn("{}");
-        when(materializationService.materialize(workflowId, contents, "{}", false)).thenReturn(true);
+        when(materializationService.materialize(workflowId, runId, contents, "{}", false)).thenReturn(true);
 
-        assertThat(service().recordSuccess(workflowId, result)).isTrue();
+        assertThat(service().recordSuccess(workflowId, runId, result)).isTrue();
 
         var order = inOrder(mapper, materializationService);
         order.verify(mapper).map(result);
-        order.verify(materializationService).materialize(workflowId, contents, "{}", false);
+        order.verify(materializationService).materialize(workflowId, runId, contents, "{}", false);
         verifyNoInteractions(workflowRepository);
     }
 
     @Test
     void invalidMappingNeverEntersPersistence() {
         when(mapper.map(result)).thenThrow(new AiOutputValidationException("Mehrdeutige Referenz"));
-        assertThatThrownBy(() -> service().recordSuccess(UUID.randomUUID(), result))
+        assertThatThrownBy(() -> service().recordSuccess(UUID.randomUUID(), UUID.randomUUID(), result))
                 .isInstanceOf(AiOutputValidationException.class);
         verifyNoInteractions(workflowRepository, materializationService, payloadCodec);
     }
@@ -83,14 +89,48 @@ class AiGenerationWorkflowServiceTest {
     @Test
     void storageFailurePropagatesToCoordinatorAfterTransactionRollback() {
         UUID workflowId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
         MappedDraft contents = new MappedDraft(List.of(), List.of());
         when(mapper.map(result)).thenReturn(contents);
         when(result.criticalAssumptions()).thenReturn(List.of());
         when(payloadCodec.writeGeneratedPlan(result)).thenReturn("{}");
-        when(materializationService.materialize(workflowId, contents, "{}", false))
+        when(materializationService.materialize(workflowId, runId, contents, "{}", false))
                 .thenThrow(new IllegalStateException("Draft konnte nicht gespeichert werden"));
-        assertThatThrownBy(() -> service().recordSuccess(workflowId, result))
+        assertThatThrownBy(() -> service().recordSuccess(workflowId, runId, result))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void technicalPreCheckFailureCannotBeRetriedAsGeneration() {
+        UUID workflowId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        var workflow = mock(AiPlanGenerationWorkflow.class);
+        when(workflowRepository.findOwnedByIdForUpdate(workflowId, userId)).thenReturn(Optional.of(workflow));
+        when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
+        when(workflow.getLastAiOperation()).thenReturn(AiOperation.PRE_CHECK);
+
+        assertThatThrownBy(() -> service().retry(workflowId, userId))
+                .isInstanceOf(ConflictException.class);
+
+        verify(workflow, never()).startGeneration(any(), any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void retryableGenerationFailureStartsNewRun() {
+        UUID workflowId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        var workflow = mock(AiPlanGenerationWorkflow.class);
+        when(workflowRepository.findOwnedByIdForUpdate(workflowId, userId)).thenReturn(Optional.of(workflow));
+        when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
+        when(workflow.getLastAiOperation()).thenReturn(AiOperation.PLAN_GENERATION);
+        when(workflow.getLastErrorRetryable()).thenReturn(true);
+
+        service().retry(workflowId, userId);
+
+        var runId = org.mockito.ArgumentCaptor.forClass(UUID.class);
+        verify(workflow).startGeneration(runId.capture(), any(Instant.class));
+        verify(eventPublisher).publishEvent(new AiGenerationRequestedEvent(workflowId, runId.getValue()));
     }
 
     @Test

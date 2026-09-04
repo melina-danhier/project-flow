@@ -15,6 +15,7 @@
 <h2 th:if="${workflow.status.name() == 'TECHNICAL_FAILURE' and workflow.errorOperation?.name() == 'PLAN_GENERATION'}">Der Planentwurf konnte nicht erstellt werden</h2>
 <h2 th:if="${workflow.status.name() == 'TECHNICAL_FAILURE' and workflow.errorOperation == null}">Der KI-Vorgang konnte nicht abgeschlossen werden</h2>
 
+<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
 <p th:if="${workflow.processing and workflow.preCheckRun}">Die KI prüft deine bestätigten Projektangaben. Diese Seite wird automatisch aktualisiert.</p>
 <p th:if="${workflow.processing and !workflow.preCheckRun}">Die KI erstellt den Planentwurf auf Grundlage der bestätigten Vorprüfung. Diese Seite wird automatisch aktualisiert.</p>
 <p th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}">Die Generierung ist abgeschlossen. Der Entwurf bleibt getrennt vom aktiven Projekt und kann im nächsten Schritt überprüft werden.</p>
