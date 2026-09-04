@@ -34,9 +34,7 @@ public class CriticalAssumptionReviewService {
     public AssumptionReviewDto getReview(UUID workflowId, UUID userId) {
         var workflow = workflowRepository.findOwnedById(workflowId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
-        boolean failedRegeneration = workflow.getPendingAssumptionReview() != null
-                && (workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
-                || workflow.getStatus() == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
+        boolean failedRegeneration = workflow.hasFailedAssumptionRegeneration();
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING
                 && !failedRegeneration) {
             throw new ConflictException("Für diesen KI-Workflow ist keine Annahmenprüfung offen.");
@@ -66,9 +64,7 @@ public class CriticalAssumptionReviewService {
     public boolean submit(UUID workflowId, UUID userId, AssumptionReviewRequest request) {
         var workflow = workflowRepository.findOwnedByIdForUpdate(workflowId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
-        boolean failedRegeneration = workflow.getPendingAssumptionReview() != null
-                && (workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
-                || workflow.getStatus() == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
+        boolean failedRegeneration = workflow.hasFailedAssumptionRegeneration();
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING
                 && !failedRegeneration) {
             throw new ConflictException("Die Annahmenprüfung kann in diesem Zustand nicht abgeschlossen werden.");
@@ -104,11 +100,13 @@ public class CriticalAssumptionReviewService {
         String context = payloadCodec.writeAssumptionContext(
                 new GenerationAssumptionContext(allConfirmed, allRejected));
         String review = payloadCodec.writeAssumptionReview(request);
-        if (failedRegeneration) workflow.prepareFailedAssumptionRegeneration(context, review);
-        else workflow.prepareAssumptionRegeneration(context, review);
         UUID runId = UUID.randomUUID();
-        workflow.activatePendingGenerationRun(runId,
-                Instant.now(clock).plus(executionProperties.getMaxRunTime()));
+        Instant expiresAt = Instant.now(clock).plus(executionProperties.getMaxRunTime());
+        if (failedRegeneration) {
+            workflow.prepareFailedAssumptionRegeneration(context, review, runId, expiresAt);
+        } else {
+            workflow.prepareAssumptionRegeneration(context, review, runId, expiresAt);
+        }
         eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflowId, runId));
         return true;
     }

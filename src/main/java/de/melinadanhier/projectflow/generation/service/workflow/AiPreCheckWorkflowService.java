@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.generation.service.workflow;
 
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
@@ -9,7 +10,6 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +24,11 @@ import java.util.UUID;
 public class AiPreCheckWorkflowService {
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final AiWorkflowPayloadCodec payloadCodec;
-    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     @Transactional
     public Optional<AiWizardSnapshot> claimAndReadSnapshot(UUID workflowId, UUID runId) {
-        UUID effectiveRunId = runId != null ? runId : require(workflowId).getActiveRunId();
-        if (workflowRepository.claimPreCheck(workflowId, effectiveRunId, Instant.now(clock)) != 1) {
+        if (workflowRepository.claimPreCheck(workflowId, runId, Instant.now(clock)) != 1) {
             return Optional.empty();
         }
         AiPlanGenerationWorkflow workflow = require(workflowId);
@@ -38,17 +36,10 @@ public class AiPreCheckWorkflowService {
         return Optional.of(payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()));
     }
 
-    public Optional<AiWizardSnapshot> claimAndReadSnapshot(UUID workflowId) {
-        if (workflowRepository.claimPreCheck(workflowId, Instant.now(clock)) != 1) return Optional.empty();
-        var workflow = require(workflowId);
-        workflow.clearTechnicalError();
-        return Optional.of(payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()));
-    }
-
     @Transactional
     public boolean isActive(UUID workflowId, UUID runId) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
-        return workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(),
+        return workflow.isActiveRun(runId,
                 Instant.now(clock), AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
     }
 
@@ -61,39 +52,28 @@ public class AiPreCheckWorkflowService {
     public void recordProviderCall(UUID workflowId, UUID runId,
                                    String promptVersion, String schemaVersion) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
-        if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+        if (!workflow.isActiveRun(runId, Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING)) {
-            throw new de.melinadanhier.projectflow.common.exception.ConflictException(
+            throw new ConflictException(
                     "Der KI-Pre-Check ist nicht mehr aktiv.");
         }
         workflow.recordPreCheckAttempt(promptVersion, schemaVersion);
     }
 
     @Transactional
-    public void recordProviderCall(UUID workflowId, String promptVersion, String schemaVersion) {
-        recordProviderCall(workflowId, null, promptVersion, schemaVersion);
-    }
-
-    @Transactional
     public OptionalInt recordRetry(UUID workflowId, UUID runId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
-        if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+        if (!workflow.isActiveRun(runId, Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING)) {
             return OptionalInt.empty();
         }
         return OptionalInt.of(workflow.recordPreCheckRetry(error));
     }
 
-    public OptionalInt recordRetry(UUID workflowId, AiTechnicalError error) {
-        var workflow = require(workflowId);
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING) return OptionalInt.empty();
-        return OptionalInt.of(workflow.recordPreCheckRetry(error));
-    }
-
     @Transactional
     public boolean recordResult(UUID workflowId, UUID runId, AiPreCheckResult result) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
-        if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+        if (!workflow.isActiveRun(runId, Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING)) {
             return false;
         }
@@ -102,27 +82,13 @@ public class AiPreCheckWorkflowService {
         return true;
     }
 
-    public boolean recordResult(UUID workflowId, AiPreCheckResult result) {
-        var workflow = require(workflowId);
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING) return false;
-        workflow.recordPreCheckResult(payloadCodec.writePreCheckResult(result), result.hasPlausibilityIssues());
-        return true;
-    }
-
     @Transactional
     public boolean recordFailure(UUID workflowId, UUID runId, AiTechnicalError error) {
         AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
-        if (!workflow.isActiveRun(runId != null ? runId : workflow.getActiveRunId(), Instant.now(clock),
+        if (!workflow.isActiveRun(runId, Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING)) {
             return false;
         }
-        workflow.recordPreCheckFailure(error);
-        return true;
-    }
-
-    public boolean recordFailure(UUID workflowId, AiTechnicalError error) {
-        var workflow = require(workflowId);
-        if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING) return false;
         workflow.recordPreCheckFailure(error);
         return true;
     }
