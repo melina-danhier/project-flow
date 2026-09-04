@@ -21,7 +21,16 @@
                 <p class="subtitle">Erstelle deinen persönlichen ProjectFlow-Arbeitsbereich.</p>
             </div>
 
-            <form th:action="@{/register}" th:object="${registrationForm}" method="post">
+            <form id="register-form" th:action="@{/register}" th:object="${registrationForm}" method="post">
+                <div th:if="${#fields.hasErrors('*')}" class="pf-alert pf-alert--error" role="alert">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span>Bitte überprüfe deine Angaben. Einige Felder enthalten Fehler.</span>
+                </div>
+
                 <div class="pf-form-group">
                     <label for="displayName" class="pf-label">Anzeigename</label>
                     <input id="displayName" class="pf-input" type="text" th:field="*{displayName}" required maxlength="100" placeholder="z. B. Alex Miller">
@@ -44,12 +53,37 @@
                     <label for="passwordConfirmation" class="pf-label">Passwort wiederholen</label>
                     <input id="passwordConfirmation" class="pf-input" type="password" th:field="*{passwordConfirmation}" autocomplete="new-password" required placeholder="Passwort bestätigen">
                     <div th:if="${#fields.hasErrors('passwordConfirmation')}" class="pf-alert pf-alert--error" th:errors="*{passwordConfirmation}" role="alert"></div>
+                    <div id="password-mismatch-msg" class="pf-hint" style="color: var(--pf-danger); display: none; margin-top: 0.35rem;">
+                        Die Passwörter stimmen nicht überein.
+                    </div>
                 </div>
 
-                <button type="submit" class="pf-btn pf-btn--primary" style="width: 100%; margin-top: 1.25rem;">
+                <button id="register-submit-btn" type="submit" class="pf-btn pf-btn--primary" style="width: 100%; margin-top: 1.25rem;">
                     Jetzt registrieren
                 </button>
             </form>
+
+            <script>
+                (() => {
+                    const pwd = document.getElementById('password');
+                    const confirm = document.getElementById('passwordConfirmation');
+                    const msg = document.getElementById('password-mismatch-msg');
+                    const form = document.getElementById('register-form');
+                    if (!pwd || !confirm || !msg || !form) return;
+
+                    const checkMatch = () => {
+                        if (confirm.value.length > 0 && pwd.value !== confirm.value) {
+                            msg.style.display = 'block';
+                            confirm.setCustomValidity('Die Passwörter stimmen nicht überein.');
+                        } else {
+                            msg.style.display = 'none';
+                            confirm.setCustomValidity('');
+                        }
+                    };
+                    pwd.addEventListener('input', checkMatch);
+                    confirm.addEventListener('input', checkMatch);
+                })();
+            </script>
 
             <div class="pf-auth-footer">
                 Bereits registriert? <a th:href="@{/login}">Zur Anmeldung →</a>

@@ -705,6 +705,38 @@ button:disabled,
     border-top: 1px solid var(--pf-border);
 }
 
+.pf-card dl {
+    display: grid;
+    grid-template-columns: minmax(130px, auto) 1fr;
+    gap: 0.65rem 1.5rem;
+    align-items: baseline;
+    margin: 0.75rem 0;
+    padding: 1rem 1.25rem;
+    background: var(--pf-surface-subtle);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-md);
+}
+
+.pf-card dl:empty {
+    display: none;
+}
+
+.pf-card dl dt {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pf-text-muted);
+}
+
+.pf-card dl dd {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--pf-text-main);
+    word-break: break-word;
+}
+
 /* ==========================================================================
    Badges & Pills
    ========================================================================== */
