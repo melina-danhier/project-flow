@@ -27,6 +27,15 @@ public class GenerationPromptBuilder {
             - Erzeuge ausschließlich Sections mit Aufgaben und Meilensteinen. Eine Section ist ein
               allgemeiner Bereich und kann zeitlich, thematisch oder funktional gegliedert sein.
               Sections besitzen deshalb keine eigenen Datumsfelder.
+            - Richte Detailtiefe, Aufgabenumfang und Komplexität am konkreten Projektkontext aus,
+              insbesondere an Projektgröße, Einzel- oder Gruppenmodus, Zeitraum, Beteiligten und genannten
+              Rahmenbedingungen. Überplane kleine, private oder studentische Vorhaben nicht.
+              Ein einfaches, klar begrenztes und risikoarmes Vorhaben benötigt typischerweise nur
+              eine bis drei Sections, ungefähr fünf bis zehn substanzielle Aufgaben und keinen oder
+              höchstens einen wirklich aussagekräftigen Meilenstein. Dies ist ein Orientierungswert,
+              kein Mindestumfang; komplexere bestätigte Anforderungen dürfen mehr Struktur erhalten.
+              Fasse eng zusammengehörige Arbeitsschritte zusammen, statt sie künstlich in Prüf-,
+              Vorbereitungs-, Dokumentations- oder Abschlussaufgaben zu zerlegen.
             - Erzeuge insgesamt mindestens drei Aufgaben.
             - Gib alle im Ausgabeschema definierten Felder zurück. Nutze für nicht belegte optionale
               Werte null statt das Feld wegzulassen.
@@ -38,6 +47,10 @@ public class GenerationPromptBuilder {
               Selbstabhängigkeiten noch Zyklen.
             - priority ist optional und darf nur LOW, MEDIUM oder HIGH sein. Setze den Wert auf null,
               wenn keine begründete Priorität ableitbar ist.
+            - estimatedHours ist optional. Setze den Wert auf null, wenn wesentliche Angaben zu Menge,
+              Umfang oder Ausgangslage für eine belastbare Schätzung fehlen. Wenn eine Schätzung
+              hinreichend begründet ist, verwende eine konservative, grobe ganze Stundenzahl ohne
+              scheinbare Präzision. Überschätze kleine organisatorische Tätigkeiten nicht.
             - origin ist genau USER_INPUT, wenn der Inhalt unmittelbar aus einer Nutzereingabe folgt,
               andernfalls AI_INFERRED.
             - Gib keinen Prüfstatus wie checked, verified oder reviewed zurück. Neue Inhalte sind
@@ -46,11 +59,33 @@ public class GenerationPromptBuilder {
               benötigt jede Aufgabe dueDate und jeder Meilenstein date; Aufgaben-startDate bleibt
               optional. Ohne terminierte Planung dürfen alle Datumsfelder null sein. Ergänze keine
               fehlenden Datumswerte durch bloße technische Annahmen.
+            - Meilensteine sind ausschließlich wichtige erreichte Zustände, Ergebnisse oder Ereignisse,
+              die einen relevanten Fortschritt im Projekt markieren. Formuliere sie als eingetretenen
+              Zustand oder erreichtes Ergebnis, nicht als auszuführende Tätigkeit. Tätigkeiten gehören
+              als Aufgaben in den Plan. Erzeuge nur Meilensteine, die im konkreten Projekt sinnvoll sind.
+            - Decke alle wesentlichen Teilbereiche ab, die zum Erreichen des bestätigten Projektziels
+              erforderlich und aus den bestätigten Angaben ableitbar sind. Prüfe vor der Ausgabe den
+              gesamten Entwurf auf diese inhaltliche Vollständigkeit und ergänze fehlende Sections,
+              Aufgaben oder Meilensteine.
+            - Bleibe eng beim ausdrücklich bestätigten Projektziel. Ergänze keine neuen Teilziele,
+              Verbesserungen oder optionalen Vorgehensweisen als feste Aufgaben. Insbesondere dürfen
+              Verwertung, Weitergabe, Reparatur, Fotodokumentation oder zusätzliche Anschaffungen nur
+              als Aufgabe erscheinen, wenn sie bestätigt oder zur Zielerreichung zwingend erforderlich
+              sind. Ein lediglich denkbarer oder üblicher Weg ist nicht automatisch erforderlich.
+            - Erfinde keine konkreten Entscheidungen, Ressourcen, Mengen, Personen, Präferenzen oder
+              sonstigen Nutzerinformationen. Wenn eine fehlende Information für die spätere Umsetzung
+              geklärt werden muss, lasse den betroffenen optionalen Wert null oder plane eine angemessen
+              formulierte Aufgabe zur Klärung bzw. Entscheidung ein. Behaupte kein erfundenes Ergebnis.
             - Berücksichtige bestätigte Pre-Check-Warnungen als fachlichen Kontext; ändere deswegen keine Eingabe.
             - Gib kritische Annahmen ausschließlich global in criticalAssumptions zurück. Verknüpfe sie nicht
               mit Sections, Aufgaben oder Meilensteinen. Gib nur Annahmen aus, deren Falschheit Inhalt,
-              Umfang, Aufwand, Terminplanung oder Aufbau des Plans wesentlich verändern würde. Allgemeine,
-              nebensächliche oder rein beschreibende Vermutungen sind keine kritischen Annahmen.
+              Umfang, Aufwand, Terminplanung, Sicherheit oder Aufbau des Plans wesentlich verändern würde
+              und deren Klärung deshalb vor der Übernahme nötig ist. Normale Planungsunsicherheit,
+              allgemeine, nebensächliche oder rein beschreibende Vermutungen sind keine kritischen
+              Annahmen. Erzeuge keine Annahmen zu seltenen Gefahren oder Sonderfällen ohne konkreten
+              Anhaltspunkt in confirmedWizardData. Wiederhole bekannte Eingaben, etwa den Projektmodus
+              oder Zeitraum, weder direkt noch als vermutete Machbarkeit. Für einfache, risikoarme und
+              sinnvoll planbare Vorhaben ist eine leere criticalAssumptions-Liste ausdrücklich normal.
             - Setze correctionRequiredIfRejected nur auf true, wenn die bloße Verneinung der Aussage keine
               ausreichende Information für eine korrekte Neugenerierung liefert.
             - Behandle confirmedAssumptions als verbindliche Fakten und gib sie nicht erneut als Annahmen aus.
