@@ -1,34 +1,150 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Projekte – ProjectFlow</title>
+    <th:block th:replace="~{fragments/layout :: head('Projekte')}" />
 </head>
 <body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
 <main>
-    <h1>Meine Projekte</h1>
-    <nav aria-label="Projektbereiche">
-        <a th:href="@{/projects}">Aktiv</a>
-        <a th:href="@{/projects/drafts}">Entwürfe</a>
-        <a th:href="@{/projects(location=ARCHIVE)}">Archiv</a>
-        <a th:href="@{/projects(location=TRASH)}">Papierkorb</a>
+    <!-- Modern Page Header with Actions -->
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <h1 style="margin: 0;">Meine Projekte</h1>
+            <p class="pf-page-header__subtitle">Verwalte deine aktiven Initiativen, Aufgabenstrukturen und Meilensteine.</p>
+        </div>
+        <div class="pf-page-header__actions">
+            <a class="pf-btn pf-btn--secondary" th:href="@{/templates}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+                Vorlagen
+            </a>
+            <a class="pf-btn pf-btn--primary" th:href="@{/projects/new}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Neues Projekt
+            </a>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs for Filter Sections -->
+    <nav class="pf-tabs" aria-label="Projektbereiche">
+        <a th:href="@{/projects}"
+           th:classappend="${selectedLocation != null and selectedLocation.name() == 'ACTIVE' ? 'active' : ''}">
+           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+               <polyline points="2 17 12 22 22 17"></polyline>
+               <polyline points="2 12 12 17 22 12"></polyline>
+           </svg>
+           Aktiv
+        </a>
+        <a th:href="@{/projects/drafts}"
+           th:classappend="${selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'active' : ''}">
+           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path>
+           </svg>
+           Entwürfe (KI)
+        </a>
+        <a th:href="@{/projects(location=ARCHIVE)}"
+           th:classappend="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'active' : ''}">
+           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <polyline points="21 8 21 21 3 21 3 8"></polyline>
+               <rect x="1" y="3" width="22" height="5"></rect>
+               <line x1="10" y1="12" x2="14" y2="12"></line>
+           </svg>
+           Archiv
+        </a>
+        <a th:href="@{/projects(location=TRASH)}"
+           th:classappend="${selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'active' : ''}">
+           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <polyline points="3 6 5 6 21 6"></polyline>
+               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+           </svg>
+           Papierkorb
+        </a>
     </nav>
-    <p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
-    <p th:if="${#lists.isEmpty(projects)}">In diesem Bereich sind keine Projekte vorhanden.</p>
-    <ul th:unless="${#lists.isEmpty(projects)}">
-        <li th:each="project : ${projects}">
-            <a th:if="${selectedLocation.name() != 'DRAFT'}" th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}"></a>
-            <a th:if="${selectedLocation.name() == 'DRAFT'}"
-               th:href="@{/projects/{id}/draft(id=${project.id})}" th:text="${project.title}"></a>
-            <span th:if="${project.projectTypeLabel}" th:text="${project.projectTypeLabel}"></span>
-        </li>
-    </ul>
-    <a th:href="@{/projects/new}">Projekt anlegen</a>
-    <a th:href="@{/templates}">Vorlagen ansehen</a>
-    <form th:action="@{/logout}" method="post">
-        <button type="submit">Abmelden</button>
-    </form>
+
+    <!-- Flash Messages (Alerts) -->
+    <th:block th:replace="~{fragments/flash-messages :: all}" />
+
+    <!-- Empty State -->
+    <div th:if="${#lists.isEmpty(projects)}" class="pf-empty-state">
+        <div class="pf-empty-state__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+        </div>
+        <div class="pf-empty-state__title">Keine Projekte in dieser Ansicht</div>
+        <p class="pf-empty-state__text">
+            Hier sind aktuell keine Einträge hinterlegt. Erstelle dein erstes Projekt manuell, mit einer Best-Practice Vorlage oder lass die KI deinen Plan erstellen.
+        </p>
+        <a class="pf-btn pf-btn--primary" th:href="@{/projects/new}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Neues Projekt anlegen
+        </a>
+    </div>
+
+    <!-- Modern Project Card Grid -->
+    <div class="pf-project-grid" th:unless="${#lists.isEmpty(projects)}">
+        <div class="pf-project-card" th:each="project : ${projects}">
+            <div>
+                <div class="pf-project-card__top">
+                    <span class="pf-badge pf-badge--gray" th:if="${project.projectTypeLabel}" th:text="${project.projectTypeLabel}">Kategorie</span>
+                    <span class="pf-badge pf-badge--purple" th:if="${project.creationType != null and project.creationType.name() == 'AI'}">KI-Generiert</span>
+                    <span class="pf-badge pf-badge--blue" th:if="${project.collaborationMode != null and project.collaborationMode.name() == 'GROUP'}">Team</span>
+                </div>
+                <h3 class="pf-project-card__title">
+                    <a th:if="${selectedLocation.name() != 'DRAFT'}" th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}">Projekttitel</a>
+                    <a th:if="${selectedLocation.name() == 'DRAFT'}" th:href="@{/projects/{id}/draft(id=${project.id})}" th:text="${project.title}">Entwurftitel</a>
+                </h3>
+                <p th:if="${project.startDate != null or project.endDate != null}" style="font-size: 0.84rem; color: var(--pf-text-muted); margin-top: 0.4rem;">
+                    <span th:if="${project.startDate != null}" th:text="${#temporals.format(project.startDate, 'dd.MM.yyyy')}">Start</span>
+                    <span th:if="${project.startDate != null and project.endDate != null}"> – </span>
+                    <span th:if="${project.endDate != null}" th:text="${#temporals.format(project.endDate, 'dd.MM.yyyy')}">Ende</span>
+                </p>
+            </div>
+
+            <div class="pf-project-card__meta">
+                <a th:if="${selectedLocation.name() != 'DRAFT'}"
+                   th:href="@{/projects/{id}/plan(id=${project.id})}"
+                   class="pf-btn pf-btn--sm pf-btn--outline" style="width: 100%;">
+                   Projektplan öffnen →
+                </a>
+                <a th:if="${selectedLocation.name() == 'DRAFT'}"
+                   th:href="@{/projects/{id}/draft(id=${project.id})}"
+                   class="pf-btn pf-btn--sm pf-btn--primary" style="width: 100%;">
+                   Entwurf prüfen →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Utility Session Bar -->
+    <div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div style="color: var(--pf-text-muted); font-size: 0.88rem;">
+            Eingeloggt als aktiver Nutzer.
+        </div>
+        <form th:action="@{/logout}" method="post" style="margin: 0;">
+            <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Abmelden
+            </button>
+        </form>
+    </div>
 </main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>
 </html>

@@ -1,8 +1,56 @@
 <!doctype html>
-<html lang="de" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><title>Vorlage – ProjectFlow</title></head>
-<body><main><a th:href="@{/templates}">Zu den Vorlagen</a><h1 th:text="${template.title}">Vorlage</h1>
-<p th:if="${template.projectTypeLabel}" th:text="${template.projectTypeLabel}"></p>
-<p th:text="${template.description}"></p><h2>Bereiche</h2><ul><li th:each="section : ${template.sections}" th:text="${section.title}"></li></ul>
-<h2>Aufgaben</h2><ul><li th:each="task : ${template.tasks}" th:text="${task.title}"></li></ul>
-<p><a th:href="@{/projects/new}">Projekt mit dem Wizard anlegen</a></p>
-</main></body></html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Vorlage')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/templates}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zurück zum Vorlagenkatalog
+            </a>
+            <div class="pf-cluster">
+                <h1 th:text="${template.title}" style="margin: 0;">Vorlage</h1>
+                <span class="pf-badge pf-badge--gray" th:if="${template.projectTypeLabel}" th:text="${template.projectTypeLabel}">Kategorie</span>
+            </div>
+            <p class="pf-page-header__subtitle" th:text="${template.description}">Beschreibung der Vorlage</p>
+        </div>
+        <div class="pf-page-header__actions">
+            <a th:href="@{/projects/new}" class="pf-btn pf-btn--primary">
+                Projekt mit dieser Vorlage anlegen →
+            </a>
+        </div>
+    </div>
+
+    <div class="pf-grid pf-grid--2" style="align-items: start;">
+        <div class="pf-card">
+            <h3 style="margin-bottom: 1rem;">Bereiche dieser Vorlage</h3>
+            <ul class="pf-element-list">
+                <li th:each="section : ${template.sections}" class="pf-element-item" style="font-weight: 600;" th:text="${section.title}">
+                    Bereich
+                </li>
+            </ul>
+        </div>
+
+        <div class="pf-card">
+            <h3 style="margin-bottom: 1rem;">Enthaltene Aufgaben</h3>
+            <ul class="pf-element-list">
+                <li th:each="task : ${template.tasks}" class="pf-element-item">
+                    <span class="pf-element-item__icon pf-element-item__icon--task">☐</span>
+                    <span th:text="${task.title}">Aufgabe</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

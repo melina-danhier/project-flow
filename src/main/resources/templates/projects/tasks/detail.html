@@ -1,79 +1,158 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title>Aufgabe – ProjectFlow</title></head>
-<body><main>
-<a th:href="@{/projects/{projectId}/plan(projectId=${task.planContainerId})}">Zum Projektplan</a>
-<h1 th:text="${task.title}">Aufgabe</h1>
-<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
-<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
-<dl>
-    <dt>Beschreibung</dt><dd th:text="${task.description ?: 'Keine Beschreibung'}"></dd>
-    <dt>Bereich</dt><dd>
-        <span th:if="${task.planSectionId == null}">Ohne Bereich</span>
-        <span th:each="section : ${task.availableSections}" th:if="${section.id == task.planSectionId}" th:text="${section.title}"></span>
-    </dd>
-    <dt>Status</dt><dd th:text="${task.status}"></dd>
-    <dt>Priorität</dt><dd th:text="${task.priority}"></dd>
-    <dt>Startdatum</dt><dd th:text="${task.startDate ?: 'Nicht festgelegt'}"></dd>
-    <dt>Fälligkeitsdatum</dt><dd th:text="${task.dueDate ?: 'Nicht festgelegt'}"></dd>
-    <dt th:if="${task.groupProject}">Zuständigkeit</dt>
-    <dd th:if="${task.groupProject}" th:text="${task.assigneeDisplayName ?: 'Nicht zugewiesen'}"></dd>
-</dl>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Aufgabe')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
 
-<section aria-labelledby="task-comments-heading">
-    <h2 id="task-comments-heading" th:text="${commentGroupProject ? 'Kommentare' : 'Notizen'}">Notizen</h2>
-    <p th:if="${#lists.isEmpty(comments)}"
-       th:text="${commentGroupProject ? 'Noch keine Kommentare vorhanden.' : 'Noch keine Notizen vorhanden.'}">Noch keine Einträge vorhanden.</p>
-    <ol th:unless="${#lists.isEmpty(comments)}">
-        <li th:each="comment : ${comments}">
-            <p th:text="${comment.content}">Beitrag</p>
-            <p>
-                <span th:text="${comment.authorDisplayName}">Name</span>,
-                <time th:datetime="${comment.createdAt}"
-                      th:text="${#temporals.format(comment.createdAt, 'dd.MM.yyyy HH:mm')}">Zeitpunkt</time>
-            </p>
-            <form th:if="${comment.deletable}"
-                  th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
-                  method="post">
-                <button type="submit" th:text="${commentGroupProject ? 'Eigenen Kommentar löschen' : 'Eigene Notiz löschen'}">Beitrag löschen</button>
+<main>
+    <!-- Header with Back Link and Actions -->
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects/{projectId}/plan(projectId=${task.planContainerId})}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zum Projektplan
+            </a>
+            <div class="pf-cluster">
+                <h1 th:text="${task.title}" style="margin: 0;">Aufgabe</h1>
+                <span class="pf-badge pf-badge--blue" th:text="${task.status}">Status</span>
+                <span class="pf-badge"
+                      th:classappend="${task.priority != null and task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority != null and task.priority.name() == 'MEDIUM' ? 'pf-badge--yellow' : 'pf-badge--gray')}"
+                      th:text="${task.priority}">Priorität</span>
+            </div>
+        </div>
+
+        <div class="pf-page-header__actions" th:if="${task.editable}">
+            <a class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}">
+                Aufgabe bearbeiten
+            </a>
+            <form th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post" style="margin: 0;">
+                <button type="submit" class="pf-btn pf-btn--danger pf-btn--sm">Löschen</button>
             </form>
-        </li>
-    </ol>
-    <form th:if="${task.editable}"
-          th:action="@{/projects/{projectId}/tasks/{taskId}/comments(projectId=${task.planContainerId},taskId=${task.id})}"
-          th:object="${commentForm}" method="post">
-        <label for="comment-content" th:text="${commentGroupProject ? 'Neuer Kommentar' : 'Neue Notiz'}">Neue Notiz</label>
-        <textarea id="comment-content" th:field="*{content}" maxlength="2000" required></textarea>
-        <p th:if="${#fields.hasErrors('content')}" th:errors="*{content}" role="alert"></p>
-        <button type="submit" th:text="${commentGroupProject ? 'Kommentar hinzufügen' : 'Notiz hinzufügen'}">Hinzufügen</button>
-    </form>
-</section>
+        </div>
+    </div>
 
-<section><h2>Voraussetzungen</h2>
-    <p th:if="${#lists.isEmpty(task.predecessors)}">Keine Voraussetzungen.</p>
-    <ul><li th:each="prerequisite : ${task.predecessors}">
-        <a th:href="@{/projects/{projectId}/tasks/{taskId}(projectId=${task.planContainerId},taskId=${prerequisite.id})}"
-           th:text="${prerequisite.title}"></a>
-        <form th:if="${task.editable}"
-              th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies/{prerequisiteId}/remove(projectId=${task.planContainerId},taskId=${task.id},prerequisiteId=${prerequisite.id})}"
-              method="post"><button type="submit">Entfernen</button></form>
-    </li></ul>
-    <form th:if="${task.editable and !#lists.isEmpty(task.availablePrerequisites)}"
-          th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies(projectId=${task.planContainerId},taskId=${task.id})}"
-          th:object="${dependencyForm}" method="post">
-        <label for="prerequisite">Voraussetzung hinzufügen</label>
-        <select id="prerequisite" th:field="*{prerequisiteTaskId}" required>
-            <option value="">Bitte wählen</option>
-            <option th:each="candidate : ${task.availablePrerequisites}" th:value="${candidate.id}" th:text="${candidate.title}"></option>
-        </select>
-        <p th:if="${#fields.hasErrors('prerequisiteTaskId')}" th:errors="*{prerequisiteTaskId}" role="alert"></p>
-        <button type="submit">Hinzufügen</button>
-    </form>
-</section>
+    <!-- Flash Messages -->
+    <th:block th:replace="~{fragments/flash-messages :: all}" />
 
-<p th:if="${task.affectedDependencyCount > 0}">Beim Löschen werden <span th:text="${task.affectedDependencyCount}"></span> Abhängigkeiten entfernt.</p>
-<a th:if="${task.editable}" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}">Aufgabe bearbeiten</a>
-<form th:if="${task.editable}" th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post">
-    <button type="submit">Aufgabe endgültig löschen</button>
-</form>
-</main></body></html>
+    <!-- Grid Layout: Details Card + Comments & Dependencies -->
+    <div class="pf-grid pf-grid--2" style="align-items: start;">
+        <!-- Left: Task Metadata & Prerequisites -->
+        <div class="pf-stack">
+            <!-- Facts Card -->
+            <div class="pf-card">
+                <h3 style="margin-bottom: 1rem;">Details</h3>
+                <div style="display: grid; gap: 0.85rem;">
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Beschreibung</span>
+                        <p style="margin: 0.25rem 0 0; white-space: pre-line;" th:text="${task.description ?: 'Keine Beschreibung vorhanden.'}"></p>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">
+                        <div>
+                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Bereich</span>
+                            <div style="font-weight: 600; margin-top: 0.2rem;">
+                                <span th:if="${task.planSectionId == null}">Ohne Bereich</span>
+                                <span th:each="section : ${task.availableSections}" th:if="${section.id == task.planSectionId}" th:text="${section.title}"></span>
+                            </div>
+                        </div>
+                        <div th:if="${task.groupProject}">
+                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Zuständigkeit</span>
+                            <div style="font-weight: 600; margin-top: 0.2rem;" th:text="${task.assigneeDisplayName ?: 'Nicht zugewiesen'}"></div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">
+                        <div>
+                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Startdatum</span>
+                            <div style="font-weight: 500; margin-top: 0.2rem;" th:text="${task.startDate ?: 'Nicht festgelegt'}"></div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Fälligkeitsdatum</span>
+                            <div style="font-weight: 500; margin-top: 0.2rem;" th:text="${task.dueDate ?: 'Nicht festgelegt'}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prerequisites Card -->
+            <div class="pf-card">
+                <h3 style="margin-bottom: 0.85rem;">Voraussetzungen</h3>
+                <p th:if="${#lists.isEmpty(task.predecessors)}" style="color: var(--pf-text-muted); font-size: 0.9rem;">Keine Voraussetzungen definiert.</p>
+                <ul th:unless="${#lists.isEmpty(task.predecessors)}" class="pf-element-list" style="margin-bottom: 1rem;">
+                    <li th:each="prerequisite : ${task.predecessors}" class="pf-element-item">
+                        <a th:href="@{/projects/{projectId}/tasks/{taskId}(projectId=${task.planContainerId},taskId=${prerequisite.id})}"
+                           th:text="${prerequisite.title}" style="font-weight: 600;"></a>
+                        <form th:if="${task.editable}"
+                              th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies/{prerequisiteId}/remove(projectId=${task.planContainerId},taskId=${task.id},prerequisiteId=${prerequisite.id})}"
+                              method="post" style="margin: 0;">
+                            <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary">Entfernen</button>
+                        </form>
+                    </li>
+                </ul>
+
+                <!-- Add Prerequisite Form -->
+                <form th:if="${task.editable and !#lists.isEmpty(task.availablePrerequisites)}"
+                      th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies(projectId=${task.planContainerId},taskId=${task.id})}"
+                      th:object="${dependencyForm}" method="post" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
+                    <div class="pf-form-group">
+                        <label for="prerequisite" class="pf-label">Voraussetzung hinzufügen</label>
+                        <select id="prerequisite" th:field="*{prerequisiteTaskId}" required class="pf-select">
+                            <option value="">Bitte wählen...</option>
+                            <option th:each="candidate : ${task.availablePrerequisites}" th:value="${candidate.id}" th:text="${candidate.title}"></option>
+                        </select>
+                        <div th:if="${#fields.hasErrors('prerequisiteTaskId')}" th:errors="*{prerequisiteTaskId}" class="pf-alert pf-alert--error" role="alert"></div>
+                    </div>
+                    <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Hinzufügen</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right: Comments / Notes Feed -->
+        <div class="pf-card">
+            <h3 style="margin-bottom: 1rem;" th:text="${commentGroupProject ? 'Kommentare' : 'Notizen'}">Notizen</h3>
+            
+            <p th:if="${#lists.isEmpty(comments)}" style="color: var(--pf-text-muted); font-size: 0.9rem;"
+               th:text="${commentGroupProject ? 'Noch keine Kommentare vorhanden.' : 'Noch keine Notizen vorhanden.'}">
+               Noch keine Einträge vorhanden.
+            </p>
+
+            <div th:unless="${#lists.isEmpty(comments)}" style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.5rem;">
+                <div th:each="comment : ${comments}" style="padding: 0.85rem 1rem; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); border: 1px solid var(--pf-border);">
+                    <p th:text="${comment.content}" style="margin: 0 0 0.5rem; color: var(--pf-text-main);"></p>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--pf-text-muted);">
+                        <span>
+                            <strong th:text="${comment.authorDisplayName}">Name</strong> · 
+                            <time th:datetime="${comment.createdAt}" th:text="${#temporals.format(comment.createdAt, 'dd.MM.yyyy HH:mm')}">Zeitpunkt</time>
+                        </span>
+                        <form th:if="${comment.deletable}"
+                              th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
+                              method="post" style="margin: 0;">
+                            <button type="submit" style="background: none; border: none; color: var(--pf-danger); cursor: pointer; padding: 0; font-size: 0.78rem; font-weight: 600;">
+                                Löschen
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Comment Form -->
+            <form th:if="${task.editable}"
+                  th:action="@{/projects/{projectId}/tasks/{taskId}/comments(projectId=${task.planContainerId},taskId=${task.id})}"
+                  th:object="${commentForm}" method="post" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
+                <div class="pf-form-group">
+                    <label for="comment-content" class="pf-label" th:text="${commentGroupProject ? 'Neuer Kommentar' : 'Neue Notiz'}">Neue Notiz</label>
+                    <textarea id="comment-content" th:field="*{content}" maxlength="2000" required class="pf-textarea" style="min-height: 80px;" placeholder="Notiz oder Update eintragen..."></textarea>
+                    <div th:if="${#fields.hasErrors('content')}" th:errors="*{content}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+                <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary" th:text="${commentGroupProject ? 'Kommentar absenden' : 'Notiz speichern'}">Speichern</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

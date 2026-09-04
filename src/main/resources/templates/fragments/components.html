@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Reusable Page Header Component -->
+<div th:fragment="page-header(title, subtitle, badgeText, badgeVariant, backUrl, backText)" class="pf-page-header">
+    <div class="pf-page-header__left">
+        <a th:if="${backUrl != null}" th:href="${backUrl}" class="pf-page-header__back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span th:text="${backText ?: 'Zurück'}">Zurück</span>
+        </a>
+        <div class="pf-cluster">
+            <h1 th:text="${title}" style="margin: 0;">Seitentitel</h1>
+            <span th:if="${badgeText != null}"
+                  class="pf-badge"
+                  th:classappend="${badgeVariant != null ? 'pf-badge--' + badgeVariant : 'pf-badge--blue'}"
+                  th:text="${badgeText}">Status</span>
+        </div>
+        <p th:if="${subtitle != null}" class="pf-page-header__subtitle" th:text="${subtitle}">Beschreibung oder Untertitel</p>
+    </div>
+</div>
+
+<!-- Reusable Button Component (Supports both <a> and <button>) -->
+<th:block th:fragment="button(text, href, type, variant, size, extraClass)">
+    <a th:if="${href != null}"
+       th:href="${href}"
+       class="pf-btn"
+       th:classappend="${(variant != null ? ' pf-btn--' + variant : '') + (size != null ? ' pf-btn--' + size : '') + (extraClass != null ? ' ' + extraClass : '')}"
+       th:text="${text}">Aktion</a>
+    <button th:if="${href == null}"
+            th:type="${type ?: 'button'}"
+            class="pf-btn"
+            th:classappend="${(variant != null ? ' pf-btn--' + variant : '') + (size != null ? ' pf-btn--' + size : '') + (extraClass != null ? ' ' + extraClass : '')}"
+            th:text="${text}">Aktion</button>
+</th:block>
+
+<!-- Reusable Status Badge Component -->
+<span th:fragment="badge(text, variant, extraClass)"
+      class="pf-badge"
+      th:classappend="${(variant != null ? ' pf-badge--' + variant : ' pf-badge--blue') + (extraClass != null ? ' ' + extraClass : '')}"
+      th:text="${text}">Badge</span>
+
+<!-- Reusable Metric / Stat Card -->
+<div th:fragment="stat-card(label, value, icon, variant)" class="pf-stat-card">
+    <div class="pf-stat-icon" th:classappend="${variant != null ? ' pf-stat-icon--' + variant : ''}">
+        <!-- Project Folder Icon -->
+        <svg th:if="${icon == 'folder' or icon == null}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <!-- Tasks Check Icon -->
+        <svg th:if="${icon == 'check'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 11 12 14 22 4"></polyline>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <!-- AI Sparkle Icon -->
+        <svg th:if="${icon == 'sparkle'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path>
+        </svg>
+        <!-- Milestone Flag Icon -->
+        <svg th:if="${icon == 'flag'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+            <line x1="4" y1="22" x2="4" y2="15"></line>
+        </svg>
+    </div>
+    <div class="pf-stat-info">
+        <span class="pf-stat-val" th:text="${value}">0</span>
+        <span class="pf-stat-lbl" th:text="${label}">Metrik</span>
+    </div>
+</div>
+
+<!-- Reusable Empty State -->
+<div th:fragment="empty-state(title, text, actionText, actionUrl, iconType)" class="pf-empty-state">
+    <div class="pf-empty-state__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+    </div>
+    <div class="pf-empty-state__title" th:text="${title}">Keine Einträge vorhanden</div>
+    <p class="pf-empty-state__text" th:text="${text}">Erstelle deinen ersten Eintrag oder wähle eine Option aus.</p>
+    <a th:if="${actionUrl != null and actionText != null}"
+       th:href="${actionUrl}"
+       class="pf-btn pf-btn--primary"
+       th:text="${actionText}">Jetzt starten</a>
+</div>
+
+<!-- Reusable Container Card -->
+<div th:fragment="card(title, subtitle, extraClass)"
+     class="pf-card"
+     th:classappend="${extraClass != null ? ' ' + extraClass : ''}">
+    <div th:if="${title != null}" class="pf-card__header">
+        <div>
+            <h3 th:text="${title}" style="margin: 0;">Card Titel</h3>
+            <p th:if="${subtitle != null}" style="margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--pf-text-muted);" th:text="${subtitle}"></p>
+        </div>
+    </div>
+    <div class="pf-card__body">
+        <!-- Card content injected here -->
+    </div>
+</div>
+
+</body>
+</html>

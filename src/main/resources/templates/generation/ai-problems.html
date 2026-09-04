@@ -1,41 +1,94 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hinweise zur Projektplanung – ProjectFlow</title>
+    <th:block th:replace="~{fragments/layout :: head('Hinweise zur Projektplanung')}" />
 </head>
-<body><main>
-<p>KI-Prüfung der Projektangaben</p>
-<h1>Bitte prüfe diese Hinweise</h1>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
 
-<p th:if="${review.hasErrors()}" role="alert">
-    Mindestens ein schwerwiegender Widerspruch blockiert die Plangenerierung. Passe deine Eingaben an und starte die Prüfung erneut.
-</p>
-<p th:unless="${review.hasErrors()}">
-    Prüfe die Hinweise und starte die Plangenerierung anschließend ausdrücklich.
-</p>
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <div class="pf-cluster" style="margin-bottom: 0.25rem;">
+                <span class="pf-badge pf-badge--yellow">KI-Prüfung</span>
+                <span class="pf-badge pf-badge--gray">Validierung</span>
+            </div>
+            <h1 style="margin: 0;">Bitte prüfe diese Hinweise</h1>
+            <p class="pf-page-header__subtitle">
+                Die Plausibilitätsprüfung hat Rückfragen oder Widersprüche in deinen Projektangaben festgestellt.
+            </p>
+        </div>
+    </div>
 
-<section th:each="problem : ${review.problems}" th:unless="${problem.acknowledged}"
-         th:attr="aria-label=${problem.severity.name() == 'ERROR' ? 'Fehler' : 'Warnung'}">
-    <h2 th:text="${problem.severity.name() == 'ERROR' ? 'Fehler' : 'Warnung'}">Hinweis</h2>
-    <p><strong>Hinweis:</strong> <span th:text="${problem.message}"></span></p>
-    <p><strong>Vorschlag:</strong> <span th:text="${problem.suggestion}"></span></p>
-    <form th:if="${problem.warning}"
-          th:action="@{/projects/new/ai/problems/{workflowId}/warnings/{problemIndex}/acknowledge(workflowId=${review.workflowId},problemIndex=${problem.index})}"
-          method="post">
-        <button type="submit">Hinweis akzeptieren</button>
-    </form>
-    <p th:unless="${problem.warning}"><strong>Dieser Fehler kann nicht akzeptiert werden.</strong></p>
-</section>
+    <div style="max-width: 820px;">
+        <div th:if="${review.hasErrors()}" class="pf-alert pf-alert--error" role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>Mindestens ein schwerwiegender Widerspruch blockiert die Plangenerierung. Passe deine Eingaben an und starte die Prüfung erneut.</span>
+        </div>
 
-<form th:if="${review.canGenerate()}"
-      th:action="@{/projects/new/ai/status/{workflowId}/generate(workflowId=${review.workflowId})}"
-      method="post" onsubmit="this.querySelector('button').disabled=true">
-    <button type="submit">Planentwurf generieren</button>
-</form>
+        <div th:unless="${review.hasErrors()}" class="pf-alert pf-alert--warning" role="status">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span>Prüfe die Hinweise. Sobald alle Punkte geklärt oder akzeptiert sind, kannst du die Plangenerierung starten.</span>
+        </div>
 
-<form th:action="@{/projects/new/ai/problems/{workflowId}/edit(workflowId=${review.workflowId})}" method="post">
-    <button type="submit">Eingaben ändern</button>
-</form>
-</main></body></html>
+        <!-- Problems List -->
+        <div class="pf-stack" style="margin-top: 1.5rem;">
+            <div th:each="problem : ${review.problems}" th:unless="${problem.acknowledged}"
+                 class="pf-card"
+                 th:classappend="${problem.severity.name() == 'ERROR' ? 'pf-card--accent pf-card--accent-danger' : 'pf-card--accent'}"
+                 style="border-left-width: 4px;"
+                 th:style="${problem.severity.name() == 'ERROR' ? 'border-left-color: var(--pf-danger);' : 'border-left-color: var(--pf-warning);'}">
+                <div class="pf-card__header">
+                    <span class="pf-badge"
+                          th:classappend="${problem.severity.name() == 'ERROR' ? 'pf-badge--red' : 'pf-badge--yellow'}"
+                          th:text="${problem.severity.name() == 'ERROR' ? 'Fehler' : 'Warnung'}">Hinweis</span>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <p style="font-size: 0.95rem; color: var(--pf-text-main); font-weight: 600; margin-bottom: 0.4rem;" th:text="${problem.message}"></p>
+                    <p style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0;">
+                        <strong>Vorschlag: </strong><span th:text="${problem.suggestion}"></span>
+                    </p>
+                </div>
+
+                <div th:if="${problem.warning}">
+                    <form th:action="@{/projects/new/ai/problems/{workflowId}/warnings/{problemIndex}/acknowledge(workflowId=${review.workflowId},problemIndex=${problem.index})}"
+                          method="post" style="margin: 0;">
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--outline">
+                            Diesen Hinweis akzeptieren
+                        </button>
+                    </form>
+                </div>
+                <div th:unless="${problem.warning}" style="font-size: 0.84rem; color: var(--pf-danger); font-weight: 600;">
+                    Dieser Fehler muss in den Eingaben korrigiert werden.
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <form th:if="${review.canGenerate()}"
+                  th:action="@{/projects/new/ai/status/{workflowId}/generate(workflowId=${review.workflowId})}"
+                  method="post" onsubmit="this.querySelector('button').disabled=true" style="margin: 0;">
+                <button type="submit" class="pf-btn pf-btn--primary pf-btn--lg">
+                    Planentwurf jetzt generieren →
+                </button>
+            </form>
+
+            <form th:action="@{/projects/new/ai/problems/{workflowId}/edit(workflowId=${review.workflowId})}" method="post" style="margin: 0;">
+                <button type="submit" class="pf-btn pf-btn--secondary">Eingaben ändern</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

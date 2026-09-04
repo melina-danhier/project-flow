@@ -1,17 +1,57 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title>Vorlage auswählen – ProjectFlow</title></head>
-<body><main>
-<h1>Vorlage auswählen</h1>
-<p>Deine Grundangaben bleiben erhalten. Du kannst jede Vorlage ansehen und verwenden.</p>
-<ul><li th:each="template : ${templates}">
-    <strong th:if="${recommendedTemplateId != null and recommendedTemplateId == template.id}">Empfohlen: </strong>
-    <a th:href="@{/projects/new/template/{id}(id=${template.id})}" th:text="${template.title}">Vorlage</a>
-    <span th:if="${template.projectTypeLabel}" th:text="${template.projectTypeLabel}"></span>
-    <form th:action="@{/projects/new/template/{id}(id=${template.id})}" method="post">
-        <button type="submit">Direkt benutzen</button>
-    </form>
-</li></ul>
-<a th:href="@{/projects/new/method}">Zurück</a>
-<form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Abbrechen</button></form>
-</main></body></html>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Vorlage auswählen')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects/new/method}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zurück zur Methodenauswahl
+            </a>
+            <h1 style="margin: 0;">Vorlage auswählen</h1>
+            <p class="pf-page-header__subtitle">Deine Grundangaben bleiben erhalten. Du kannst jede Vorlage vorab ansehen oder direkt für dein Projekt übernehmen.</p>
+        </div>
+    </div>
+
+    <div class="pf-project-grid">
+        <div th:each="template : ${templates}" class="pf-project-card"
+             th:style="${recommendedTemplateId != null and recommendedTemplateId == template.id ? 'border: 2px solid var(--pf-primary); box-shadow: var(--pf-shadow-md);' : ''}">
+            <div>
+                <div class="pf-project-card__top">
+                    <span class="pf-badge pf-badge--purple" th:if="${recommendedTemplateId != null and recommendedTemplateId == template.id}">Empfohlen für dich</span>
+                    <span class="pf-badge pf-badge--gray" th:if="${template.projectTypeLabel}" th:text="${template.projectTypeLabel}">Kategorie</span>
+                </div>
+                <h3 class="pf-project-card__title">
+                    <a th:href="@{/projects/new/template/{id}(id=${template.id})}" th:text="${template.title}">Vorlagentitel</a>
+                </h3>
+                <p th:if="${template.description}" th:text="${template.description}" style="font-size: 0.88rem; color: var(--pf-text-muted); margin-top: 0.5rem;"></p>
+            </div>
+            <div class="pf-project-card__meta" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
+                <form th:action="@{/projects/new/template/{id}(id=${template.id})}" method="post" style="margin: 0; width: 100%;">
+                    <button type="submit" class="pf-btn pf-btn--primary pf-btn--sm" style="width: 100%;">
+                        Direkt benutzen →
+                    </button>
+                </form>
+                <a th:href="@{/projects/new/template/{id}(id=${template.id})}" class="pf-btn pf-btn--secondary pf-btn--sm" style="width: 100%;">
+                    Vorschau ansehen
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
+        <th:block th:replace="~{fragments/wizard-nav :: cancel('Assistent abbrechen')}" />
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

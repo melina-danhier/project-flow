@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="title-field(label)" class="pf-form-group">
+    <label for="title" class="pf-label" th:text="${label}">Titel</label>
+    <input id="title" class="pf-input" th:field="*{title}" required maxlength="100" placeholder="z. B. Website Relaunch">
+    <div th:if="${#fields.hasErrors('title')}" class="pf-alert pf-alert--error" th:errors="*{title}" role="alert"></div>
+</div>
+
+<div th:fragment="description-field(label, optional)" class="pf-form-group">
+    <label for="description" class="pf-label">
+        <span th:text="${label}">Beschreibung</span>
+        <span th:if="${optional}" class="pf-hint">(optional)</span>
+    </label>
+    <textarea id="description" class="pf-textarea" th:field="*{description}" maxlength="2000" placeholder="Zielsetzung, Notizen oder Hintergrundinformationen..."></textarea>
+    <div th:if="${#fields.hasErrors('description')}" class="pf-alert pf-alert--error" th:errors="*{description}" role="alert"></div>
+</div>
+
+<div th:fragment="collaboration-mode" class="pf-form-group">
+    <fieldset>
+        <legend>Wer arbeitet am Projekt?</legend>
+        <label>
+            <input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required>
+            <span>Nur ich (Einzelprojekt)</span>
+        </label>
+        <label>
+            <input type="radio" th:field="*{collaborationMode}" value="GROUP">
+            <span>Eine Gruppe / Team</span>
+        </label>
+    </fieldset>
+    <div th:if="${#fields.hasErrors('collaborationMode')}" class="pf-alert pf-alert--error" th:errors="*{collaborationMode}" role="alert"></div>
+</div>
+
+<div th:fragment="section-selector(sectionList)" class="pf-form-group">
+    <label for="section" class="pf-label">Bereich / Phase</label>
+    <select id="section" class="pf-select" th:field="*{planSectionId}">
+        <option value="">Ohne Bereich (Allgemein)</option>
+        <option th:each="s : ${sectionList}" th:value="${s.id}" th:text="${s.title}"></option>
+    </select>
+</div>
+
+</body>
+</html>

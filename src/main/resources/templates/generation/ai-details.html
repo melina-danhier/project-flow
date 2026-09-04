@@ -1,28 +1,68 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Zusätzliche KI-Angaben – ProjectFlow</title></head>
-<body><main>
-<p>KI-Wizard</p>
-<h1>Zusätzliche Angaben für die KI</h1>
-<p>Diese optionalen Angaben helfen der KI, einen passenderen Plan für „<span th:text="${wizardState.title}">Projekt</span>“ vorzuschlagen.</p>
-<form th:action="@{/projects/new/ai/details}" th:object="${aiProjectDetailsForm}" method="post">
-    <label for="projectGoal">Projektziel <span>(optional)</span></label>
-    <textarea id="projectGoal" th:field="*{projectGoal}" maxlength="2000"></textarea>
-    <p th:if="${#fields.hasErrors('projectGoal')}" th:errors="*{projectGoal}" role="alert"></p>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Zusätzliche KI-Angaben')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
 
-    <label for="constraints">Rahmenbedingungen <span>(optional)</span></label>
-    <textarea id="constraints" th:field="*{constraints}" maxlength="2000"
-              placeholder="z. B. Budget, feste Termine oder verfügbare Mittel"></textarea>
-    <p th:if="${#fields.hasErrors('constraints')}" th:errors="*{constraints}" role="alert"></p>
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <div class="pf-cluster" style="margin-bottom: 0.25rem;">
+                <span class="pf-badge pf-badge--purple">KI-Assistent</span>
+                <span class="pf-badge pf-badge--gray">Optionale Angaben</span>
+            </div>
+            <h1 style="margin: 0;">Zusätzliche Angaben für die KI</h1>
+            <p class="pf-page-header__subtitle">
+                Diese Angaben helfen der KI, einen maßgeschneiderten Plan für „<strong th:text="${wizardState.title}">Projekt</strong>" zu erstellen.
+            </p>
+        </div>
+    </div>
 
-    <label for="additionalInformation">Weitere Hinweise <span>(optional)</span></label>
-    <textarea id="additionalInformation" th:field="*{additionalInformation}" maxlength="2000"></textarea>
-    <p th:if="${#fields.hasErrors('additionalInformation')}" th:errors="*{additionalInformation}" role="alert"></p>
+    <div class="pf-card" style="max-width: 760px;">
+        <form th:action="@{/projects/new/ai/details}" th:object="${aiProjectDetailsForm}" method="post">
+            <div class="pf-form-group">
+                <label for="projectGoal" class="pf-label">
+                    <span>Projektziel</span>
+                    <span class="pf-hint">(optional)</span>
+                </label>
+                <textarea id="projectGoal" class="pf-textarea" th:field="*{projectGoal}" maxlength="2000" placeholder="Welches konkrete Ergebnis soll am Ende des Projekts erreicht sein?"></textarea>
+                <div th:if="${#fields.hasErrors('projectGoal')}" th:errors="*{projectGoal}" class="pf-alert pf-alert--error" role="alert"></div>
+            </div>
 
-    <button type="submit">Weiter zur Zusammenfassung</button>
-</form>
-<a th:href="@{/projects/new/method}">Zurück</a>
-<form th:action="@{/projects/new/cancel}" method="post">
-    <button type="submit">Projekterstellung abbrechen</button>
-</form>
-</main></body></html>
+            <div class="pf-form-group">
+                <label for="constraints" class="pf-label">
+                    <span>Rahmenbedingungen & Limitierungen</span>
+                    <span class="pf-hint">(optional)</span>
+                </label>
+                <textarea id="constraints" class="pf-textarea" th:field="*{constraints}" maxlength="2000" placeholder="z. B. Maximalbudget, fixe Zwischentermine, Ressourcen oder technologische Vorgaben"></textarea>
+                <div th:if="${#fields.hasErrors('constraints')}" th:errors="*{constraints}" class="pf-alert pf-alert--error" role="alert"></div>
+            </div>
+
+            <div class="pf-form-group">
+                <label for="additionalInformation" class="pf-label">
+                    <span>Weitere Hinweise & Kontext</span>
+                    <span class="pf-hint">(optional)</span>
+                </label>
+                <textarea id="additionalInformation" class="pf-textarea" th:field="*{additionalInformation}" maxlength="2000" placeholder="Besonderheiten, Zielgruppen, Risiken oder bereits getroffene Entscheidungen"></textarea>
+                <div th:if="${#fields.hasErrors('additionalInformation')}" th:errors="*{additionalInformation}" class="pf-alert pf-alert--error" role="alert"></div>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <button type="submit" class="pf-btn pf-btn--primary">
+                    Weiter zur Zusammenfassung →
+                </button>
+                <a th:href="@{/projects/new/method}" class="pf-btn pf-btn--secondary">← Zurück</a>
+            </div>
+        </form>
+
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
+            <th:block th:replace="~{fragments/wizard-nav :: cancel('Projekterstellung abbrechen')}" />
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>
