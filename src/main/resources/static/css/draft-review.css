@@ -1,63 +1,277 @@
-:root { color-scheme: light; font-family: system-ui, sans-serif; }
-body { margin: 0; color: #202428; background: #f6f7f8; }
-main { max-width: 68rem; margin: 2rem auto; padding: 0 1rem 3rem; line-height: 1.5; }
-a { color: #205493; }
-.review-header, .draft-section { margin-block: 1.5rem; padding: 1.5rem; border: 1px solid #d9dde2; border-radius: .65rem; background: #fff; }
-.draft-label { display: inline-block; margin: 0; padding: .25rem .6rem; border-radius: 999px; background: #fff3cd; color: #604700; font-weight: 650; }
-.review-header h1 { margin-block-end: .25rem; }
-.review-header h2 { margin-block: 0 1rem; font-size: 1.2rem; font-weight: 600; }
-.project-facts, .element-facts { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; margin-block: 1rem; }
-.project-facts div, .element-facts div { display: grid; gap: .1rem; }
-dt { font-size: .85rem; font-weight: 650; color: #59636e; }
-dd { margin: 0; }
-.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; }
-.section-heading h2 { margin-block-start: 0; }
-.section-edit { min-width: min(23rem, 100%); }
-.section-edit summary { cursor: pointer; font-weight: 650; }
-.section-edit form { margin-block-start: .75rem; }
-label { display: block; margin-block: .65rem .2rem; font-weight: 600; }
-input, textarea, select { width: 100%; max-width: 100%; padding: .55rem; box-sizing: border-box; border: 1px solid #9aa3ad; border-radius: .3rem; font: inherit; background: #fff; }
-textarea { min-height: 6rem; resize: vertical; }
-button { margin-block-start: .75rem; padding: .55rem .9rem; border: 1px solid #205493; border-radius: .3rem; background: #205493; color: #fff; font: inherit; cursor: pointer; }
-button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid #f2b134; outline-offset: 3px; }
-.plan-elements { margin: 1rem 0 0; padding: 0; list-style: none; }
-.plan-element { padding: 1rem 0; border-top: 1px solid #e3e6e9; }
-.element-heading { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
-.element-icon { width: 1.25rem; color: #315d85; text-align: center; }
-.element-type { padding: .1rem .45rem; border-radius: 999px; background: #e8eef4; color: #294a69; font-size: .8rem; font-weight: 650; }
-.element-origin { padding: .1rem .45rem; border-radius: 999px; background: #e8f4e8; color: #27552c; font-size: .8rem; font-weight: 650; }
-.section-title { flex: 1; }
-.drag-handle { flex: 0 0 auto; margin: 0; padding: .2rem .45rem; border-color: #8b949e; background: #fff; color: #39424c; cursor: grab; }
-.drag-handle:active { cursor: grabbing; }
-.is-dragging { opacity: .45; }
-.drop-target { outline: 3px dashed #4a78a5; outline-offset: 3px; }
-.element-edit { margin-inline-start: 2.25rem; }
-.element-edit summary { cursor: pointer; font-weight: 650; }
-.element-edit form { max-width: 32rem; margin-block-start: .75rem; }
-.sort-mode { max-width: 30rem; padding-block-start: .25rem; }
-.sorting-hint { color: #59636e; font-size: .9rem; }
-.review-progress { margin-block: 1rem; }
-.review-filters { margin-block: 1rem; padding: 1rem; border: 1px solid #d9dde2; border-radius: .4rem; }
-.review-filters fieldset { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: 0; padding: 0; border: 0; }
-.review-filters label { display: inline-flex; align-items: center; gap: .35rem; margin-block: .35rem; font-weight: 500; }
-.review-filters input { width: auto; }
-.review-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .5rem; }
-.review-actions form { margin: 0; }
-.review-actions button { margin: 0; padding: .35rem .65rem; }
-.button-reject { border-color: #9b2c2c; background: #9b2c2c; }
-.button-secondary { border-color: #59636e; background: #fff; color: #39424c; }
-.review-status { padding: .1rem .45rem; border-radius: 999px; font-size: .8rem; font-weight: 650; }
-.status-pending { background: #fff3cd; color: #604700; }
-.status-accepted { background: #dff2e1; color: #27552c; }
-.status-rejected { background: #f5dddd; color: #742323; }
-.unsectioned { border-style: dashed; }
-.plan-elements { min-height: 2.5rem; }
-.assumption-card { margin-block: 1rem; padding: 1rem; border: 1px solid #d9dde2; border-radius: .5rem; background: #fff; }
-.assumption-card legend { padding-inline: .35rem; font-weight: 650; }
-.assumption-card label { font-weight: 500; }
-.assumption-card input[type="radio"] { width: auto; }
-.assumption-correction[hidden] { display: none; }
-.error-message { padding: .75rem; border-left: .3rem solid #9b2c2c; background: #f5dddd; }
-button:disabled { cursor: not-allowed; opacity: .55; }
-.apply-draft { margin-block-start: 2rem; }
-@media (max-width: 42rem) { .section-heading { display: block; } .section-edit { margin-block-start: 1rem; } }
+/* ==========================================================================
+   ProjectFlow - AI Draft Review & Interactive Board Styles
+   ========================================================================== */
+
+main[data-sort-mode] {
+    flex: 1 0 auto;
+}
+
+.review-header,
+.draft-section {
+    margin-block: 1.5rem;
+    padding: 1.5rem;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg);
+    background: #ffffff;
+    box-shadow: var(--pf-shadow-xs);
+}
+
+.review-header h1 {
+    margin-bottom: 0.35rem;
+}
+
+.review-header h2 {
+    margin: 0.25rem 0 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--pf-text-main);
+}
+
+.project-facts,
+.element-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem 1.75rem;
+    margin: 1rem 0;
+    padding: 0.85rem 1rem;
+    background: var(--pf-surface-subtle);
+    border-radius: var(--pf-radius-md);
+}
+
+.project-facts div,
+.element-facts div {
+    display: grid;
+    gap: 0.2rem;
+}
+
+dt {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--pf-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+dd {
+    margin: 0;
+    font-weight: 500;
+    color: var(--pf-text-main);
+}
+
+.section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.section-heading h2 {
+    margin-top: 0;
+}
+
+.section-edit {
+    min-width: min(23rem, 100%);
+}
+
+.section-edit summary,
+.element-edit summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--pf-text-secondary);
+}
+
+.section-edit summary:hover,
+.element-edit summary:hover {
+    color: var(--pf-primary);
+}
+
+.section-edit form,
+.element-edit form {
+    margin-top: 0.85rem;
+}
+
+.plan-elements {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+    min-height: 2.5rem;
+}
+
+.plan-element {
+    padding: 1rem 0;
+    border-top: 1px solid var(--pf-border);
+}
+
+.element-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.element-icon {
+    width: 1.5rem;
+    color: var(--pf-primary);
+    text-align: center;
+    font-size: 1rem;
+}
+
+.section-title {
+    flex: 1;
+}
+
+.drag-handle {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: var(--pf-radius-sm);
+    background: #ffffff;
+    color: var(--pf-text-muted);
+    cursor: grab;
+    font-size: 0.85rem;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.is-dragging {
+    opacity: 0.45;
+}
+
+.drop-target {
+    outline: 3px dashed var(--pf-primary);
+    outline-offset: 3px;
+    border-radius: var(--pf-radius-md);
+}
+
+.element-edit {
+    margin-left: 2.25rem;
+}
+
+.element-edit form {
+    max-width: 34rem;
+}
+
+.sort-mode {
+    max-width: 32rem;
+    padding-top: 0.5rem;
+}
+
+.sorting-hint {
+    color: var(--pf-text-muted);
+    font-size: 0.88rem;
+}
+
+.review-progress {
+    margin: 1rem 0;
+    padding: 0.65rem 1rem;
+    background: var(--pf-primary-soft);
+    border: 1px solid var(--pf-primary-border);
+    border-radius: var(--pf-radius-md);
+    color: var(--pf-primary-active);
+}
+
+.review-filters {
+    margin: 1rem 0;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-md);
+    background: var(--pf-surface-subtle);
+}
+
+.review-filters fieldset {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.review-filters label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.35rem 0;
+    font-weight: 500;
+}
+
+.review-filters input {
+    width: auto;
+    min-height: auto;
+}
+
+.review-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.65rem 0;
+}
+
+.review-actions form {
+    margin: 0;
+}
+
+.review-actions button {
+    margin: 0;
+    min-height: 32px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.82rem;
+}
+
+.button-secondary {
+    border-color: var(--pf-border-strong);
+    background: #ffffff;
+    color: var(--pf-text-secondary);
+}
+
+.button-secondary:hover {
+    background: var(--pf-surface-subtle);
+    color: var(--pf-text-main);
+}
+
+.unsectioned {
+    border-style: dashed;
+}
+
+.assumption-card {
+    margin: 1.25rem 0;
+    padding: 1.25rem;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg);
+    background: #ffffff;
+    box-shadow: var(--pf-shadow-xs);
+}
+
+.assumption-card legend {
+    padding: 0 0.5rem;
+    font-weight: 700;
+}
+
+.assumption-card label {
+    font-weight: 500;
+}
+
+.assumption-card input[type="radio"] {
+    width: auto;
+}
+
+.assumption-correction[hidden] {
+    display: none;
+}
+
+.apply-draft {
+    margin-top: 2rem;
+}
+
+@media (max-width: 42rem) {
+    .section-heading {
+        display: block;
+    }
+    .section-edit {
+        margin-top: 1rem;
+    }
+}

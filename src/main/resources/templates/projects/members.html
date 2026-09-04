@@ -1,27 +1,71 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title>Mitglieder – ProjectFlow</title></head>
-<body><main>
-<a th:href="@{/projects/{projectId}/plan(projectId=${project.id})}">Zum Projektplan</a>
-<h1>Mitglieder verwalten</h1>
-<p th:text="${project.title}"></p>
-<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
-<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
-<ul>
-    <li th:each="member : ${members}">
-        <span th:text="${member.displayName}"></span>
-        <span th:text="${member.role.name() == 'OWNER' ? 'Owner' : 'Mitglied'}"></span>
-        <form th:if="${member.role.name() == 'MEMBER'}"
-              th:action="@{/projects/{projectId}/members/{memberId}/remove(projectId=${project.id},memberId=${member.id})}"
-              method="post">
-            <button type="submit">Entfernen</button>
-        </form>
-    </li>
-</ul>
-<form th:action="@{/projects/{projectId}/members(projectId=${project.id})}" th:object="${memberForm}" method="post">
-    <label for="member-email">Registrierten Nutzer per E-Mail hinzufügen</label>
-    <input id="member-email" type="email" th:field="*{email}" required maxlength="254">
-    <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" role="alert"></p>
-    <button type="submit">Hinzufügen</button>
-</form>
-</main></body></html>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Mitglieder')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects/{projectId}/plan(projectId=${project.id})}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zum Projektplan
+            </a>
+            <h1 style="margin: 0;">Mitglieder verwalten</h1>
+            <p class="pf-page-header__subtitle" th:text="${project.title}">Projekttitel</p>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/flash-messages :: all}" />
+
+    <div class="pf-grid pf-grid--2" style="align-items: start;">
+        <!-- Member List Card -->
+        <div class="pf-card">
+            <h3 style="margin-bottom: 1rem;">Aktuelle Teammitglieder</h3>
+            <ul class="pf-element-list">
+                <li th:each="member : ${members}" class="pf-element-item">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div class="site-header__avatar" style="width: 32px; height: 32px; font-size: 0.85rem;"
+                             th:text="${#strings.substring(member.displayName, 0, 1)}">M</div>
+                        <div>
+                            <div style="font-weight: 600;" th:text="${member.displayName}">Name</div>
+                            <span class="pf-badge pf-badge--sm"
+                                  th:classappend="${member.role.name() == 'OWNER' ? 'pf-badge--purple' : 'pf-badge--blue'}"
+                                  th:text="${member.role.name() == 'OWNER' ? 'Projektleitung' : 'Mitglied'}">Rolle</span>
+                        </div>
+                    </div>
+                    <form th:if="${member.role.name() == 'MEMBER'}"
+                          th:action="@{/projects/{projectId}/members/{memberId}/remove(projectId=${project.id},memberId=${member.id})}"
+                          method="post" style="margin: 0;">
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary" style="color: var(--pf-danger);">Entfernen</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Add Member Card -->
+        <div class="pf-card">
+            <h3 style="margin-bottom: 1rem;">Neues Mitglied einladen</h3>
+            <p style="font-size: 0.88rem; color: var(--pf-text-muted);">
+                Füge registrierte Benutzer über deren registrierte E-Mail-Adresse zu diesem Gruppenprojekt hinzu.
+            </p>
+            <form th:action="@{/projects/{projectId}/members(projectId=${project.id})}" th:object="${memberForm}" method="post">
+                <div class="pf-form-group">
+                    <label for="member-email" class="pf-label">E-Mail-Adresse des Nutzers</label>
+                    <input id="member-email" type="email" th:field="*{email}" required maxlength="254" class="pf-input" placeholder="kollege@beispiel.de">
+                    <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+                <button type="submit" class="pf-btn pf-btn--primary">Mitglied hinzufügen</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>
