@@ -1,35 +1,87 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title th:text="${editing ? 'Aufgabe bearbeiten – ProjectFlow' : 'Aufgabe anlegen – ProjectFlow'}">Aufgabe</title></head>
-<body><main>
-<a th:href="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/plan(projectId=${projectId})}">Abbrechen</a>
-<h1 th:text="${editing ? 'Aufgabe bearbeiten' : 'Aufgabe anlegen'}">Aufgabe</h1>
-<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
-<form th:action="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/tasks(projectId=${projectId})}"
-      th:object="${taskForm}" method="post">
-    <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
-    <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
-    <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
-    <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
-    <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
-    <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
-    <label for="status">Status</label><select id="status" th:field="*{status}">
-        <option value="OPEN">Offen</option><option value="IN_PROGRESS">In Bearbeitung</option><option value="COMPLETED">Erledigt</option>
-    </select>
-    <label for="priority">Priorität</label><select id="priority" th:field="*{priority}" required>
-        <option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option>
-    </select>
-    <p th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" role="alert"></p>
-    <label for="section">Bereich</label><select id="section" th:field="*{planSectionId}">
-        <option value="">Ohne Bereich</option><option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.title}"></option>
-    </select>
-    <label for="startDate">Startdatum</label><input id="startDate" type="date" th:field="*{startDate}">
-    <label for="dueDate">Fälligkeitsdatum</label><input id="dueDate" type="date" th:field="*{dueDate}">
-    <div th:if="${groupProject}">
-    <label for="assignee">Zuständigkeit</label><select id="assignee" th:field="*{assigneeId}">
-        <option value="">Nicht zugewiesen</option><option th:each="member : ${assignees}" th:value="${member.id}" th:text="${member.displayName}"></option>
-    </select>
+<head>
+    <th:block th:replace="~{fragments/layout :: head(${editing ? 'Aufgabe bearbeiten' : 'Aufgabe anlegen'})}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/plan(projectId=${projectId})}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Abbrechen
+            </a>
+            <h1 th:text="${editing ? 'Aufgabe bearbeiten' : 'Aufgabe anlegen'}" style="margin: 0;">Aufgabe</h1>
+        </div>
     </div>
-    <button type="submit" th:text="${editing ? 'Aufgabe speichern' : 'Aufgabe anlegen'}">Speichern</button>
-</form>
-</main></body></html>
+
+    <div th:if="${errorMessage}" class="pf-alert pf-alert--error" role="alert" th:text="${errorMessage}"></div>
+
+    <div class="pf-card" style="max-width: 760px;">
+        <form th:action="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/tasks(projectId=${projectId})}"
+              th:object="${taskForm}" method="post">
+            <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
+            <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
+            
+            <th:block th:replace="~{fragments/form-fields :: title-field('Aufgabentitel')}" />
+            <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung', false)}" />
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                <div class="pf-form-group">
+                    <label for="status" class="pf-label">Status</label>
+                    <select id="status" th:field="*{status}" class="pf-select">
+                        <option value="OPEN">Offen</option>
+                        <option value="IN_PROGRESS">In Bearbeitung</option>
+                        <option value="COMPLETED">Erledigt</option>
+                    </select>
+                </div>
+
+                <div class="pf-form-group">
+                    <label for="priority" class="pf-label">Priorität</label>
+                    <select id="priority" th:field="*{priority}" required class="pf-select">
+                        <option value="LOW">Niedrig</option>
+                        <option value="MEDIUM">Mittel</option>
+                        <option value="HIGH">Hoch</option>
+                    </select>
+                    <div th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+            </div>
+
+            <th:block th:replace="~{fragments/form-fields :: section-selector(${sections})}" />
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                <div class="pf-form-group">
+                    <label for="startDate" class="pf-label">Startdatum</label>
+                    <input id="startDate" type="date" th:field="*{startDate}" class="pf-input">
+                </div>
+                <div class="pf-form-group">
+                    <label for="dueDate" class="pf-label">Fälligkeitsdatum</label>
+                    <input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input">
+                </div>
+            </div>
+
+            <div th:if="${groupProject}" class="pf-form-group">
+                <label for="assignee" class="pf-label">Zuständigkeit</label>
+                <select id="assignee" th:field="*{assigneeId}" class="pf-select">
+                    <option value="">Nicht zugewiesen</option>
+                    <option th:each="member : ${assignees}" th:value="${member.id}" th:text="${member.displayName}"></option>
+                </select>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; align-items: center;">
+                <button type="submit" class="pf-btn pf-btn--primary" th:text="${editing ? 'Aufgabe speichern' : 'Aufgabe anlegen'}">Speichern</button>
+                <a th:href="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/plan(projectId=${projectId})}"
+                   class="pf-btn pf-btn--secondary">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

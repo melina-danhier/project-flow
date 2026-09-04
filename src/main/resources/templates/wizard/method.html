@@ -1,30 +1,112 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title>Erstellungsweg wählen – ProjectFlow</title></head>
-<body><main>
-<p>Schritt 2</p><h1>Wie möchtest du starten?</h1>
-<p>Die Grundangaben für „<span th:text="${wizardState.title}">Projekt</span>“ sind zwischengespeichert.</p>
-<form th:action="@{/projects/new/method}" th:object="${creationMethodForm}" method="post">
-    <fieldset><legend>Erstellungsweg</legend>
-        <label><input type="radio" th:field="*{creationType}" value="AI"> KI-generierter Plan</label>
-        <label><input type="radio" th:field="*{creationType}" value="TEMPLATE"> Vorhandenes Template</label>
-        <label><input type="radio" th:field="*{creationType}" value="EMPTY"> Ohne anfängliche Aufgaben</label>
-    </fieldset>
-    <p th:if="${#fields.hasErrors('creationType')}" th:errors="*{creationType}" role="alert"></p>
-    <button id="method-submit" type="submit">Weiter</button>
-</form>
-<a th:href="@{/projects/new}">Grundangaben bearbeiten</a>
-<form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Abbrechen</button></form>
-<script>
-    (() => {
-        const labels = {EMPTY: 'Projekt erstellen', TEMPLATE: 'Vorlage auswählen', AI: 'Weiter zu den KI-Angaben'};
-        const button = document.getElementById('method-submit');
-        const update = () => {
-            const selected = document.querySelector('input[name="creationType"]:checked');
-            button.textContent = labels[selected?.value] ?? 'Weiter';
-        };
-        document.querySelectorAll('input[name="creationType"]').forEach(input => input.addEventListener('change', update));
-        update();
-    })();
-</script>
-</main></body></html>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Erstellungsweg wählen')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <div class="pf-cluster" style="margin-bottom: 0.25rem;">
+                <span class="pf-badge pf-badge--purple">Schritt 2</span>
+                <span class="pf-badge pf-badge--gray">Projekt-Assistent</span>
+            </div>
+            <h1 style="margin: 0;">Wie möchtest du starten?</h1>
+            <p class="pf-page-header__subtitle">
+                Die Grundangaben für „<strong th:text="${wizardState.title}">Projekt</strong>" sind gespeichert. Wähle nun die gewünschte Erstellungsmethode.
+            </p>
+        </div>
+    </div>
+
+    <div class="pf-card" style="max-width: 760px;">
+        <form th:action="@{/projects/new/method}" th:object="${creationMethodForm}" method="post">
+            <fieldset style="border: none; padding: 0; margin: 0 0 1.5rem;">
+                <legend style="padding: 0; font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem;">Erstellungsmethode</legend>
+                
+                <div style="display: grid; gap: 1rem;">
+                    <!-- Option 1: AI -->
+                    <label style="display: flex; align-items: flex-start; gap: 1rem; padding: 1.15rem; border: 2px solid var(--pf-border); border-radius: var(--pf-radius-lg); cursor: pointer; transition: var(--pf-transition);"
+                           onmouseover="this.style.borderColor='var(--pf-purple)'"
+                           onmouseout="this.style.borderColor='var(--pf-border)'">
+                        <input type="radio" th:field="*{creationType}" value="AI" style="margin-top: 0.25rem;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <strong style="font-size: 1rem; color: var(--pf-text-main);">KI-generierter Plan (Empfohlen)</strong>
+                                <span class="pf-badge pf-badge--purple">Smart AI</span>
+                            </div>
+                            <p style="margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--pf-text-muted);">
+                                Lass dir auf Basis deiner Vorgaben automatisch einen strukturierten Projektplan mit Bereichen, Aufgaben und Meilensteinen vorschlagen.
+                            </p>
+                        </div>
+                    </label>
+
+                    <!-- Option 2: Template -->
+                    <label style="display: flex; align-items: flex-start; gap: 1rem; padding: 1.15rem; border: 2px solid var(--pf-border); border-radius: var(--pf-radius-lg); cursor: pointer; transition: var(--pf-transition);"
+                           onmouseover="this.style.borderColor='var(--pf-primary)'"
+                           onmouseout="this.style.borderColor='var(--pf-border)'">
+                        <input type="radio" th:field="*{creationType}" value="TEMPLATE" style="margin-top: 0.25rem;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <strong style="font-size: 1rem; color: var(--pf-text-main);">Vorhandenes Template</strong>
+                                <span class="pf-badge pf-badge--blue">Vorlagen</span>
+                            </div>
+                            <p style="margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--pf-text-muted);">
+                                Wähle aus vorkonfigurierten Branchen- und Aufgaben-Templates die passende Struktur aus.
+                            </p>
+                        </div>
+                    </label>
+
+                    <!-- Option 3: Manual / Empty -->
+                    <label style="display: flex; align-items: flex-start; gap: 1rem; padding: 1.15rem; border: 2px solid var(--pf-border); border-radius: var(--pf-radius-lg); cursor: pointer; transition: var(--pf-transition);"
+                           onmouseover="this.style.borderColor='var(--pf-border-strong)'"
+                           onmouseout="this.style.borderColor='var(--pf-border)'">
+                        <input type="radio" th:field="*{creationType}" value="EMPTY" style="margin-top: 0.25rem;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <strong style="font-size: 1rem; color: var(--pf-text-main);">Ohne anfängliche Aufgaben</strong>
+                                <span class="pf-badge pf-badge--gray">Flexibel</span>
+                            </div>
+                            <p style="margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--pf-text-muted);">
+                                Starte mit einem leeren Projektplan und erstelle Bereiche, Aufgaben und Meilensteine manuell nach deinen eigenen Vorstellungen.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+            </fieldset>
+
+            <div th:if="${#fields.hasErrors('creationType')}" th:errors="*{creationType}" class="pf-alert pf-alert--error" role="alert"></div>
+
+            <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <button id="method-submit" type="submit" class="pf-btn pf-btn--primary">
+                    Weiter
+                </button>
+                <a th:href="@{/projects/new}" class="pf-btn pf-btn--secondary">
+                    ← Grundangaben bearbeiten
+                </a>
+            </div>
+        </form>
+
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
+            <th:block th:replace="~{fragments/wizard-nav :: cancel('Assistent abbrechen')}" />
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const labels = {EMPTY: 'Projekt erstellen', TEMPLATE: 'Vorlage auswählen', AI: 'Weiter zu den KI-Angaben'};
+            const button = document.getElementById('method-submit');
+            const update = () => {
+                const selected = document.querySelector('input[name="creationType"]:checked');
+                button.textContent = labels[selected?.value] ?? 'Weiter';
+            };
+            document.querySelectorAll('input[name="creationType"]').forEach(input => input.addEventListener('change', update));
+            update();
+        })();
+    </script>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

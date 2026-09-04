@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="review-actions(pathSegment, entityId, projectId, reviewStatusName, lockVersion)"
+     class="review-actions">
+    <form th:if="${reviewStatusName != 'ACCEPTED'}"
+          th:action="@{/projects/{pId}/draft/{seg}/{eId}/accept(pId=${projectId},seg=${pathSegment},eId=${entityId})}"
+          method="post">
+        <input type="hidden" name="lockVersion" th:value="${lockVersion}">
+        <button type="submit">Übernehmen</button>
+    </form>
+    <form th:if="${reviewStatusName != 'REJECTED'}"
+          th:action="@{/projects/{pId}/draft/{seg}/{eId}/reject(pId=${projectId},seg=${pathSegment},eId=${entityId})}"
+          method="post">
+        <input type="hidden" name="lockVersion" th:value="${lockVersion}">
+        <button class="button-reject" type="submit">Verwerfen</button>
+    </form>
+    <form th:if="${reviewStatusName != 'PENDING'}"
+          th:action="@{/projects/{pId}/draft/{seg}/{eId}/reset(pId=${projectId},seg=${pathSegment},eId=${entityId})}"
+          method="post">
+        <input type="hidden" name="lockVersion" th:value="${lockVersion}">
+        <button class="button-secondary" type="submit">Auf offen setzen</button>
+    </form>
+</div>
+
+<div th:fragment="element-heading(element)" class="element-heading">
+    <button type="button" class="drag-handle element-drag-handle" title="Element verschieben"
+            aria-label="Element verschieben">↕</button>
+    <span class="element-icon" aria-hidden="true"
+          th:text="${element.type == 'TASK' ? '☐' : '◆'}"></span>
+    <strong th:text="${element.title}"></strong>
+    <span class="element-type"
+          th:text="${element.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span>
+    <span class="element-origin" th:text="${element.originLabel}"></span>
+    <span class="review-status"
+          th:classappend="${' status-' + #strings.toLowerCase(element.reviewStatus.name())}"
+          th:text="${element.reviewStatus.name() == 'PENDING' ? 'Offen' : (element.reviewStatus.name() == 'ACCEPTED' ? 'Übernommen' : 'Verworfen')}"></span>
+</div>
+
+<th:block th:fragment="element-edit-forms(element, projectId, lockVersion)">
+    <form th:if="${element.type == 'TASK'}"
+          th:action="@{/projects/{pId}/draft/tasks/{tId}(pId=${projectId},tId=${element.id})}"
+          method="post">
+        <input type="hidden" name="lockVersion" th:value="${lockVersion}">
+        <label th:for="${'task-title-' + element.id}">Titel</label>
+        <input th:id="${'task-title-' + element.id}" name="title" th:value="${element.title}"
+               required maxlength="100">
+        <label th:for="${'task-description-' + element.id}">Beschreibung</label>
+        <textarea th:id="${'task-description-' + element.id}" name="description" maxlength="2000"
+                  th:text="${element.description}"></textarea>
+        <label th:for="${'task-priority-' + element.id}">Priorität</label>
+        <select th:id="${'task-priority-' + element.id}" name="priority">
+            <option value="LOW" th:selected="${element.priority.name() == 'LOW'}">Niedrig</option>
+            <option value="MEDIUM" th:selected="${element.priority.name() == 'MEDIUM'}">Mittel</option>
+            <option value="HIGH" th:selected="${element.priority.name() == 'HIGH'}">Hoch</option>
+        </select>
+        <label th:for="${'task-hours-' + element.id}">Aufwand in Stunden</label>
+        <input th:id="${'task-hours-' + element.id}" type="number" name="estimatedHours" min="1"
+               th:value="${element.estimatedHours}">
+        <label th:for="${'task-start-' + element.id}">Startdatum</label>
+        <input th:id="${'task-start-' + element.id}" type="date" name="startDate"
+               th:value="${element.startDate}">
+        <label th:for="${'task-due-' + element.id}">Deadline</label>
+        <input th:id="${'task-due-' + element.id}" type="date" name="dueDate"
+               th:value="${element.dueDate}">
+        <button type="submit">Aufgabe speichern</button>
+    </form>
+    <form th:if="${element.type == 'MILESTONE'}"
+          th:action="@{/projects/{pId}/draft/milestones/{mId}(pId=${projectId},mId=${element.id})}"
+          method="post">
+        <input type="hidden" name="lockVersion" th:value="${lockVersion}">
+        <label th:for="${'milestone-title-' + element.id}">Titel</label>
+        <input th:id="${'milestone-title-' + element.id}" name="title" th:value="${element.title}"
+               required maxlength="100">
+        <label th:for="${'milestone-date-' + element.id}">Datum</label>
+        <input th:id="${'milestone-date-' + element.id}" type="date" name="dueDate"
+               th:value="${element.dueDate}">
+        <button type="submit">Meilenstein speichern</button>
+    </form>
+</th:block>
+
+</body>
+</html>

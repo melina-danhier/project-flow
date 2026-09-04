@@ -1,25 +1,60 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Zusätzliche KI-Angaben – ProjectFlow</title></head>
-<body><main>
-<p>Schritt 3</p>
-<h1>Angaben passend zu deinem Projekt</h1>
-<p>Beantworte nur, was bereits feststeht. Diese Angaben helfen bei Vorprüfung und Planentwurf für „<span th:text="${wizardState.title}">Projekt</span>“.</p>
-<form th:action="@{/projects/new/ai/details}" th:object="${aiProjectDetailsForm}" method="post">
-    <div th:if="${#fields.hasAnyErrors()}" th:each="error : ${#fields.allErrors()}"
-         th:text="${error}" role="alert"></div>
-    <div th:each="question : ${questions}">
-        <label th:for="|answer-${question.key}|" th:text="${question.label + (question.required ? '' : ' (optional)')}"></label>
-        <textarea th:id="|answer-${question.key}|"
-                  th:field="*{answers[__${question.key}__]}"
-                  th:maxlength="${question.maxLength}" th:required="${question.required}"></textarea>
-        <p th:if="${question.helpText != null}" th:text="${question.helpText}"></p>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Angaben passend zu deinem Projekt')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <div class="pf-cluster" style="margin-bottom: 0.25rem;">
+                <span class="pf-badge pf-badge--purple">Schritt 3</span>
+                <span class="pf-badge pf-badge--gray">KI-Projektfragen</span>
+            </div>
+            <h1 style="margin: 0;">Angaben passend zu deinem Projekt</h1>
+            <p class="pf-page-header__subtitle">
+                Beantworte nur, was bereits feststeht. Diese Angaben helfen bei Vorprüfung und Planentwurf für „<strong th:text="${wizardState.title}">Projekt</strong>“.
+            </p>
+        </div>
     </div>
 
-    <button type="submit">Weiter zur Zusammenfassung</button>
-</form>
-<a th:href="@{/projects/new/method}">Zurück zur Erstellungsart</a>
-<form th:action="@{/projects/new/cancel}" method="post">
-    <button type="submit">Projekterstellung abbrechen</button>
-</form>
-</main></body></html>
+    <div class="pf-card" style="max-width: 760px;">
+        <form th:action="@{/projects/new/ai/details}" th:object="${aiProjectDetailsForm}" method="post">
+            <div th:if="${#fields.hasAnyErrors()}" th:each="error : ${#fields.allErrors()}"
+                 class="pf-alert pf-alert--error" th:text="${error}" role="alert"></div>
+
+            <div th:each="question : ${questions}" class="pf-form-group">
+                <label th:for="|answer-${question.key}|" class="pf-label">
+                    <span th:text="${question.label}">Frage</span>
+                    <span th:if="${!question.required}" class="pf-hint">(optional)</span>
+                    <span th:if="${question.required}" class="pf-hint" style="color: var(--pf-danger); font-weight: 700;">*</span>
+                </label>
+                <textarea th:id="|answer-${question.key}|"
+                          class="pf-textarea"
+                          th:field="*{answers[__${question.key}__]}"
+                          th:maxlength="${question.maxLength}"
+                          th:required="${question.required}"></textarea>
+                <p th:if="${question.helpText != null}" class="pf-hint" th:text="${question.helpText}"></p>
+            </div>
+
+            <div style="margin-top: 1.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <button type="submit" class="pf-btn pf-btn--primary">
+                    Weiter zur Zusammenfassung →
+                </button>
+                <a th:href="@{/projects/new/method}" class="pf-btn pf-btn--secondary">
+                    ← Zurück zur Erstellungsart
+                </a>
+            </div>
+        </form>
+
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
+            <th:block th:replace="~{fragments/wizard-nav :: cancel('Projekterstellung abbrechen')}" />
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

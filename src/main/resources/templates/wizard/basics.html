@@ -1,84 +1,122 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title>Projekt anlegen – ProjectFlow</title></head>
-<body><main>
-<p>Schritt 1 von 2</p>
-<h1>Grundangaben zum Projekt</h1>
-<p>Diese Angaben gelten unabhängig davon, wie du dein Projekt anschließend erstellst.</p>
-<form th:action="@{/projects/new}" th:object="${projectBasicsForm}" method="post">
-    <label for="title">Projekttitel</label>
-    <input id="title" th:field="*{title}" required maxlength="100">
-    <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
-    <label for="description">Beschreibung <span>(bei „Sonstiges“ erforderlich)</span></label>
-    <textarea id="description" th:field="*{description}" maxlength="2000" th:required="*{otherCategory}"></textarea>
-    <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
-    <div th:replace="~{fragments/project-classification :: fields(false)}"></div>
-    <fieldset>
-        <legend>Wer arbeitet am Projekt?</legend>
-        <label><input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required> Nur ich</label>
-        <label><input type="radio" th:field="*{collaborationMode}" value="GROUP"> Eine kleine Gruppe</label>
-    </fieldset>
-    <p th:if="${#fields.hasErrors('collaborationMode')}" th:errors="*{collaborationMode}" role="alert"></p>
-    <fieldset>
-        <legend>Zeitlicher Rahmen</legend>
-        <label><input type="radio" th:field="*{timeFrameType}" value="START_AND_END"> Start und Ende</label>
-        <label><input type="radio" th:field="*{timeFrameType}" value="START_AND_DURATION"> Start und Dauer</label>
-        <label><input type="radio" th:field="*{timeFrameType}" value="END_AND_DURATION"> Ende und Dauer</label>
-        <label><input type="radio" th:field="*{timeFrameType}" value="NONE"> Noch keine Zeitangaben</label>
-    </fieldset>
-    <p th:if="${#fields.hasErrors('timeFrameType')}" th:errors="*{timeFrameType}" role="alert"></p>
-    <div id="start-date-field" th:hidden="*{!startDateInputActive}">
-        <label for="startDate">Startdatum</label>
-        <input id="startDate" type="date" th:field="*{startDate}"
-               th:disabled="*{!startDateInputActive}" th:required="*{startDateInputActive}">
-        <p th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" role="alert"></p>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Projekt anlegen')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <div class="pf-cluster" style="margin-bottom: 0.25rem;">
+                <span class="pf-badge pf-badge--purple">Schritt 1 von 2</span>
+                <span class="pf-badge pf-badge--gray">Projekt-Assistent</span>
+            </div>
+            <h1 style="margin: 0;">Grundangaben zum Projekt</h1>
+            <p class="pf-page-header__subtitle">Diese Basisdaten gelten unabhängig davon, wie du dein Projekt im nächsten Schritt erstellst.</p>
+        </div>
     </div>
-    <div id="end-date-field" th:hidden="*{!endDateInputActive}">
-        <label for="endDate">Enddatum</label>
-        <input id="endDate" type="date" th:field="*{endDate}"
-               th:disabled="*{!endDateInputActive}" th:required="*{endDateInputActive}">
-        <p th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" role="alert"></p>
+
+    <div class="pf-card" style="max-width: 760px;">
+        <form th:action="@{/projects/new}" th:object="${projectBasicsForm}" method="post">
+            <th:block th:replace="~{fragments/form-fields :: title-field('Projekttitel')}" />
+            
+            <div class="pf-form-group">
+                <label for="description" class="pf-label">
+                    <span>Beschreibung</span>
+                    <span class="pf-hint">(bei „Sonstiges“ erforderlich)</span>
+                </label>
+                <textarea id="description" class="pf-textarea" th:field="*{description}" maxlength="2000" th:required="*{otherCategory}" placeholder="Zielsetzung, Notizen oder Hintergrundinformationen..."></textarea>
+                <div th:if="${#fields.hasErrors('description')}" class="pf-alert pf-alert--error" th:errors="*{description}" role="alert"></div>
+            </div>
+
+            <div th:replace="~{fragments/project-classification :: fields(false)}"></div>
+            <th:block th:replace="~{fragments/form-fields :: collaboration-mode}" />
+            
+            <fieldset>
+                <legend>Zeitlicher Rahmen</legend>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; margin-top: 0.5rem;">
+                    <label><input type="radio" th:field="*{timeFrameType}" value="START_AND_END"> <span>Start und Ende</span></label>
+                    <label><input type="radio" th:field="*{timeFrameType}" value="START_AND_DURATION"> <span>Start und Dauer</span></label>
+                    <label><input type="radio" th:field="*{timeFrameType}" value="END_AND_DURATION"> <span>Ende und Dauer</span></label>
+                    <label><input type="radio" th:field="*{timeFrameType}" value="NONE"> <span>Noch keine Zeitangaben</span></label>
+                </div>
+            </fieldset>
+            
+            <div th:if="${#fields.hasErrors('timeFrameType')}" th:errors="*{timeFrameType}" class="pf-alert pf-alert--error" role="alert"></div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                <div id="start-date-field" th:hidden="*{!startDateInputActive}" class="pf-form-group">
+                    <label for="startDate" class="pf-label">Startdatum</label>
+                    <input id="startDate" type="date" th:field="*{startDate}" class="pf-input"
+                           th:disabled="*{!startDateInputActive}" th:required="*{startDateInputActive}">
+                    <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+
+                <div id="end-date-field" th:hidden="*{!endDateInputActive}" class="pf-form-group">
+                    <label for="endDate" class="pf-label">Enddatum</label>
+                    <input id="endDate" type="date" th:field="*{endDate}" class="pf-input"
+                           th:disabled="*{!endDateInputActive}" th:required="*{endDateInputActive}">
+                    <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+
+                <div id="duration-field" th:hidden="*{!durationInputActive}" class="pf-form-group">
+                    <label for="durationDays" class="pf-label">Dauer in Tagen</label>
+                    <input id="durationDays" type="number" min="1" step="1" th:field="*{durationDays}" class="pf-input"
+                           th:disabled="*{!durationInputActive}" th:required="*{durationInputActive}">
+                    <div th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <button type="submit" class="pf-btn pf-btn--primary">
+                    Weiter zum nächsten Schritt →
+                </button>
+            </div>
+        </form>
+
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
+            <th:block th:replace="~{fragments/wizard-nav :: cancel('Assistent abbrechen')}" />
+        </div>
     </div>
-    <div id="duration-field" th:hidden="*{!durationInputActive}">
-        <label for="durationDays">Dauer in Tagen</label>
-        <input id="durationDays" type="number" min="1" step="1" th:field="*{durationDays}"
-               th:disabled="*{!durationInputActive}" th:required="*{durationInputActive}">
-        <p th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}" role="alert"></p>
-    </div>
-    <button type="submit">Weiter</button>
-</form>
-<form th:action="@{/projects/new/cancel}" method="post"><button type="submit">Abbrechen</button></form>
-<script>
-    (() => {
-        const category = document.getElementById('category');
-        const description = document.getElementById('description');
-        const updateDescriptionRequirement = () => description.required = category.value === 'OTHER';
-        category.addEventListener('change', updateDescriptionRequirement);
-        updateDescriptionRequirement();
-        const startField = document.getElementById('start-date-field');
-        const startInput = document.getElementById('startDate');
-        const endField = document.getElementById('end-date-field');
-        const endInput = document.getElementById('endDate');
-        const durationField = document.getElementById('duration-field');
-        const durationInput = document.getElementById('durationDays');
-        const updateTimeFields = () => {
-            const selected = document.querySelector('input[name="timeFrameType"]:checked')?.value ?? 'NONE';
-            const needsStart = selected === 'START_AND_END' || selected === 'START_AND_DURATION';
-            const needsEnd = selected === 'START_AND_END' || selected === 'END_AND_DURATION';
-            const needsDuration = selected === 'START_AND_DURATION' || selected === 'END_AND_DURATION';
-            startField.hidden = !needsStart;
-            startInput.disabled = !needsStart;
-            startInput.required = needsStart;
-            endField.hidden = !needsEnd;
-            endInput.disabled = !needsEnd;
-            endInput.required = needsEnd;
-            durationField.hidden = !needsDuration;
-            durationInput.disabled = !needsDuration;
-            durationInput.required = needsDuration;
-        };
-        document.querySelectorAll('input[name="timeFrameType"]')
-            .forEach(input => input.addEventListener('change', updateTimeFields));
-        updateTimeFields();
-    })();
-</script>
-</main></body></html>
+
+    <script>
+        (() => {
+            const category = document.getElementById('category');
+            const description = document.getElementById('description');
+            const updateDescriptionRequirement = () => description.required = category.value === 'OTHER';
+            category.addEventListener('change', updateDescriptionRequirement);
+            updateDescriptionRequirement();
+
+            const startField = document.getElementById('start-date-field');
+            const startInput = document.getElementById('startDate');
+            const endField = document.getElementById('end-date-field');
+            const endInput = document.getElementById('endDate');
+            const durationField = document.getElementById('duration-field');
+            const durationInput = document.getElementById('durationDays');
+            const updateTimeFields = () => {
+                const selected = document.querySelector('input[name="timeFrameType"]:checked')?.value ?? 'NONE';
+                const needsStart = selected === 'START_AND_END' || selected === 'START_AND_DURATION';
+                const needsEnd = selected === 'START_AND_END' || selected === 'END_AND_DURATION';
+                const needsDuration = selected === 'START_AND_DURATION' || selected === 'END_AND_DURATION';
+                startField.hidden = !needsStart;
+                startInput.disabled = !needsStart;
+                startInput.required = needsStart;
+                endField.hidden = !needsEnd;
+                endInput.disabled = !needsEnd;
+                endInput.required = needsEnd;
+                durationField.hidden = !needsDuration;
+                durationInput.disabled = !needsDuration;
+                durationInput.required = needsDuration;
+            };
+            document.querySelectorAll('input[name="timeFrameType"]')
+                .forEach(input => input.addEventListener('change', updateTimeFields));
+            updateTimeFields();
+        })();
+    </script>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

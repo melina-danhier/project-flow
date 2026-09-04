@@ -1,25 +1,59 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title th:text="${editing ? 'Meilenstein bearbeiten – ProjectFlow' : 'Meilenstein anlegen – ProjectFlow'}">Meilenstein</title></head>
-<body><main>
-<a th:href="@{/projects/{projectId}/plan(projectId=${projectId})}">Abbrechen</a>
-<h1 th:text="${editing ? 'Meilenstein bearbeiten' : 'Meilenstein anlegen'}">Meilenstein</h1>
-<form th:action="${editing} ? @{/projects/{projectId}/milestones/{milestoneId}(projectId=${projectId},milestoneId=${milestoneId})} : @{/projects/{projectId}/milestones(projectId=${projectId})}"
-      th:object="${milestoneForm}" method="post">
-    <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
-    <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
-    <label for="title">Titel</label><input id="title" th:field="*{title}" required maxlength="100">
-    <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
-    <label for="description">Beschreibung</label><textarea id="description" th:field="*{description}" maxlength="2000"></textarea>
-    <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
-    <label for="section">Bereich</label><select id="section" th:field="*{planSectionId}">
-        <option value="">Ohne Bereich</option><option th:each="section : ${sections}" th:value="${section.id}" th:text="${section.title}"></option>
-    </select>
-    <label for="dueDate">Datum</label><input id="dueDate" type="date" th:field="*{dueDate}">
-    <label th:if="${editing}" for="completed">Erledigt</label><input th:if="${editing}" id="completed" type="checkbox" th:field="*{completed}">
-    <button type="submit" th:text="${editing ? 'Meilenstein speichern' : 'Meilenstein anlegen'}">Speichern</button>
-</form>
-<form th:if="${editing}" th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${projectId},milestoneId=${milestoneId})}" method="post">
-    <button type="submit">Meilenstein endgültig löschen</button>
-</form>
-</main></body></html>
+<head>
+    <th:block th:replace="~{fragments/layout :: head(${editing ? 'Meilenstein bearbeiten' : 'Meilenstein anlegen'})}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects/{projectId}/plan(projectId=${projectId})}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zum Projektplan
+            </a>
+            <h1 th:text="${editing ? 'Meilenstein bearbeiten' : 'Meilenstein anlegen'}" style="margin: 0;">Meilenstein</h1>
+        </div>
+    </div>
+
+    <div class="pf-card" style="max-width: 760px;">
+        <form th:action="${editing} ? @{/projects/{projectId}/milestones/{milestoneId}(projectId=${projectId},milestoneId=${milestoneId})} : @{/projects/{projectId}/milestones(projectId=${projectId})}"
+              th:object="${milestoneForm}" method="post">
+            <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
+            <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
+            
+            <th:block th:replace="~{fragments/form-fields :: title-field('Titel des Meilensteins')}" />
+            <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung des Meilensteins', false)}" />
+            <th:block th:replace="~{fragments/form-fields :: section-selector(${sections})}" />
+            
+            <div class="pf-form-group">
+                <label for="dueDate" class="pf-label">Zieldatum</label>
+                <input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input">
+            </div>
+
+            <div th:if="${editing}" class="pf-form-group">
+                <label for="completed" style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input id="completed" type="checkbox" th:field="*{completed}">
+                    <span>Als erledigt markieren</span>
+                </label>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; align-items: center;">
+                <button type="submit" class="pf-btn pf-btn--primary" th:text="${editing ? 'Meilenstein speichern' : 'Meilenstein anlegen'}">Speichern</button>
+                <a th:href="@{/projects/{projectId}/plan(projectId=${projectId})}" class="pf-btn pf-btn--secondary">Abbrechen</a>
+            </div>
+        </form>
+
+        <form th:if="${editing}" th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${projectId},milestoneId=${milestoneId})}" method="post" style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--pf-border);">
+            <button type="submit" class="pf-btn pf-btn--danger pf-btn--sm">Meilenstein endgültig löschen</button>
+        </form>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

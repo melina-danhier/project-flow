@@ -1,8 +1,52 @@
 <!doctype html>
-<html lang="de" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><title>Vorlagen – ProjectFlow</title></head>
-<body><main><h1>Projektvorlagen</h1>
-<ul>
-<li th:each="template : ${templates}"><a th:href="@{/templates/{id}(id=${template.id})}" th:text="${template.title}"></a>
-    <span th:if="${template.projectTypeLabel}" th:text="${template.projectTypeLabel}"></span></li>
-</ul>
-<a th:href="@{/projects}">Zurück</a></main></body></html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Vorlagen')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zurück zur Projektübersicht
+            </a>
+            <h1 style="margin: 0;">Projektvorlagen</h1>
+            <p class="pf-page-header__subtitle">Wähle eine erprobte Struktur für deine Anforderungen oder starte direkt ein neues Projekt daraus.</p>
+        </div>
+        <div class="pf-page-header__actions">
+            <a class="pf-btn pf-btn--primary" th:href="@{/projects/new}">
+                Neues Projekt mit Wizard
+            </a>
+        </div>
+    </div>
+
+    <div class="pf-project-grid">
+        <div th:each="template : ${templates}" class="pf-project-card">
+            <div>
+                <div class="pf-project-card__top">
+                    <span class="pf-badge pf-badge--gray" th:if="${template.projectTypeLabel}" th:text="${template.projectTypeLabel}">Kategorie</span>
+                    <span class="pf-badge pf-badge--blue">Vorlage</span>
+                </div>
+                <h3 class="pf-project-card__title">
+                    <a th:href="@{/templates/{id}(id=${template.id})}" th:text="${template.title}">Vorlagentitel</a>
+                </h3>
+                <p th:if="${template.description}" th:text="${template.description}" style="font-size: 0.88rem; color: var(--pf-text-muted); margin-top: 0.5rem;"></p>
+            </div>
+            <div class="pf-project-card__meta">
+                <a th:href="@{/templates/{id}(id=${template.id})}" class="pf-btn pf-btn--sm pf-btn--outline" style="width: 100%;">
+                    Details ansehen →
+                </a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

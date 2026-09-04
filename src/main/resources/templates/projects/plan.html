@@ -1,101 +1,222 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"><title th:text="${plan.project.title} + ' – ProjectFlow'">Projektplan</title></head>
-<body><main>
-<a th:href="@{/projects}">Zur Projektübersicht</a>
-<h1 th:text="${plan.project.title}">Projekt</h1>
-<p th:if="${plan.project.projectTypeLabel}" th:text="${plan.project.projectTypeLabel}"></p>
-<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
-<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
-<p th:unless="${plan.editable}">Dieses Projekt ist schreibgeschützt.</p>
+<head>
+    <th:block th:replace="~{fragments/layout :: head(${plan.project.title})}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
 
-<nav th:if="${plan.editable}" aria-label="Planaktionen">
-    <a th:href="@{/projects/{projectId}/tasks/new(projectId=${plan.project.id})}">Aufgabe hinzufügen</a>
-    <a th:href="@{/projects/{projectId}/milestones/new(projectId=${plan.project.id})}">Meilenstein hinzufügen</a>
-    <a th:if="${plan.owner}" th:href="@{/projects/{projectId}/edit(projectId=${plan.project.id})}">Projektdetails bearbeiten</a>
-    <a th:if="${plan.owner and plan.project.groupProject}" th:href="@{/projects/{projectId}/members(projectId=${plan.project.id})}">Mitglieder verwalten</a>
-</nav>
+<main>
+    <!-- Page Header with Breadcrumbs and Actions -->
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zur Projektübersicht
+            </a>
+            <div class="pf-cluster">
+                <h1 th:text="${plan.project.title}" style="margin: 0;">Projekt</h1>
+                <span class="pf-badge pf-badge--gray" th:if="${plan.project.projectTypeLabel}" th:text="${plan.project.projectTypeLabel}">Kategorie</span>
+                <span class="pf-badge pf-badge--yellow" th:unless="${plan.editable}">Schreibgeschützt</span>
+            </div>
+        </div>
 
-<section><h2>Bereiche</h2>
-    <article th:each="section : ${plan.sections}">
-        <h3 th:text="${section.title}"></h3>
-        <p th:if="${section.description}" th:text="${section.description}"></p>
-        <p><span th:text="${section.taskCount}"></span> Aufgaben, <span th:text="${section.milestoneCount}"></span> Meilensteine</p>
-        <ol>
-            <li th:each="element : ${section.elements}">
-                <a th:if="${element.type.name() == 'TASK'}"
-                   th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
-                   th:text="${element.title}"></a>
-                <a th:if="${element.type.name() == 'MILESTONE'}"
-                   th:href="@{/projects/{projectId}/milestones/{elementId}/edit(projectId=${plan.project.id},elementId=${element.id})}"
-                   th:text="${element.title}"></a>
-                <span th:if="${element.relevantDate}" th:text="${element.relevantDate}"></span>
-            </li>
-        </ol>
-        <div th:if="${plan.editable}">
-            <form th:action="@{/projects/{projectId}/sections/{sectionId}(projectId=${plan.project.id},sectionId=${section.id})}"
+        <div class="pf-page-header__actions" th:if="${plan.editable}">
+            <a class="pf-btn pf-btn--outline" th:href="@{/projects/{projectId}/tasks/new(projectId=${plan.project.id})}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+                Aufgabe hinzufügen
+            </a>
+            <a class="pf-btn pf-btn--outline" th:href="@{/projects/{projectId}/milestones/new(projectId=${plan.project.id})}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                    <line x1="4" y1="22" x2="4" y2="15"></line>
+                </svg>
+                Meilenstein
+            </a>
+            <a th:if="${plan.owner}" class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/edit(projectId=${plan.project.id})}">
+                Einstellungen
+            </a>
+            <a th:if="${plan.owner and plan.project.groupProject}" class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/members(projectId=${plan.project.id})}">
+                Team
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <th:block th:replace="~{fragments/flash-messages :: all}" />
+
+    <!-- Plan Sections -->
+    <div style="margin-top: 1.5rem;">
+        <h2 style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--pf-primary);">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Projektbereiche & Aufgaben
+        </h2>
+
+        <!-- Sections Loop -->
+        <div th:each="section : ${plan.sections}" class="pf-plan-section">
+            <div class="pf-plan-section__header">
+                <div>
+                    <h3 th:text="${section.title}" style="margin: 0; font-size: 1.2rem;">Bereich</h3>
+                    <p th:if="${section.description}" th:text="${section.description}" style="margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--pf-text-muted);"></p>
+                </div>
+                <div class="pf-cluster">
+                    <span class="pf-badge pf-badge--blue" th:text="${section.taskCount + ' Aufgaben'}">0 Aufgaben</span>
+                    <span class="pf-badge pf-badge--purple" th:text="${section.milestoneCount + ' Meilensteine'}">0 Meilensteine</span>
+                </div>
+            </div>
+
+            <!-- Elements in this Section -->
+            <ul class="pf-element-list" style="margin-bottom: 1.25rem;">
+                <li th:if="${#lists.isEmpty(section.elements)}" style="padding: 1rem; color: var(--pf-text-muted); text-align: center; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md);">
+                    Keine Aufgaben oder Meilensteine in diesem Bereich vorhanden.
+                </li>
+                <li th:each="element : ${section.elements}" class="pf-element-item">
+                    <div class="pf-element-item__left">
+                        <span class="pf-element-item__icon pf-element-item__icon--task" th:if="${element.type.name() == 'TASK'}">
+                            ☐
+                        </span>
+                        <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}">
+                            ◆
+                        </span>
+                        <div>
+                            <a th:if="${element.type.name() == 'TASK'}"
+                               th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
+                               th:text="${element.title}" style="font-weight: 600;"></a>
+                            <a th:if="${element.type.name() == 'MILESTONE'}"
+                               th:href="@{/projects/{projectId}/milestones/{elementId}/edit(projectId=${plan.project.id},elementId=${element.id})}"
+                               th:text="${element.title}" style="font-weight: 600;"></a>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="pf-badge pf-badge--outline" th:if="${element.relevantDate}" th:text="${element.relevantDate}">Datum</span>
+                    </div>
+                </li>
+            </ul>
+
+            <!-- Section Settings Accordion / Form -->
+            <details th:if="${plan.editable}" style="border-top: 1px solid var(--pf-border); padding-top: 0.85rem; margin-top: 0.5rem;">
+                <summary style="cursor: pointer; color: var(--pf-text-muted); font-size: 0.85rem; font-weight: 600;">
+                    Bereich bearbeiten oder löschen
+                </summary>
+                <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                    <!-- Edit Section -->
+                    <form th:action="@{/projects/{projectId}/sections/{sectionId}(projectId=${plan.project.id},sectionId=${section.id})}"
+                          th:object="${sectionForm}" method="post">
+                        <input type="hidden" name="lockVersion" th:value="${section.lockVersion}">
+                        <input type="hidden" name="sortOrder" th:value="${section.sortOrder}">
+                        <div class="pf-form-group">
+                            <label th:for="${'section-title-' + section.id}" class="pf-label">Bereichstitel</label>
+                            <input th:id="${'section-title-' + section.id}" name="title"
+                                   th:value="${editingSectionId == section.id ? sectionForm.title : section.title}" required maxlength="100" class="pf-input">
+                            <div th:if="${editingSectionId == section.id and #fields.hasErrors('title')}"
+                                 th:errors="*{title}" class="pf-alert pf-alert--error" role="alert"></div>
+                        </div>
+                        <div class="pf-form-group">
+                            <label th:for="${'section-description-' + section.id}" class="pf-label">Beschreibung</label>
+                            <textarea th:id="${'section-description-' + section.id}" name="description" maxlength="2000" class="pf-textarea" style="min-height: 70px;"
+                                      th:text="${editingSectionId == section.id ? sectionForm.description : section.description}"></textarea>
+                            <div th:if="${editingSectionId == section.id and #fields.hasErrors('description')}"
+                                 th:errors="*{description}" class="pf-alert pf-alert--error" role="alert"></div>
+                        </div>
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Bereich speichern</button>
+                    </form>
+
+                    <!-- Delete Section -->
+                    <form th:action="@{/projects/{projectId}/sections/{sectionId}/delete(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="border-left: 1px solid var(--pf-border); padding-left: 1.25rem;">
+                        <div class="pf-form-group">
+                            <label th:for="${'delete-mode-' + section.id}" class="pf-label">Inhalte handhaben</label>
+                            <select th:id="${'delete-mode-' + section.id}" name="mode" required class="pf-select">
+                                <option value="DELETE_CONTENT">Mit Inhalten löschen</option>
+                                <option value="MOVE_CONTENT">In anderen Bereich verschieben</option>
+                            </select>
+                        </div>
+                        <div class="pf-form-group">
+                            <label th:for="${'target-section-' + section.id}" class="pf-label">Zielbereich</label>
+                            <select th:id="${'target-section-' + section.id}" name="targetSectionId" class="pf-select">
+                                <option value="">Keine</option>
+                                <option th:each="target : ${plan.sections}" th:unless="${target.id == section.id}"
+                                        th:value="${target.id}" th:text="${target.title}"></option>
+                            </select>
+                        </div>
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--danger">Bereich löschen</button>
+                    </form>
+                </div>
+            </details>
+        </div>
+
+        <!-- Add New Section Card -->
+        <div th:if="${plan.editable}" class="pf-card pf-card--tint" style="margin-top: 2rem;">
+            <h3 style="margin-bottom: 0.85rem;">Neuen Bereich anlegen</h3>
+            <form th:action="@{/projects/{projectId}/sections(projectId=${plan.project.id})}"
                   th:object="${sectionForm}" method="post">
-                <input type="hidden" name="lockVersion" th:value="${section.lockVersion}">
-                <input type="hidden" name="sortOrder" th:value="${section.sortOrder}">
-                <label th:for="${'section-title-' + section.id}">Titel</label>
-                <input th:id="${'section-title-' + section.id}" name="title"
-                       th:value="${editingSectionId == section.id ? sectionForm.title : section.title}" required maxlength="100">
-                <p th:if="${editingSectionId == section.id and #fields.hasErrors('title')}"
-                   th:errors="*{title}" role="alert"></p>
-                <label th:for="${'section-description-' + section.id}">Beschreibung</label>
-                <textarea th:id="${'section-description-' + section.id}" name="description" maxlength="2000"
-                          th:text="${editingSectionId == section.id ? sectionForm.description : section.description}"></textarea>
-                <p th:if="${editingSectionId == section.id and #fields.hasErrors('description')}"
-                   th:errors="*{description}" role="alert"></p>
-                <button type="submit">Bereich speichern</button>
-            </form>
-            <form th:action="@{/projects/{projectId}/sections/{sectionId}/delete(projectId=${plan.project.id},sectionId=${section.id})}" method="post">
-                <label th:for="${'delete-mode-' + section.id}">Inhalte</label>
-                <select th:id="${'delete-mode-' + section.id}" name="mode" required>
-                    <option value="DELETE_CONTENT">Mit Inhalten löschen</option>
-                    <option value="MOVE_CONTENT">In anderen Bereich verschieben</option>
-                </select>
-                <label th:for="${'target-section-' + section.id}">Zielbereich</label>
-                <select th:id="${'target-section-' + section.id}" name="targetSectionId">
-                    <option value="">Keine</option>
-                    <option th:each="target : ${plan.sections}" th:unless="${target.id == section.id}"
-                            th:value="${target.id}" th:text="${target.title}"></option>
-                </select>
-                <button type="submit">Bereich löschen</button>
+                <div class="pf-form-group">
+                    <label for="new-section-title" class="pf-label">Titel des neuen Bereichs</label>
+                    <input id="new-section-title" th:field="*{title}" required maxlength="100" class="pf-input" placeholder="z. B. Konzeption, Entwicklung oder Abschluss">
+                    <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+                <div class="pf-form-group">
+                    <label for="new-section-description" class="pf-label">Beschreibung (optional)</label>
+                    <textarea id="new-section-description" th:field="*{description}" maxlength="2000" class="pf-textarea" style="min-height: 80px;" placeholder="Details zu dieser Projektphase..."></textarea>
+                    <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+                <button type="submit" class="pf-btn pf-btn--primary">Bereich anlegen</button>
             </form>
         </div>
-    </article>
-    <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/sections(projectId=${plan.project.id})}"
-          th:object="${sectionForm}" method="post">
-        <label for="new-section-title">Neuer Bereich</label>
-        <input id="new-section-title" th:field="*{title}" required maxlength="100">
-        <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></p>
-        <label for="new-section-description">Beschreibung</label>
-        <textarea id="new-section-description" th:field="*{description}" maxlength="2000"></textarea>
-        <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" role="alert"></p>
-        <button type="submit">Bereich anlegen</button>
-    </form>
-</section>
+    </div>
 
-<section th:unless="${#lists.isEmpty(plan.unsectionedElements)}"><h2>Ohne Bereich</h2><ol>
-    <li th:each="element : ${plan.unsectionedElements}">
-        <a th:if="${element.type.name() == 'TASK'}"
-           th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
-           th:text="${element.title}"></a>
-        <a th:if="${element.type.name() == 'MILESTONE'}"
-           th:href="@{/projects/{projectId}/milestones/{elementId}/edit(projectId=${plan.project.id},elementId=${element.id})}"
-           th:text="${element.title}"></a>
-    </li>
-</ol></section>
+    <!-- Unsectioned Elements -->
+    <div th:unless="${#lists.isEmpty(plan.unsectionedElements)}" class="pf-plan-section" style="margin-top: 2rem; border-style: dashed;">
+        <h2>Elemente ohne Bereich</h2>
+        <ul class="pf-element-list">
+            <li th:each="element : ${plan.unsectionedElements}" class="pf-element-item">
+                <div class="pf-element-item__left">
+                    <span class="pf-element-item__icon pf-element-item__icon--task" th:if="${element.type.name() == 'TASK'}">☐</span>
+                    <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}">◆</span>
+                    <div>
+                        <a th:if="${element.type.name() == 'TASK'}"
+                           th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
+                           th:text="${element.title}" style="font-weight: 600;"></a>
+                        <a th:if="${element.type.name() == 'MILESTONE'}"
+                           th:href="@{/projects/{projectId}/milestones/{elementId}/edit(projectId=${plan.project.id},elementId=${element.id})}"
+                           th:text="${element.title}" style="font-weight: 600;"></a>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </div>
 
-<div th:if="${plan.editable and plan.owner}">
-    <a th:href="@{/projects/{id}/edit(id=${plan.project.id})}">Projekt bearbeiten</a>
-    <form th:action="@{/projects/{id}/trash(id=${plan.project.id})}" method="post"><button type="submit">In den Papierkorb</button></form>
-</div>
-<div th:if="${plan.owner and (plan.project.location.name() == 'TRASH' or plan.project.location.name() == 'ARCHIVE')}">
-    <form th:action="@{/projects/{id}/reactivate(id=${plan.project.id})}" method="post"><button type="submit">Wiederherstellen</button></form>
-</div>
-<div th:if="${plan.owner and plan.project.location.name() == 'TRASH'}">
-    <form th:action="@{/projects/{id}/delete(id=${plan.project.id})}" method="post"><button type="submit">Endgültig löschen</button></form>
-</div>
-</main></body></html>
+    <!-- Project Administration Section -->
+    <div style="margin-top: 3.5rem; padding-top: 1.75rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div class="pf-cluster">
+            <a th:if="${plan.editable and plan.owner}" th:href="@{/projects/{id}/edit(id=${plan.project.id})}" class="pf-btn pf-btn--sm pf-btn--secondary">
+                Projekt bearbeiten
+            </a>
+            <form th:if="${plan.editable and plan.owner}" th:action="@{/projects/{id}/trash(id=${plan.project.id})}" method="post" style="margin:0;">
+                <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary" style="color: var(--pf-danger);">
+                    In den Papierkorb
+                </button>
+            </form>
+            <form th:if="${plan.owner and (plan.project.location.name() == 'TRASH' or plan.project.location.name() == 'ARCHIVE')}" th:action="@{/projects/{id}/reactivate(id=${plan.project.id})}" method="post" style="margin:0;">
+                <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Wiederherstellen</button>
+            </form>
+            <form th:if="${plan.owner and plan.project.location.name() == 'TRASH'}" th:action="@{/projects/{id}/delete(id=${plan.project.id})}" method="post" style="margin:0;">
+                <button type="submit" class="pf-btn pf-btn--sm pf-btn--danger">Endgültig löschen</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

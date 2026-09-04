@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+<form th:fragment="cancel(buttonText)" th:action="@{/projects/new/cancel}" method="post">
+    <button type="submit" th:text="${buttonText}">Abbrechen</button>
+</form>
+</body>
+</html>
