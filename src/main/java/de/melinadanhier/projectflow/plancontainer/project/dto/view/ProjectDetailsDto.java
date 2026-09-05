@@ -1,12 +1,13 @@
-package de.melinadanhier.projectflow.plancontainer.project.dto;
+package de.melinadanhier.projectflow.plancontainer.project.dto.view;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.collaboration.ProjectCollaboration;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import lombok.Getter;
@@ -21,7 +22,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProjectDetailsDto implements ProjectClassification {
+public class ProjectDetailsDto implements ProjectClassification, ProjectCollaboration {
 
     private UUID id;
     private String title;
@@ -36,9 +37,6 @@ public class ProjectDetailsDto implements ProjectClassification {
     private ProjectSubCategory subcategory;
     private CollaborationMode collaborationMode;
 
-    public boolean isGroupProject() {
-        return collaborationMode == CollaborationMode.GROUP;
-    }
     private CreationType creationType;
     private ProjectStatus status;
     private ProjectLocation location;

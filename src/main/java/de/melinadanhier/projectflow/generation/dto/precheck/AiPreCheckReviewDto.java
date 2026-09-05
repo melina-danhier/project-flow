@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.generation.dto;
+package de.melinadanhier.projectflow.generation.dto.precheck;
 
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 
@@ -10,6 +10,10 @@ public record AiPreCheckReviewDto(
         UUID projectId,
         List<AiPreCheckProblemDto> problems
 ) {
+    public AiPreCheckReviewDto {
+        problems = problems == null ? List.of() : List.copyOf(problems);
+    }
+
     public boolean hasErrors() {
         return problems.stream()
                 .anyMatch(p -> p.severity() == AiPreCheckSeverity.ERROR);

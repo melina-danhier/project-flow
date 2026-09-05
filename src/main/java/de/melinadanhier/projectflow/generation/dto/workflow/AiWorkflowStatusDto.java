@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.generation.dto.response;
+package de.melinadanhier.projectflow.generation.dto.workflow;
 
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
@@ -23,11 +23,7 @@ public record AiWorkflowStatusDto(
     }
 
     public boolean isProcessing() {
-        return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING
-                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
-                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING
-                || status == AiPlanGenerationWorkflowStatus.GENERATION_PENDING
-                || status == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING;
+        return status.isActiveExecution();
     }
 
     public boolean canRetry() {
@@ -38,17 +34,11 @@ public record AiWorkflowStatusDto(
     }
 
     public boolean canCancel() {
-        return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING
-                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
-                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING
-                || status == AiPlanGenerationWorkflowStatus.GENERATION_PENDING
-                || status == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING;
+        return isProcessing();
     }
 
     public boolean isPreCheckRun() {
-        return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING
-                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
-                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING
+        return status.isPreCheckPhase()
                 || (status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
                 && errorOperation == AiOperation.PRE_CHECK);
     }

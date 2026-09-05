@@ -2,7 +2,7 @@ package de.melinadanhier.projectflow.ai;
 
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.AiOperation;
-import de.melinadanhier.projectflow.generation.dto.response.AiWorkflowStatusDto;
+import de.melinadanhier.projectflow.generation.dto.workflow.AiWorkflowStatusDto;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import org.junit.jupiter.api.Test;
 
@@ -32,9 +32,18 @@ class AiWorkflowStatusDtoTest {
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING,
                 AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
                 AiPlanGenerationWorkflowStatus.GENERATION_RUNNING}) {
+            assertThat(status(cancellable).isProcessing()).isTrue();
             assertThat(status(cancellable).canCancel()).isTrue();
         }
         assertThat(status(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED).canCancel()).isFalse();
+    }
+
+    @Test
+    void retryBackoffAndCancelledPreCheckRemainAssignedToThePreCheckPhase() {
+        assertThat(status(AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING).isPreCheckRun()).isTrue();
+        assertThat(status(AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED).isPreCheckRun()).isTrue();
+        assertThat(status(AiOperation.PRE_CHECK).isPreCheckRun()).isTrue();
+        assertThat(status(AiOperation.PLAN_GENERATION).isPreCheckRun()).isFalse();
     }
 
     private AiWorkflowStatusDto status(AiOperation operation) {

@@ -1,7 +1,7 @@
 package de.melinadanhier.projectflow.wizard.controller;
 
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectDetailsDto;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectDetailsDto;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
 import de.melinadanhier.projectflow.wizard.service.AiWizardCompletionService;

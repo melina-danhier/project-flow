@@ -194,7 +194,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
 
     public UUID startGeneration(UUID runId, Instant expiresAt) {
         boolean draftRegeneration = status == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
-        if (status != AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED
+        if (status != AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED
                 && status != AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED
                 && status != AiPlanGenerationWorkflowStatus.GENERATION_FAILED
                 && status != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
@@ -280,7 +280,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         clearError();
         status = needsReview
                 ? AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW
-                : AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED;
+                : AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED;
         clearActiveRun();
     }
 
@@ -294,7 +294,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
 
     public void approvePreCheck() {
         requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
-        status = AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED;
+        status = AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED;
     }
 
     public boolean acknowledgeWarning(int problemIndex) {
@@ -408,7 +408,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
         generationRoundAttemptCount = 0;
         clearError();
-        status = AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED;
+        status = AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED;
         clearActiveRun();
     }
 

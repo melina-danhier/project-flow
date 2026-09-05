@@ -20,8 +20,8 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import lombok.RequiredArgsConstructor;

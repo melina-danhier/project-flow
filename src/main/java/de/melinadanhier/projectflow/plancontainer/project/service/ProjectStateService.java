@@ -2,8 +2,8 @@ package de.melinadanhier.projectflow.plancontainer.project.service;
 
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import org.springframework.stereotype.Service;
 
 @Service

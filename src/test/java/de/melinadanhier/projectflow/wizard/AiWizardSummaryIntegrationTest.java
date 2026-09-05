@@ -1,11 +1,11 @@
 package de.melinadanhier.projectflow.wizard;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;

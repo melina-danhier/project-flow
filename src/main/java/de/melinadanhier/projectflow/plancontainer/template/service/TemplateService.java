@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.template.service;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.mapper.TemplateMapper;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
 import de.melinadanhier.projectflow.plancontainer.template.dto.TemplateSummaryDto;

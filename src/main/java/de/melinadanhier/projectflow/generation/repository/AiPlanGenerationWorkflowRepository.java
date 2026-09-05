@@ -32,7 +32,7 @@ public interface AiPlanGenerationWorkflowRepository
             where workflow.id = :workflowId
               and membership.user.id = :userId
               and membership.active = true
-              and membership.role = de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole.OWNER
+              and membership.role = de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole.OWNER
             """)
     Optional<AiPlanGenerationWorkflow> findOwnedById(
             @Param("workflowId") UUID workflowId,
@@ -47,7 +47,7 @@ public interface AiPlanGenerationWorkflowRepository
             where workflow.id = :workflowId
               and membership.user.id = :userId
               and membership.active = true
-              and membership.role = de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole.OWNER
+              and membership.role = de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole.OWNER
             """)
     Optional<AiPlanGenerationWorkflow> findOwnedByIdForUpdate(
             @Param("workflowId") UUID workflowId,
@@ -93,7 +93,7 @@ public interface AiPlanGenerationWorkflowRepository
             where workflow.project.id = :projectId
               and membership.user.id = :userId
               and membership.active = true
-              and membership.role = de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole.OWNER
+              and membership.role = de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole.OWNER
             """)
     Optional<AiPlanGenerationWorkflow> findOwnedByProjectId(
             @Param("projectId") UUID projectId,

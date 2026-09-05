@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project.repository;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;

@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;

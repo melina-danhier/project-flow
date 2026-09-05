@@ -1,8 +1,8 @@
 package de.melinadanhier.projectflow.plancontainer.template.model;
 
 import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

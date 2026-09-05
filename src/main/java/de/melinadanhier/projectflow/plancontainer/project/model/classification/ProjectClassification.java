@@ -1,6 +1,5 @@
-package de.melinadanhier.projectflow.plancontainer.project.model;
+package de.melinadanhier.projectflow.plancontainer.project.model.classification;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import java.util.List;
 

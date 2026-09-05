@@ -1,6 +1,6 @@
-package de.melinadanhier.projectflow.plancontainer.project.dto;
+package de.melinadanhier.projectflow.plancontainer.project.dto.view;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

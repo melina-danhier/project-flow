@@ -1,8 +1,8 @@
 package de.melinadanhier.projectflow.wizard.dto;
 
 import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
@@ -75,10 +75,6 @@ public class ProjectBasicsForm implements ProjectClassification {
             case NONE -> { }
         }
         return form;
-    }
-
-    public boolean isOtherCategory() {
-        return category == TemplateCategory.OTHER;
     }
 
     public boolean isStartDateInputActive() {

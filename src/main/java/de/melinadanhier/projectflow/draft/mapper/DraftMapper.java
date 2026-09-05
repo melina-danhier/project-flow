@@ -4,7 +4,6 @@ import de.melinadanhier.projectflow.draft.model.*;
 import de.melinadanhier.projectflow.draft.dto.review.DraftPlanElementDto;
 import de.melinadanhier.projectflow.draft.dto.review.DraftReviewDto;
 import de.melinadanhier.projectflow.draft.dto.review.DraftSectionDto;
-import de.melinadanhier.projectflow.generation.dto.GenerationStatusDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

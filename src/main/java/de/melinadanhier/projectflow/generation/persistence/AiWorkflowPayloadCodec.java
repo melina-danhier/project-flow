@@ -4,7 +4,7 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.model.workflow.GenerationAssumptionContext;
-import de.melinadanhier.projectflow.generation.dto.AssumptionReviewRequest;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionReviewRequest;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

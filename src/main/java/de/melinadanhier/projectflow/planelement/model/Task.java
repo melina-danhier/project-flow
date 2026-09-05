@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.planelement.model;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

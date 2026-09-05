@@ -6,8 +6,8 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.generation.dto.AiPreCheckProblemDto;
-import de.melinadanhier.projectflow.generation.dto.AiPreCheckReviewDto;
+import de.melinadanhier.projectflow.generation.dto.precheck.AiPreCheckProblemDto;
+import de.melinadanhier.projectflow.generation.dto.precheck.AiPreCheckReviewDto;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
@@ -52,7 +52,7 @@ public class AiPreCheckReviewService {
             boolean generationStarted = workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_PENDING
                     || workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING
                     || workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED
-                    || workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED;
+                    || workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED;
             if (alreadyAccepted && generationStarted) {
                 return true;
             }
@@ -99,7 +99,7 @@ public class AiPreCheckReviewService {
 
     private void requireReviewable(AiPlanGenerationWorkflow workflow) {
         if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW
-                && workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED
+                && workflow.getStatus() != AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED
                 && workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED) {
             throw new ConflictException("Für diesen KI-Workflow liegen keine aktuellen Hinweise vor.");
         }

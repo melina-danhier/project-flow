@@ -1,7 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.template.dto;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
