@@ -1,8 +1,8 @@
 package de.melinadanhier.projectflow.generation.controller;
 
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
-import de.melinadanhier.projectflow.generation.dto.AssumptionReviewForm;
-import de.melinadanhier.projectflow.generation.dto.response.AiWorkflowStatusDto;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionReviewForm;
+import de.melinadanhier.projectflow.generation.dto.workflow.AiWorkflowStatusDto;
 import de.melinadanhier.projectflow.generation.service.assumption.CriticalAssumptionReviewService;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
@@ -40,12 +40,12 @@ public class AiWorkflowController {
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
     ) {
-        AiWorkflowStatusDto workflow = workflowQueryService.getOwnedStatus(
+        AiWorkflowStatusDto workflow = workflowQueryService.getStatus(
                 workflowId, currentUser.userId()
         );
         switch (workflow.status()) {
-            case PRE_CHECK_NEEDS_REVIEW, PRE_CHECK_SUCCEEDED, GENERATION_CANCELLED -> {
-                return problemsRedirect(workflowId);
+            case PRE_CHECK_NEEDS_REVIEW, PRE_CHECK_COMPLETED, GENERATION_CANCELLED -> {
+                return preCheckReviewRedirect(workflowId);
             }
             case GENERATION_COMPLETED -> {
                 return "redirect:/projects/" + workflow.projectId() + "/draft/review";
@@ -92,7 +92,7 @@ public class AiWorkflowController {
     }
 
     @GetMapping("/problems/{workflowId}")
-    public String problems(
+    public String preCheckReview(
             @PathVariable UUID workflowId,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
@@ -111,7 +111,7 @@ public class AiWorkflowController {
         if (preCheckReviewService.acknowledgeWarning(workflowId, currentUser.userId(), problemIndex)) {
             return "redirect:/projects/new/ai/status/" + workflowId;
         }
-        return "redirect:/projects/new/ai/problems/" + workflowId;
+        return preCheckReviewRedirect(workflowId);
     }
 
     @PostMapping("/status/{workflowId}/retry")
@@ -123,7 +123,7 @@ public class AiWorkflowController {
         return "redirect:/projects/new/ai/status/" + workflowId;
     }
 
-    private String problemsRedirect(UUID workflowId) {
+    private String preCheckReviewRedirect(UUID workflowId) {
         return "redirect:/projects/new/ai/problems/" + workflowId;
     }
 

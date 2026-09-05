@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.wizard.service;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.wizard.model.AiProjectQuestion;
 import de.melinadanhier.projectflow.wizard.model.AiQuestionType;

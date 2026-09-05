@@ -1,6 +1,7 @@
-package de.melinadanhier.projectflow.plancontainer.project.model;
+package de.melinadanhier.projectflow.plancontainer.project.model.membership;
 
 import de.melinadanhier.projectflow.common.model.MutableEntity;
+import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.user.model.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

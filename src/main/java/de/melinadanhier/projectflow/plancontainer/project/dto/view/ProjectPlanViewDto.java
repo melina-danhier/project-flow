@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.plancontainer.project.dto;
+package de.melinadanhier.projectflow.plancontainer.project.dto.view;
 
 import de.melinadanhier.projectflow.planelement.dto.MilestoneDetailsDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionDto;

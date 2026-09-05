@@ -32,7 +32,7 @@ public class AiWorkflowControlService {
 
     @Transactional
     public UUID startGeneration(UUID workflowId, UUID userId) {
-        var workflow = requireOwnedForUpdate(workflowId, userId);
+        AiPlanGenerationWorkflow workflow = requireOwnedForUpdate(workflowId, userId);
         expireIfNecessary(workflow);
         if (workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_PENDING
                 || workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
@@ -66,7 +66,7 @@ public class AiWorkflowControlService {
         }
         AiOperation operation = switch (workflow.getStatus()) {
             case PRE_CHECK_PENDING, PRE_CHECK_RUNNING, PRE_CHECK_RETRY_PENDING,
-                    PRE_CHECK_SUCCEEDED, PRE_CHECK_NEEDS_REVIEW, PRE_CHECK_CANCELLED -> AiOperation.PRE_CHECK;
+                 PRE_CHECK_COMPLETED, PRE_CHECK_NEEDS_REVIEW, PRE_CHECK_CANCELLED -> AiOperation.PRE_CHECK;
             default -> AiOperation.PLAN_GENERATION;
         };
         AiWizardSnapshot snapshot = workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED
@@ -89,8 +89,7 @@ public class AiWorkflowControlService {
         };
         var timeout = new IllegalStateException("Die maximale Laufzeit der KI-Ausführung wurde überschritten.");
         return workflow.expire(workflow.getActiveRunId(), Instant.now(clock),
-                new AiTechnicalError(AiTechnicalErrorCode.PROVIDER_TIMEOUT, operation,
-                        timeout.getMessage(), timeout));
+                new AiTechnicalError(AiTechnicalErrorCode.PROVIDER_TIMEOUT, operation, timeout.getMessage(), timeout));
     }
 
     private AiPlanGenerationWorkflow requireOwnedForUpdate(UUID workflowId, UUID userId) {

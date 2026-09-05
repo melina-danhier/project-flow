@@ -1,12 +1,11 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.generation.controller.AiWorkflowController;
-import de.melinadanhier.projectflow.generation.dto.AssumptionDecision;
-import de.melinadanhier.projectflow.generation.dto.AssumptionDecisionRequest;
-import de.melinadanhier.projectflow.generation.dto.AssumptionReviewDto;
-import de.melinadanhier.projectflow.generation.dto.AssumptionReviewRequest;
-import de.melinadanhier.projectflow.generation.dto.CriticalAssumptionReviewDto;
-import de.melinadanhier.projectflow.generation.dto.response.AiWorkflowStatusDto;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionDecision;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionDecisionRequest;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionReviewDto;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionReviewRequest;
+import de.melinadanhier.projectflow.generation.dto.assumption.CriticalAssumptionReviewDto;
+import de.melinadanhier.projectflow.generation.dto.workflow.AiWorkflowStatusDto;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.service.assumption.CriticalAssumptionReviewService;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
@@ -108,7 +107,7 @@ class CriticalAssumptionReviewControllerTest {
 
     @Test
     void routesFailedRegenerationWithSavedReviewBackToAssumptions() throws Exception {
-        when(queries.getOwnedStatus(workflowId, owner.userId())).thenReturn(workflowStatus(
+        when(queries.getStatus(workflowId, owner.userId())).thenReturn(workflowStatus(
                 AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE, true));
 
         mvc.perform(get("/projects/new/ai/status/{id}", workflowId).with(user(owner)))
@@ -117,7 +116,7 @@ class CriticalAssumptionReviewControllerTest {
 
     @Test
     void keepsPreCheckRoutingPrecedenceOverSavedAssumptionReview() throws Exception {
-        when(queries.getOwnedStatus(workflowId, owner.userId())).thenReturn(workflowStatus(
+        when(queries.getStatus(workflowId, owner.userId())).thenReturn(workflowStatus(
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW, true));
 
         mvc.perform(get("/projects/new/ai/status/{id}", workflowId).with(user(owner)))

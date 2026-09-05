@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.generation.dto;
+package de.melinadanhier.projectflow.generation.dto.assumption;
 
 public record AssumptionDecisionRequest(
         int assumptionIndex,

@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.generation.dto;
+package de.melinadanhier.projectflow.generation.dto.precheck;
 
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 

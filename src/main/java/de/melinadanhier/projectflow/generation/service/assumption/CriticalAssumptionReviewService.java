@@ -4,7 +4,11 @@ import de.melinadanhier.projectflow.ai.model.generation.RejectedCriticalAssumpti
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.generation.dto.*;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionDecision;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionDecisionRequest;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionReviewDto;
+import de.melinadanhier.projectflow.generation.dto.assumption.AssumptionReviewRequest;
+import de.melinadanhier.projectflow.generation.dto.assumption.CriticalAssumptionReviewDto;
 import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.GenerationAssumptionContext;

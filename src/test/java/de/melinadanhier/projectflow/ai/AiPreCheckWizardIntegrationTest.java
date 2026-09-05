@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
@@ -19,7 +19,7 @@ import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
@@ -94,7 +94,7 @@ class AiPreCheckWizardIntegrationTest {
         when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
 
         UUID workflowId = start(owner);
-        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
         verify(aiClient, never()).generatePlan(any());
         mockMvc.perform(post(statusUrl(workflowId) + "/generate")
                         .with(user(principal(owner))).with(csrf()))
@@ -164,7 +164,7 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(redirectedUrl(statusUrl(workflowId)));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)).isLessThan(1000);
         assertThat(workflowRepository.findById(workflowId).orElseThrow().getStatus())
-                .isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED);
+                .isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
         mockMvc.perform(post(statusUrl(workflowId) + "/generate")
                         .session(session).with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection());
@@ -294,7 +294,7 @@ class AiPreCheckWizardIntegrationTest {
                 .andReturn().getResponse().getRedirectedUrl();
         UUID restartedWorkflowId = UUID.fromString(redirect.substring(redirect.lastIndexOf('/') + 1));
         assertThat(restartedWorkflowId).isNotEqualTo(oldWorkflowId);
-        awaitStatus(restartedWorkflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED);
+        awaitStatus(restartedWorkflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
         assertThat(workflowRepository.findById(oldWorkflowId)).get()
                 .extracting("status")
                 .isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);

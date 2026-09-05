@@ -139,7 +139,7 @@ class DraftPostgresMigrationTest {
                 connection.setSchema(schema);
                 var scoped = new JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(connection, true));
                 var cases = new java.util.ArrayList<LegacyCase>();
-                for (var value : de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory.values()) {
+                for (var value : de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory.values()) {
                     cases.add(seedClassification(scoped, value.getCategory().name(), value.getLabel(), value.name(), false));
                     cases.add(seedClassification(scoped, value.getCategory().name(), " " + value.name().toLowerCase(java.util.Locale.ROOT) + " ", value.name(), true));
                 }
@@ -240,9 +240,11 @@ class DraftPostgresMigrationTest {
                 where conname = 'ck_ai_workflows_status'
                 """, String.class);
         assertThat(statusConstraint)
+                .contains("PRE_CHECK_COMPLETED")
                 .contains("ASSUMPTIONS_REVIEW_PENDING")
                 .doesNotContain("DRAFT_APPLIED")
-                .doesNotContain("PRE_CHECK_PASSED");
+                .doesNotContain("PRE_CHECK_PASSED")
+                .doesNotContain("PRE_CHECK_SUCCEEDED");
         assertThat(jdbc.queryForObject("""
                 select count(*) from information_schema.columns
                 where table_schema = 'public' and table_name = 'plan_drafts'

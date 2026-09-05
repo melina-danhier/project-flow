@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.AiOperation;
@@ -26,10 +26,10 @@ import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowInitializationService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -537,7 +537,7 @@ class AiWorkflowIntegrationTest {
 
         var completion = completionService.complete(UUID.randomUUID(), owner.getId(), this::snapshot);
         await(() -> workflowRepository.findById(completion.workflowId())
-                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED)
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED)
                 .orElse(false));
 
         try (var executor = Executors.newFixedThreadPool(2)) {
@@ -593,7 +593,7 @@ class AiWorkflowIntegrationTest {
 
     private void startGenerationAfterPreCheck(UUID workflowId, UUID userId) throws Exception {
         await(() -> workflowRepository.findById(workflowId)
-                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED)
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED)
                 .orElse(false));
         workflowControlService.startGeneration(workflowId, userId);
     }

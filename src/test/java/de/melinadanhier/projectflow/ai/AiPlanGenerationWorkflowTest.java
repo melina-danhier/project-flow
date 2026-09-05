@@ -81,7 +81,7 @@ class AiPlanGenerationWorkflowTest {
         var preCheck = workflow();
         ReflectionTestUtils.setField(preCheck.workflow(), "status", AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
         preCheck.workflow().recordPreCheckResult("{}", false);
-        assertThat(preCheck.workflow().getStatus()).isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED);
+        assertThat(preCheck.workflow().getStatus()).isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
         assertRunCleared(preCheck.workflow());
 
         var generation = runningGeneration();

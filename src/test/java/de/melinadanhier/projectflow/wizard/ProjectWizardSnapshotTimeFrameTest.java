@@ -1,7 +1,7 @@
 package de.melinadanhier.projectflow.wizard;
 
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import tools.jackson.databind.json.JsonMapper;
 import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
