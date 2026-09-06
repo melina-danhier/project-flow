@@ -1,34 +1,35 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <body><div th:fragment="fields(requireOtherDescription)">
-    <label for="category">Oberkategorie</label>
-    <select id="category" th:field="*{category}" required>
-        <option value="OTHER">Sonstiges</option>
-        <option value="EDUCATION">Bildung und Studium</option>
-        <option value="SOFTWARE_TECHNOLOGY">Software und Technik</option>
-        <option value="EVENT">Veranstaltung</option>
-        <option value="HOME">Haushalt und Wohnen</option>
-        <option value="CREATIVE">Kreatives</option>
-        <option value="CAREER">Beruf und Karriere</option>
-        <option value="HEALTH_PERSONAL_DEVELOPMENT">Gesundheit und persönliche Entwicklung</option>
-        <option value="TRAVEL">Reise</option>
-    </select>
-    <p th:if="${#fields.hasErrors('category')}" th:errors="*{category}" role="alert"></p>
-    <div id="subcategory-fields" th:hidden="*{otherCategory}">
-        <label for="subcategory">Unterkategorie <span>(optional)</span></label>
-        <select id="subcategory" th:field="*{subcategory}" th:disabled="*{otherCategory}">
+    <div class="pf-form-group">
+        <label for="category" class="pf-label">Oberkategorie</label>
+        <select id="category" th:field="*{category}" class="pf-select" required>
+            <option value="OTHER">Sonstiges</option>
+            <option value="EDUCATION">Bildung und Studium</option>
+            <option value="SOFTWARE_TECHNOLOGY">Software und Technik</option>
+            <option value="EVENT">Veranstaltung</option>
+            <option value="HOME">Haushalt und Wohnen</option>
+            <option value="CREATIVE">Kreatives</option>
+            <option value="CAREER">Beruf und Karriere</option>
+            <option value="HEALTH_PERSONAL_DEVELOPMENT">Gesundheit und persönliche Entwicklung</option>
+            <option value="TRAVEL">Reise</option>
+        </select>
+        <div th:if="${#fields.hasErrors('category')}" class="pf-alert pf-alert--error" th:errors="*{category}" role="alert"></div>
+    </div>
+    <div id="subcategory-fields" th:hidden="*{otherCategory}" class="pf-form-group">
+        <label for="subcategory" class="pf-label">Unterkategorie <span class="pf-hint" style="font-weight: normal;">(optional)</span></label>
+        <select id="subcategory" th:field="*{subcategory}" class="pf-select" th:disabled="*{otherCategory}">
             <option value="">Keine Unterkategorie</option>
             <option th:each="option : *{subcategoryOptions}" th:value="${option.name()}" th:text="${option.label}"></option>
         </select>
-
+        <div th:if="${#fields.hasErrors('subcategory')}" class="pf-alert pf-alert--error" th:errors="*{subcategory}" role="alert"></div>
     </div>
-        <p th:if="${#fields.hasErrors('subcategory')}" th:errors="*{subcategory}" role="alert"></p>
-    <div id="other-project-type-fields" th:if="${requireOtherDescription}" th:hidden="*{!otherCategory}">
-        <label for="otherProjectTypeDescription">Was für ein Projekt ist es?</label>
-        <input id="otherProjectTypeDescription" th:field="*{otherProjectTypeDescription}" maxlength="100"
+    <div id="other-project-type-fields" th:if="${requireOtherDescription}" th:hidden="*{!otherCategory}" class="pf-form-group">
+        <label for="otherProjectTypeDescription" class="pf-label">Was für ein Projekt ist es?</label>
+        <input id="otherProjectTypeDescription" class="pf-input" th:field="*{otherProjectTypeDescription}" maxlength="100"
                placeholder="z. B. privater Flohmarkt" th:required="*{otherCategory}" th:disabled="*{!otherCategory}">
-        <p th:if="${#fields.hasErrors('otherProjectTypeDescription')}"
-           th:errors="*{otherProjectTypeDescription}" role="alert"></p>
+        <div th:if="${#fields.hasErrors('otherProjectTypeDescription')}" class="pf-alert pf-alert--error"
+             th:errors="*{otherProjectTypeDescription}" role="alert"></div>
     </div>
     <template id="subcategory-options">
         <option th:each="option : ${T(de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory).values()}"
