@@ -27,9 +27,7 @@
                 
                 <div style="display: grid; gap: 1rem;">
                     <!-- Option 1: AI -->
-                    <label style="display: flex; align-items: flex-start; gap: 1rem; padding: 1.15rem; border: 2px solid var(--pf-border); border-radius: var(--pf-radius-lg); cursor: pointer; transition: var(--pf-transition);"
-                           onmouseover="this.style.borderColor='var(--pf-purple)'"
-                           onmouseout="this.style.borderColor='var(--pf-border)'">
+                    <label class="pf-choice-card">
                         <input type="radio" th:field="*{creationType}" value="AI" style="margin-top: 0.25rem;">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -43,9 +41,7 @@
                     </label>
 
                     <!-- Option 2: Template -->
-                    <label style="display: flex; align-items: flex-start; gap: 1rem; padding: 1.15rem; border: 2px solid var(--pf-border); border-radius: var(--pf-radius-lg); cursor: pointer; transition: var(--pf-transition);"
-                           onmouseover="this.style.borderColor='var(--pf-primary)'"
-                           onmouseout="this.style.borderColor='var(--pf-border)'">
+                    <label class="pf-choice-card">
                         <input type="radio" th:field="*{creationType}" value="TEMPLATE" style="margin-top: 0.25rem;">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -59,9 +55,7 @@
                     </label>
 
                     <!-- Option 3: Manual / Empty -->
-                    <label style="display: flex; align-items: flex-start; gap: 1rem; padding: 1.15rem; border: 2px solid var(--pf-border); border-radius: var(--pf-radius-lg); cursor: pointer; transition: var(--pf-transition);"
-                           onmouseover="this.style.borderColor='var(--pf-border-strong)'"
-                           onmouseout="this.style.borderColor='var(--pf-border)'">
+                    <label class="pf-choice-card">
                         <input type="radio" th:field="*{creationType}" value="EMPTY" style="margin-top: 0.25rem;">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
