@@ -67,7 +67,7 @@ class PlanDraftMaterializationIntegrationTest {
         Fixture f = runningWorkflow();
         String snapshot = workflows.findById(f.workflowId()).orElseThrow().getConfirmedSnapshot();
         assertThat(drafts.findByProjectId(f.projectId())).isEmpty();
-        assertThat(workflowService.recordSuccess(f.workflowId(), generatedPlan())).isTrue();
+        assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), generatedPlan())).isTrue();
 
         assertCompleteDraft(f);
         var workflow = workflows.findById(f.workflowId()).orElseThrow();
@@ -86,7 +86,8 @@ class PlanDraftMaterializationIntegrationTest {
             assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
             return invocation.callRealMethod();
         }).when(mapper).map(any());
-        inTransaction(() -> assertThat(workflowService.recordSuccess(f.workflowId(), generatedPlan())).isTrue());
+        inTransaction(() -> assertThat(
+                workflowService.recordSuccess(f.workflowId(), runId(f), generatedPlan())).isTrue());
         assertCompleteDraft(f);
     }
 
@@ -95,7 +96,7 @@ class PlanDraftMaterializationIntegrationTest {
         Fixture f = runningWorkflow();
         var first = new GeneratedPlanResponse(generatedPlan().sections(), List.of(
                 new GeneratedCriticalAssumption("Material ist vorhanden.", false)));
-        assertThat(workflowService.recordSuccess(f.workflowId(), first)).isTrue();
+        assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), first)).isTrue();
         UUID draftId = drafts.findByProjectId(f.projectId()).orElseThrow().getId();
 
         inTransaction(() -> {
@@ -106,9 +107,9 @@ class PlanDraftMaterializationIntegrationTest {
                     codec.writeAssumptionContext(new GenerationAssumptionContext(
                             List.of(), List.of(new RejectedCriticalAssumption(
                             "Material ist vorhanden.", null)))),
-                    codec.writeAssumptionReview(review));
+                    codec.writeAssumptionReview(review), UUID.randomUUID(), Instant.now().plusSeconds(300));
         });
-        assertThat(workflowService.claimWork(f.workflowId())).isPresent();
+        assertThat(workflowService.claimWork(f.workflowId(), runId(f))).isPresent();
 
         var replacement = new GeneratedPlanResponse(List.of(new GeneratedSection(
                 "replacement", "Neu geplant", null, 1,
@@ -117,7 +118,7 @@ class PlanDraftMaterializationIntegrationTest {
                         task("replacement-2", "Neue Aufgabe 2", 2, null, List.of()),
                         task("replacement-3", "Neue Aufgabe 3", 3, null, List.of())),
                 List.of())), List.of());
-        assertThat(workflowService.recordSuccess(f.workflowId(), replacement)).isTrue();
+        assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), replacement)).isTrue();
 
         readDraft(f, draft -> {
             assertThat(draft.getId()).isEqualTo(draftId);
@@ -135,7 +136,7 @@ class PlanDraftMaterializationIntegrationTest {
         Fixture f = runningWorkflow();
         var contents = mapper.map(generatedPlan());
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            assertThat(storage.materialize(f.workflowId(), contents,
+            assertThat(storage.materialize(f.workflowId(), runId(f), contents,
                     codec.writeGeneratedPlan(generatedPlan()), false)).isTrue();
             assertThat(drafts.findByProjectId(f.projectId())).isPresent();
             assertThat(workflows.findById(f.workflowId()).orElseThrow().getStatus())
@@ -170,7 +171,7 @@ class PlanDraftMaterializationIntegrationTest {
             jdbc.update("insert into draft_task_prerequisites "
                     + "(successor_draft_task_id, prerequisite_draft_task_id) values (null, null)");
             return result;
-        }).when(storage).materialize(eq(f.workflowId()), any(), anyString(), anyBoolean());
+        }).when(storage).materialize(eq(f.workflowId()), eq(runId(f)), any(), anyString(), anyBoolean());
         stubGeneration(generatedPlan());
 
         // The failure transaction must commit independently, even if an outer caller rolls back.
@@ -188,9 +189,10 @@ class PlanDraftMaterializationIntegrationTest {
         assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
 
         // After an explicit manual repair/retry, only the existing workflow is reused.
-        doCallRealMethod().when(storage).materialize(eq(f.workflowId()), any(), anyString(), anyBoolean());
+        doCallRealMethod().when(storage).materialize(
+                eq(f.workflowId()), eq(runId(f)), any(), anyString(), anyBoolean());
         prepareRetry(f);
-        assertThat(workflowService.recordSuccess(f.workflowId(), generatedPlan())).isTrue();
+        assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), generatedPlan())).isTrue();
         assertCompleteDraft(f);
     }
 
@@ -226,11 +228,11 @@ class PlanDraftMaterializationIntegrationTest {
     @Test
     void completedWorkflowRejectsDuplicateSuccessAndLateFailure() {
         Fixture f = runningWorkflow();
-        assertThat(workflowService.recordSuccess(f.workflowId(), generatedPlan())).isTrue();
+        assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), generatedPlan())).isTrue();
         var draft = drafts.findByProjectId(f.projectId()).orElseThrow();
         long version = workflows.findById(f.workflowId()).orElseThrow().getLockVersion();
-        assertThat(workflowService.recordSuccess(f.workflowId(), generatedPlan())).isFalse();
-        assertThat(workflowService.recordTechnicalFailure(f.workflowId(), AiTechnicalError.from(
+        assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), generatedPlan())).isFalse();
+        assertThat(workflowService.recordTechnicalFailure(f.workflowId(), runId(f), AiTechnicalError.from(
                 new IllegalStateException("Verspäteter Fehler"), AiOperation.PLAN_GENERATION))).isFalse();
         assertThat(drafts.findByProjectId(f.projectId()).orElseThrow().getId()).isEqualTo(draft.getId());
         assertThat(workflows.findById(f.workflowId()).orElseThrow().getLockVersion()).isEqualTo(version);
@@ -248,8 +250,10 @@ class PlanDraftMaterializationIntegrationTest {
             return result;
         }).when(mapper).map(any());
         try (var executor = Executors.newFixedThreadPool(2)) {
-            var first = executor.submit(() -> workflowService.recordSuccess(f.workflowId(), generatedPlan()));
-            var second = executor.submit(() -> workflowService.recordSuccess(f.workflowId(), generatedPlan()));
+            var first = executor.submit(() -> workflowService.recordSuccess(
+                    f.workflowId(), runId(f), generatedPlan()));
+            var second = executor.submit(() -> workflowService.recordSuccess(
+                    f.workflowId(), runId(f), generatedPlan()));
             assertThat(List.of(first.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS)))
                     .containsExactlyInAnyOrder(true, false);
         }
@@ -271,7 +275,7 @@ class PlanDraftMaterializationIntegrationTest {
             drafts.saveAndFlush(existing);
         });
         UUID draftId = drafts.findByProjectId(f.projectId()).orElseThrow().getId();
-        assertThatThrownBy(() -> workflowService.recordSuccess(f.workflowId(), generatedPlan()))
+        assertThatThrownBy(() -> workflowService.recordSuccess(f.workflowId(), runId(f), generatedPlan()))
                 .isInstanceOf(ConflictException.class);
         readDraft(f, draft -> {
             assertThat(draft.getId()).isEqualTo(draftId);
@@ -293,7 +297,8 @@ class PlanDraftMaterializationIntegrationTest {
                     "ai-wizard-v2", UUID.randomUUID(), Instant.now(), "v1");
             return workflows.saveAndFlush(workflow).getId();
         });
-        workflows.claimPreCheck(workflowId, Instant.now());
+        workflows.claimPreCheck(workflowId,
+                workflows.findById(workflowId).orElseThrow().getActiveRunId(), Instant.now());
         inTransaction(() -> {
             var workflow = workflows.findById(workflowId).orElseThrow();
             workflow.recordPreCheckResult(codec.writePreCheckResult(new AiPreCheckResult(List.of(
@@ -302,15 +307,17 @@ class PlanDraftMaterializationIntegrationTest {
             workflow.approvePreCheck();
             workflow.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         });
-        assertThat(workflows.claimGeneration(workflowId, Instant.now())).isEqualTo(1);
+        assertThat(workflows.claimGeneration(workflowId,
+                workflows.findById(workflowId).orElseThrow().getActiveRunId(), Instant.now())).isEqualTo(1);
         var workflow = workflows.findById(workflowId).orElseThrow();
         return new Fixture(workflow.getId(), workflow.getProject().getId());
     }
 
     private void prepareRetry(Fixture f) {
-        inTransaction(() -> workflows.findById(f.workflowId()).orElseThrow().prepareManualGenerationRetry());
+        inTransaction(() -> workflows.findById(f.workflowId()).orElseThrow()
+                .startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300)));
         assertNoDraft(f);
-        assertThat(workflows.claimGeneration(f.workflowId(), Instant.now())).isEqualTo(1);
+        assertThat(workflows.claimGeneration(f.workflowId(), runId(f), Instant.now())).isEqualTo(1);
         assertNoDraft(f);
     }
 
@@ -320,7 +327,11 @@ class PlanDraftMaterializationIntegrationTest {
     }
 
     private AiGenerationWork work(Fixture f) {
-        return new AiGenerationWork(f.workflowId(), null, List.of(), 0);
+        return new AiGenerationWork(f.workflowId(), runId(f), null, List.of(), 0);
+    }
+
+    private UUID runId(Fixture f) {
+        return workflows.findById(f.workflowId()).orElseThrow().getActiveRunId();
     }
 
     private void assertCompleteDraft(Fixture f) {

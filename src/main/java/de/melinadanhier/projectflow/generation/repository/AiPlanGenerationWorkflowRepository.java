@@ -2,19 +2,18 @@ package de.melinadanhier.projectflow.generation.repository;
 
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.List;
-import java.time.Instant;
-
-import org.springframework.transaction.annotation.Transactional;
-import jakarta.persistence.LockModeType;
 
 public interface AiPlanGenerationWorkflowRepository
         extends JpaRepository<AiPlanGenerationWorkflow, UUID> {
@@ -71,11 +70,6 @@ public interface AiPlanGenerationWorkflowRepository
     int claimPreCheck(@Param("workflowId") UUID workflowId, @Param("runId") UUID runId,
                       @Param("now") Instant now);
 
-    default int claimPreCheck(UUID workflowId, Instant now) {
-        return findById(workflowId).map(workflow -> claimPreCheck(workflowId, workflow.getActiveRunId(), now))
-                .orElse(0);
-    }
-
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("""
@@ -89,61 +83,6 @@ public interface AiPlanGenerationWorkflowRepository
             """)
     int claimGeneration(@Param("workflowId") UUID workflowId, @Param("runId") UUID runId,
                         @Param("now") Instant now);
-
-    default int claimGeneration(UUID workflowId, Instant now) {
-        return findById(workflowId).map(workflow -> claimGeneration(workflowId, workflow.getActiveRunId(), now))
-                .orElse(0);
-    }
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Transactional
-    @Query("""
-            update AiPlanGenerationWorkflow workflow
-            set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
-                workflow.generationRoundAttemptCount = 0,
-                workflow.lastTechnicalError = null,
-                workflow.lastAiOperation = null,
-                workflow.lastErrorRetryable = null,
-                workflow.updatedAt = :now
-            where workflow.id = :workflowId
-              and workflow.lastErrorRetryable = true
-              and workflow.lastAiOperation = de.melinadanhier.projectflow.ai.model.AiOperation.PLAN_GENERATION
-              and workflow.status in (
-                de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_FAILED,
-                de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
-              and exists (
-                select membership.id
-                from ProjectMember membership
-                where membership.project = workflow.project
-                  and membership.user.id = :userId
-                  and membership.active = true
-                  and membership.role = de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole.OWNER)
-            """)
-    int retryGeneration(
-            @Param("workflowId") UUID workflowId,
-            @Param("userId") UUID userId,
-            @Param("now") Instant now
-    );
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Transactional
-    @Query("""
-            update AiPlanGenerationWorkflow workflow
-            set workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
-                workflow.generationRoundAttemptCount = 0,
-                workflow.lastTechnicalError = null,
-                workflow.lastAiOperation = null,
-                workflow.lastErrorRetryable = null,
-                workflow.updatedAt = :now
-            where workflow.id = :workflowId
-              and workflow.status = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
-              and workflow.lastTechnicalError = de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR
-              and workflow.lastAiOperation = de.melinadanhier.projectflow.ai.model.AiOperation.PLAN_GENERATION
-            """)
-    int retryGenerationAfterClientConfigurationFix(
-            @Param("workflowId") UUID workflowId,
-            @Param("now") Instant now
-    );
 
     Optional<AiPlanGenerationWorkflow> findByProjectId(UUID projectId);
 

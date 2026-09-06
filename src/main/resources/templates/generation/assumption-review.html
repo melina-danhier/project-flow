@@ -16,35 +16,35 @@
             </div>
             <h1 style="margin: 0;">Kritische Annahmen prüfen</h1>
             <p class="pf-page-header__subtitle">
-                Die KI hat während der Planung bestimmte Annahmen getroffen. Bitte bestätige oder korrigiere sie, um deinen Planentwurf anzuzeigen.
+                Bitte prüfe alle Annahmen. Der erzeugte Entwurf wird erst danach angezeigt.
             </p>
         </div>
     </div>
 
     <div style="max-width: 780px;">
-        <div th:if="${review.errorMessage}" th:text="${review.errorMessage}" role="alert" class="pf-alert pf-alert--error"></div>
+        <p th:if="${review.errorMessage}" th:text="${review.errorMessage}" role="alert" class="error-message pf-alert pf-alert--error"></p>
 
         <form id="assumption-review-form" th:action="@{/projects/new/ai/assumptions/{id}(id=${review.workflowId})}" method="post">
-            <input type="hidden" name="assumptionCount" th:value="${review.assumptions.size()}">
-            
             <div class="pf-stack">
                 <fieldset class="assumption-card" th:each="assumption : ${review.assumptions}"
                           th:attr="data-correction-required=${assumption.correctionRequiredIfRejected}">
                     <legend style="font-size: 1rem; color: var(--pf-text-main);" th:text="${assumption.statement}">Annahme</legend>
+                    <input type="hidden" th:name="${'decisions[' + assumption.index + '].assumptionIndex'}"
+                           th:value="${assumption.index}">
                     <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
                         <label>
-                            <input type="radio" th:name="${'decision.' + assumption.index}" value="CONFIRMED" required
+                            <input type="radio" th:name="${'decisions[' + assumption.index + '].decision'}" value="CONFIRMED" required
                                    th:checked="${assumption.decision?.name() == 'CONFIRMED'}"> <span>Trifft zu</span>
                         </label>
                         <label>
-                            <input type="radio" th:name="${'decision.' + assumption.index}" value="REJECTED" required
+                            <input type="radio" th:name="${'decisions[' + assumption.index + '].decision'}" value="REJECTED" required
                                    th:checked="${assumption.decision?.name() == 'REJECTED'}"> <span>Trifft nicht zu</span>
                         </label>
                     </div>
                     <div class="assumption-correction" th:if="${assumption.correctionRequiredIfRejected}" style="margin-top: 0.85rem;">
                         <label th:for="${'correction-' + assumption.index}" class="pf-label">Was trifft stattdessen zu?</label>
                         <textarea th:id="${'correction-' + assumption.index}" class="pf-textarea"
-                                  th:name="${'correction.' + assumption.index}" maxlength="2000"
+                                  th:name="${'decisions[' + assumption.index + '].correction'}" maxlength="2000"
                                   th:text="${assumption.correction}"></textarea>
                     </div>
                 </fieldset>

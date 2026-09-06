@@ -1,7 +1,13 @@
 package de.melinadanhier.projectflow.ai;
 
 import de.melinadanhier.projectflow.generation.controller.AiWorkflowController;
-import de.melinadanhier.projectflow.generation.dto.*;
+import de.melinadanhier.projectflow.generation.dto.AssumptionDecision;
+import de.melinadanhier.projectflow.generation.dto.AssumptionDecisionRequest;
+import de.melinadanhier.projectflow.generation.dto.AssumptionReviewDto;
+import de.melinadanhier.projectflow.generation.dto.AssumptionReviewRequest;
+import de.melinadanhier.projectflow.generation.dto.CriticalAssumptionReviewDto;
+import de.melinadanhier.projectflow.generation.dto.response.AiWorkflowStatusDto;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.service.assumption.CriticalAssumptionReviewService;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
@@ -69,21 +75,69 @@ class CriticalAssumptionReviewControllerTest {
 
         mvc.perform(post("/projects/new/ai/assumptions/{id}", workflowId)
                         .with(user(owner)).with(csrf())
-                        .param("assumptionCount", "2")
-                        .param("decision.0", "CONFIRMED")
-                        .param("decision.1", "REJECTED")
-                        .param("correction.1", "Vier Stunden."))
+                        .param("decisions[0].assumptionIndex", "0")
+                        .param("decisions[0].decision", "CONFIRMED")
+                        .param("decisions[1].assumptionIndex", "1")
+                        .param("decisions[1].decision", "REJECTED")
+                        .param("decisions[1].correction", "Vier Stunden."))
                 .andExpect(redirectedUrl("/projects/new/ai/status/" + workflowId));
         verify(reviews).submit(workflowId, owner.userId(), expected);
     }
 
     @Test
-    void rejectsManipulatedAssumptionCountBeforeBuildingTheRequest() throws Exception {
+    void rejectsManipulatedAssumptionIndexBeforeBuildingTheRequest() throws Exception {
         mvc.perform(post("/projects/new/ai/assumptions/{id}", workflowId)
                         .with(user(owner)).with(csrf())
-                        .param("assumptionCount", "51"))
+                        .param("decisions[0].assumptionIndex", "50")
+                        .param("decisions[0].decision", "CONFIRMED"))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(reviews);
+    }
+
+    @Test
+    void rejectsInvalidDecisionBeforeBuildingTheRequest() throws Exception {
+        mvc.perform(post("/projects/new/ai/assumptions/{id}", workflowId)
+                        .with(user(owner)).with(csrf())
+                        .param("decisions[0].assumptionIndex", "0")
+                        .param("decisions[0].decision", "MANIPULATED"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(reviews);
+    }
+
+    @Test
+    void routesFailedRegenerationWithSavedReviewBackToAssumptions() throws Exception {
+        when(queries.getOwnedStatus(workflowId, owner.userId())).thenReturn(workflowStatus(
+                AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE, true));
+
+        mvc.perform(get("/projects/new/ai/status/{id}", workflowId).with(user(owner)))
+                .andExpect(redirectedUrl("/projects/new/ai/assumptions/" + workflowId));
+    }
+
+    @Test
+    void keepsPreCheckRoutingPrecedenceOverSavedAssumptionReview() throws Exception {
+        when(queries.getOwnedStatus(workflowId, owner.userId())).thenReturn(workflowStatus(
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW, true));
+
+        mvc.perform(get("/projects/new/ai/status/{id}", workflowId).with(user(owner)))
+                .andExpect(redirectedUrl("/projects/new/ai/problems/" + workflowId));
+    }
+
+    @Test
+    void retryDelegatesOwnershipAndStateValidationToGenerationService() throws Exception {
+        mvc.perform(post("/projects/new/ai/status/{id}/retry", workflowId)
+                        .with(user(owner)).with(csrf()))
+                .andExpect(redirectedUrl("/projects/new/ai/status/" + workflowId));
+
+        verify(generations).retry(workflowId, owner.userId());
+        verifyNoInteractions(queries);
+    }
+
+    private AiWorkflowStatusDto workflowStatus(AiPlanGenerationWorkflowStatus status,
+                                               boolean pendingAssumptionReview) {
+        return new AiWorkflowStatusDto(
+                workflowId, projectId, status, 0, 0, 0,
+                null, null, null, pendingAssumptionReview);
     }
 }

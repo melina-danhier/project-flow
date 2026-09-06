@@ -28,7 +28,9 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -62,7 +64,9 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     private String snapshotVersion;
 
     @NotNull
-    @Column(name = "completion_token", nullable = false)
+    @Column(name = "completion_token", nullable = false, updatable = false)
+    // Original token stored with the workflow for audit/backward compatibility.
+    // Idempotent lookup deliberately uses AiWorkflowCompletionToken instead.
     private UUID completionToken;
 
     @NotNull
@@ -197,40 +201,43 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
                 && status != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
             throw new IllegalStateException("Die Generierung kann in diesem Zustand nicht gestartet werden.");
         }
+        if (status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
+                && lastAiOperation != AiOperation.PLAN_GENERATION) {
+            throw new IllegalStateException(
+                    "Ein technischer Fehler der Vorprüfung darf nicht als Generierungsfehler erneut gestartet werden.");
+        }
         if (preCheckResult == null && !draftRegeneration) {
             throw new IllegalStateException("Vor der Generierung ist eine erfolgreiche Vorprüfung erforderlich.");
         }
         generationRoundAttemptCount = 0;
         clearError();
-        activeRunId = runId;
-        runExpiresAt = expiresAt;
+        setActiveRun(runId, expiresAt);
         status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
         return runId;
     }
 
-    public void activatePendingGenerationRun(UUID runId, Instant expiresAt) {
-        requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_PENDING);
-        activeRunId = java.util.Objects.requireNonNull(runId);
-        runExpiresAt = java.util.Objects.requireNonNull(expiresAt);
-    }
-
-    public boolean cancel(UUID runId, AiPlanGenerationWorkflowStatus running,
-                          AiPlanGenerationWorkflowStatus cancelled) {
-        if (status != running || !java.util.Objects.equals(activeRunId, runId)) {
+    private boolean cancel(UUID runId, AiPlanGenerationWorkflowStatus cancelled,
+                           AiPlanGenerationWorkflowStatus... cancellableStatuses) {
+        if (!Objects.equals(activeRunId, runId)
+                || Arrays.stream(cancellableStatuses).noneMatch(candidate -> status == candidate)) {
             return false;
         }
         status = cancelled;
+        clearActiveRun();
         return true;
     }
 
     public boolean cancelPreCheckRun(UUID runId) {
-        return cancel(runId, AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING,
-                AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED);
+        return cancel(runId, AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED,
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING,
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING,
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING);
     }
 
     public boolean cancelGenerationRun(UUID runId) {
-        return cancel(runId, AiPlanGenerationWorkflowStatus.GENERATION_RUNNING,
-                AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED);
+        return cancel(runId, AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED,
+                AiPlanGenerationWorkflowStatus.GENERATION_PENDING,
+                AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
     }
 
     public boolean expire(UUID runId, Instant now, AiTechnicalError error) {
@@ -239,12 +246,13 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
                 || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING;
         boolean generation = status == AiPlanGenerationWorkflowStatus.GENERATION_PENDING
                 || status == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING;
-        if ((!preCheck && !generation) || !java.util.Objects.equals(activeRunId, runId)
+        if ((!preCheck && !generation) || !Objects.equals(activeRunId, runId)
                 || runExpiresAt == null || now.isBefore(runExpiresAt)) {
             return false;
         }
         status = AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE;
         recordError(error);
+        clearActiveRun();
         return true;
     }
 
@@ -273,6 +281,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         status = needsReview
                 ? AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW
                 : AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED;
+        clearActiveRun();
     }
 
     public void recordPreCheckFailure(AiTechnicalError error) {
@@ -280,6 +289,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         requireOperation(error, AiOperation.PRE_CHECK);
         status = AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE;
         recordError(error);
+        clearActiveRun();
     }
 
     public void approvePreCheck() {
@@ -321,12 +331,14 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         status = assumptionsNeedReview
                 ? AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING
                 : AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
+        clearActiveRun();
     }
 
     public void confirmAssumptions() {
         requireStatus(AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING);
         pendingAssumptionReview = null;
         status = AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
+        clearActiveRun();
     }
 
     public void confirmAssumptionsAfterFailedRegeneration() {
@@ -334,32 +346,46 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         pendingAssumptionReview = null;
         clearError();
         status = AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
+        clearActiveRun();
     }
 
-    public void prepareAssumptionRegeneration(String serializedContext, String serializedReview) {
+    public void prepareAssumptionRegeneration(String serializedContext, String serializedReview,
+                                               UUID runId, Instant expiresAt) {
         requireStatus(AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING);
-        generationAssumptionContext = serializedContext;
-        pendingAssumptionReview = serializedReview;
-        generationRoundAttemptCount = 0;
-        clearError();
-        status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
+        prepareAssumptionRegenerationRun(serializedContext, serializedReview, runId, expiresAt);
     }
 
-    public void prepareFailedAssumptionRegeneration(String serializedContext, String serializedReview) {
+    public void prepareFailedAssumptionRegeneration(String serializedContext, String serializedReview,
+                                                     UUID runId, Instant expiresAt) {
         requireFailedAssumptionRegeneration();
+        prepareAssumptionRegenerationRun(serializedContext, serializedReview, runId, expiresAt);
+    }
+
+    private void prepareAssumptionRegenerationRun(String serializedContext, String serializedReview,
+                                                   UUID runId, Instant expiresAt) {
         generationAssumptionContext = serializedContext;
         pendingAssumptionReview = serializedReview;
         generationRoundAttemptCount = 0;
         clearError();
+        setActiveRun(runId, expiresAt);
         status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
     }
 
     private void requireFailedAssumptionRegeneration() {
         if ((status != AiPlanGenerationWorkflowStatus.GENERATION_FAILED
                 && status != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
-                || pendingAssumptionReview == null) {
+                || pendingAssumptionReview == null
+                || lastAiOperation != AiOperation.PLAN_GENERATION) {
             throw new IllegalStateException("Es liegt keine fehlgeschlagene Annahmen-Neugenerierung vor.");
         }
+    }
+
+    /** A saved review exists only while its requested regeneration has failed. */
+    public boolean hasFailedAssumptionRegeneration() {
+        return pendingAssumptionReview != null
+                && lastAiOperation == AiOperation.PLAN_GENERATION
+                && (status == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
+                || status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
     }
 
     public void recordGenerationFailure(AiTechnicalError error) {
@@ -367,6 +393,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         requireOperation(error, AiOperation.PLAN_GENERATION);
         status = AiPlanGenerationWorkflowStatus.GENERATION_FAILED;
         recordError(error);
+        clearActiveRun();
     }
 
     public void recordTechnicalFailure(AiTechnicalError error) {
@@ -374,16 +401,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         requireOperation(error, AiOperation.PLAN_GENERATION);
         status = AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE;
         recordError(error);
-    }
-
-    public void prepareManualGenerationRetry() {
-        if (status != AiPlanGenerationWorkflowStatus.GENERATION_FAILED
-                && status != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE) {
-            throw new IllegalStateException("Der Workflow kann in diesem Zustand nicht erneut gestartet werden.");
-        }
-        generationRoundAttemptCount = 0;
-        clearError();
-        status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
+        clearActiveRun();
     }
 
     public void prepareDraftRegeneration() {
@@ -391,6 +409,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         generationRoundAttemptCount = 0;
         clearError();
         status = AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED;
+        clearActiveRun();
     }
 
     private void clearError() {
@@ -403,6 +422,16 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         lastTechnicalError = error.errorCode();
         lastAiOperation = error.operation();
         lastErrorRetryable = error.isRetryable();
+    }
+
+    private void setActiveRun(UUID runId, Instant expiresAt) {
+        activeRunId = Objects.requireNonNull(runId, "runId");
+        runExpiresAt = Objects.requireNonNull(expiresAt, "expiresAt");
+    }
+
+    private void clearActiveRun() {
+        activeRunId = null;
+        runExpiresAt = null;
     }
 
     private void requireOperation(AiTechnicalError error, AiOperation expected) {

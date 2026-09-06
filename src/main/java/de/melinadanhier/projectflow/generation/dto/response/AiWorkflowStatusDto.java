@@ -16,7 +16,7 @@ public record AiWorkflowStatusDto(
         AiTechnicalErrorCode errorCode,
         AiOperation errorOperation,
         Boolean errorRetryable,
-        boolean pendingAssumptionReview
+        boolean failedAssumptionRegeneration
 ) {
     public String errorMessage() {
         return errorCode == null ? null : errorCode.getUserMessage();
@@ -38,7 +38,10 @@ public record AiWorkflowStatusDto(
     }
 
     public boolean canCancel() {
-        return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
+        return status == AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING
+                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING
+                || status == AiPlanGenerationWorkflowStatus.PRE_CHECK_RETRY_PENDING
+                || status == AiPlanGenerationWorkflowStatus.GENERATION_PENDING
                 || status == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING;
     }
 

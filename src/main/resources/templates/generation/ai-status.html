@@ -9,6 +9,8 @@
 
 <main>
     <div class="pf-card" style="max-width: 680px; margin: 2rem auto; text-align: center; padding: 3rem 2rem;">
+        <p th:if="${successMessage}" th:text="${successMessage}" role="status" class="pf-alert pf-alert--success"></p>
+
         <!-- Processing State Animation -->
         <div th:if="${workflow.processing}" style="margin-bottom: 1.5rem;">
             <div class="site-header__avatar" style="width: 64px; height: 64px; margin: 0 auto; background: var(--pf-purple-bg); color: var(--pf-purple);">
@@ -28,13 +30,13 @@
         <h2 th:if="${workflow.status.name() == 'TECHNICAL_FAILURE' and workflow.errorOperation == null}" style="color: var(--pf-danger); font-size: 1.25rem;">Der KI-Vorgang konnte nicht abgeschlossen werden</h2>
 
         <p th:if="${workflow.processing and workflow.preCheckRun}" style="color: var(--pf-text-muted); max-width: 480px; margin: 0 auto 1.5rem;">
-            Die KI prüft deine bestätigten Angaben auf Plausibilität. Diese Seite aktualisiert sich automatisch alle 3 Sekunden.
+            Die KI prüft deine bestätigten Projektangaben. Diese Seite wird automatisch aktualisiert.
         </p>
         <p th:if="${workflow.processing and !workflow.preCheckRun}" style="color: var(--pf-text-muted); max-width: 480px; margin: 0 auto 1.5rem;">
-            Die KI strukturiert nun Phasen, Meilensteine und Aufgaben. Diese Seite aktualisiert sich automatisch alle 3 Sekunden.
+            Die KI erstellt den Planentwurf auf Grundlage der bestätigten Vorprüfung. Diese Seite wird automatisch aktualisiert.
         </p>
         <p th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}" style="color: var(--pf-text-secondary); max-width: 480px; margin: 0 auto 1.75rem;">
-            Die Generierung ist abgeschlossen. Der Entwurf bleibt getrennt vom aktiven Projekt und kann jetzt überprüft werden.
+            Die Generierung ist abgeschlossen. Der Entwurf bleibt getrennt vom aktiven Projekt und kann im nächsten Schritt überprüft werden.
         </p>
 
         <div th:if="${workflow.errorMessage}" class="pf-alert pf-alert--error" th:text="${workflow.errorMessage}" role="alert"></div>

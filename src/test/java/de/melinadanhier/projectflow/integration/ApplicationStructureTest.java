@@ -13,6 +13,7 @@ class ApplicationStructureTest {
 
     private static final Path PROJECT_ROOT = Path.of(System.getProperty("user.dir"));
     private static final Path JAVA_ROOT = PROJECT_ROOT.resolve("src/main/java/de/melinadanhier/projectflow");
+    private static final Path TEMPLATE_ROOT = PROJECT_ROOT.resolve("src/main/resources/templates");
 
     @Test
     void featureAreasDoNotDependOnWizardInternals() throws IOException {
@@ -22,6 +23,20 @@ class ApplicationStructureTest {
                         .allSatisfy(path -> assertThat(read(path))
                                 .doesNotContain("de.melinadanhier.projectflow.wizard"));
             }
+        }
+    }
+
+    @Test
+    void aiWorkflowRedirectTargetsRenderSuccessMessages() {
+        for (String template : Set.of(
+                "generation/ai-summary.html",
+                "generation/ai-status.html",
+                "generation/ai-problems.html"
+        )) {
+            assertThat(read(TEMPLATE_ROOT.resolve(template)))
+                    .contains("th:if=\"${successMessage}\"")
+                    .contains("th:text=\"${successMessage}\"")
+                    .contains("role=\"status\"");
         }
     }
 

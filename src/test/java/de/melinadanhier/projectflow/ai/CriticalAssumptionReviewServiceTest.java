@@ -61,6 +61,18 @@ class CriticalAssumptionReviewServiceTest {
     }
 
     @Test
+    void confirmationAfterFailedRegenerationUsesPreservedReviewPath() {
+        when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.GENERATION_FAILED);
+        when(workflow.hasFailedAssumptionRegeneration()).thenReturn(true);
+
+        assertThat(service.submit(workflowId, userId, request(confirmed(0), confirmed(1)))).isFalse();
+
+        verify(workflow).confirmAssumptionsAfterFailedRegeneration();
+        verify(workflow, never()).confirmAssumptions();
+        verifyNoInteractions(events);
+    }
+
+    @Test
     void rejectionStartsRegenerationWithConfirmedFactsAndOnlyRealCorrection() {
         var request = request(confirmed(0), rejected(1, "Vier Stunden pro Woche."));
         when(codec.readAssumptionContext(null)).thenReturn(GenerationAssumptionContext.empty());
@@ -74,8 +86,8 @@ class CriticalAssumptionReviewServiceTest {
         assertThat(context.getValue().confirmedAssumptions()).containsExactly("Cloud-Dienste sind erlaubt.");
         assertThat(context.getValue().rejectedAssumptions()).containsExactly(
                 new RejectedCriticalAssumption("Zehn Stunden stehen bereit.", "Vier Stunden pro Woche."));
-        verify(workflow).prepareAssumptionRegeneration("context", "review");
-        verify(workflow).activatePendingGenerationRun(any(UUID.class), any(java.time.Instant.class));
+        verify(workflow).prepareAssumptionRegeneration(
+                eq("context"), eq("review"), any(UUID.class), any(java.time.Instant.class));
         verify(events).publishEvent(any(AiGenerationRequestedEvent.class));
     }
 
@@ -90,7 +102,8 @@ class CriticalAssumptionReviewServiceTest {
                 request(rejected(0, "Kommentar"), confirmed(1))))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("keine Korrektur");
-        verify(workflow, never()).prepareAssumptionRegeneration(anyString(), anyString());
+        verify(workflow, never()).prepareAssumptionRegeneration(
+                anyString(), anyString(), any(UUID.class), any(java.time.Instant.class));
     }
 
     @Test
