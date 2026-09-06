@@ -18,7 +18,7 @@
         </div>
     </div>
 
-    <!-- Flash message if present -->
+    <p th:if="${successMessage}" th:text="${successMessage}" role="status" class="pf-alert pf-alert--success"></p>
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
     <div class="pf-stack" style="max-width: 820px;">
