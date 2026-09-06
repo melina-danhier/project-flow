@@ -7,6 +7,7 @@
 <th:block th:replace="~{fragments/layout :: site-header}" />
 
 <main>
+    <p th:if="${successMessage}" th:text="${successMessage}" role="status" class="pf-alert pf-alert--success"></p>
     <div class="pf-page-header">
         <div class="pf-page-header__left">
             <div class="pf-cluster" style="margin-bottom: 0.25rem;">

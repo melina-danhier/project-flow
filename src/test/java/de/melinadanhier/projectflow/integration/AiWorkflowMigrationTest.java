@@ -14,6 +14,59 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AiWorkflowMigrationTest {
 
     @Test
+    void clearsTerminalRunsAndEnforcesExactRunStateInvariant() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:terminal-ai-runs;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            UUID terminalId = UUID.randomUUID();
+            UUID pendingId = UUID.randomUUID();
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        CREATE TABLE ai_plan_generation_workflows (
+                            id UUID PRIMARY KEY,
+                            status VARCHAR(40) NOT NULL,
+                            active_run_id UUID,
+                            run_expires_at TIMESTAMP(6) WITH TIME ZONE,
+                            CONSTRAINT ck_ai_workflows_active_run CHECK (
+                                status NOT IN ('PRE_CHECK_PENDING', 'PRE_CHECK_RUNNING', 'PRE_CHECK_RETRY_PENDING',
+                                               'GENERATION_PENDING', 'GENERATION_RUNNING')
+                                OR (active_run_id IS NOT NULL AND run_expires_at IS NOT NULL)))
+                        """);
+                statement.execute("""
+                        INSERT INTO ai_plan_generation_workflows
+                            (id, status, active_run_id, run_expires_at)
+                        VALUES ('%s', 'GENERATION_COMPLETED', RANDOM_UUID(), CURRENT_TIMESTAMP),
+                               ('%s', 'GENERATION_PENDING', RANDOM_UUID(), CURRENT_TIMESTAMP)
+                        """.formatted(terminalId, pendingId));
+            }
+
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V27__clear_terminal_ai_execution_runs.sql"));
+
+            try (var statement = connection.createStatement();
+                 var terminal = statement.executeQuery("""
+                         SELECT active_run_id, run_expires_at
+                         FROM ai_plan_generation_workflows WHERE id = '%s'
+                         """.formatted(terminalId))) {
+                assertThat(terminal.next()).isTrue();
+                assertThat(terminal.getObject("active_run_id")).isNull();
+                assertThat(terminal.getObject("run_expires_at")).isNull();
+            }
+            try (var statement = connection.createStatement()) {
+                assertThatThrownBy(() -> statement.execute("""
+                        UPDATE ai_plan_generation_workflows
+                        SET active_run_id = RANDOM_UUID(), run_expires_at = CURRENT_TIMESTAMP
+                        WHERE id = '%s'
+                        """.formatted(terminalId))).isInstanceOf(SQLException.class);
+                assertThatThrownBy(() -> statement.execute("""
+                        UPDATE ai_plan_generation_workflows
+                        SET active_run_id = NULL, run_expires_at = NULL
+                        WHERE id = '%s'
+                        """.formatted(pendingId))).isInstanceOf(SQLException.class);
+            }
+        }
+    }
+
+    @Test
     void resetsPreviouslyAssumedVersionsAndAllowsRecordingActualCallVersions() throws Exception {
         try (var connection = DriverManager.getConnection(
                 "jdbc:h2:mem:actual-ai-versions;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {

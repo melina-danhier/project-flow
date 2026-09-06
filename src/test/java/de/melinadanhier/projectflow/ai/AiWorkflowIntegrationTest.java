@@ -9,6 +9,8 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
+import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
@@ -214,7 +216,8 @@ class AiWorkflowIntegrationTest {
                 .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(workflowRepository.findById(completion.workflowId())).get()
                 .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
-        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
+        assertThatThrownBy(() -> generationWorkflowService.retry(completion.workflowId(), owner.getId()))
+                .isInstanceOf(ConflictException.class);
         assertThat(projectRepository.findById(completion.projectId())).get().satisfies(project -> {
             assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
             assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
@@ -369,7 +372,8 @@ class AiWorkflowIntegrationTest {
         assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(workflow.getLastErrorRetryable()).isFalse();
-        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
+        assertThatThrownBy(() -> generationWorkflowService.retry(completion.workflowId(), owner.getId()))
+                .isInstanceOf(ConflictException.class);
 
         org.mockito.Mockito.doReturn(generatedPlan()).when(aiClient).generatePlan(any());
         assertThat(generationWorkflowService.retryAfterAdministrativeFix(completion.workflowId())).isTrue();
@@ -405,7 +409,8 @@ class AiWorkflowIntegrationTest {
         assertThat(failed.getLastAiOperation()).isEqualTo(AiOperation.PLAN_GENERATION);
         assertThat(failed.getLastErrorRetryable()).isTrue();
         assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
-        assertThat(generationWorkflowService.retry(completion.workflowId(), outsider.getId())).isFalse();
+        assertThatThrownBy(() -> generationWorkflowService.retry(completion.workflowId(), outsider.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
 
         CountDownLatch generationStarted = new CountDownLatch(1);
         CountDownLatch releaseGeneration = new CountDownLatch(1);
@@ -417,10 +422,11 @@ class AiWorkflowIntegrationTest {
             return generatedPlan();
         }).when(aiClient).generatePlan(any());
 
-        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isTrue();
+        generationWorkflowService.retry(completion.workflowId(), owner.getId());
         assertThat(generationStarted.await(2, TimeUnit.SECONDS)).isTrue();
         assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
-        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
+        assertThatThrownBy(() -> generationWorkflowService.retry(completion.workflowId(), owner.getId()))
+                .isInstanceOf(ConflictException.class);
         releaseGeneration.countDown();
         await(() -> workflowRepository.findById(completion.workflowId())
                 .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED)
@@ -433,7 +439,8 @@ class AiWorkflowIntegrationTest {
         assertThat(completed.getLastErrorRetryable()).isNull();
         assertThat(draftRepository.findByProjectId(completion.projectId())).get()
                 .extracting("status").isEqualTo(DraftPlanStatus.READY_FOR_REVIEW);
-        assertThat(generationWorkflowService.retry(completion.workflowId(), owner.getId())).isFalse();
+        assertThatThrownBy(() -> generationWorkflowService.retry(completion.workflowId(), owner.getId()))
+                .isInstanceOf(ConflictException.class);
     }
 
     private AiWizardSnapshot snapshot() {
