@@ -18,9 +18,7 @@ public final class AiProjectQuestionCatalog {
     private static final Map<ProjectSubCategory, List<AiProjectQuestion>> BY_SUBCATEGORY = buildCatalog();
     private static final List<AiProjectQuestion> GENERIC = questions(
             q("desiredOutcome", "Konkretes Ziel oder gewünschtes Ergebnis"),
-            q("currentSituation", "Aktueller Ausgangsstand"),
-            q("relevantConditions", "Relevante Rahmenbedingungen"),
-            q("specialConstraints", "Besondere Einschränkungen")
+            q("relevantConditions", "Relevante Rahmenbedingungen oder Einschränkungen")
     );
 
     private AiProjectQuestionCatalog() { }
@@ -85,24 +83,33 @@ public final class AiProjectQuestionCatalog {
         put(map, ProjectSubCategory.SOFTWARE_PROJECT,
                 "goalAndScope", "Ziel und Funktionsumfang", "requirements", "Vorhandene Anforderungen",
                 "technologies", "Festgelegte Technologien", "currentState", "Aktueller Ausgangsstand",
-                "technicalConstraints", "Technische Einschränkungen");
+                "technicalExperience", "Technischer Kenntnisstand", "technicalConstraints", "Technische Einschränkungen");
         put(map, ProjectSubCategory.WEB_OR_MOBILE_APP,
                 "usageScenario", "Zielgruppe oder Nutzungsszenario", "coreFeatures", "Zentrale Funktionen",
                 "technicalRequirements", "Technische Vorgaben", "applicationArchitecture", "Frontend, Backend und Datenhaltung",
-                "externalInterfaces", "Externe Schnittstellen");
+                "externalInterfaces", "Externe Schnittstellen", "technicalExperience", "Technischer Kenntnisstand");
         put(map, ProjectSubCategory.EXTEND_EXISTING_APPLICATION,
                 "currentState", "Ausgangszustand", "desiredExtension", "Gewünschte Erweiterung",
                 "affectedComponents", "Betroffene Komponenten", "technicalDependencies", "Technische Abhängigkeiten",
-                "technicalConstraints", "Besondere Einschränkungen");
+                "technicalExperience", "Technischer Kenntnisstand", "technicalConstraints", "Besondere Einschränkungen");
         put(map, ProjectSubCategory.WEBSITE,
                 "goalAndAudience", "Ziel und Zielgruppe", "pagesAndContent", "Gewünschte Inhalte oder Seiten",
-                "currentState", "Vorhandener Ausgangszustand", "designAndTechnicalRequirements", "Technische oder gestalterische Vorgaben");
+                "currentState", "Vorhandener Ausgangszustand", "designAndTechnicalRequirements", "Technische oder gestalterische Vorgaben",
+                "technicalExperience", "Technischer Kenntnisstand");
         put(map, ProjectSubCategory.DATABASE_PROJECT,
                 "purposeAndRequirements", "Zweck und Anforderungen", "dataEntities", "Bekannte Daten oder Entitäten",
-                "technicalRequirements", "Technische Vorgaben", "currentState", "Aktueller Ausgangsstand");
+                "technicalRequirements", "Technische Vorgaben", "currentState", "Aktueller Ausgangsstand",
+                "technicalExperience", "Technischer Kenntnisstand");
         put(map, ProjectSubCategory.HARDWARE_OR_RASPBERRY_PI_PROJECT,
                 "useCase", "Ziel oder Anwendungsfall", "requiredComponents", "Vorhandene oder benötigte Komponenten",
-                "availableHardware", "Vorhandene Hardware", "technicalConstraints", "Technische Einschränkungen");
+                "availableHardware", "Vorhandene Hardware", "technicalExperience", "Technischer Kenntnisstand",
+                "technicalConstraints", "Technische Einschränkungen");
+        put(map, ProjectSubCategory.OTHER_SOFTWARE_AND_TECHNOLOGY,
+                "desiredOutcome", "Konkretes Ziel oder gewünschtes Ergebnis",
+                "currentSituation", "Aktueller Ausgangsstand",
+                "technicalExperience", "Technischer Kenntnisstand",
+                "relevantConditions", "Relevante Rahmenbedingungen",
+                "specialConstraints", "Besondere Einschränkungen");
 
         put(map, ProjectSubCategory.PRIVATE_CELEBRATION,
                 "occasionOutcome", "Anlass oder gewünschtes Ergebnis", "guestCount", "Gästezahl",

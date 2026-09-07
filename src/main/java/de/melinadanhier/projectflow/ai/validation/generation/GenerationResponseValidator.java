@@ -10,8 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashSet;
-import java.util.Locale;
 
 import static de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationCode.*;
 
@@ -35,30 +33,8 @@ public class GenerationResponseValidator {
             return new GenerationValidationResult(issues);
         }
         validateBeanConstraints(response, issues);
-        validateCriticalAssumptions(response, issues);
         new GenerationStructureValidator(snapshot, issues).validate(response);
         return new GenerationValidationResult(issues);
-    }
-
-    private void validateCriticalAssumptions(GeneratedPlanResponse response,
-                                             List<GenerationValidationIssue> issues) {
-        if (response.criticalAssumptions() == null) {
-            issues.add(new GenerationValidationIssue(CRITICAL_ASSUMPTIONS_MISSING, "criticalAssumptions"));
-            return;
-        }
-        var normalized = new HashSet<String>();
-        for (int index = 0; index < response.criticalAssumptions().size(); index++) {
-            var assumption = response.criticalAssumptions().get(index);
-            String path = "criticalAssumptions[" + index + "].statement";
-            if (assumption == null || assumption.statement() == null || assumption.statement().isBlank()) {
-                issues.add(new GenerationValidationIssue(CRITICAL_ASSUMPTION_INVALID, path));
-                continue;
-            }
-            String key = assumption.statement().strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
-            if (!normalized.add(key)) {
-                issues.add(new GenerationValidationIssue(CRITICAL_ASSUMPTION_DUPLICATE, path));
-            }
-        }
     }
 
     private void validateBeanConstraints(GeneratedPlanResponse response, List<GenerationValidationIssue> issues) {

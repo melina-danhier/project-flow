@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import de.melinadanhier.projectflow.ai.model.generation.RejectedCriticalAssumption;
 
 @Service
 @RequiredArgsConstructor
@@ -32,23 +31,19 @@ public class AiPlanGenerationService {
 
     public GeneratedPlanResponse generatePlan(
             AiWizardSnapshot confirmedSnapshot,
-            List<AiPreCheckProblem> acknowledgedWarnings
+            List<AiPreCheckProblem> acceptedOpenPoints
     ) {
-        return generatePlan(confirmedSnapshot, acknowledgedWarnings, 0,
-                List.of(), List.of(), () -> { });
+        return generatePlan(confirmedSnapshot, acceptedOpenPoints, 0, () -> { });
     }
 
     public GeneratedPlanResponse generatePlan(
             AiWizardSnapshot confirmedSnapshot,
-            List<AiPreCheckProblem> acknowledgedWarnings,
+            List<AiPreCheckProblem> acceptedOpenPoints,
             int alreadyUsedAttempts,
-            List<String> confirmedAssumptions,
-            List<RejectedCriticalAssumption> rejectedAssumptions,
             Runnable beforeProviderCall
     ) {
         AiGenerationRequest request = new AiGenerationRequest(
-                confirmedSnapshot, acknowledgedWarnings, List.of(), confirmedAssumptions,
-                rejectedAssumptions);
+                confirmedSnapshot, acceptedOpenPoints, List.of());
         int attempts = alreadyUsedAttempts;
         int maxAttempts = executionProperties.getMaxAttempts();
         while (true) {
@@ -75,16 +70,6 @@ public class AiPlanGenerationService {
                 waitBeforeRetry(attempts);
             }
         }
-    }
-
-    public GeneratedPlanResponse generatePlan(
-            AiWizardSnapshot confirmedSnapshot,
-            List<AiPreCheckProblem> acknowledgedWarnings,
-            int alreadyUsedAttempts,
-            Runnable beforeProviderCall
-    ) {
-        return generatePlan(confirmedSnapshot, acknowledgedWarnings, alreadyUsedAttempts,
-                List.of(), List.of(), beforeProviderCall);
     }
 
     private AiOutputValidationException invalidResponse(

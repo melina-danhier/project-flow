@@ -33,7 +33,7 @@ public class DraftMaterializationService {
      */
     @Transactional
     public boolean materialize(UUID workflowId, UUID runId, MappedDraft contents,
-                               String serializedPlan, boolean assumptionsNeedReview) {
+                               String serializedPlan) {
         UUID projectId = workflowRepository.findProjectIdById(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
         projectRepository.findForUpdate(projectId)
@@ -45,7 +45,7 @@ public class DraftMaterializationService {
                 AiPlanGenerationWorkflowStatus.GENERATION_RUNNING)) {
             return false;
         }
-        if (existingDraft.isPresent() && workflow.getPendingAssumptionReview() == null) {
+        if (existingDraft.isPresent()) {
             throw new ConflictException("Für dieses Projekt existiert bereits ein Planentwurf.");
         }
         DraftPlan draft = existingDraft.orElseGet(() -> {
@@ -60,7 +60,7 @@ public class DraftMaterializationService {
         draft.setGeneratedAt(Instant.now(clock));
         draft.setAppliedAt(null);
         draft.setStatus(DraftPlanStatus.READY_FOR_REVIEW);
-        workflow.recordGenerationCompleted(serializedPlan, assumptionsNeedReview);
+        workflow.recordGenerationCompleted(serializedPlan);
         // Cascade persists sections and elements; prerequisite links reference these same task entities.
         draftRepository.saveAndFlush(draft);
         return true;

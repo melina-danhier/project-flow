@@ -223,7 +223,7 @@ class DraftPostgresMigrationTest {
                               String category, String legacy, String expected) {}
 
     @Test
-    void allMigrationsRemoveElementAssumptionsAndAddWorkflowContext() {
+    void allMigrationsRemovePostGenerationAssumptionReview() {
         assertThat(jdbc.queryForObject("""
                 select count(*) from information_schema.columns
                 where table_schema = 'public' and table_name = 'draft_plan_elements'
@@ -233,7 +233,7 @@ class DraftPostgresMigrationTest {
                 select count(*) from information_schema.columns
                 where table_schema = 'public' and table_name = 'ai_plan_generation_workflows'
                 and column_name in ('generation_assumption_context', 'pending_assumption_review')
-                """, Integer.class)).isEqualTo(2);
+                """, Integer.class)).isZero();
         String statusConstraint = jdbc.queryForObject("""
                 select pg_get_constraintdef(oid)
                 from pg_constraint
@@ -241,7 +241,7 @@ class DraftPostgresMigrationTest {
                 """, String.class);
         assertThat(statusConstraint)
                 .contains("PRE_CHECK_COMPLETED")
-                .contains("ASSUMPTIONS_REVIEW_PENDING")
+                .doesNotContain("ASSUMPTIONS_REVIEW_PENDING")
                 .doesNotContain("DRAFT_APPLIED")
                 .doesNotContain("PRE_CHECK_PASSED")
                 .doesNotContain("PRE_CHECK_SUCCEEDED");
@@ -251,5 +251,18 @@ class DraftPostgresMigrationTest {
                 and column_name = 'applied_at'
                 """, Integer.class)).isOne();
         assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success = false", Integer.class)).isZero();
+    }
+
+    @Test
+    void allMigrationsCreateStorageForUserConfirmedOpenPointContexts() {
+        assertThat(jdbc.queryForObject("""
+                select count(*) from information_schema.tables
+                where table_schema = 'public' and table_name = 'ai_workflow_open_point_contexts'
+                """, Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("""
+                select count(*) from information_schema.columns
+                where table_schema = 'public' and table_name = 'ai_workflow_open_point_contexts'
+                and column_name in ('workflow_id', 'problem_index', 'confirmed_context')
+                """, Integer.class)).isEqualTo(3);
     }
 }

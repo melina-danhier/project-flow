@@ -45,6 +45,7 @@ public class AiClientConfiguration {
             StubAiProperties stubProperties,
             OpenAiProperties openAiProperties,
             GeminiProperties geminiProperties,
+            AiExecutionProperties executionProperties,
             ObjectProvider<OpenAIClient> openAiSdk,
             ObjectProvider<Client> geminiSdk,
             ObjectProvider<AiResponseParser> parser,
@@ -63,7 +64,7 @@ public class AiClientConfiguration {
         else if (provider.equals("gemini")) {
             return new GeminiAiClient(
                     new SdkGeminiResponsesGateway(geminiSdk.getObject().models, parser.getObject(),
-                            geminiProperties.getMaxOutputTokens()),
+                            geminiProperties.getMaxOutputTokens(), executionProperties.getGenerationTemperature()),
                     geminiProperties, preCheckPromptBuilder.getObject(), generationPromptBuilder.getObject());
         }
         else if (!provider.isEmpty()) {

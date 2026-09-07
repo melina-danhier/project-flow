@@ -85,48 +85,27 @@ class AiPlanGenerationWorkflowTest {
         assertRunCleared(preCheck.workflow());
 
         var generation = runningGeneration();
-        generation.workflow().recordGenerationCompleted("{}", false);
+        generation.workflow().recordGenerationCompleted("{}");
         assertThat(generation.workflow().getStatus()).isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
         assertRunCleared(generation.workflow());
     }
 
     @Test
-    void failedAssumptionRegenerationPreservesReviewAndCanBeConfirmed() {
-        var fixture = runningGeneration();
-        fixture.workflow().recordGenerationCompleted("{\"criticalAssumptions\":[{}]}", true);
-        assertThat(fixture.workflow().getStatus())
-                .isEqualTo(AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING);
-        assertThat(fixture.workflow().getPendingAssumptionReview()).isNull();
+    void storesCustomOpenPointContextSeparatelyAndDefaultAcceptanceReplacesIt() {
+        var fixture = workflow();
+        ReflectionTestUtils.setField(fixture.workflow(), "status",
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
 
-        UUID regenerationRun = UUID.randomUUID();
-        fixture.workflow().prepareAssumptionRegeneration(
-                "context", "review", regenerationRun, NOW.plusSeconds(600));
-        ReflectionTestUtils.setField(fixture.workflow(), "status", AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
-        fixture.workflow().recordGenerationFailure(error(AiOperation.PLAN_GENERATION));
+        fixture.workflow().confirmOpenPointContext(2, "  Eigene bestätigte Planungsgrundlage.  ");
 
-        assertThat(fixture.workflow().hasFailedAssumptionRegeneration()).isTrue();
-        assertThat(fixture.workflow().getPendingAssumptionReview()).isEqualTo("review");
-        assertRunCleared(fixture.workflow());
+        assertThat(fixture.workflow().getAcceptedOpenPointIndices()).containsExactly(2);
+        assertThat(fixture.workflow().getCustomOpenPointInterpretations())
+                .containsEntry(2, "Eigene bestätigte Planungsgrundlage.");
 
-        fixture.workflow().confirmAssumptionsAfterFailedRegeneration();
-        assertThat(fixture.workflow().getStatus()).isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
-        assertThat(fixture.workflow().getPendingAssumptionReview()).isNull();
-    }
+        fixture.workflow().acceptOpenPoint(2);
 
-    @Test
-    void successfulAssumptionRegenerationClearsPreservedReview() {
-        var fixture = runningGeneration();
-        fixture.workflow().recordGenerationCompleted("old", true);
-        fixture.workflow().prepareAssumptionRegeneration(
-                "context", "review", UUID.randomUUID(), NOW.plusSeconds(600));
-        ReflectionTestUtils.setField(fixture.workflow(), "status", AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
-
-        fixture.workflow().recordGenerationCompleted("new", false);
-
-        assertThat(fixture.workflow().getGeneratedPlan()).isEqualTo("new");
-        assertThat(fixture.workflow().getPendingAssumptionReview()).isNull();
-        assertThat(fixture.workflow().hasFailedAssumptionRegeneration()).isFalse();
-        assertRunCleared(fixture.workflow());
+        assertThat(fixture.workflow().getAcceptedOpenPointIndices()).containsExactly(2);
+        assertThat(fixture.workflow().getCustomOpenPointInterpretations()).isEmpty();
     }
 
     private Fixture workflow() {

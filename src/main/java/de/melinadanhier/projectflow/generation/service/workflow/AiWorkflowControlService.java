@@ -38,8 +38,7 @@ public class AiWorkflowControlService {
                 || workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_RUNNING) {
             return workflow.getActiveRunId();
         }
-        if (workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED
-                || workflow.getStatus() == AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING) {
+        if (workflow.getStatus() == AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
             return workflow.getActiveRunId();
         }
         Instant now = Instant.now(clock);

@@ -55,10 +55,16 @@ public class GenerationPromptBuilder {
               andernfalls AI_INFERRED.
             - Gib keinen Prüfstatus wie checked, verified oder reviewed zurück. Neue Inhalte sind
               anwendungsseitig ungeprüft.
-            - Richte die Terminierung nach dem bestätigten Zeitraum-Modus aus. Bei terminierter Planung
-              benötigt jede Aufgabe dueDate und jeder Meilenstein date; Aufgaben-startDate bleibt
-              optional. Ohne terminierte Planung dürfen alle Datumsfelder null sein. Ergänze keine
-              fehlenden Datumswerte durch bloße technische Annahmen.
+            - Startdatum, Enddatum, Dauer und verfügbare Arbeitszeit sind voneinander unabhängige Angaben.
+              Bestätigte Nutzereingaben haben Vorrang und dürfen weder überschrieben noch umgedeutet werden.
+              Konkrete Kalenderdaten dürfen nur verwendet werden, wenn sie aus confirmedWizardData oder
+              einer akzeptierten Zeitschätzung in confirmedPlanningContext plausibel ableitbar sind.
+              Ergänze keine fehlenden Datumswerte durch bloße technische Annahmen. Ohne ausreichend
+              konkrete Grundlage bleiben Aufgaben-startDate, Aufgaben-dueDate und Meilenstein-date null.
+            - Verwende in Datumsfeldern ausschließlich konkrete Kalenderdaten im vorgesehenen ISO-Format
+              oder null. Relative Werte wie „Woche 1“, „Tag 5“ oder „drei Tage nach Projektstart“ sind
+              dort verboten. Sections dürfen bei fachlichem Nutzen zeitlich benannte Titel wie
+              „Woche 1 – Grundlagen“ tragen; erzwinge solche Wochenphasen nicht für jedes Projekt.
             - Meilensteine sind ausschließlich wichtige erreichte Zustände, Ergebnisse oder Ereignisse,
               die einen relevanten Fortschritt im Projekt markieren. Formuliere sie als eingetretenen
               Zustand oder erreichtes Ergebnis, nicht als auszuführende Tätigkeit. Tätigkeiten gehören
@@ -67,30 +73,40 @@ public class GenerationPromptBuilder {
               erforderlich und aus den bestätigten Angaben ableitbar sind. Prüfe vor der Ausgabe den
               gesamten Entwurf auf diese inhaltliche Vollständigkeit und ergänze fehlende Sections,
               Aufgaben oder Meilensteine.
+            - Decke jedes ausdrücklich bestätigte Endergebnis durch mindestens eine konkrete Aufgabe ab,
+              durch die dieses Ergebnis tatsächlich hergestellt, durchgeführt oder fertiggestellt wird.
+              Eine reine Prüfung, Abstimmung oder ein Meilenstein ersetzt diese Umsetzungsaufgabe nicht.
             - Bleibe eng beim ausdrücklich bestätigten Projektziel. Ergänze keine neuen Teilziele,
               Verbesserungen oder optionalen Vorgehensweisen als feste Aufgaben. Insbesondere dürfen
               Verwertung, Weitergabe, Reparatur, Fotodokumentation oder zusätzliche Anschaffungen nur
               als Aufgabe erscheinen, wenn sie bestätigt oder zur Zielerreichung zwingend erforderlich
               sind. Ein lediglich denkbarer oder üblicher Weg ist nicht automatisch erforderlich.
+              Bewahre sprachliche Einschränkungen und ihren Bezugszeitraum: Verallgemeinere Angaben
+              wie „aktuell“, „vorerst“, „bis“ oder „während“ nicht zu dauerhaften Voraussetzungen.
             - Erfinde keine konkreten Entscheidungen, Ressourcen, Mengen, Personen, Präferenzen oder
               sonstigen Nutzerinformationen. Wenn eine fehlende Information für die spätere Umsetzung
               geklärt werden muss, lasse den betroffenen optionalen Wert null oder plane eine angemessen
               formulierte Aufgabe zur Klärung bzw. Entscheidung ein. Behaupte kein erfundenes Ergebnis.
-            - Berücksichtige bestätigte Pre-Check-Warnungen als fachlichen Kontext; ändere deswegen keine Eingabe.
-            - Gib kritische Annahmen ausschließlich global in criticalAssumptions zurück. Verknüpfe sie nicht
-              mit Sections, Aufgaben oder Meilensteinen. Gib nur Annahmen aus, deren Falschheit Inhalt,
-              Umfang, Aufwand, Terminplanung, Sicherheit oder Aufbau des Plans wesentlich verändern würde
-              und deren Klärung deshalb vor der Übernahme nötig ist. Normale Planungsunsicherheit,
-              allgemeine, nebensächliche oder rein beschreibende Vermutungen sind keine kritischen
-              Annahmen. Erzeuge keine Annahmen zu seltenen Gefahren oder Sonderfällen ohne konkreten
-              Anhaltspunkt in confirmedWizardData. Wiederhole bekannte Eingaben, etwa den Projektmodus
-              oder Zeitraum, weder direkt noch als vermutete Machbarkeit. Für einfache, risikoarme und
-              sinnvoll planbare Vorhaben ist eine leere criticalAssumptions-Liste ausdrücklich normal.
-            - Setze correctionRequiredIfRejected nur auf true, wenn die bloße Verneinung der Aussage keine
-              ausreichende Information für eine korrekte Neugenerierung liefert.
-            - Behandle confirmedAssumptions als verbindliche Fakten und gib sie nicht erneut als Annahmen aus.
-              Behandle rejectedAssumptions als falsche Voraussetzungen und berücksichtige ausschließlich dort
-              tatsächlich enthaltene Korrekturen als zusätzliche verbindliche Fakten.
+              Nenne insbesondere keine konkreten Anbieter, Produkte, Personen oder Zuständigkeiten,
+              sofern sie nicht bestätigt wurden.
+            - Erzeuge keine detaillierte Personal- oder Ressourceneinsatzplanung, wenn sie nicht ausdrücklich
+              verlangt wurde. Plane bei Gruppenprojekten bei Bedarf eine kompakte organisatorische Aufgabe
+              wie „Zuständigkeiten verteilen“, statt unbestätigte Personen einzelnen Aufgaben zuzuweisen.
+            - Platziere einen Meilenstein logisch und bei terminierter Planung auch zeitlich erst nach den
+              Aufgaben, durch die sein Zustand erreicht wird. Sein Datum darf nicht vor dem Fälligkeitsdatum
+              einer dafür erforderlichen Aufgabe liegen.
+            - Interpretiere bei einem Projekt mit eindeutigem Abschlussereignis den letzten bestätigten
+              Projekttag standardmäßig als Tag dieses Ereignisses, sofern die bestätigten Angaben nichts
+              anderes sagen. Plane keine Nachbereitung außerhalb des bestätigten Zeitraums und verlängere
+              diesen niemals stillschweigend. Nachbereitung gehört nur in den Plan, wenn sie ausdrücklich
+              zum Ziel oder Scope gehört, und muss dann innerhalb des bestätigten Zeitraums liegen.
+            - Priorisiere bei Konflikten in dieser Reihenfolge: confirmedWizardData, danach ergänzender
+              confirmedPlanningContext, danach Hinweise aus previousOutputValidationIssues und zuletzt
+              die übrigen Regeln dieses Prompts.
+            - Die vom Nutzer bestätigten Planungsgrundlagen in confirmedPlanningContext sind verbindlich.
+              Verwende jede acceptedInterpretation als Grundlage der Planung, hinterfrage oder interpretiere
+              sie nicht erneut und gib sie nicht als neue offene Annahme zurück. Sie dürfen bestätigte
+              Nutzereingaben nur ergänzen, niemals ersetzen.
             """;
 
     private final ObjectMapper objectMapper;
@@ -99,8 +115,8 @@ public class GenerationPromptBuilder {
         return build(confirmedSnapshot, List.of());
     }
 
-    public AiPrompt build(AiWizardSnapshot confirmedSnapshot, List<AiPreCheckProblem> acknowledgedWarnings) {
-        return build(new AiGenerationRequest(confirmedSnapshot, acknowledgedWarnings));
+    public AiPrompt build(AiWizardSnapshot confirmedSnapshot, List<AiPreCheckProblem> acceptedOpenPoints) {
+        return build(new AiGenerationRequest(confirmedSnapshot, acceptedOpenPoints));
     }
 
     public AiPrompt build(AiGenerationRequest request) {
@@ -114,12 +130,12 @@ public class GenerationPromptBuilder {
     private String serializeRequestData(AiGenerationRequest request) {
         Map<String, Object> context = new LinkedHashMap<>();
         context.put("confirmedWizardData", request.confirmedWizardData());
-        context.put("acknowledgedPreCheckWarnings", request.acknowledgedWarnings());
+        context.put("confirmedPlanningContext", request.acceptedOpenPoints().stream()
+                .map(AiPreCheckProblem::acceptedInterpretation)
+                .toList());
         if (!request.previousValidationIssues().isEmpty()) {
             context.put("previousOutputValidationIssues", request.previousValidationIssues());
         }
-        context.put("confirmedAssumptions", request.confirmedAssumptions());
-        context.put("rejectedAssumptions", request.rejectedAssumptions());
         try {
             return objectMapper.writeValueAsString(context);
         } catch (JacksonException exception) {

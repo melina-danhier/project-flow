@@ -6,6 +6,7 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,13 +35,13 @@ public class StubAiClient implements AiClient {
         LocalDate projectEnd = request.confirmedWizardData().endDate();
         boolean withDates = properties.getGenerationScenario() == StubAiGenerationScenario.WITH_DATES
                 && projectStart != null
-                && (projectEnd == null || !projectEnd.isBefore(projectStart));
+                && projectEnd != null
+                && !projectEnd.isBefore(projectStart);
         LocalDate scheduleStart = withDates ? projectStart : null;
 
         return new GeneratedPlanResponse(List.of(
                 preparationSection(scheduleStart, projectEnd),
-                implementationSection(scheduleStart, projectEnd)), List.of()
-        );
+                implementationSection(scheduleStart, projectEnd)));
     }
 
     private GeneratedSection preparationSection(LocalDate projectStart, LocalDate projectEnd) {
@@ -86,16 +87,20 @@ public class StubAiClient implements AiClient {
     private AiPreCheckProblem warning() {
         return new AiPreCheckProblem(
                 AiPreCheckSeverity.WARNING,
+                AiPreCheckProblemType.RISK,
                 "Der vorgesehene Zeitraum ist für den beschriebenen Umfang sehr knapp.",
-                "Plane mehr Zeit ein oder reduziere den Umfang."
+                "Plane mehr Zeit ein oder reduziere den Umfang.",
+                "Die Planung bleibt im angegebenen Zeitraum und priorisiert die wichtigsten Arbeiten."
         );
     }
 
     private AiPreCheckProblem error() {
         return new AiPreCheckProblem(
                 AiPreCheckSeverity.ERROR,
+                AiPreCheckProblemType.CONFLICT,
                 "Die genannten Rahmenbedingungen widersprechen dem gewünschten Projektziel.",
-                "Passe das Ziel oder die Rahmenbedingungen an."
+                "Passe das Ziel oder die Rahmenbedingungen an.",
+                ""
         );
     }
 

@@ -85,7 +85,7 @@ class SdkOpenAiResponsesGatewayTest {
                     "order":1,"prerequisiteTaskTempIds":[],"priority":null
                   }],
                   "milestones":[{"tempId":null,"title":"Meilenstein","date":null,"order":1}]
-                }],"criticalAssumptions":[]}
+                }]}
                 """;
         var output = executeRaw(rawResponse(json), OpenAiGenerationOutput.class);
         assertThat(output.sections()).singleElement().satisfies(section -> {

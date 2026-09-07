@@ -35,6 +35,7 @@ class AiProjectSpecificDetailsTest {
                 "plannedWork", "Vollständig streichen, Boden erneuern und Küche austauschen",
                 "executionMode", "Eigenleistung",
                 "specialConstraints", "Nur Samstag 08:00 bis Sonntag 20:00"));
+        details.setAdditionalInformation("  Nachhaltige Materialien bevorzugen  ");
 
         service.saveAiDetails(details, context.userId(), context.session());
         var summary = service.aiSummary(context.userId(), context.session());
@@ -47,7 +48,9 @@ class AiProjectSpecificDetailsTest {
         assertThat(summary.projectSpecificAnswers()).extracting("key")
                 .contains("affectedRooms", "plannedWork", "executionMode", "specialConstraints");
         assertThat(snapshot.projectSpecificAnswers()).containsEntry("affectedRooms", "80-m²-Wohnung");
+        assertThat(snapshot.additionalInformation()).isEqualTo("Nachhaltige Materialien bevorzugen");
         assertThat(preCheckPayload).contains("80-m²-Wohnung", "Boden erneuern", "Eigenleistung")
+                .contains("Nachhaltige Materialien bevorzugen")
                 .contains("\"collaborationMode\":\"INDIVIDUAL\"");
     }
 
@@ -57,7 +60,7 @@ class AiProjectSpecificDetailsTest {
                 TemplateCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT);
 
         assertThat(questions).extracting("key")
-                .contains("goalAndScope", "technologies", "technicalConstraints")
+                .contains("goalAndScope", "technologies", "technicalExperience", "technicalConstraints")
                 .doesNotContain("affectedRooms", "plannedWork");
         assertThat(AiProjectQuestionCatalog.containsUnknownKey(
                 TemplateCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT,
@@ -69,10 +72,27 @@ class AiProjectSpecificDetailsTest {
     }
 
     @Test
+    void allSoftwareAndTechnologyVariantsOfferOptionalTechnicalExperience() {
+        for (var subcategory : ProjectSubCategory.values()) {
+            if (subcategory.getCategory() != TemplateCategory.SOFTWARE_TECHNOLOGY) {
+                continue;
+            }
+            assertThat(AiProjectQuestionCatalog.questionsFor(
+                    TemplateCategory.SOFTWARE_TECHNOLOGY, subcategory))
+                    .filteredOn(question -> question.key().equals("technicalExperience"))
+                    .singleElement()
+                    .satisfies(question -> {
+                        assertThat(question.label()).isEqualTo("Technischer Kenntnisstand");
+                        assertThat(question.required()).isFalse();
+                    });
+        }
+    }
+
+    @Test
     void otherUsesGenericQuestionsWithoutInventingASubcategory() {
         assertThat(AiProjectQuestionCatalog.questionsFor(TemplateCategory.OTHER, null))
                 .extracting("key")
-                .containsExactly("desiredOutcome", "currentSituation", "relevantConditions", "specialConstraints");
+                .containsExactly("desiredOutcome", "relevantConditions");
     }
 
     @Test

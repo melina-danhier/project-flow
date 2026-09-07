@@ -48,7 +48,7 @@ class PlanDraftLockOrderingTest {
                 draftRepository, workflowRepository, projectRepository, Clock.systemUTC());
 
         assertThat(service.materialize(
-                workflowId, runId, new MappedDraft(List.of(), List.of()), "{}", false)).isFalse();
+                workflowId, runId, new MappedDraft(List.of(), List.of()), "{}")).isFalse();
 
         InOrder order = inOrder(workflowRepository, projectRepository, draftRepository);
         order.verify(workflowRepository).findProjectIdById(workflowId);

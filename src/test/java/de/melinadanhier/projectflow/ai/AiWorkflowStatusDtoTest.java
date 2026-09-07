@@ -52,12 +52,12 @@ class AiWorkflowStatusDtoTest {
                 AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE,
                 0, 1, 1,
                 AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
-                operation, true, false);
+                operation, true);
     }
 
     private AiWorkflowStatusDto status(AiPlanGenerationWorkflowStatus status) {
         return new AiWorkflowStatusDto(
                 UUID.randomUUID(), UUID.randomUUID(), status,
-                0, 0, 0, null, null, null, false);
+                0, 0, 0, null, null, null);
     }
 }
