@@ -19,7 +19,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -255,7 +254,6 @@ class PlanDraftMaterializationIntegrationTest {
             Project project = new Project();
             project.setTitle("Atomarer Plan");
             project.setCreationType(CreationType.AI);
-            project.setStatus(ProjectStatus.DRAFT);
             project.setLocation(ProjectLocation.DRAFT);
             projects.saveAndFlush(project);
             var workflow = AiPlanGenerationWorkflow.create(project, "{\"title\":\"Unveränderlich\"}",

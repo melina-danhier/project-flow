@@ -16,7 +16,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.user.model.User;
@@ -67,7 +66,6 @@ public class AiWorkflowInitializationService {
         project.setSubcategory(snapshot.subcategory());
         project.setCollaborationMode(snapshot.collaborationMode());
         project.setCreationType(CreationType.AI);
-        project.setStatus(ProjectStatus.DRAFT);
         project.setLocation(ProjectLocation.DRAFT);
 
         ProjectMember membership = new ProjectMember();

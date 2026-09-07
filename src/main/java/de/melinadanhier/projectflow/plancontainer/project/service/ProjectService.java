@@ -1,7 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.project.service;
 
 import de.melinadanhier.projectflow.plancontainer.project.validation.ProjectClassificationValidator;
-import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
@@ -16,7 +15,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.Creati
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
@@ -29,6 +27,7 @@ import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
 import de.melinadanhier.projectflow.planelement.model.Task;
+import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneDetailsDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionDto;
 import de.melinadanhier.projectflow.planelement.dto.TaskDependencyDto;
@@ -67,7 +66,6 @@ public class ProjectService {
     private final PlanElementMapper planElementMapper;
     private final DraftRepository draftRepository;
     private final PlanElementRepository planElementRepository;
-    private final ProjectStateService projectStateService;
 
     @Transactional
     public ProjectDetailsDto createProject(ProjectCreateForm form, UUID ownerUserId) {
@@ -127,7 +125,7 @@ public class ProjectService {
                 ? normalizeOptionalText(form.getOtherProjectTypeDescription()) : null);
         project.setCollaborationMode(form.getCollaborationMode());
         project.setCreationType(creationType);
-        projectStateService.changeState(project, ProjectStatus.ACTIVE, ProjectLocation.OVERVIEW);
+        project.setLocation(ProjectLocation.OVERVIEW);
         if (form.getStructureMode() != null) {
             project.setStructureMode(form.getStructureMode());
         }
@@ -209,9 +207,8 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectSummaryDto> findAccessibleProjects(ProjectLocation location, UUID userId) {
         ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
-        return projectRepository.findAllAccessibleByUserIdAndLocation(userId, selectedLocation).stream()
-                .map(projectMapper::toSummaryDto)
-                .toList();
+        return toSummariesWithProgress(
+                projectRepository.findAllAccessibleByUserIdAndLocation(userId, selectedLocation));
     }
 
     @Transactional(readOnly = true)
@@ -222,9 +219,21 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProjectSummaryDto> searchAccessibleProjects(
+            String query,
+            ProjectLocation location,
+            UUID userId
+    ) {
+        ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
+        String normalizedQuery = query == null ? "" : query.trim();
+        return toSummariesWithProgress(projectRepository.searchAccessibleByUserIdAndLocation(
+                userId, selectedLocation, normalizedQuery));
+    }
+
+    @Transactional(readOnly = true)
     public ProjectDetailsDto getProject(UUID projectId, UUID userId) {
         authorizationService.requireMember(projectId, userId);
-        Project project = projectRepository.findPlanProjectById(projectId)
+        Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
         requireRegularProject(project);
         return projectMapper.toDetailsDto(project);
@@ -233,9 +242,9 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public ProjectPlanViewDto getProjectPlan(UUID projectId, UUID userId) {
         ProjectMember currentMembership = authorizationService.requireMember(projectId, userId);
-        Project project = projectRepository.findPlanProjectById(projectId)
+        Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
-        if (project.getStatus() == ProjectStatus.DRAFT) {
+        if (project.getLocation() == ProjectLocation.DRAFT) {
             throw new DraftProjectPlanAccessException(projectId);
         }
         requireRegularProject(project);
@@ -250,11 +259,6 @@ public class ProjectService {
         view.setProject(projectMapper.toDetailsDto(project));
         view.setEditable(authorizationService.isEditable(currentMembership));
         view.setOwner(currentMembership.getRole() == ProjectMemberRole.OWNER);
-        view.setActiveMembers(project.isGroupProject()
-                ? projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
-                        .map(projectMapper::toMemberDto).toList()
-                : List.of());
-
         List<TaskDetailsDto> taskDtos = tasks.stream().map(planElementMapper::toDetailsDto).toList();
         List<MilestoneDetailsDto> milestoneDtos = milestones.stream().map(planElementMapper::toDetailsDto).toList();
         taskDtos.forEach(task -> task.setEditable(view.isEditable()));
@@ -269,12 +273,9 @@ public class ProjectService {
                         )))
                 .toList());
 
-        List<PlanElementViewDto> orderedElements = planElements.stream()
+        List<PlanElementViewDto> manualElements = planElements.stream()
                 .map(this::toViewElement)
-                .sorted(project.getSortMode() == SortMode.DATE
-                        ? PlanOrdering.dated(PlanElementViewDto::getRelevantDate,
-                                PlanElementViewDto::getSortOrder, PlanElementViewDto::getId)
-                        : PlanOrdering.manual(PlanElementViewDto::getSortOrder, PlanElementViewDto::getId))
+                .sorted(PlanOrdering.manual(PlanElementViewDto::getSortOrder, PlanElementViewDto::getId))
                 .toList();
 
         Map<UUID, Long> taskCounts = tasks.stream()
@@ -291,23 +292,25 @@ public class ProjectService {
                     SectionDto dto = planElementMapper.toDto(section);
                     dto.setTaskCount(taskCounts.getOrDefault(section.getId(), 0L).intValue());
                     dto.setMilestoneCount(milestoneCounts.getOrDefault(section.getId(), 0L).intValue());
-                    dto.setElements(orderedElements.stream()
+                    List<PlanElementViewDto> sectionElements = manualElements.stream()
                             .filter(element -> section.getId().equals(element.getPlanSectionId()))
-                            .toList());
+                            .toList();
+                    dto.setElements(PlanOrdering.display(
+                            sectionElements, project.getSortMode(), PlanElementViewDto::getRelevantDate));
                     return dto;
                 })
                 .toList();
         view.setSections(sections);
-        view.setUnsectionedElements(orderedElements.stream()
-                .filter(element -> element.getPlanSectionId() == null)
-                .toList());
+        view.setUnsectionedElements(PlanOrdering.display(
+                manualElements.stream().filter(element -> element.getPlanSectionId() == null).toList(),
+                project.getSortMode(), PlanElementViewDto::getRelevantDate));
         return view;
     }
 
     @Transactional
     public ProjectDetailsDto updateProject(UUID projectId, ProjectUpdateForm form, UUID userId) {
-        ProjectMember actingOwner = authorizationService.requireEditableOwnerForUpdate(projectId, userId);
-        Project project = projectRepository.findById(projectId)
+        authorizationService.requireEditableOwnerForUpdate(projectId, userId);
+        Project project = projectRepository.findWithMembershipsById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
         requireCurrentVersion(project.getLockVersion(), form.getLockVersion());
         if (form.getCollaborationMode() == null || form.getCollaborationMode() == CollaborationMode.BOTH) {
@@ -353,8 +356,21 @@ public class ProjectService {
 
     @Transactional
     public void moveToTrash(UUID projectId, UUID userId) {
-        ProjectMember owner = authorizationService.requireEditableOwner(projectId, userId);
-        projectStateService.changeState(owner.getProject(), ProjectStatus.ACTIVE, ProjectLocation.TRASH);
+        Project project = authorizationService.requireOwner(projectId, userId).getProject();
+        if (project.getLocation() != ProjectLocation.OVERVIEW
+                && project.getLocation() != ProjectLocation.ARCHIVE) {
+            throw new ConflictException("Nur Projekte aus der Übersicht oder dem Archiv können in den Papierkorb verschoben werden.");
+        }
+        project.setLocation(ProjectLocation.TRASH);
+    }
+
+    @Transactional
+    public void archiveProject(UUID projectId, UUID userId) {
+        Project project = authorizationService.requireOwner(projectId, userId).getProject();
+        if (project.getLocation() != ProjectLocation.OVERVIEW) {
+            throw new ConflictException("Nur Projekte aus der Übersicht können archiviert werden.");
+        }
+        project.setLocation(ProjectLocation.ARCHIVE);
     }
 
     @Transactional
@@ -365,10 +381,7 @@ public class ProjectService {
                 && project.getLocation() != ProjectLocation.ARCHIVE) {
             throw new ConflictException("Nur archivierte Projekte oder Projekte im Papierkorb können reaktiviert werden.");
         }
-        if (project.getStatus() == ProjectStatus.DRAFT) {
-            throw new ConflictException("Ein KI-Entwurf muss über den vorgesehenen Prüf- und Bestätigungsfluss übernommen werden.");
-        }
-        projectStateService.changeState(project, ProjectStatus.ACTIVE, ProjectLocation.OVERVIEW);
+        project.setLocation(ProjectLocation.OVERVIEW);
     }
 
     @Transactional
@@ -445,9 +458,30 @@ public class ProjectService {
     }
 
     private void requireRegularProject(Project project) {
-        if (project.getStatus() == ProjectStatus.DRAFT) {
+        if (project.getLocation() == ProjectLocation.DRAFT) {
             throw new ResourceNotFoundException("Projekt wurde nicht gefunden.");
         }
+    }
+
+    private List<ProjectSummaryDto> toSummariesWithProgress(List<Project> projects) {
+        List<ProjectSummaryDto> summaries = projects.stream().map(projectMapper::toSummaryDto).toList();
+        if (projects.isEmpty()) {
+            return summaries;
+        }
+        Map<UUID, TaskRepository.ProjectTaskProgress> progressByProject = taskRepository
+                .findProgressByProjectIds(projects.stream().map(Project::getId).toList(), TaskStatus.COMPLETED)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        TaskRepository.ProjectTaskProgress::getProjectId,
+                        progress -> progress));
+        summaries.forEach(summary -> {
+            TaskRepository.ProjectTaskProgress progress = progressByProject.get(summary.getId());
+            if (progress != null && progress.getTotalTasks() > 0) {
+                summary.setProgress((int) Math.round(
+                        progress.getCompletedTasks() * 100.0 / progress.getTotalTasks()));
+            }
+        });
+        return summaries;
     }
 
     private LocalDate toAbsoluteDate(Project project, LocalDate absoluteDate, Integer relativeDay) {

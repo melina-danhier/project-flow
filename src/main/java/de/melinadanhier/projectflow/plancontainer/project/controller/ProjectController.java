@@ -60,6 +60,21 @@ public class ProjectController {
         return "projects/overview";
     }
 
+    @GetMapping("/projects/search")
+    public String search(
+            @RequestParam(defaultValue = "") String query,
+            @RequestParam(required = false) ProjectLocation location,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model
+    ) {
+        ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
+        model.addAttribute("projects", projectService.searchAccessibleProjects(
+                query, selectedLocation, currentUser.userId()));
+        model.addAttribute("query", query);
+        model.addAttribute("selectedLocation", selectedLocation);
+        return "projects/overview";
+    }
+
 
     @GetMapping("/projects/{projectId}/edit")
     public String editForm(
@@ -119,6 +134,17 @@ public class ProjectController {
         projectService.moveToTrash(projectId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde in den Papierkorb verschoben.");
         return "redirect:/projects";
+    }
+
+    @PostMapping("/projects/{projectId}/archive")
+    public String archive(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            RedirectAttributes redirectAttributes
+    ) {
+        projectService.archiveProject(projectId, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde archiviert.");
+        return "redirect:/projects?location=ARCHIVE";
     }
 
     @PostMapping("/projects/{projectId}/reactivate")

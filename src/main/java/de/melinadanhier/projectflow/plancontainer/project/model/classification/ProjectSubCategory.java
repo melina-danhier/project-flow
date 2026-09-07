@@ -77,4 +77,8 @@ public enum ProjectSubCategory {
     public static boolean isValidFor(ProjectCategory category, ProjectSubCategory subcategory) {
         return subcategory == null || subcategory.category == category;
     }
+
+    public boolean isOther() {
+        return name().startsWith("OTHER_");
+    }
 }

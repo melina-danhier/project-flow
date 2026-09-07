@@ -12,10 +12,8 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
-import de.melinadanhier.projectflow.plancontainer.project.service.ProjectStateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +30,6 @@ public class DraftApplicationService {
     private final ProjectRepository projectRepository;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final ProjectAuthorizationService authorizationService;
-    private final ProjectStateService projectStateService;
     private final DraftValidationService validationService;
     private final DraftPlanAdoptionFactory adoptionFactory;
     private final Clock clock;
@@ -114,19 +111,19 @@ public class DraftApplicationService {
             throw new ResourceNotFoundException("Für dieses Projekt ist kein Planentwurf vorhanden.");
         }
         if (draft.getId() == null || draftId != null && !draft.getId().equals(draftId)) {
-            if (project.getStatus() != ProjectStatus.DRAFT) {
+            if (project.getLocation() != ProjectLocation.DRAFT) {
                 throw new DraftVersionConflictException(
                         "Das Projekt wurde bereits mit einem anderen Plan aktiviert.", false);
             }
             throw new ResourceNotFoundException("Der angegebene Planentwurf wurde nicht gefunden.");
         }
         if (draft.getStatus() == DraftPlanStatus.APPLIED) {
-            if (project.getStatus() == ProjectStatus.ACTIVE && project.getLocation() == ProjectLocation.OVERVIEW) {
+            if (project.getLocation() == ProjectLocation.OVERVIEW) {
                 return projectId;
             }
             throw new ConflictException("Der übernommene Entwurf und der Projektstatus sind inkonsistent.");
         }
-        if (project.getStatus() != ProjectStatus.DRAFT || project.getLocation() != ProjectLocation.DRAFT
+        if (project.getLocation() != ProjectLocation.DRAFT
                 || !project.getSections().isEmpty() || !project.getElements().isEmpty()) {
             throw new DraftVersionConflictException(
                     "Das Projekt wurde bereits mit einem anderen Plan aktiviert.", false);
@@ -146,7 +143,7 @@ public class DraftApplicationService {
         }
         validationService.validateForApplication(draft);
         adoptionFactory.adopt(draft, project);
-        projectStateService.changeState(project, ProjectStatus.ACTIVE, ProjectLocation.OVERVIEW);
+        project.setLocation(ProjectLocation.OVERVIEW);
         draft.setStatus(DraftPlanStatus.APPLIED);
         draft.setAppliedAt(Instant.now(clock));
         projectRepository.saveAndFlush(project);
@@ -184,14 +181,12 @@ public class DraftApplicationService {
         return draftRepository.findByProjectId(projectId)
                 .filter(draft -> draft.getStatus() == DraftPlanStatus.APPLIED)
                 .map(DraftPlan::getProject)
-                .filter(project -> project.getStatus() == ProjectStatus.ACTIVE)
                 .filter(project -> project.getLocation() == ProjectLocation.OVERVIEW)
                 .isPresent();
     }
 
     private void requireEmptyDraftProject(Project project) {
         if (project == null
-                || project.getStatus() != ProjectStatus.DRAFT
                 || project.getLocation() != ProjectLocation.DRAFT
                 || !project.getSections().isEmpty()
                 || !project.getElements().isEmpty()) {

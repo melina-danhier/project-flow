@@ -16,19 +16,18 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectMembershipService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
-import de.melinadanhier.projectflow.plancontainer.project.service.ProjectStateService;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapperImpl;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
+import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
@@ -62,7 +61,6 @@ import static org.assertj.core.api.Assertions.within;
         ProjectAuthorizationService.class,
         ProjectMembershipService.class,
         ProjectService.class,
-        ProjectStateService.class,
         ProjectMapperImpl.class,
         PlanElementService.class,
         PlanElementMapperImpl.class
@@ -106,9 +104,6 @@ class ProjectSecurityIntegrationTest {
     private ProjectService projectService;
 
     @Autowired
-    private ProjectStateService projectStateService;
-
-    @Autowired
     private PlanElementService planElementService;
 
     @Test
@@ -132,7 +127,6 @@ class ProjectSecurityIntegrationTest {
         });
         Project project = projectRepository.findById(projectId).orElseThrow();
         assertThat(project.getCreationType()).isEqualTo(CreationType.EMPTY);
-        assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
         assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
         assertThat(project.getCategory()).isEqualTo(ProjectCategory.HOME);
         assertThat(project.getSubcategory()).isEqualTo(ProjectSubCategory.MOVING);
@@ -181,26 +175,9 @@ class ProjectSecurityIntegrationTest {
     void creationAndLocationEnumsContainOnlyTheSpecifiedValues() {
         assertThat(CreationType.values()).containsExactly(
                 CreationType.EMPTY, CreationType.TEMPLATE, CreationType.AI);
-        assertThat(ProjectStatus.values()).containsExactly(
-                ProjectStatus.DRAFT, ProjectStatus.ACTIVE, ProjectStatus.COMPLETED);
         assertThat(ProjectLocation.values()).containsExactly(
                 ProjectLocation.OVERVIEW, ProjectLocation.DRAFT,
                 ProjectLocation.TRASH, ProjectLocation.ARCHIVE);
-    }
-
-    @Test
-    void draftStatusAndLocationAreChangedOnlyAsAConsistentPair() {
-        Project project = new Project();
-
-        projectStateService.changeState(project, ProjectStatus.DRAFT, ProjectLocation.DRAFT);
-        assertThat(project.isDraftStateConsistent()).isTrue();
-
-        assertThatThrownBy(() -> projectStateService.changeState(
-                project, ProjectStatus.DRAFT, ProjectLocation.OVERVIEW))
-                .isInstanceOf(DomainValidationException.class);
-        assertThatThrownBy(() -> projectStateService.changeState(
-                project, ProjectStatus.ACTIVE, ProjectLocation.DRAFT))
-                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
@@ -208,7 +185,7 @@ class ProjectSecurityIntegrationTest {
         User owner = saveUser("location-owner@example.org");
         Project overview = saveProject("Aktiv", owner);
         Project draft = saveProject("Entwurf", owner);
-        projectStateService.changeState(draft, ProjectStatus.DRAFT, ProjectLocation.DRAFT);
+        draft.setLocation(ProjectLocation.DRAFT);
         projectRepository.flush();
 
         assertThat(projectRepository.findAllAccessibleByUserId(owner.getId()))
@@ -222,7 +199,7 @@ class ProjectSecurityIntegrationTest {
         User owner = saveUser("draft-block-owner@example.org");
         User member = saveUser("draft-block-member@example.org");
         Project draft = saveProject("Gesperrter Entwurf", owner);
-        projectStateService.changeState(draft, ProjectStatus.DRAFT, ProjectLocation.DRAFT);
+        draft.setLocation(ProjectLocation.DRAFT);
         projectRepository.flush();
 
         assertThatThrownBy(() -> authorizationService.requireEditableOwner(draft.getId(), owner.getId()))
@@ -230,7 +207,121 @@ class ProjectSecurityIntegrationTest {
         assertThatThrownBy(() -> membershipService.addMember(draft.getId(), member.getEmail(), owner.getId()))
                 .isInstanceOf(ProjectNotEditableException.class);
         assertThatThrownBy(() -> projectService.moveToTrash(draft.getId(), owner.getId()))
-                .isInstanceOf(ProjectNotEditableException.class);
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void overviewContainsOwnersAndActiveMembersButNoOtherLocationsOrInactiveMemberships() {
+        User owner = saveUser("overview-owner@example.org");
+        User member = saveUser("overview-member@example.org");
+        Project owned = saveProject("Eigenes Projekt", owner);
+        Project shared = saveProject("Geteiltes Projekt", owner);
+        addMembership(shared, member, ProjectMemberRole.MEMBER, true);
+        Project inactive = saveProject("Inaktive Mitgliedschaft", owner);
+        addMembership(inactive, member, ProjectMemberRole.MEMBER, false);
+        for (ProjectLocation location : List.of(
+                ProjectLocation.ARCHIVE, ProjectLocation.TRASH, ProjectLocation.DRAFT)) {
+            Project hidden = saveProject("Versteckt " + location, owner);
+            hidden.setLocation(location);
+            addMembership(hidden, member, ProjectMemberRole.MEMBER, true);
+        }
+        projectRepository.flush();
+
+        assertThat(projectService.findAccessibleProjects(owner.getId()))
+                .extracting("id").contains(owned.getId(), shared.getId(), inactive.getId());
+        assertThat(projectService.findAccessibleProjects(member.getId()))
+                .extracting("id").containsExactly(shared.getId());
+    }
+
+    @Test
+    void summariesCalculateTaskProgressWithoutCountingMilestones() {
+        User owner = saveUser("progress-owner@example.org");
+        Project empty = saveProject("Ohne Aufgaben", owner);
+        Project open = saveProject("Offen", owner);
+        saveTask(open, "Offen 1", TaskStatus.OPEN, null);
+        saveTask(open, "Offen 2", TaskStatus.IN_PROGRESS, null);
+        Project partial = saveProject("Teilweise", owner);
+        saveTask(partial, "Erledigt", TaskStatus.COMPLETED, null);
+        saveTask(partial, "Noch offen", TaskStatus.OPEN, null);
+        Project complete = saveProject("Fertig", owner);
+        saveTask(complete, "Fertig 1", TaskStatus.COMPLETED, null);
+        saveTask(complete, "Fertig 2", TaskStatus.COMPLETED, null);
+        Milestone milestone = new Milestone();
+        milestone.setTitle("Nicht mitzählen");
+        milestone.setOrigin(ElementOrigin.USER);
+        milestone.setPlanContainer(partial);
+        milestoneRepository.saveAndFlush(milestone);
+
+        var summaries = projectService.findAccessibleProjects(owner.getId());
+        assertThat(summaries).filteredOn("id", empty.getId()).singleElement()
+                .extracting("progress").isNull();
+        assertThat(summaries).filteredOn("id", open.getId()).singleElement()
+                .extracting("progress").isEqualTo(0);
+        assertThat(summaries).filteredOn("id", partial.getId()).singleElement()
+                .extracting("progress").isEqualTo(50);
+        assertThat(summaries).filteredOn("id", complete.getId()).singleElement()
+                .extracting("progress").isEqualTo(100);
+    }
+
+    @Test
+    void searchUsesTitleDescriptionLocationAndActiveMembership() {
+        User owner = saveUser("search-owner@example.org");
+        User member = saveUser("search-member@example.org");
+        Project titleMatch = saveProject("SemesterPLAN", owner);
+        addMembership(titleMatch, member, ProjectMemberRole.MEMBER, true);
+        Project descriptionMatch = saveProject("Studium", owner);
+        descriptionMatch.setDescription("Mein geheimer Projektplan");
+        addMembership(descriptionMatch, member, ProjectMemberRole.MEMBER, true);
+        Project archived = saveProject("Archivplan", owner);
+        archived.setLocation(ProjectLocation.ARCHIVE);
+        addMembership(archived, member, ProjectMemberRole.MEMBER, true);
+        Project inactive = saveProject("Inaktiver Plan", owner);
+        addMembership(inactive, member, ProjectMemberRole.MEMBER, false);
+        saveProject("Fremder Projektplan", owner);
+        projectRepository.flush();
+
+        assertThat(projectService.searchAccessibleProjects("pLaN", ProjectLocation.OVERVIEW, member.getId()))
+                .extracting("id").containsExactlyInAnyOrder(titleMatch.getId(), descriptionMatch.getId());
+        assertThat(projectService.searchAccessibleProjects("plan", ProjectLocation.ARCHIVE, member.getId()))
+                .extracting("id").containsExactly(archived.getId());
+    }
+
+    @Test
+    void ownerControlsArchiveTrashAndRestoreTransitions() {
+        User owner = saveUser("lifecycle-owner@example.org");
+        User member = saveUser("lifecycle-member@example.org");
+        Project project = saveProject("Lebenszyklus", owner);
+        addMembership(project, member, ProjectMemberRole.MEMBER, true);
+
+        assertThatThrownBy(() -> projectService.archiveProject(project.getId(), member.getId()))
+                .isInstanceOf(ForbiddenOperationException.class);
+        projectService.archiveProject(project.getId(), owner.getId());
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.ARCHIVE);
+        projectService.reactivateProject(project.getId(), owner.getId());
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        projectService.archiveProject(project.getId(), owner.getId());
+        projectService.moveToTrash(project.getId(), owner.getId());
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.TRASH);
+        projectService.reactivateProject(project.getId(), owner.getId());
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+    }
+
+    @Test
+    void categoryDisplayUsesConcreteSubtypeOtherwiseTopLevelCategory() {
+        Project concrete = new Project();
+        concrete.setCategory(ProjectCategory.EDUCATION);
+        concrete.setSubcategory(ProjectSubCategory.EXAM_PREPARATION);
+        assertThat(concrete.getDisplayCategory()).isEqualTo("Prüfungslernplan");
+
+        concrete.setSubcategory(null);
+        assertThat(concrete.getDisplayCategory()).isEqualTo("Bildung und Studium");
+        concrete.setSubcategory(ProjectSubCategory.OTHER_EDUCATION);
+        assertThat(concrete.getDisplayCategory()).isEqualTo("Bildung und Studium");
+
+        concrete.setCategory(ProjectCategory.OTHER);
+        concrete.setSubcategory(null);
+        concrete.setOtherProjectTypeDescription("Freie geheime Kategorie");
+        assertThat(concrete.getDisplayCategory()).isEqualTo("Sonstiges");
     }
 
     @Test
@@ -543,7 +634,6 @@ class ProjectSecurityIntegrationTest {
         project.setTitle(title);
         project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.GROUP);
         project.setCreationType(CreationType.EMPTY);
-        project.setStatus(ProjectStatus.ACTIVE);
         ProjectMember ownerMembership = new ProjectMember();
         ownerMembership.setUser(owner);
         ownerMembership.setRole(ProjectMemberRole.OWNER);

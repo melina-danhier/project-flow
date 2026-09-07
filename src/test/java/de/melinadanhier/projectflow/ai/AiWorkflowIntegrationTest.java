@@ -28,7 +28,6 @@ import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowContro
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -182,7 +181,7 @@ class AiWorkflowIntegrationTest {
             assertThat(project.getSubcategory()).isEqualTo(snapshot.subcategory());
             assertThat(project.getCollaborationMode()).isEqualTo(snapshot.collaborationMode());
             assertThat(project.getCreationType()).isEqualTo(CreationType.AI);
-            assertThat(project.getStatus()).isEqualTo(ProjectStatus.DRAFT);
+            assertThat(project.getLocation()).isEqualTo(ProjectLocation.DRAFT);
             assertThat(project.getLocation()).isEqualTo(ProjectLocation.DRAFT);
         });
         assertThat(projectMemberRepository.findByProjectIdAndUserId(completion.projectId(), owner.getId()))
@@ -218,7 +217,7 @@ class AiWorkflowIntegrationTest {
         assertThatThrownBy(() -> generationWorkflowService.retry(completion.workflowId(), owner.getId()))
                 .isInstanceOf(ConflictException.class);
         assertThat(projectRepository.findById(completion.projectId())).get().satisfies(project -> {
-            assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+            assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
             assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
         });
 
@@ -291,7 +290,7 @@ class AiWorkflowIntegrationTest {
                 .isEqualTo(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE);
         assertThat(workflow.getLastAiOperation()).isEqualTo(AiOperation.PRE_CHECK);
         assertThat(projectRepository.findById(completion.projectId())).get()
-                .extracting("status").isEqualTo(ProjectStatus.DRAFT);
+                .extracting("location").isEqualTo(ProjectLocation.DRAFT);
         verify(aiClient, times(3)).preCheck(any());
         try {
             verify(backoff).waitBeforeRetry(1);
@@ -345,7 +344,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getLastErrorRetryable()).isFalse();
         assertThat(draftRepository.findByProjectId(completion.projectId())).isEmpty();
         assertThat(projectRepository.findById(completion.projectId())).get()
-                .extracting("status").isEqualTo(ProjectStatus.DRAFT);
+                .extracting("location").isEqualTo(ProjectLocation.DRAFT);
     }
 
     @Test

@@ -8,7 +8,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.classification.P
 import de.melinadanhier.projectflow.plancontainer.project.model.collaboration.ProjectCollaboration;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
@@ -22,7 +21,6 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -71,11 +69,6 @@ public class Project extends PlanContainer implements ProjectClassification, Pro
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private ProjectStatus status;
-
-    @NotNull
-    @Enumerated(EnumType.STRING)
     @Column(name = "location", nullable = false, length = 20)
     private ProjectLocation location = ProjectLocation.OVERVIEW;
 
@@ -105,8 +98,4 @@ public class Project extends PlanContainer implements ProjectClassification, Pro
         }
     }
 
-    @AssertTrue(message = "Entwurfsstatus und Entwurfsbereich müssen gemeinsam gesetzt sein.")
-    public boolean isDraftStateConsistent() {
-        return (status == ProjectStatus.DRAFT) == (location == ProjectLocation.DRAFT);
-    }
 }

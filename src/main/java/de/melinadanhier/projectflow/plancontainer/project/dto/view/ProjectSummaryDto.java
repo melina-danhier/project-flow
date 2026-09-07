@@ -4,7 +4,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.classification.P
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.Getter;
@@ -21,6 +20,7 @@ public class ProjectSummaryDto implements ProjectClassification {
 
     private UUID id;
     private String title;
+    private String description;
     private LocalDate startDate;
     private LocalDate endDate;
     private ProjectCategory category;
@@ -29,6 +29,6 @@ public class ProjectSummaryDto implements ProjectClassification {
     private ProjectSubCategory subcategory;
     private CollaborationMode collaborationMode;
     private CreationType creationType;
-    private ProjectStatus status;
     private ProjectLocation location;
+    private Integer progress;
 }

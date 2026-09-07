@@ -9,7 +9,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -98,7 +97,7 @@ class DraftApplicationIntegrationTest {
         var applied = drafts.findById(fixture.draftId()).orElseThrow();
         assertThat(applied.getStatus()).isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(applied.getAppliedAt()).isNotNull();
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
         assertThat(applications.apply(fixture.projectId(), fixture.ownerId()).status())
                 .isEqualTo(DraftApplyStatus.APPLIED);
 
@@ -133,12 +132,12 @@ class DraftApplicationIntegrationTest {
 
         assertThatThrownBy(() -> applications.confirmAndApply(fixture.projectId(), fixture.draftId(),
                 fixture.ownerId(), summary.lockVersion(), false)).isInstanceOf(DomainValidationException.class);
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.DRAFT);
+        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
         assertThat(drafts.findById(fixture.draftId()).orElseThrow().getStatus()).isNotEqualTo(DraftPlanStatus.APPLIED);
 
         applications.confirmEmpty(fixture.projectId(), fixture.draftId(), fixture.ownerId(),
                 summary.lockVersion());
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isZero();
     }
@@ -174,7 +173,7 @@ class DraftApplicationIntegrationTest {
         assertThat(generations.regenerateDraft(fixture.projectId(), fixture.draftId(),
                 fixture.ownerId(), version)).isEqualTo(workflowId);
 
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.DRAFT);
+        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
         assertThat(drafts.findById(fixture.draftId())).isEmpty();
         assertThat(workflows.findById(workflowId).orElseThrow().getStatus())
                 .isEqualTo(de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING);
@@ -198,7 +197,7 @@ class DraftApplicationIntegrationTest {
         }
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isZero();
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.DRAFT);
+        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
         assertThat(drafts.findById(fixture.draftId()).orElseThrow().getStatus())
                 .isIn(DraftPlanStatus.READY_FOR_REVIEW, DraftPlanStatus.IN_REVIEW);
     }
@@ -228,7 +227,7 @@ class DraftApplicationIntegrationTest {
 
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isZero();
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.DRAFT);
+        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
         assertThat(drafts.findById(fixture.draftId()).orElseThrow().getStatus())
                 .isIn(DraftPlanStatus.READY_FOR_REVIEW, DraftPlanStatus.IN_REVIEW);
     }
@@ -285,7 +284,7 @@ class DraftApplicationIntegrationTest {
         owner.setDisplayName("Owner"); owner.setPasswordHash("hash"); owner.setEnabled(true);
         users.saveAndFlush(owner);
         Project project = new Project(); project.setTitle("Projekt"); project.setCreationType(CreationType.AI);
-        project.setStatus(ProjectStatus.DRAFT); project.setLocation(ProjectLocation.DRAFT);
+        project.setLocation(ProjectLocation.DRAFT);
         ProjectMember membership = new ProjectMember(); membership.setUser(owner);
         membership.setRole(ProjectMemberRole.OWNER); membership.setActive(true); project.addMembership(membership);
         return projects.saveAndFlush(project);

@@ -7,7 +7,6 @@ import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.Getter;
@@ -15,8 +14,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -38,8 +35,6 @@ public class ProjectDetailsDto implements ProjectClassification, ProjectCollabor
     private CollaborationMode collaborationMode;
 
     private CreationType creationType;
-    private ProjectStatus status;
     private ProjectLocation location;
-    private List<ProjectMemberDto> members = new ArrayList<>();
     private long lockVersion;
 }

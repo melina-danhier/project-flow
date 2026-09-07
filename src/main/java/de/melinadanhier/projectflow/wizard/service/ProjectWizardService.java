@@ -7,7 +7,6 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.AiWizardSummary;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
@@ -90,7 +89,7 @@ public class ProjectWizardService {
         return new AiWizardSummary(
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
                 state.getCollaborationMode() == CollaborationMode.GROUP,
-                categoryLabel(state.getCategory(), state.getProjectTypeLabel()),
+                categoryLabel(state),
                 "KI-generierter Plan",
                 state.getDurationDays(), state.getAvailableWorkingTime(),
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(), answers);
@@ -187,18 +186,11 @@ public class ProjectWizardService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private String categoryLabel(ProjectCategory category, String projectTypeLabel) {
-        String label = switch (category) {
-            case EDUCATION -> "Bildung und Studium";
-            case SOFTWARE_TECHNOLOGY -> "Software und Technik";
-            case EVENT -> "Veranstaltung";
-            case HOME -> "Haushalt und Wohnen";
-            case CREATIVE -> "Kreatives";
-            case CAREER -> "Beruf und Karriere";
-            case HEALTH_PERSONAL_DEVELOPMENT -> "Gesundheit und persönliche Entwicklung";
-            case TRAVEL -> "Reise";
-            case OTHER -> "Sonstiges";
-        };
-        return projectTypeLabel == null ? label : label + " – " + projectTypeLabel;
+    private String categoryLabel(ProjectWizardState state) {
+        String displayCategory = state.getDisplayCategory();
+        return state.getSubcategory() != null && !state.getSubcategory().isOther()
+                ? state.getCategory().getLabel() + " – " + displayCategory
+                : displayCategory;
     }
+
 }

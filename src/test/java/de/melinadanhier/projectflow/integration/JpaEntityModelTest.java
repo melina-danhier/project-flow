@@ -10,7 +10,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.Creati
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
@@ -91,7 +90,7 @@ class JpaEntityModelTest {
 
     @Test
     void persistsProjectAsPlanContainerSubtype() {
-        Project project = newProject("Umzug", CreationType.EMPTY, ProjectStatus.ACTIVE);
+        Project project = newProject("Umzug", CreationType.EMPTY, ProjectLocation.OVERVIEW);
         project.setCategory(ProjectCategory.HOME);
         project.setSubcategory(ProjectSubCategory.MOVING);
 
@@ -109,7 +108,7 @@ class JpaEntityModelTest {
 
     @Test
     void persistsSectionTaskAndMilestoneThroughJoinedInheritance() {
-        Project project = newProject("Präsentation", CreationType.AI, ProjectStatus.DRAFT);
+        Project project = newProject("Präsentation", CreationType.AI, ProjectLocation.DRAFT);
         PlanSection section = newSection("Vorbereitung", ElementOrigin.AI, 0);
         Task task = newTask("Folien erstellen", ElementOrigin.AI, 0);
         Milestone milestone = newMilestone("Generalprobe", ElementOrigin.AI, 1);
@@ -133,7 +132,7 @@ class JpaEntityModelTest {
     @Test
     void rejectsDuplicateMembershipForProjectAndUser() {
         User user = newUser("owner@example.org");
-        Project project = newProject("Projekt", CreationType.EMPTY, ProjectStatus.ACTIVE);
+        Project project = newProject("Projekt", CreationType.EMPTY, ProjectLocation.OVERVIEW);
         entityManager.persist(user);
         entityManager.persist(project);
 
@@ -180,7 +179,7 @@ class JpaEntityModelTest {
 
     @Test
     void persistsPlanDraftAndItsContentsAsSeparateAggregate() {
-        Project project = newProject("KI-Projekt", CreationType.AI, ProjectStatus.DRAFT);
+        Project project = newProject("KI-Projekt", CreationType.AI, ProjectLocation.DRAFT);
         entityManager.persist(project);
         DraftPlan draft = newDraft(project);
         DraftSection section = new DraftSection();
@@ -208,7 +207,7 @@ class JpaEntityModelTest {
 
     @Test
     void persistsAndReloadsTaskPrerequisites() {
-        Project project = newProject("Abhängigkeiten", CreationType.EMPTY, ProjectStatus.ACTIVE);
+        Project project = newProject("Abhängigkeiten", CreationType.EMPTY, ProjectLocation.OVERVIEW);
         Task predecessor = newTask("Konzept", ElementOrigin.USER, 0);
         Task successor = newTask("Umsetzung", ElementOrigin.USER, 1);
         project.addElement(predecessor);
@@ -227,7 +226,7 @@ class JpaEntityModelTest {
 
     @Test
     void persistsAndReloadsDraftTaskPrerequisites() {
-        Project project = newProject("Draft-Abhängigkeiten", CreationType.AI, ProjectStatus.DRAFT);
+        Project project = newProject("Draft-Abhängigkeiten", CreationType.AI, ProjectLocation.DRAFT);
         entityManager.persist(project);
         DraftPlan draft = newDraft(project);
         DraftTask predecessor = new DraftTask();
@@ -251,7 +250,7 @@ class JpaEntityModelTest {
 
     @Test
     void storesEnumsAsStrings() {
-        Project project = newProject("Enum-Test", CreationType.EMPTY, ProjectStatus.ACTIVE);
+        Project project = newProject("Enum-Test", CreationType.EMPTY, ProjectLocation.OVERVIEW);
         Task task = newTask("Wichtig", ElementOrigin.USER, 0);
         task.setPriority(TaskPriority.HIGH);
         task.setStatus(TaskStatus.IN_PROGRESS);
@@ -316,12 +315,11 @@ class JpaEntityModelTest {
         return user;
     }
 
-    private Project newProject(String title, CreationType creationType, ProjectStatus status) {
+    private Project newProject(String title, CreationType creationType, ProjectLocation location) {
         Project project = new Project();
         project.setTitle(title);
         project.setCreationType(creationType);
-        project.setStatus(status);
-        project.setLocation(status == ProjectStatus.DRAFT ? ProjectLocation.DRAFT : ProjectLocation.OVERVIEW);
+        project.setLocation(location);
         return project;
     }
 

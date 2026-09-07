@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.planelement;
 
 import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
+import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -56,15 +57,16 @@ class PlanOrderingTest {
     }
 
     @Test
-    void datedOrderUsesNullsLastManualOrderAndStableId() {
+    void dateDisplayKeepsUndatedSlotsAndUsesManualOrderForEqualDates() {
         UUID lowId = new UUID(0, 1); UUID highId = new UUID(0, 2);
         Item later = new Item(highId, 100, LocalDate.of(2027, 2, 1));
-        Item tiedHigh = new Item(highId, 200, LocalDate.of(2027, 1, 1));
-        Item tiedLow = new Item(lowId, 200, LocalDate.of(2027, 1, 1));
-        Item undated = new Item(lowId, 0, null);
-        List<Item> items = new ArrayList<>(List.of(undated, later, tiedHigh, tiedLow));
-        items.sort(PlanOrdering.dated(Item::date, Item::order, Item::id));
-        assertThat(items).containsExactly(tiedLow, tiedHigh, later, undated);
+        Item undated = new Item(lowId, 200, null);
+        Item tiedHigh = new Item(highId, 300, LocalDate.of(2027, 1, 1));
+        Item tiedLow = new Item(lowId, 400, LocalDate.of(2027, 1, 1));
+        List<Item> items = List.of(later, undated, tiedHigh, tiedLow);
+
+        assertThat(PlanOrdering.display(items, SortMode.DATE, Item::date))
+                .containsExactly(tiedHigh, undated, tiedLow, later);
     }
 
     @Test

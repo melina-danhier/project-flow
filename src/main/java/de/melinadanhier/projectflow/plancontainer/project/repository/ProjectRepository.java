@@ -29,6 +29,22 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
             @Param("location") ProjectLocation location
     );
 
+    @Query("""
+            select distinct project
+            from Project project
+            join project.memberships membership
+            where membership.user.id = :userId and membership.active = true
+              and project.location = :location
+              and (lower(project.title) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(project.description, '')) like lower(concat('%', :query, '%')))
+            order by project.updatedAt desc
+            """)
+    List<Project> searchAccessibleByUserIdAndLocation(
+            @Param("userId") UUID userId,
+            @Param("location") ProjectLocation location,
+            @Param("query") String query
+    );
+
     default List<Project> findAllAccessibleByUserId(UUID userId) {
         return findAllAccessibleByUserIdAndLocation(userId, ProjectLocation.OVERVIEW);
     }
@@ -39,5 +55,5 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     @EntityGraph(attributePaths = {"memberships", "memberships.user"})
     @Query("select project from Project project where project.id = :projectId")
-    java.util.Optional<Project> findPlanProjectById(@Param("projectId") UUID projectId);
+    java.util.Optional<Project> findWithMembershipsById(@Param("projectId") UUID projectId);
 }

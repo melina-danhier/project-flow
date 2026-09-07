@@ -13,6 +13,48 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ProjectCreationMigrationTest {
 
     @Test
+    void removesRedundantProjectStatusAndPreservesLocation() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:project-status-removal;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        CREATE TABLE projects (
+                            id UUID PRIMARY KEY,
+                            status VARCHAR(20) NOT NULL,
+                            location VARCHAR(20) NOT NULL,
+                            CONSTRAINT ck_projects_status CHECK (status IN ('DRAFT', 'ACTIVE', 'COMPLETED')),
+                            CONSTRAINT ck_projects_draft_state CHECK (
+                                (status = 'DRAFT' AND location = 'DRAFT')
+                                OR (status <> 'DRAFT' AND location <> 'DRAFT'))
+                        )
+                        """);
+                statement.execute("""
+                        INSERT INTO projects (id, status, location) VALUES
+                            (RANDOM_UUID(), 'DRAFT', 'DRAFT'),
+                            (RANDOM_UUID(), 'ACTIVE', 'OVERVIEW'),
+                            (RANDOM_UUID(), 'COMPLETED', 'ARCHIVE')
+                        """);
+            }
+
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V32__remove_project_status.sql"));
+
+            try (var statement = connection.createStatement()) {
+                try (var result = statement.executeQuery("SELECT location FROM projects ORDER BY location")) {
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getString(1)).isEqualTo("ARCHIVE");
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getString(1)).isEqualTo("DRAFT");
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getString(1)).isEqualTo("OVERVIEW");
+                }
+                assertThatThrownBy(() -> statement.executeQuery("SELECT status FROM projects"))
+                        .isInstanceOf(SQLException.class);
+            }
+        }
+    }
+
+    @Test
     void migratesManualAndExistingDraftRowsBeforeAddingTheNewConstraints() throws Exception {
         try (var connection = DriverManager.getConnection(
                 "jdbc:h2:mem:project-creation-migration;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {

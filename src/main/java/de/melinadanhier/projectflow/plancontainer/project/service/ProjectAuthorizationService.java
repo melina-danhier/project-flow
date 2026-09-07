@@ -8,7 +8,6 @@ import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
@@ -61,8 +60,7 @@ public class ProjectAuthorizationService {
     }
 
     public boolean isEditable(ProjectMember membership) {
-        return membership.getProject().getStatus() == ProjectStatus.ACTIVE
-                && membership.getProject().getLocation() == ProjectLocation.OVERVIEW;
+        return membership.getProject().getLocation() == ProjectLocation.OVERVIEW;
     }
 
     /** Serialize changes to mode, memberships and task assignments on the same project. */
