@@ -38,7 +38,7 @@
              th:errors="*{otherProjectTypeDescription}" role="alert"></div>
     </div>
     <template id="subcategory-options">
-        <option th:each="option : ${T(de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory).values()}"
+        <option th:each="option : *{allSubcategories}"
                 th:value="${option.name()}" th:attr="data-category=${option.category.name()}"
                 th:text="${option.label}"></option>
     </template>
