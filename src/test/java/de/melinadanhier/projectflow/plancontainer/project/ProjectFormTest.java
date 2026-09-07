@@ -5,7 +5,7 @@ import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectForm;
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectUpdateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -47,17 +47,17 @@ class ProjectFormTest {
     @Test
     void createFormKeepsItsOtherCategoryDefaultAndOptionalTypeDescription() {
         ProjectCreateForm form = validCreateForm();
-        form.setCategory(TemplateCategory.OTHER);
+        form.setCategory(ProjectCategory.OTHER);
         form.setDescription("Das Projekt ist bereits ausreichend beschrieben.");
 
-        assertThat(new ProjectCreateForm().getCategory()).isEqualTo(TemplateCategory.OTHER);
+        assertThat(new ProjectCreateForm().getCategory()).isEqualTo(ProjectCategory.OTHER);
         assertThat(validator.validate(form)).isEmpty();
     }
 
     private ProjectCreateForm validCreateForm() {
         ProjectCreateForm form = new ProjectCreateForm();
         form.setTitle("Neues Projekt");
-        form.setCategory(TemplateCategory.EDUCATION);
+        form.setCategory(ProjectCategory.EDUCATION);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         form.setCreationType(CreationType.EMPTY);
         return form;
@@ -66,7 +66,7 @@ class ProjectFormTest {
     private ProjectUpdateForm validUpdateForm() {
         ProjectUpdateForm form = new ProjectUpdateForm();
         form.setTitle("Bestehendes Projekt");
-        form.setCategory(TemplateCategory.EDUCATION);
+        form.setCategory(ProjectCategory.EDUCATION);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         return form;
     }

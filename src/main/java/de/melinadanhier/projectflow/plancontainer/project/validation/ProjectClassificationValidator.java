@@ -3,7 +3,7 @@ package de.melinadanhier.projectflow.plancontainer.project.validation;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.util.LinkedHashMap;
@@ -33,7 +33,7 @@ public class ProjectClassificationValidator
         return errors.isEmpty();
     }
 
-    public static void requireValid(TemplateCategory category, ProjectSubCategory subcategory,
+    public static void requireValid(ProjectCategory category, ProjectSubCategory subcategory,
                                     String otherDescription) {
         var errors = errors(category, subcategory, otherDescription, true);
         if (!errors.isEmpty()) {
@@ -41,13 +41,13 @@ public class ProjectClassificationValidator
         }
     }
 
-    private static Map<String, String> errors(TemplateCategory category, ProjectSubCategory subcategory,
+    private static Map<String, String> errors(ProjectCategory category, ProjectSubCategory subcategory,
                                                String otherDescription, boolean requireDescription) {
         Map<String, String> errors = new LinkedHashMap<>();
         if (!ProjectSubCategory.isValidFor(category, subcategory)) {
             errors.put("subcategory", "Bitte wähle eine Unterkategorie der gewählten Oberkategorie oder keine Unterkategorie.");
         }
-        if (requireDescription && category == TemplateCategory.OTHER
+        if (requireDescription && category == ProjectCategory.OTHER
                 && (otherDescription == null || otherDescription.isBlank())) {
             errors.put("otherProjectTypeDescription",
                     "Bitte beschreibe kurz, um welche Art von Projekt es sich handelt.");

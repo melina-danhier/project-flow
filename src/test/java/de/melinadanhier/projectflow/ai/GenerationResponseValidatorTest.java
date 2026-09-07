@@ -7,7 +7,7 @@ import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidatio
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationCode;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationResult;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import org.junit.jupiter.api.Test;
 
@@ -336,7 +336,7 @@ class GenerationResponseValidatorTest {
     private AiGenerationRequest request(LocalDate start, LocalDate end) {
         return new AiGenerationRequest(new AiWizardSnapshot(
                 "Projekt", null, start, end,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
                 null, null, null, null, null), List.of());
     }
 

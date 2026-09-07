@@ -7,7 +7,7 @@ import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,7 +30,7 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
     private UUID userId;
     private String title;
     private String description;
-    private TemplateCategory category = TemplateCategory.OTHER;
+    private ProjectCategory category = ProjectCategory.OTHER;
     private String otherProjectTypeDescription;
 
     private ProjectSubCategory subcategory;

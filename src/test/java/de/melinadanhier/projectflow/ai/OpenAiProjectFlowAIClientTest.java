@@ -17,7 +17,7 @@ import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.ai.provider.openai.*;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import org.junit.jupiter.api.Test;
 import com.openai.models.responses.StructuredResponseCreateParams;
 
@@ -142,7 +142,7 @@ class OpenAiProjectFlowAIClientTest {
     private AiWizardSnapshot snapshot() {
         return new AiWizardSnapshot(
                 "Projekt", null, null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
                 null, null, null);
     }
 

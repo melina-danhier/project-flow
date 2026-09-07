@@ -3,7 +3,7 @@ package de.melinadanhier.projectflow.plancontainer.template.dto;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,7 +17,7 @@ public class TemplateSummaryDto implements ProjectClassification {
 
     private UUID id;
     private String title;
-    private TemplateCategory category;
+    private ProjectCategory category;
     private String otherProjectTypeDescription;
 
     private ProjectSubCategory subcategory;

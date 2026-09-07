@@ -6,7 +6,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.classification.P
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.collaboration.ProjectCollaboration;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,7 +31,7 @@ public abstract class ProjectForm implements ProjectClassification, ProjectColla
     private LocalDate endDate;
 
     @NotNull(message = "Bitte wähle eine Oberkategorie aus.")
-    private TemplateCategory category;
+    private ProjectCategory category;
 
     private ProjectSubCategory subcategory;
 

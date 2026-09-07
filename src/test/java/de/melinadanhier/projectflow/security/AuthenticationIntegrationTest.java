@@ -13,7 +13,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.membership.Proje
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
@@ -336,7 +336,7 @@ class AuthenticationIntegrationTest {
         assertThat(projectRepository.count()).isEqualTo(projectsBefore);
         assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
                 .isInstanceOfSatisfying(ProjectWizardState.class, saved -> {
-                    assertThat(saved.getCategory()).isEqualTo(TemplateCategory.OTHER);
+                    assertThat(saved.getCategory()).isEqualTo(ProjectCategory.OTHER);
                     assertThat(saved.getDescription()).isEqualTo("Privaten Flohmarkt organisieren");
                     assertThat(saved.getOtherProjectTypeDescription()).isNull();
                 });
@@ -414,7 +414,7 @@ class AuthenticationIntegrationTest {
         assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
                 .isInstanceOfSatisfying(ProjectWizardState.class, state -> {
                     assertThat(state.getTitle()).isEqualTo("Vorlagenprojekt");
-                    assertThat(state.getCategory()).isEqualTo(TemplateCategory.EVENT);
+                    assertThat(state.getCategory()).isEqualTo(ProjectCategory.EVENT);
                     assertThat(state.getCollaborationMode()).isEqualTo(CollaborationMode.GROUP);
                     assertThat(state.getCreationType()).isEqualTo(CreationType.TEMPLATE);
                 });
@@ -677,7 +677,7 @@ class AuthenticationIntegrationTest {
     private Project saveDraftProject(User owner) {
         Project project = new Project();
         project.setTitle("Direkt gesperrter Entwurf");
-        project.setCategory(TemplateCategory.EDUCATION);
+        project.setCategory(ProjectCategory.EDUCATION);
         project.setSubcategory(ProjectSubCategory.PRESENTATION_OR_REPORT);
         project.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         project.setCreationType(CreationType.AI);
