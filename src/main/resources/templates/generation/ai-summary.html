@@ -86,18 +86,23 @@
                 </label>
                 <p th:if="${#fields.hasErrors('consent')}" th:errors="*{consent}" class="pf-alert pf-alert--error" role="alert"></p>
 
-                <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <a th:href="@{/projects/new/ai/details}" class="pf-btn pf-btn--secondary">
+                            ← Zurück
+                        </a>
+                        <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
+                            Abbrechen
+                        </button>
+                    </div>
                     <button id="ai-confirmation-submit" type="submit" class="pf-btn pf-btn--primary" disabled>
                         KI-Prüfung und Planentwurf starten →
                     </button>
-                    <a th:href="@{/projects/new/ai/details}" class="pf-btn pf-btn--secondary">← Zurück</a>
                 </div>
             </form>
         </div>
 
-        <div style="padding-top: 0.5rem;">
-            <th:block th:replace="~{fragments/wizard-nav :: cancel('Projekterstellung abbrechen')}" />
-        </div>
+        <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post" style="display: none;"></form>
     </div>
 
     <script>

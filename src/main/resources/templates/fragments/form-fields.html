@@ -3,7 +3,10 @@
 <body>
 
 <div th:fragment="title-field(label)" class="pf-form-group">
-    <label for="title" class="pf-label" th:text="${label}">Titel</label>
+    <label for="title" class="pf-label">
+        <span th:text="${label}">Titel</span>
+        <span class="pf-required-star" aria-hidden="true">*</span>
+    </label>
     <input id="title" class="pf-input" th:field="*{title}" required maxlength="100" placeholder="z. B. Website Relaunch">
     <div th:if="${#fields.hasErrors('title')}" class="pf-alert pf-alert--error" th:errors="*{title}" role="alert"></div>
 </div>
@@ -19,7 +22,7 @@
 
 <div th:fragment="collaboration-mode" class="pf-form-group">
     <fieldset>
-        <legend>Wer arbeitet am Projekt?</legend>
+        <legend>Wer arbeitet am Projekt? <span class="pf-required-star" aria-hidden="true">*</span></legend>
         <label>
             <input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required>
             <span>Nur ich (Einzelprojekt)</span>

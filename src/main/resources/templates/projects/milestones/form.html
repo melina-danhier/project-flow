@@ -42,9 +42,9 @@
                 </label>
             </div>
 
-            <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; align-items: center;">
-                <button type="submit" class="pf-btn pf-btn--primary" th:text="${editing ? 'Meilenstein speichern' : 'Meilenstein anlegen'}">Speichern</button>
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <a th:href="@{/projects/{projectId}/plan(projectId=${projectId})}" class="pf-btn pf-btn--secondary">Abbrechen</a>
+                <button type="submit" class="pf-btn pf-btn--primary" th:text="${editing ? 'Meilenstein speichern' : 'Meilenstein anlegen'}">Speichern</button>
             </div>
         </form>
 
