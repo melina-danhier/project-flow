@@ -15,11 +15,7 @@ public record GeneratedMilestone(
         @Positive int order
 ) {
     public GeneratedMilestone {
-        tempId = trim(tempId);
-        title = trim(title);
-    }
-
-    private static String trim(String value) {
-        return value == null ? null : value.trim();
+        tempId = tempId == null ? null : tempId.trim();
+        title = title == null ? null : title.trim();
     }
 }
