@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<html lang="de" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
 <!-- Global Head Fragment -->
@@ -18,7 +19,7 @@
 <header th:fragment="site-header" class="site-header" id="top">
     <div class="site-header__inner">
         <div class="site-header__left">
-            <a class="brand" th:href="@{/projects}" aria-label="ProjectFlow Startseite">
+            <a class="brand" th:href="${#authorization.expression('isAuthenticated()') ? '/projects' : '/'}" aria-label="ProjectFlow Startseite">
                 <span class="brand__mark" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
@@ -31,7 +32,8 @@
                     <span class="brand__subtitle">Workspace</span>
                 </div>
             </a>
-            <nav class="site-nav" aria-label="Hauptnavigation">
+            <!-- Only show project navigation for authenticated users -->
+            <nav sec:authorize="isAuthenticated()" class="site-nav" aria-label="Hauptnavigation">
                 <a th:href="@{/projects}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -65,24 +67,43 @@
                 <span>Suche</span>
                 <span class="site-header__kbd">⌘K</span>
             </span>
-            <a class="site-header__account" th:href="@{/login}" aria-label="Mein Konto">
-                <span class="site-header__avatar">PF</span>
-                <span>Anmelden</span>
-            </a>
-            <a class="pf-btn pf-btn--sm pf-btn--primary" th:href="@{/register}" style="text-decoration: none;">
-                Registrieren
-            </a>
+
+            <!-- Show login button for anonymous users -->
+            <th:block sec:authorize="!isAuthenticated()">
+                <a class="site-header__account" th:href="@{/login}" aria-label="Anmelden">
+                    <span class="site-header__avatar">PF</span>
+                    <span>Anmelden</span>
+                </a>
+            </th:block>
+
+            <!-- Show user info + logout for authenticated users -->
+            <th:block sec:authorize="isAuthenticated()">
+                <a class="site-header__account" th:href="@{/projects}" aria-label="Mein Konto">
+                    <span class="site-header__avatar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </span>
+                    <span>Workspace</span>
+                </a>
+                <form th:action="@{/logout}" method="post" style="margin: 0;">
+                    <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" style="text-decoration: none;">
+                        Abmelden
+                    </button>
+                </form>
+            </th:block>
         </div>
     </div>
 </header>
 
-<!-- Rich Multi-Column Modern Footer (Fixed / Anchored Bottom) -->
+<!-- Footer with links + copyright -->
 <footer th:fragment="site-footer" class="site-footer">
     <div class="site-footer__inner">
         <div class="site-footer__grid">
             <!-- Brand & Mission Column -->
             <div class="site-footer__col">
-                <a class="brand" th:href="@{/projects}" style="margin-bottom: 0.85rem;">
+                <a class="brand" th:href="@{/}" style="margin-bottom: 0.85rem;">
                     <span class="brand__mark" aria-hidden="true" style="width: 32px; height: 32px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
                             <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
@@ -93,10 +114,6 @@
                     <span style="font-size: 1.05rem;">ProjectFlow</span>
                 </a>
                 <p>Klar planen. Agil steuern. Gemeinsam vorankommen. Deine All-in-One Plattform für strukturierte Projekte, Aufgaben und Meilensteine.</p>
-                <div class="site-footer__status">
-                    <span class="status-dot-pulse" aria-hidden="true"></span>
-                    <span>Alle Systeme betriebsbereit</span>
-                </div>
             </div>
 
             <!-- Products / Core Navigation -->
@@ -120,38 +137,11 @@
                     <li><a th:href="@{/projects(location='ARCHIVE')}">Projektarchiv</a></li>
                 </ul>
             </div>
-
-            <!-- Security & Workspace -->
-            <div class="site-footer__col">
-                <h4>Sicherheit & Schutz</h4>
-                <p style="font-size: 0.82rem; margin-bottom: 0.85rem;">DSGVO-konforme Datenhaltung und isolierte Mandantensicherheit im lokalen Arbeitsbereich.</p>
-                <span class="site-footer__badge">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                    </svg>
-                    Ende-zu-Ende gesichert
-                </span>
-            </div>
         </div>
 
-        <!-- Bottom Bar -->
+        <!-- Bottom Bar — Copyright Only -->
         <div class="site-footer__bottom">
-            <div>
-                © 2026 ProjectFlow Inc. Alle Rechte vorbehalten. · <span class="site-footer__badge">v2.4 Pro</span>
-            </div>
-            <div class="site-footer__bottom-links">
-                <a th:href="@{/projects}">Datenschutz</a>
-                <a th:href="@{/projects}">Nutzungsbedingungen</a>
-                <a th:href="@{/projects}">Impressum</a>
-            </div>
-            <div>
-                <a class="site-footer__top-link" href="#top">
-                    Nach oben
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="18 15 12 9 6 15"></polyline>
-                    </svg>
-                </a>
-            </div>
+            <span>© 2026 ProjectFlow Inc. All rights reserved.</span>
         </div>
     </div>
 </footer>
