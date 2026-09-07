@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.project.service;
 
 import de.melinadanhier.projectflow.plancontainer.project.validation.ProjectClassificationValidator;
+import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
@@ -37,6 +38,7 @@ import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
+import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +50,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDate;
-import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -269,9 +270,10 @@ public class ProjectService {
 
         List<PlanElementViewDto> orderedElements = planElements.stream()
                 .map(this::toViewElement)
-                .sorted(Comparator.comparingInt(PlanElementViewDto::getSortOrder)
-                .thenComparing(PlanElementViewDto::getType)
-                .thenComparing(PlanElementViewDto::getId))
+                .sorted(project.getSortMode() == SortMode.DATE
+                        ? PlanOrdering.dated(PlanElementViewDto::getRelevantDate,
+                                PlanElementViewDto::getSortOrder, PlanElementViewDto::getId)
+                        : PlanOrdering.manual(PlanElementViewDto::getSortOrder, PlanElementViewDto::getId))
                 .toList();
 
         Map<UUID, Long> taskCounts = tasks.stream()

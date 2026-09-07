@@ -5,7 +5,6 @@ import de.melinadanhier.projectflow.draft.dto.editing.DraftElementMoveForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftMilestoneForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionMoveForm;
-import de.melinadanhier.projectflow.draft.dto.editing.DraftSortModeForm;
 import de.melinadanhier.projectflow.draft.dto.review.DraftReviewDto;
 import de.melinadanhier.projectflow.draft.dto.review.DraftSectionDto;
 import de.melinadanhier.projectflow.draft.mapper.DraftMapper;
@@ -24,17 +23,16 @@ import jakarta.persistence.LockModeType;
 import jakarta.validation.Validator;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
+import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.time.LocalDate;
-import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 
@@ -70,7 +68,7 @@ public class DraftReviewService {
                         draft.getElements().stream().map(DraftPlanElement::getReviewStatus))
                 .filter(status -> status != DraftReviewStatus.PENDING).count());
         review.setSections(draft.getSections().stream()
-                .sorted(Comparator.comparingInt(DraftSection::getSortOrder).thenComparing(DraftSection::getId))
+                .sorted(PlanOrdering.manual(DraftSection::getSortOrder, DraftSection::getId))
                 .map(section -> {
                     var dto = draftMapper.toDto(section);
                     List<DraftPlanElement> manualOrder = manualOrder(section);
@@ -78,7 +76,7 @@ public class DraftReviewService {
                     for (int position = 0; position < manualOrder.size(); position++) {
                         manualPositions.put(manualOrder.get(position).getId(), position);
                     }
-                    dto.setElements(displayOrder(manualOrder, draft.getSortMode()).stream()
+                    dto.setElements(displayOrder(manualOrder).stream()
                             .filter(element -> matches(element, reviewStatus))
                             .map(element -> {
                                 var elementDto = draftMapper.toDto(element);
@@ -95,13 +93,13 @@ public class DraftReviewService {
                 .map(draftMapper::toDto).toList());
         List<DraftPlanElement> unsectioned = draft.getElements().stream()
                 .filter(element -> element.getDraftSection() == null)
-                .sorted(Comparator.comparingInt(DraftPlanElement::getSortOrder).thenComparing(DraftPlanElement::getId))
+                .sorted(PlanOrdering.manual(DraftPlanElement::getSortOrder, DraftPlanElement::getId))
                 .toList();
         var unsectionedPositions = new java.util.HashMap<UUID, Integer>();
         for (int position = 0; position < unsectioned.size(); position++) {
             unsectionedPositions.put(unsectioned.get(position).getId(), position);
         }
-        review.setUnsectionedElements(displayOrder(unsectioned, draft.getSortMode()).stream()
+        review.setUnsectionedElements(displayOrder(unsectioned).stream()
                 .filter(element -> matches(element, reviewStatus))
                 .map(element -> {
                     var dto = draftMapper.toDto(element);
@@ -211,28 +209,24 @@ public class DraftReviewService {
         requireValid(form, "Die Zielposition ist ungültig.");
         DraftPlan draft = editable(projectId, userId, form.getLockVersion());
         DraftPlanElement element = element(draft, elementId);
+        String actualDate = date(element) == null ? "" : date(element).toString();
+        if (!Objects.equals(actualDate, form.getTargetDate())) {
+            throw new DomainValidationException(
+                    "Bei aktiver Datumssortierung kann nur innerhalb derselben Datumsgruppe verschoben werden.");
+        }
         DraftSection source = element.getDraftSection();
         DraftSection target = form.getTargetSectionId() == null ? null : section(draft, form.getTargetSectionId());
-        List<DraftPlanElement> sourceOrder = manualOrder(draft, source);
-        int currentPosition = sourceOrder.indexOf(element);
         boolean sameSection = Objects.equals(source == null ? null : source.getId(),
                 target == null ? null : target.getId());
-        if (sameSection && draft.getSortMode() == SortMode.DATE && isDated(element)
-                && form.getTargetPosition() != currentPosition) {
-            throw new DomainValidationException(
-                    "Datierte Elemente werden bei zeitlicher Sortierung automatisch eingeordnet.");
-        }
-        sourceOrder.remove(element);
-        if (sameSection) {
-            insert(sourceOrder, element, form.getTargetPosition());
-            applyOrder(source, sourceOrder);
-        } else {
-            List<DraftPlanElement> targetOrder = manualOrder(draft, target);
-            insert(targetOrder, element, form.getTargetPosition());
+        List<DraftPlanElement> targetGroup = manualOrder(draft, target).stream()
+                .filter(candidate -> Objects.equals(date(candidate), date(element)))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        targetGroup.remove(element);
+        PlanOrdering.place(targetGroup, element, form.getTargetPosition(),
+                DraftPlanElement::getSortOrder, DraftPlanElement::setSortOrder);
+        if (!sameSection) {
             if (source != null) source.removeElement(element);
             if (target != null) target.addElement(element);
-            applyOrder(source, sourceOrder);
-            applyOrder(target, targetOrder);
         }
     }
 
@@ -242,20 +236,10 @@ public class DraftReviewService {
         DraftPlan draft = editable(projectId, userId, form.getLockVersion());
         DraftSection moved = section(draft, sectionId);
         List<DraftSection> order = new ArrayList<>(draft.getSections());
-        order.sort(Comparator.comparingInt(DraftSection::getSortOrder).thenComparing(DraftSection::getId));
+        order.sort(PlanOrdering.manual(DraftSection::getSortOrder, DraftSection::getId));
         order.remove(moved);
-        if (form.getTargetPosition() > order.size()) {
-            throw new DomainValidationException("Die Zielposition des Bereichs ist ungültig.");
-        }
-        order.add(form.getTargetPosition(), moved);
-        for (int index = 0; index < order.size(); index++) order.get(index).setSortOrder(index);
-    }
-
-    @Transactional
-    public void updateSortMode(UUID projectId, UUID userId, DraftSortModeForm form) {
-        requireValid(form, "Der Sortiermodus ist ungültig.");
-        DraftPlan draft = editable(projectId, userId, form.getLockVersion());
-        draft.setSortMode(form.getSortMode());
+        PlanOrdering.place(order, moved, form.getTargetPosition(),
+                DraftSection::getSortOrder, DraftSection::setSortOrder);
     }
 
     @Transactional
@@ -263,14 +247,11 @@ public class DraftReviewService {
         DraftPlan draft = editable(projectId, userId, version);
         DraftTask task = task(draft, taskId);
         DraftSection section = task.getDraftSection();
-        List<DraftPlanElement> remaining = section == null ? new ArrayList<>() : manualOrder(section);
-        remaining.remove(task);
         draft.getElements().stream().filter(DraftTask.class::isInstance).map(DraftTask.class::cast)
                 .forEach(other -> other.removePrerequisite(task));
         task.getPrerequisites().clear();
         if (section != null) section.removeElement(task);
         draft.removeElement(task);
-        if (section != null) applyOrder(section, remaining);
     }
 
     private DraftTask task(DraftPlan draft, UUID taskId) {
@@ -297,46 +278,28 @@ public class DraftReviewService {
 
     private List<DraftPlanElement> manualOrder(DraftSection section) {
         List<DraftPlanElement> order = new ArrayList<>(section.getElements());
-        order.sort(Comparator.comparingInt(DraftPlanElement::getSortOrder)
-                .thenComparing(DraftPlanElement::getId));
+        order.sort(PlanOrdering.manual(DraftPlanElement::getSortOrder, DraftPlanElement::getId));
         return order;
     }
 
     private List<DraftPlanElement> manualOrder(DraftPlan draft, DraftSection section) {
         if (section != null) return manualOrder(section);
         return draft.getElements().stream().filter(element -> element.getDraftSection() == null)
-                .sorted(Comparator.comparingInt(DraftPlanElement::getSortOrder)
-                        .thenComparing(DraftPlanElement::getId))
+                .sorted(PlanOrdering.manual(DraftPlanElement::getSortOrder, DraftPlanElement::getId))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
     }
 
-    private List<DraftPlanElement> displayOrder(List<DraftPlanElement> manual, SortMode mode) {
-        if (mode != SortMode.DATE) return manual;
-        List<DraftPlanElement> dated = manual.stream().filter(this::isDated)
-                .sorted(Comparator.comparing(this::date)).toList();
-        var iterator = dated.iterator();
-        return manual.stream().map(element -> isDated(element) ? iterator.next() : element).toList();
+    private List<DraftPlanElement> displayOrder(List<DraftPlanElement> manual) {
+        return manual.stream()
+                .sorted(PlanOrdering.dated(this::date,
+                        DraftPlanElement::getSortOrder, DraftPlanElement::getId))
+                .toList();
     }
-
-    private boolean isDated(DraftPlanElement element) { return date(element) != null; }
 
     private LocalDate date(DraftPlanElement element) {
         if (element instanceof DraftTask task) return task.getDueDate();
         if (element instanceof DraftMilestone milestone) return milestone.getDueDate();
         return null;
-    }
-
-    private void insert(List<DraftPlanElement> order, DraftPlanElement element, int position) {
-        if (position > order.size()) throw new DomainValidationException("Die Zielposition ist ungültig.");
-        order.add(position, element);
-    }
-
-    private void applyOrder(DraftSection section, List<DraftPlanElement> order) {
-        if (section != null) {
-            section.getElements().clear();
-            section.getElements().addAll(order);
-        }
-        for (int index = 0; index < order.size(); index++) order.get(index).setSortOrder(index);
     }
 
     private void updateElementReviewStatus(UUID projectId, UUID elementId, UUID userId, long version,

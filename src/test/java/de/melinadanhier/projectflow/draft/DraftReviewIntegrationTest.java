@@ -225,7 +225,7 @@ class DraftReviewIntegrationTest {
                 .andExpect(redirectedUrl(f.reviewUrl()));
         assertThat(review(f).getElements()).hasSize(3);
         assertThat(review(f).getSections().getFirst().getElements())
-                .extracting("sortOrder").containsExactly(0, 1, 2);
+                .extracting("sortOrder").containsExactly(200, 300, 400);
         application.continueWithPending(
                 f.projectId(), review(f).getId(), f.owner().userId(), review(f).getLockVersion());
         assertThat(elementCount(f)).isEqualTo(3);
@@ -280,11 +280,11 @@ class DraftReviewIntegrationTest {
                 "/sections/" + section.getId(),
                 "/tasks/" + task.getId() + "/delete", "/tasks/" + task.getId(),
                 "/milestones/" + milestoneId, "/elements/" + task.getId() + "/move",
-                "/sections/" + section.getId() + "/move", "/sort-mode")) {
+                "/sections/" + section.getId() + "/move")) {
             mvc.perform(post(f.url() + suffix).param("draftId", draft.getId().toString())
                             .param("lockVersion", "0").param("title", "Titel").param("priority", "LOW")
                             .param("targetSectionId", section.getId().toString()).param("targetPosition", "0")
-                            .param("sortMode", "MANUAL")
+                            .param("targetDate", task.getDueDate() == null ? "" : task.getDueDate().toString())
                             .with(user(outsider)).with(csrf())).andExpect(status().isNotFound());
             mvc.perform(post(f.url() + suffix).param("lockVersion", "0").with(user(f.owner())))
                     .andExpect(status().isForbidden());
@@ -454,6 +454,8 @@ class DraftReviewIntegrationTest {
         current = review(f);
         UUID firstTask = current.getElements().get(0).getId();
         UUID secondTask = current.getElements().get(1).getId();
+        String secondTaskDate = current.getElements().get(1).getDueDate() == null
+                ? "" : current.getElements().get(1).getDueDate().toString();
         reviews.acceptElement(f.projectId(), firstTask, f.owner().userId(), current.getLockVersion());
         current = review(f);
         reviews.acceptElement(f.projectId(), secondTask, f.owner().userId(), current.getLockVersion());
@@ -467,6 +469,7 @@ class DraftReviewIntegrationTest {
         var move = new de.melinadanhier.projectflow.draft.dto.editing.DraftElementMoveForm();
         move.setLockVersion(current.getLockVersion());
         move.setTargetSectionId(null);
+        move.setTargetDate(secondTaskDate);
         move.setTargetPosition(0);
         reviews.moveElement(f.projectId(), secondTask, f.owner().userId(), move);
         current = review(f);

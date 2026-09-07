@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.draft.dto.editing;
+package de.melinadanhier.projectflow.planelement.dto;
 
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import jakarta.validation.constraints.NotNull;
@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class DraftSortModeForm {
-    @NotNull private Long lockVersion;
+public class PlanSortModeForm {
+    @NotNull private Long projectLockVersion;
     @NotNull private SortMode sortMode;
 }

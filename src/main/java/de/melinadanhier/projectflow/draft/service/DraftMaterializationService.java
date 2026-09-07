@@ -8,6 +8,7 @@ import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
+import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -54,7 +55,7 @@ public class DraftMaterializationService {
             return created;
         });
         draft.clearContents();
-        draft.setSortMode(workflow.getProject().getSortMode());
+        draft.setSortMode(SortMode.DATE);
         contents.sections().forEach(draft::addSection);
         contents.elements().forEach(draft::addElement);
         draft.setGeneratedAt(Instant.now(clock));

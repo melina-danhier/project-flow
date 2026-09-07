@@ -11,6 +11,7 @@ import de.melinadanhier.projectflow.draft.model.DraftSection;
 import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
+import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public class GeneratedPlanDraftMapper {
         for (int sectionPosition = 0; sectionPosition < orderedSections.size(); sectionPosition++) {
             GeneratedSection generatedSection = orderedSections.get(sectionPosition);
             DraftSection section = createSection(generatedSection);
-            section.setSortOrder(sectionPosition);
+            section.setSortOrder((sectionPosition + 1) * PlanOrdering.GAP);
             sections.add(section);
 
             for (GeneratedTask generatedTask : generatedSection.tasks()) {
@@ -102,7 +103,7 @@ public class GeneratedPlanDraftMapper {
         section.getElements().clear();
         section.getElements().addAll(orderedElements);
         for (int position = 0; position < orderedElements.size(); position++) {
-            orderedElements.get(position).setSortOrder(position);
+            orderedElements.get(position).setSortOrder((position + 1) * PlanOrdering.GAP);
         }
     }
 
