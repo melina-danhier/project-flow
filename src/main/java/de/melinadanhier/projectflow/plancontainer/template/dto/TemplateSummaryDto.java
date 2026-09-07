@@ -17,6 +17,7 @@ public class TemplateSummaryDto implements ProjectClassification {
 
     private UUID id;
     private String title;
+    private String description;
     private ProjectCategory category;
     private String otherProjectTypeDescription;
 
