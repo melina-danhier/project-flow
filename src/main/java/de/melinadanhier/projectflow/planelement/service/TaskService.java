@@ -15,6 +15,7 @@ import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
+import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
@@ -54,6 +55,7 @@ public class TaskService {
         task.setPlanContainer(project);
         task.setPlanSection(section);
         task.setOrigin(ElementOrigin.USER);
+        task.setReviewStatus(PlanReviewStatus.CONFIRMED);
         task.setRelativeStartDay(null);
         task.setRelativeDueDay(null);
         apply(task, form, assignee);
@@ -180,6 +182,7 @@ public class TaskService {
         task.setRelativeStartDay(null);
         task.setRelativeDueDay(null);
         task.setAssignee(assignee);
+        task.setReviewStatus(PlanReviewStatus.CONFIRMED);
         task.setStatus(form.getStatus() == null
                 ? task.getId() == null ? TaskStatus.OPEN : task.getStatus()
                 : form.getStatus());
