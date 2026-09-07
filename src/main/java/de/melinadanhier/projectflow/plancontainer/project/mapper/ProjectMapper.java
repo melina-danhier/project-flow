@@ -12,9 +12,9 @@ import org.mapstruct.Mapping;
 public interface ProjectMapper {
 
     @Mapping(target = "subcategoryOptions", ignore = true)
+    @Mapping(target = "progress", ignore = true)
     ProjectSummaryDto toSummaryDto(Project project);
 
-    @Mapping(target = "members", source = "memberships")
     @Mapping(target = "subcategoryOptions", ignore = true)
     ProjectDetailsDto toDetailsDto(Project project);
 

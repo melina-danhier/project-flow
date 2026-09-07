@@ -18,7 +18,13 @@ public interface ProjectClassification {
     }
 
     default String getProjectTypeLabel() {
-        return isOtherCategory() ? getOtherProjectTypeDescription()
-                : getSubcategory() == null ? null : getSubcategory().getLabel();
+        return getDisplayCategory();
+    }
+
+    default String getDisplayCategory() {
+        if (getSubcategory() != null && !getSubcategory().isOther()) {
+            return getSubcategory().getLabel();
+        }
+        return getCategory() == null ? null : getCategory().getLabel();
     }
 }

@@ -5,7 +5,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
@@ -559,7 +558,6 @@ class SeparatedPlanUiIntegrationTest {
         project.setTitle(title);
         project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.GROUP);
         project.setCreationType(CreationType.EMPTY);
-        project.setStatus(ProjectStatus.ACTIVE);
         project.setLocation(ProjectLocation.OVERVIEW);
         ProjectMember ownerMembership = new ProjectMember();
         ownerMembership.setUser(owner);

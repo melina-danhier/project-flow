@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.planelement.repository;
 
 import de.melinadanhier.projectflow.planelement.model.Task;
+import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -9,8 +10,15 @@ import org.springframework.data.repository.query.Param;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.List;
+import java.util.Collection;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
+
+    interface ProjectTaskProgress {
+        UUID getProjectId();
+        long getTotalTasks();
+        long getCompletedTasks();
+    }
 
     Optional<Task> findByIdAndPlanContainerId(UUID taskId, UUID projectId);
 
@@ -24,6 +32,19 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             order by task.sortOrder asc
             """)
     List<Task> findPlanTasks(@Param("projectId") UUID projectId);
+
+    @Query("""
+            select task.planContainer.id as projectId,
+                   count(task) as totalTasks,
+                   sum(case when task.status = :completedStatus then 1 else 0 end) as completedTasks
+            from Task task
+            where task.planContainer.id in :projectIds
+            group by task.planContainer.id
+            """)
+    List<ProjectTaskProgress> findProgressByProjectIds(
+            @Param("projectIds") Collection<UUID> projectIds,
+            @Param("completedStatus") TaskStatus completedStatus
+    );
 
     @Query("""
             select distinct successor from Task successor

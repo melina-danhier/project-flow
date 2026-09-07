@@ -19,7 +19,7 @@ import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
@@ -224,7 +224,7 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(taskRepository.count()).isEqualTo(activeTasksBefore + 3);
         assertThat(milestoneRepository.count()).isEqualTo(activeMilestonesBefore + 1);
         assertThat(projectRepository.findById(projectId)).get()
-                .extracting("status").isEqualTo(ProjectStatus.ACTIVE);
+                .extracting("location").isEqualTo(ProjectLocation.OVERVIEW);
         assertThat(draftRepository.findById(draft.getId())).get()
                 .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
         assertThat(workflowRepository.findById(workflowId)).get()

@@ -18,7 +18,6 @@ import de.melinadanhier.projectflow.draft.model.DraftSection;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftTaskForm;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
-import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.validation.Validator;
@@ -77,7 +76,7 @@ public class DraftReviewService {
                     for (int position = 0; position < manualOrder.size(); position++) {
                         manualPositions.put(manualOrder.get(position).getId(), position);
                     }
-                    dto.setElements(displayOrder(manualOrder).stream()
+                    dto.setElements(PlanOrdering.display(manualOrder, draft.getProject().getSortMode(), this::date).stream()
                             .filter(element -> matches(element, reviewStatus))
                             .map(element -> {
                                 var elementDto = draftMapper.toDto(element);
@@ -100,7 +99,7 @@ public class DraftReviewService {
         for (int position = 0; position < unsectioned.size(); position++) {
             unsectionedPositions.put(unsectioned.get(position).getId(), position);
         }
-        review.setUnsectionedElements(displayOrder(unsectioned).stream()
+        review.setUnsectionedElements(PlanOrdering.display(unsectioned, draft.getProject().getSortMode(), this::date).stream()
                 .filter(element -> matches(element, reviewStatus))
                 .map(element -> {
                     var dto = draftMapper.toDto(element);
@@ -108,9 +107,7 @@ public class DraftReviewService {
                     return dto;
                 }).toList());
         var project = draft.getProject();
-        review.setCategoryLabel(project.getSubcategory() != null
-                ? project.getSubcategory().getLabel()
-                : categoryLabel(project.getCategory()));
+        review.setCategoryLabel(project.getDisplayCategory());
         return review;
     }
 
@@ -290,13 +287,6 @@ public class DraftReviewService {
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
     }
 
-    private List<DraftPlanElement> displayOrder(List<DraftPlanElement> manual) {
-        return manual.stream()
-                .sorted(PlanOrdering.dated(this::date,
-                        DraftPlanElement::getSortOrder, DraftPlanElement::getId))
-                .toList();
-    }
-
     private LocalDate date(DraftPlanElement element) {
         if (element instanceof DraftTask task) return task.getDueDate();
         if (element instanceof DraftMilestone milestone) return milestone.getDueDate();
@@ -351,20 +341,4 @@ public class DraftReviewService {
         });
     }
 
-    private String categoryLabel(ProjectCategory category) {
-        if (category == null) {
-            return null;
-        }
-        return switch (category) {
-            case EDUCATION -> "Bildung und Studium";
-            case SOFTWARE_TECHNOLOGY -> "Software und Technik";
-            case EVENT -> "Veranstaltung";
-            case HOME -> "Zuhause";
-            case CREATIVE -> "Kreativprojekt";
-            case CAREER -> "Beruf und Karriere";
-            case HEALTH_PERSONAL_DEVELOPMENT -> "Gesundheit und persönliche Entwicklung";
-            case TRAVEL -> "Reise";
-            case OTHER -> "Sonstiges";
-        };
-    }
 }

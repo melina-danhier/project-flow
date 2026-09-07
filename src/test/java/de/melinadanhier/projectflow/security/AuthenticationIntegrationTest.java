@@ -11,7 +11,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
@@ -500,7 +499,7 @@ class AuthenticationIntegrationTest {
                 .andExpect(status().isConflict());
 
         assertThat(projectRepository.findById(draft.getId())).get().satisfies(project -> {
-            assertThat(project.getStatus()).isEqualTo(ProjectStatus.DRAFT);
+            assertThat(project.getLocation()).isEqualTo(ProjectLocation.DRAFT);
             assertThat(project.getLocation()).isEqualTo(ProjectLocation.DRAFT);
             assertThat(project.getTitle()).isEqualTo("Direkt gesperrter Entwurf");
         });
@@ -681,7 +680,6 @@ class AuthenticationIntegrationTest {
         project.setSubcategory(ProjectSubCategory.PRESENTATION_OR_REPORT);
         project.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         project.setCreationType(CreationType.AI);
-        project.setStatus(ProjectStatus.DRAFT);
         project.setLocation(ProjectLocation.DRAFT);
         ProjectMember membership = new ProjectMember();
         membership.setUser(owner);

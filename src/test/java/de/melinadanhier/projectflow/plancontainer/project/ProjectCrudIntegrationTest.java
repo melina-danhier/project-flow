@@ -11,12 +11,10 @@ import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.Creati
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
-import de.melinadanhier.projectflow.plancontainer.project.service.ProjectStateService;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.planelement.dto.DeleteSectionForm;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
@@ -63,7 +61,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Import({
         ProjectAuthorizationService.class,
         ProjectService.class,
-        ProjectStateService.class,
         ProjectMapperImpl.class,
         PlanElementMapperImpl.class,
         TaskService.class,
@@ -382,14 +379,14 @@ class ProjectCrudIntegrationTest {
         TaskForm late = taskForm("Spät", null);
         late.setDueDate(LocalDate.of(2027, 3, 1));
         taskService.createTask(project.getId(), late, owner.getId());
+        taskService.createTask(project.getId(), taskForm("Ohne Datum", null), owner.getId());
         TaskForm early = taskForm("Früh", null);
         early.setDueDate(LocalDate.of(2027, 1, 1));
         taskService.createTask(project.getId(), early, owner.getId());
-        taskService.createTask(project.getId(), taskForm("Ohne Datum", null), owner.getId());
 
         assertThat(projectService.getProjectPlan(project.getId(), owner.getId()).getUnsectionedElements())
                 .extracting(PlanElementViewDto::getTitle)
-                .containsExactly("Früh", "Spät", "Ohne Datum");
+                .containsExactly("Früh", "Ohne Datum", "Spät");
 
         PlanSortModeForm manual = new PlanSortModeForm();
         manual.setProjectLockVersion(project.getLockVersion());
@@ -398,7 +395,7 @@ class ProjectCrudIntegrationTest {
         assertThat(project.getSortMode()).isEqualTo(SortMode.MANUAL);
         assertThat(projectService.getProjectPlan(project.getId(), owner.getId()).getUnsectionedElements())
                 .extracting(PlanElementViewDto::getTitle)
-                .containsExactly("Spät", "Früh", "Ohne Datum");
+                .containsExactly("Spät", "Ohne Datum", "Früh");
     }
 
     @Test
@@ -515,7 +512,6 @@ class ProjectCrudIntegrationTest {
         project.setTitle(title);
         project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.GROUP);
         project.setCreationType(CreationType.EMPTY);
-        project.setStatus(ProjectStatus.ACTIVE);
         ProjectMember membership = new ProjectMember();
         membership.setUser(owner);
         membership.setRole(ProjectMemberRole.OWNER);

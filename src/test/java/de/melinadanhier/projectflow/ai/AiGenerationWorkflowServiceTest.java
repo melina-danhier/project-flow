@@ -138,7 +138,6 @@ class AiGenerationWorkflowServiceTest {
         UUID workflowId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         var project = new de.melinadanhier.projectflow.plancontainer.project.model.Project();
-        project.setStatus(de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus.DRAFT);
         project.setLocation(de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation.DRAFT);
         var draft = new de.melinadanhier.projectflow.draft.model.DraftPlan();
         draft.setProject(project);

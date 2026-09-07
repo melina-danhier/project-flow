@@ -10,7 +10,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -323,7 +322,7 @@ class DraftReviewIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
                 projects.findById(f.projectId()).orElseThrow().setSubcategory(null));
         mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
-                .andExpect(content().string(containsString("Zuhause")));
+                .andExpect(content().string(containsString("Haushalt und Wohnen")));
     }
 
     @Test
@@ -547,7 +546,6 @@ class DraftReviewIntegrationTest {
             Project project = new Project();
             project.setTitle("Testprojekt");
             project.setCreationType(CreationType.AI);
-            project.setStatus(ProjectStatus.DRAFT);
             project.setLocation(ProjectLocation.DRAFT);
             ProjectMember membership = new ProjectMember();
             membership.setUser(owner);
@@ -584,12 +582,12 @@ class DraftReviewIntegrationTest {
     private void assertEmptyPlan(Fixture f) {
         assertThat(elementCount(f)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from plan_sections where plan_container_id = ?", Long.class, f.projectId())).isZero();
-        assertThat(projects.findById(f.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.DRAFT);
+        assertThat(projects.findById(f.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
     }
     private void assertApplied(Fixture f) {
         assertThat(elementCount(f)).isEqualTo(4);
         assertThat(review(f).getStatus()).isEqualTo(DraftPlanStatus.APPLIED);
-        assertThat(projects.findById(f.projectId()).orElseThrow().getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        assertThat(projects.findById(f.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
     }
     private record Fixture(UUID projectId, AuthenticatedUser owner) {
         String url() { return "/projects/" + projectId + "/draft"; }

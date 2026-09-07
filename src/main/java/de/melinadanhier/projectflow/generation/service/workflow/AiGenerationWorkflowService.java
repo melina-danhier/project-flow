@@ -22,7 +22,6 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import lombok.RequiredArgsConstructor;
@@ -182,7 +181,7 @@ public class AiGenerationWorkflowService {
             throw new ConflictException("Nur ein vollständig verworfener Entwurf kann neu generiert werden.");
         }
         var project = draft.getProject();
-        if (project.getStatus() != ProjectStatus.DRAFT || project.getLocation() != ProjectLocation.DRAFT
+        if (project.getLocation() != ProjectLocation.DRAFT
                 || !project.getSections().isEmpty() || !project.getElements().isEmpty()) {
             throw new ConflictException("Das Projekt wurde bereits aktiviert.");
         }

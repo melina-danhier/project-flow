@@ -11,7 +11,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -64,18 +63,21 @@ class DraftOrderingIntegrationTest {
     }
 
     @Test
-    void draftAlwaysUsesDeadlineThenManualOrderAndPlacesNullDatesLast() {
+    void dateOrderSortsDatedElementsButKeepsUndatedManualSlots() {
         Fixture fixture = fixture();
         fixture.task().setStartDate(LocalDate.of(2027, 12, 1));
         fixture.task().setDueDate(LocalDate.of(2027, 3, 10));
         fixture.milestone().setDueDate(LocalDate.of(2027, 2, 1));
         fixture.task().setSortOrder(100);
-        fixture.milestone().setSortOrder(200);
-        fixture.secondTask().setDueDate(null);
+        DraftTask undated = task("Ohne Datum", 200);
+        fixture.draft().addElement(undated);
+        fixture.first().addElement(undated);
+        fixture.milestone().setSortOrder(300);
+        drafts.flush();
 
         assertThat(reviews.review(fixture.project().getId(), fixture.owner().getId())
                 .getSections().getFirst().getElements()).extracting("title")
-                .containsExactly("Meilenstein", "Aufgabe");
+                .containsExactly("Meilenstein", "Ohne Datum", "Aufgabe");
 
         assertThat(fixture.task().getOrigin()).isEqualTo(ElementOrigin.AI);
         assertThat(fixture.milestone().getOrigin()).isEqualTo(ElementOrigin.AI);
@@ -136,7 +138,7 @@ class DraftOrderingIntegrationTest {
         owner.setEmail(java.util.UUID.randomUUID() + "@example.org"); owner.setDisplayName("Owner");
         owner.setPasswordHash("hash"); owner.setEnabled(true); users.save(owner);
         Project project = new Project(); project.setTitle("Draft"); project.setCreationType(CreationType.AI);
-        project.setStatus(ProjectStatus.DRAFT); project.setLocation(ProjectLocation.DRAFT);
+        project.setLocation(ProjectLocation.DRAFT);
         ProjectMember membership = new ProjectMember(); membership.setUser(owner);
         membership.setRole(ProjectMemberRole.OWNER); membership.setActive(true); project.addMembership(membership);
         projects.save(project);

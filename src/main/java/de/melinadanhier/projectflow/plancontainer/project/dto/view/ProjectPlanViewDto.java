@@ -22,7 +22,6 @@ public class ProjectPlanViewDto {
     private List<TaskDetailsDto> tasks = new ArrayList<>();
     private List<MilestoneDetailsDto> milestones = new ArrayList<>();
     private List<TaskDependencyDto> dependencies = new ArrayList<>();
-    private List<ProjectMemberDto> activeMembers = new ArrayList<>();
     private boolean editable;
     private boolean owner;
     private List<PlanElementViewDto> unsectionedElements = new ArrayList<>();

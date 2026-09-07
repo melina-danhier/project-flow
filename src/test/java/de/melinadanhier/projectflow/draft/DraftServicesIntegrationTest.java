@@ -12,7 +12,6 @@ import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
@@ -83,7 +82,6 @@ class DraftServicesIntegrationTest {
         Project project = new Project();
         project.setTitle("KI-Projekt");
         project.setCreationType(CreationType.AI);
-        project.setStatus(ProjectStatus.DRAFT);
         project.setLocation(ProjectLocation.DRAFT);
         ProjectMember membership = new ProjectMember();
         membership.setUser(owner);

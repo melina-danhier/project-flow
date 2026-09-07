@@ -1,9 +1,11 @@
 package de.melinadanhier.projectflow.planelement.service;
 
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
+import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -22,14 +24,27 @@ public final class PlanOrdering {
         return Comparator.comparingInt(order).thenComparing(id);
     }
 
-    public static <T> Comparator<T> dated(
-            Function<T, LocalDate> date,
-            ToIntFunction<T> order,
-            Function<T, UUID> id
+    /** Keeps undated elements in their manual slots and sorts only dated elements among those slots. */
+    public static <T> List<T> display(
+            List<T> manualOrder,
+            SortMode sortMode,
+            Function<T, LocalDate> date
     ) {
-        return Comparator.comparing(date, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparingInt(order)
-                .thenComparing(id);
+        if (sortMode != SortMode.DATE) {
+            return List.copyOf(manualOrder);
+        }
+        List<T> dated = manualOrder.stream()
+                .filter(element -> date.apply(element) != null)
+                .sorted(Comparator.comparing(date))
+                .toList();
+        List<T> result = new ArrayList<>(manualOrder);
+        int datedIndex = 0;
+        for (int index = 0; index < result.size(); index++) {
+            if (date.apply(result.get(index)) != null) {
+                result.set(index, dated.get(datedIndex++));
+            }
+        }
+        return List.copyOf(result);
     }
 
     /** Inserts {@code moved} and changes only it unless the target gap must be rebuilt. */

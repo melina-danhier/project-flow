@@ -6,7 +6,6 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
@@ -217,7 +216,6 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         Project project = new Project();
         project.setTitle("Claim " + UUID.randomUUID());
         project.setCreationType(CreationType.AI);
-        project.setStatus(ProjectStatus.DRAFT);
         project.setLocation(ProjectLocation.DRAFT);
         project.setCategory(ProjectCategory.OTHER);
         project.setCollaborationMode(CollaborationMode.INDIVIDUAL);
