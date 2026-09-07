@@ -19,6 +19,7 @@ import de.melinadanhier.projectflow.draft.model.DraftSection;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftTaskForm;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.validation.Validator;
@@ -387,7 +388,7 @@ public class DraftReviewService {
         });
     }
 
-    private String categoryLabel(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory category) {
+    private String categoryLabel(ProjectCategory category) {
         if (category == null) {
             return null;
         }

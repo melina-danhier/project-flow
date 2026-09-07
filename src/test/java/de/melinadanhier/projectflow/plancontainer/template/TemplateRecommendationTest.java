@@ -8,7 +8,7 @@ import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import de.melinadanhier.projectflow.plancontainer.template.dto.TemplateSummaryDto;
 import de.melinadanhier.projectflow.plancontainer.template.mapper.TemplateMapper;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
 import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
 import org.junit.jupiter.api.Test;
@@ -37,9 +37,9 @@ class TemplateRecommendationTest {
         Template broadMatch = new Template();
         Template exactMatch = new Template();
         Template differentCategory = new Template();
-        TemplateSummaryDto broadSummary = summary(TemplateCategory.EDUCATION, ProjectSubCategory.TERM_PAPER);
-        TemplateSummaryDto exactSummary = summary(TemplateCategory.EDUCATION, ProjectSubCategory.PRESENTATION_OR_REPORT);
-        TemplateSummaryDto differentSummary = summary(TemplateCategory.EVENT, ProjectSubCategory.STUDY_EVENT);
+        TemplateSummaryDto broadSummary = summary(ProjectCategory.EDUCATION, ProjectSubCategory.TERM_PAPER);
+        TemplateSummaryDto exactSummary = summary(ProjectCategory.EDUCATION, ProjectSubCategory.PRESENTATION_OR_REPORT);
+        TemplateSummaryDto differentSummary = summary(ProjectCategory.EVENT, ProjectSubCategory.STUDY_EVENT);
         when(repository.findAllByActiveTrueOrderByTitleAsc())
                 .thenReturn(List.of(broadMatch, exactMatch, differentCategory));
         when(mapper.toSummaryDto(broadMatch)).thenReturn(broadSummary);
@@ -47,11 +47,11 @@ class TemplateRecommendationTest {
         when(mapper.toSummaryDto(differentCategory)).thenReturn(differentSummary);
 
         assertThat(service.getTemplates()).containsExactly(broadSummary, exactSummary, differentSummary);
-        assertThat(service.findRecommendation(TemplateCategory.EDUCATION, ProjectSubCategory.PRESENTATION_OR_REPORT))
+        assertThat(service.findRecommendation(ProjectCategory.EDUCATION, ProjectSubCategory.PRESENTATION_OR_REPORT))
                 .get().isSameAs(exactSummary);
     }
 
-    private TemplateSummaryDto summary(TemplateCategory category, ProjectSubCategory subcategory) {
+    private TemplateSummaryDto summary(ProjectCategory category, ProjectSubCategory subcategory) {
         TemplateSummaryDto summary = new TemplateSummaryDto();
         summary.setId(UUID.randomUUID());
         summary.setCategory(category);

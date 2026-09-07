@@ -25,7 +25,7 @@ import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectStateService;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapperImpl;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
@@ -117,7 +117,7 @@ class ProjectSecurityIntegrationTest {
         ProjectCreateForm form = new ProjectCreateForm();
         form.setTitle(" Neues Projekt ");
         form.setCreationType(CreationType.EMPTY);
-        form.setCategory(TemplateCategory.HOME);
+        form.setCategory(ProjectCategory.HOME);
         form.setSubcategory(ProjectSubCategory.MOVING);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
 
@@ -134,7 +134,7 @@ class ProjectSecurityIntegrationTest {
         assertThat(project.getCreationType()).isEqualTo(CreationType.EMPTY);
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
         assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
-        assertThat(project.getCategory()).isEqualTo(TemplateCategory.HOME);
+        assertThat(project.getCategory()).isEqualTo(ProjectCategory.HOME);
         assertThat(project.getSubcategory()).isEqualTo(ProjectSubCategory.MOVING);
         assertThat(project.getCollaborationMode()).isEqualTo(CollaborationMode.INDIVIDUAL);
         assertThat(planSectionRepository.count()).isZero();
@@ -167,7 +167,7 @@ class ProjectSecurityIntegrationTest {
         form.setCreationType(CreationType.EMPTY);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         form.setSubcategory(ProjectSubCategory.MOVING);
-        for (TemplateCategory category : java.util.List.of(TemplateCategory.EDUCATION, TemplateCategory.OTHER)) {
+        for (ProjectCategory category : java.util.List.of(ProjectCategory.EDUCATION, ProjectCategory.OTHER)) {
             form.setCategory(category);
             form.setOtherProjectTypeDescription("Besonderes Vorhaben");
             assertThatThrownBy(() -> projectService.createProject(form, owner.getId()))
@@ -239,7 +239,7 @@ class ProjectSecurityIntegrationTest {
         Template template = new Template();
         template.setTitle("Studienprojekt");
         template.setDescription("Unveränderte Vorlage");
-        template.setCategory(TemplateCategory.EDUCATION);
+        template.setCategory(ProjectCategory.EDUCATION);
         template.setSubcategory(ProjectSubCategory.PRESENTATION_OR_REPORT);
         template.setCollaborationMode(CollaborationMode.BOTH);
         PlanSection sourceSection = new PlanSection();
@@ -524,7 +524,7 @@ class ProjectSecurityIntegrationTest {
     private ProjectUpdateForm updateForm(CollaborationMode mode, Long lockVersion) {
         var form = new ProjectUpdateForm();
         form.setTitle("Projekt aktualisiert");
-        form.setCategory(TemplateCategory.EDUCATION);
+        form.setCategory(ProjectCategory.EDUCATION);
         form.setCollaborationMode(mode);
         form.setLockVersion(lockVersion);
         return form;

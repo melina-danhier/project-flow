@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.template.model;
 
-public enum TemplateCategory {
+public enum ProjectCategory {
     EDUCATION,
     SOFTWARE_TECHNOLOGY,
     EVENT,

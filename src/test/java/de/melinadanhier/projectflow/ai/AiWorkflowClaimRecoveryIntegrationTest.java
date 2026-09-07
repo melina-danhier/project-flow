@@ -9,7 +9,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -219,7 +219,7 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         project.setCreationType(CreationType.AI);
         project.setStatus(ProjectStatus.DRAFT);
         project.setLocation(ProjectLocation.DRAFT);
-        project.setCategory(TemplateCategory.OTHER);
+        project.setCategory(ProjectCategory.OTHER);
         project.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         projectRepository.saveAndFlush(project);
         return workflowRepository.saveAndFlush(AiPlanGenerationWorkflow.create(

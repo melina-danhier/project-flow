@@ -20,7 +20,7 @@ import de.melinadanhier.projectflow.ai.provider.openai.OpenAiProjectFlowAIClient
 import de.melinadanhier.projectflow.ai.provider.openai.OpenAiProperties;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -39,7 +39,7 @@ class ProviderAiClientTest {
     private final GenerationPromptBuilder generationPrompts = mock(GenerationPromptBuilder.class);
     private final AiPrompt prompt = new AiPrompt("v1", "instructions", "confirmed data");
     private final AiWizardSnapshot snapshot = new AiWizardSnapshot(
-            "Projekt", null, null, null, CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER,
+            "Projekt", null, null, null, CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER,
             null, "Test", null, null, null);
 
     @ParameterizedTest

@@ -33,7 +33,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
@@ -256,7 +256,7 @@ class AiWorkflowIntegrationTest {
         User owner = saveUser("ai-rollback@example.org");
         AiWizardSnapshot invalid = new AiWizardSnapshot(
                 "Rollback", "x".repeat(2001), LocalDate.now(), LocalDate.now(),
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
                 "Nur Snapshot", null, null);
         long projectsBefore = projectRepository.count();
         long membersBefore = projectMemberRepository.count();
@@ -450,7 +450,7 @@ class AiWorkflowIntegrationTest {
                 LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 9, 21),
                 CollaborationMode.GROUP,
-                TemplateCategory.HOME,
+                ProjectCategory.HOME,
                 ProjectSubCategory.MOVING, null,
                 "Bis zum Monatsende umziehen",
                 "Budget 2.000 Euro",

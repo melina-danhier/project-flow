@@ -11,7 +11,7 @@ import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCode
 import de.melinadanhier.projectflow.common.exception.GenerationException;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
@@ -134,7 +134,7 @@ class AiOutputParserTest {
     void workflowPayloadsRoundTripAndLegacyJsonStringsRemainReadable() {
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
                 "Testprojekt", "Beschreibung", null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Sonstiges",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Sonstiges",
                 "Ziel", null, null);
         var preCheckResult = parsePreCheck(problemJson("WARNING", "Knapp"));
 

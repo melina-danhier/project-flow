@@ -19,6 +19,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
@@ -403,14 +404,14 @@ public class ProjectService {
     }
 
     private void validateGeneralProjectData(ProjectCreateForm form) {
-        if (form.getCategory() == de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.OTHER
+        if (form.getCategory() == ProjectCategory.OTHER
                 && (form.getDescription() == null || form.getDescription().isBlank())
                 && (form.getOtherProjectTypeDescription() == null
                     || form.getOtherProjectTypeDescription().isBlank())) {
             throw new DomainValidationException("Bitte beschreibe dein sonstiges Projekt.");
         }
         ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
-                form.getCategory() == de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.OTHER
+                form.getCategory() == ProjectCategory.OTHER
                         && (form.getOtherProjectTypeDescription() == null
                             || form.getOtherProjectTypeDescription().isBlank())
                         ? "Sonstiges Projekt" : form.getOtherProjectTypeDescription());

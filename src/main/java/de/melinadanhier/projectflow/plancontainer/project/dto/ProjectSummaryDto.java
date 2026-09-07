@@ -6,7 +6,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,7 +23,7 @@ public class ProjectSummaryDto implements ProjectClassification {
     private String title;
     private LocalDate startDate;
     private LocalDate endDate;
-    private TemplateCategory category;
+    private ProjectCategory category;
     private String otherProjectTypeDescription;
 
     private ProjectSubCategory subcategory;

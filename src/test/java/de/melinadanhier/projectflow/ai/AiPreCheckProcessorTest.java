@@ -18,7 +18,7 @@ import de.melinadanhier.projectflow.generation.service.coordination.AiPlanGenera
 import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckProcessor;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -195,7 +195,7 @@ class AiPreCheckProcessorTest {
     private AiWizardSnapshot snapshot() {
         return new AiWizardSnapshot(
                 "Testprojekt", null, null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
                 null, null, null);
     }
 

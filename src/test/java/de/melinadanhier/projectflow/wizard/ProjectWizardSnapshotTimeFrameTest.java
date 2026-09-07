@@ -6,7 +6,7 @@ import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCode
 import tools.jackson.databind.json.JsonMapper;
 import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.service.ProjectTimeFrameCalculator;
@@ -56,7 +56,7 @@ class ProjectWizardSnapshotTimeFrameTest {
         MockHttpSession session = new MockHttpSession();
         AiWizardSnapshot legacy = new AiWizardSnapshot(
                 "Alt", null, LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Sonstiges",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Sonstiges",
                 null, null, null);
 
         service.restoreFromSnapshot(legacy, userId, session);
@@ -114,14 +114,14 @@ class ProjectWizardSnapshotTimeFrameTest {
     private AiWizardSnapshot snapshot(LocalDate start, LocalDate end,
                                       AiProjectTimeFrameType type, Integer durationDays) {
         return new AiWizardSnapshot("Projekt", null, start, end,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
                 null, null, null, type, durationDays, java.util.Map.of());
     }
 
     private ProjectBasicsForm form(ProjectTimeFrameType mode) {
         ProjectBasicsForm form = new ProjectBasicsForm();
         form.setTitle("Projekt");
-        form.setCategory(TemplateCategory.OTHER);
+        form.setCategory(ProjectCategory.OTHER);
         form.setOtherProjectTypeDescription("Test");
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         form.setTimeFrameType(mode);
