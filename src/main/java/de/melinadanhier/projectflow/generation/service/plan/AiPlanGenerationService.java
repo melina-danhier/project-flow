@@ -11,7 +11,6 @@ import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationResponseValidator;
-import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationIssue;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationResult;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
@@ -77,11 +76,9 @@ public class AiPlanGenerationService {
     ) {
         return new AiOutputValidationException(
                 "Der generierte Plan verletzt deterministische Ausgabebedingungen.",
-                validation.issues().stream().map(this::formatIssue).toList());
-    }
-
-    private String formatIssue(GenerationValidationIssue issue) {
-        return issue.code().name() + " | " + issue.fieldPath() + " | " + issue.message();
+                validation.issues().stream()
+                        .map(issue -> issue.code().name() + " | " + issue.fieldPath() + " | " + issue.message())
+                        .toList());
     }
 
     private void waitBeforeRetry(int retryNumber) {
