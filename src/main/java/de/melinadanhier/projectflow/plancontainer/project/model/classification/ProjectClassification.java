@@ -13,6 +13,10 @@ public interface ProjectClassification {
         return ProjectSubCategory.forCategory(getCategory());
     }
 
+    default List<ProjectSubCategory> getAllSubcategories() {
+        return List.of(ProjectSubCategory.values());
+    }
+
     default boolean isOtherCategory() {
         return getCategory() == ProjectCategory.OTHER;
     }
