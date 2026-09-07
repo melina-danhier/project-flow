@@ -34,39 +34,47 @@
             <div th:replace="~{fragments/project-classification :: fields(false)}"></div>
             <th:block th:replace="~{fragments/form-fields :: collaboration-mode}" />
             
-            <fieldset>
-                <legend>Zeitlicher Rahmen <span class="pf-required-star" aria-hidden="true">*</span></legend>
-                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; margin-top: 0.5rem;">
-                    <label><input type="radio" th:field="*{timeFrameType}" value="START_AND_END"> <span>Start und Ende</span></label>
-                    <label><input type="radio" th:field="*{timeFrameType}" value="START_AND_DURATION"> <span>Start und Dauer</span></label>
-                    <label><input type="radio" th:field="*{timeFrameType}" value="END_AND_DURATION"> <span>Ende und Dauer</span></label>
-                    <label><input type="radio" th:field="*{timeFrameType}" value="NONE"> <span>Noch keine Zeitangaben</span></label>
-                </div>
-            </fieldset>
-            
-            <div th:if="${#fields.hasErrors('timeFrameType')}" th:errors="*{timeFrameType}" class="pf-alert pf-alert--error" role="alert"></div>
+            <div style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+                <h3 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 600;">Zeitlicher Rahmen</h3>
+                <p class="pf-hint" style="margin: 0 0 1rem 0;">Trage nur die Angaben ein, die dir bereits bekannt sind. Alle Angaben sind optional.</p>
+            </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                <div id="start-date-field" th:hidden="*{!startDateInputActive}" class="pf-form-group">
-                    <label for="startDate" class="pf-label">Startdatum <span class="pf-required-star" aria-hidden="true">*</span></label>
-                    <input id="startDate" type="date" th:field="*{startDate}" class="pf-input"
-                           th:disabled="*{!startDateInputActive}" th:required="*{startDateInputActive}">
+                <div class="pf-form-group">
+                    <label for="startDate" class="pf-label">
+                        <span>Wann möchtest du beginnen?</span>
+                        <span class="pf-hint">(optional)</span>
+                    </label>
+                    <input id="startDate" type="date" th:field="*{startDate}" class="pf-input">
                     <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
 
-                <div id="end-date-field" th:hidden="*{!endDateInputActive}" class="pf-form-group">
-                    <label for="endDate" class="pf-label">Enddatum <span class="pf-required-star" aria-hidden="true">*</span></label>
-                    <input id="endDate" type="date" th:field="*{endDate}" class="pf-input"
-                           th:disabled="*{!endDateInputActive}" th:required="*{endDateInputActive}">
+                <div class="pf-form-group">
+                    <label for="endDate" class="pf-label">
+                        <span>Gibt es einen gewünschten oder festen Endtermin?</span>
+                        <span class="pf-hint">(optional)</span>
+                    </label>
+                    <input id="endDate" type="date" th:field="*{endDate}" class="pf-input">
                     <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
 
-                <div id="duration-field" th:hidden="*{!durationInputActive}" class="pf-form-group">
-                    <label for="durationDays" class="pf-label">Dauer in Tagen <span class="pf-required-star" aria-hidden="true">*</span></label>
-                    <input id="durationDays" type="number" min="1" step="1" th:field="*{durationDays}" class="pf-input"
-                           th:disabled="*{!durationInputActive}" th:required="*{durationInputActive}">
+                <div class="pf-form-group">
+                    <label for="durationDays" class="pf-label">
+                        <span>Wie lange möchtest du ungefähr an dem Projekt arbeiten?</span>
+                        <span class="pf-hint">(optional)</span>
+                    </label>
+                    <input id="durationDays" type="number" min="1" step="1" th:field="*{durationDays}" class="pf-input" placeholder="z. B. 14 (Tage)">
                     <div th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
+            </div>
+
+            <div class="pf-form-group" style="margin-top: 1rem;">
+                <label for="availableWorkingTime" class="pf-label">
+                    <span>Wie viel Zeit kannst du ungefähr für das Projekt einplanen?</span>
+                    <span class="pf-hint">(optional)</span>
+                </label>
+                <input id="availableWorkingTime" type="text" th:field="*{availableWorkingTime}" class="pf-input" maxlength="1000" placeholder="z. B. ca. 5 Stunden pro Woche oder nur am Wochenende">
+                <div th:if="${#fields.hasErrors('availableWorkingTime')}" th:errors="*{availableWorkingTime}" class="pf-alert pf-alert--error" role="alert"></div>
             </div>
 
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
@@ -86,34 +94,11 @@
         (() => {
             const category = document.getElementById('category');
             const description = document.getElementById('description');
-            const updateDescriptionRequirement = () => description.required = category.value === 'OTHER';
-            category.addEventListener('change', updateDescriptionRequirement);
-            updateDescriptionRequirement();
-
-            const startField = document.getElementById('start-date-field');
-            const startInput = document.getElementById('startDate');
-            const endField = document.getElementById('end-date-field');
-            const endInput = document.getElementById('endDate');
-            const durationField = document.getElementById('duration-field');
-            const durationInput = document.getElementById('durationDays');
-            const updateTimeFields = () => {
-                const selected = document.querySelector('input[name="timeFrameType"]:checked')?.value ?? 'NONE';
-                const needsStart = selected === 'START_AND_END' || selected === 'START_AND_DURATION';
-                const needsEnd = selected === 'START_AND_END' || selected === 'END_AND_DURATION';
-                const needsDuration = selected === 'START_AND_DURATION' || selected === 'END_AND_DURATION';
-                startField.hidden = !needsStart;
-                startInput.disabled = !needsStart;
-                startInput.required = needsStart;
-                endField.hidden = !needsEnd;
-                endInput.disabled = !needsEnd;
-                endInput.required = needsEnd;
-                durationField.hidden = !needsDuration;
-                durationInput.disabled = !needsDuration;
-                durationInput.required = needsDuration;
-            };
-            document.querySelectorAll('input[name="timeFrameType"]')
-                .forEach(input => input.addEventListener('change', updateTimeFields));
-            updateTimeFields();
+            if (category && description) {
+                const updateDescriptionRequirement = () => description.required = category.value === 'OTHER';
+                category.addEventListener('change', updateDescriptionRequirement);
+                updateDescriptionRequirement();
+            }
         })();
     </script>
 </main>

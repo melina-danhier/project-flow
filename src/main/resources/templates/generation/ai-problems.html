@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <th:block th:replace="~{fragments/layout :: head('Hinweise zur Projektplanung')}" />
+    <th:block th:replace="~{fragments/layout :: head(${review.canGenerate() ? 'Angaben sind bereit' : 'Hinweise & offene Punkte prüfen'})}" />
 </head>
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
@@ -11,12 +11,15 @@
     <div class="pf-page-header">
         <div class="pf-page-header__left">
             <div class="pf-cluster" style="margin-bottom: 0.25rem;">
-                <span class="pf-badge pf-badge--yellow">KI-Prüfung</span>
-                <span class="pf-badge pf-badge--gray">Validierung</span>
+                <span class="pf-badge"
+                      th:classappend="${review.canGenerate() ? 'pf-badge--green' : 'pf-badge--yellow'}"
+                      th:text="${review.canGenerate() ? 'Bereit' : 'Prüfung erforderlich'}">Prüfung erforderlich</span>
+                <span class="pf-badge pf-badge--gray">KI-Vorprüfung</span>
             </div>
-            <h1 style="margin: 0;">Bitte prüfe diese Hinweise</h1>
-            <p class="pf-page-header__subtitle">
-                Die Plausibilitätsprüfung hat Rückfragen oder Widersprüche in deinen Projektangaben festgestellt.
+            <h1 style="margin: 0;" th:text="${review.canGenerate() ? 'Projektangaben sind bereit zur Generierung' : 'Bitte prüfe offene Punkte'}">Bitte prüfe offene Punkte</h1>
+            <p class="pf-page-header__subtitle"
+               th:text="${review.canGenerate() ? 'Alle offenen Punkte wurden geklärt oder bestätigt. Du kannst den Planentwurf jetzt erstellen lassen.' : 'Die Vorprüfung hat offene Punkte oder Widersprüche in deinen Projektangaben festgestellt.'}">
+                Die Vorprüfung hat offene Punkte oder Widersprüche in deinen Projektangaben festgestellt.
             </p>
         </div>
     </div>
@@ -28,21 +31,30 @@
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <span>Mindestens ein schwerwiegender Widerspruch blockiert die Plangenerierung. Passe deine Eingaben an und starte die Prüfung erneut.</span>
+            <span>Schwerwiegende Widersprüche blockieren die Plangenerierung. Bitte Eingaben anpassen.</span>
         </div>
 
-        <div th:unless="${review.hasErrors()}" class="pf-alert pf-alert--warning" role="status">
+        <div th:if="${!review.hasErrors() and review.hasOpenPoints()}" class="pf-alert pf-alert--warning" role="status">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
-            <span>Prüfe die Hinweise. Sobald alle Punkte geklärt oder akzeptiert sind, kannst du die Plangenerierung starten.</span>
+            <span>Offene Planungsgrundlagen müssen geprüft oder bestätigt werden.</span>
+        </div>
+
+        <div th:if="${review.canGenerate() and !review.hasErrors() and !review.hasOpenPoints()}" class="pf-alert pf-alert--success" role="status">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Alle offenen Punkte wurden geklärt oder bestätigt. Der Planentwurf kann jetzt generiert werden.</span>
         </div>
 
         <!-- Problems List -->
         <div class="pf-stack" style="margin-top: 1.5rem;">
-            <div th:each="problem : ${review.problems}" th:unless="${problem.acknowledged}"
+            <div th:each="problem : ${review.problems}"
+                 th:unless="${problem.accepted or (review.hasErrors() and problem.severity.name() != 'ERROR')}"
                  class="pf-card"
                  th:classappend="${problem.severity.name() == 'ERROR' ? 'pf-card--accent pf-card--accent-danger' : 'pf-card--accent'}"
                  style="border-left-width: 4px;"
@@ -50,25 +62,56 @@
                 <div class="pf-card__header">
                     <span class="pf-badge"
                           th:classappend="${problem.severity.name() == 'ERROR' ? 'pf-badge--red' : 'pf-badge--yellow'}"
-                          th:text="${problem.severity.name() == 'ERROR' ? 'Fehler' : 'Warnung'}">Hinweis</span>
+                          th:text="${problem.severity.name() == 'ERROR' ? 'Fehler' : 'Offener Punkt'}">Hinweis</span>
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <p style="font-size: 0.95rem; color: var(--pf-text-main); font-weight: 600; margin-bottom: 0.4rem;" th:text="${problem.message}"></p>
-                    <p style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0;">
-                        <strong>Vorschlag: </strong><span th:text="${problem.suggestion}"></span>
+                    <p th:if="${problem.suggestedUserAction != null and !problem.suggestedUserAction.isBlank()}" style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0 0 0.5rem 0;">
+                        <strong th:text="${problem.severity.name() == 'ERROR' ? 'Vorschlag: ' : 'Lösungsvorschlag: '}">Vorschlag: </strong><span th:text="${problem.suggestedUserAction}"></span>
                     </p>
                 </div>
 
-                <div th:if="${problem.warning}">
-                    <form th:action="@{/projects/new/ai/problems/{workflowId}/warnings/{problemIndex}/acknowledge(workflowId=${review.workflowId},problemIndex=${problem.index})}"
-                          method="post" style="margin: 0;">
+                <!-- Error notice -->
+                <div th:if="${problem.severity.name() == 'ERROR'}" style="font-size: 0.84rem; color: var(--pf-danger); font-weight: 600;">
+                    Dieser Fehler muss in den Eingaben korrigiert werden.
+                </div>
+
+                <!-- Open point actions -->
+                <div th:if="${problem.isOpenPoint()}">
+                    <div th:if="${problem.acceptedInterpretation != null and !problem.acceptedInterpretation.isBlank()}"
+                         style="background: var(--pf-surface-2, rgba(0,0,0,0.03)); border-radius: var(--pf-radius-sm, 6px); padding: 0.75rem; margin: 0.75rem 0; font-size: 0.88rem; color: var(--pf-text-secondary);">
+                        <strong>Bedeutung bei direkter Übernahme: </strong><span th:text="${problem.acceptedInterpretation}"></span>
+                    </div>
+
+                    <!-- Action A: Direct Accept -->
+                    <form th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/accept(workflowId=${review.workflowId},problemIndex=${problem.index})}"
+                          method="post" style="margin: 0.5rem 0 0 0;">
                         <button type="submit" class="pf-btn pf-btn--sm pf-btn--outline">
-                            Diesen Hinweis akzeptieren
+                            Interpretation direkt übernehmen
                         </button>
                     </form>
-                </div>
-                <div th:unless="${problem.warning}" style="font-size: 0.84rem; color: var(--pf-danger); font-weight: 600;">
-                    Dieser Fehler muss in den Eingaben korrigiert werden.
+
+                    <!-- Action B: Confirm Custom Context -->
+                    <form th:if="${problem.reviewQuestion != null and !problem.reviewQuestion.isBlank()}"
+                          th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/confirm(workflowId=${review.workflowId},problemIndex=${problem.index})}"
+                          method="post" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--pf-border);">
+                        <div class="pf-form-group" style="margin-bottom: 0.5rem;">
+                            <label th:for="|planningContext-${problem.index}|" class="pf-label" style="font-size: 0.88rem;">
+                                <span th:text="${problem.reviewQuestion}">Welche Planungsgrundlage soll gelten?</span>
+                                <span class="pf-required-star" aria-hidden="true">*</span>
+                            </label>
+                            <textarea th:id="|planningContext-${problem.index}|"
+                                      name="planningContext"
+                                      class="pf-textarea"
+                                      maxlength="1000"
+                                      required
+                                      placeholder="Beschreibe deine Planungsgrundlage..."
+                                      style="min-height: 70px; margin-bottom: 0.5rem;"></textarea>
+                        </div>
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">
+                            Kontext speichern
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
