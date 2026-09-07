@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
@@ -20,8 +21,8 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import lombok.RequiredArgsConstructor;
@@ -59,14 +60,14 @@ public class AiGenerationWorkflowService {
         }
         AiPlanGenerationWorkflow workflow = require(workflowId);
         AiPreCheckResult result = payloadCodec.readPreCheckResult(workflow.getPreCheckResult());
-        var acknowledgedIndices = workflow.getAcknowledgedWarningIndices();
-        var assumptionContext = payloadCodec.readAssumptionContext(workflow.getGenerationAssumptionContext());
+        var acceptedIndices = workflow.getAcceptedOpenPointIndices();
+        var customInterpretations = workflow.getCustomOpenPointInterpretations();
         if (result.hasErrors()) {
             throw new IllegalStateException("Ein Workflow mit Pre-Check-Fehlern darf nicht generiert werden.");
         }
         for (int index = 0; index < result.problems().size(); index++) {
             if (result.problems().get(index).severity() == AiPreCheckSeverity.WARNING
-                    && !acknowledgedIndices.contains(index)) {
+                    && !acceptedIndices.contains(index)) {
                 throw new IllegalStateException(
                         "Ein Workflow mit nicht akzeptierten Warnungen darf nicht generiert werden.");
             }
@@ -75,12 +76,24 @@ public class AiGenerationWorkflowService {
                 workflowId,
                 runId,
                 payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()),
-                result.problems().stream()
-                        .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
+                java.util.stream.IntStream.range(0, result.problems().size())
+                        .filter(acceptedIndices::contains)
+                        .mapToObj(index -> withConfirmedInterpretation(
+                                result.problems().get(index), customInterpretations.get(index)))
                         .toList(),
-                assumptionContext.confirmedAssumptions(),
-                assumptionContext.rejectedAssumptions(),
                 workflow.getGenerationRoundAttemptCount()));
+    }
+
+    private AiPreCheckProblem withConfirmedInterpretation(
+            AiPreCheckProblem problem,
+            String customInterpretation
+    ) {
+        if (customInterpretation == null) {
+            return problem;
+        }
+        return new AiPreCheckProblem(
+                problem.severity(), problem.type(), problem.message(), problem.suggestedUserAction(),
+                problem.reviewQuestion(), customInterpretation);
     }
 
     @Transactional
@@ -105,8 +118,7 @@ public class AiGenerationWorkflowService {
     public boolean recordSuccess(UUID workflowId, UUID runId, GeneratedPlanResponse result) {
         var contents = draftMapper.map(result);
         return draftMaterializationService.materialize(
-                workflowId, runId, contents, payloadCodec.writeGeneratedPlan(result),
-                !result.criticalAssumptions().isEmpty());
+                workflowId, runId, contents, payloadCodec.writeGeneratedPlan(result));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

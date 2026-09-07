@@ -10,13 +10,18 @@ import de.melinadanhier.projectflow.draft.model.*;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import de.melinadanhier.projectflow.generation.model.workflow.*;
-import de.melinadanhier.projectflow.generation.dto.*;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.service.coordination.AiPlanGenerationCoordinator;
 import de.melinadanhier.projectflow.generation.service.plan.AiPlanGenerationService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
-import de.melinadanhier.projectflow.plancontainer.project.model.*;
+import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import org.junit.jupiter.api.Test;
@@ -75,7 +80,7 @@ class PlanDraftMaterializationIntegrationTest {
         assertThat(workflow.getConfirmedSnapshot()).isEqualTo(snapshot);
         assertThat(codec.readGeneratedPlan(workflow.getGeneratedPlan())).isEqualTo(generatedPlan());
         assertThat(workflow.getPreCheckResult()).contains("Nur im Pre-Check");
-        assertThat(workflow.getAcknowledgedWarningIndices()).containsExactly(0);
+        assertThat(workflow.getAcceptedOpenPointIndices()).containsExactly(0);
         assertNoActivePlan(f);
     }
 
@@ -92,52 +97,12 @@ class PlanDraftMaterializationIntegrationTest {
     }
 
     @Test
-    void successfulAssumptionRegenerationAtomicallyReplacesExistingDraft() {
-        Fixture f = runningWorkflow();
-        var first = new GeneratedPlanResponse(generatedPlan().sections(), List.of(
-                new GeneratedCriticalAssumption("Material ist vorhanden.", false)));
-        assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), first)).isTrue();
-        UUID draftId = drafts.findByProjectId(f.projectId()).orElseThrow().getId();
-
-        inTransaction(() -> {
-            var workflow = workflows.findByIdForUpdate(f.workflowId()).orElseThrow();
-            var review = new AssumptionReviewRequest(List.of(
-                    new AssumptionDecisionRequest(0, AssumptionDecision.REJECTED, null)));
-            workflow.prepareAssumptionRegeneration(
-                    codec.writeAssumptionContext(new GenerationAssumptionContext(
-                            List.of(), List.of(new RejectedCriticalAssumption(
-                            "Material ist vorhanden.", null)))),
-                    codec.writeAssumptionReview(review), UUID.randomUUID(), Instant.now().plusSeconds(300));
-        });
-        assertThat(workflowService.claimWork(f.workflowId(), runId(f))).isPresent();
-
-        var replacement = new GeneratedPlanResponse(List.of(new GeneratedSection(
-                "replacement", "Neu geplant", null, 1,
-                List.of(
-                        task("replacement-1", "Neue Aufgabe 1", 1, null, List.of()),
-                        task("replacement-2", "Neue Aufgabe 2", 2, null, List.of()),
-                        task("replacement-3", "Neue Aufgabe 3", 3, null, List.of())),
-                List.of())), List.of());
-        assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), replacement)).isTrue();
-
-        readDraft(f, draft -> {
-            assertThat(draft.getId()).isEqualTo(draftId);
-            assertThat(draft.getSections()).extracting(DraftSection::getTitle)
-                    .containsExactly("Neu geplant");
-            assertThat(draft.getElements()).extracting(DraftPlanElement::getTitle)
-                    .containsExactlyInAnyOrder("Neue Aufgabe 1", "Neue Aufgabe 2", "Neue Aufgabe 3");
-        });
-        assertThat(workflows.findById(f.workflowId()).orElseThrow().getStatus())
-                .isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
-    }
-
-    @Test
     void directMaterializationJoinsCallerTransactionAndRollsBackWithIt() {
         Fixture f = runningWorkflow();
         var contents = mapper.map(generatedPlan());
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             assertThat(storage.materialize(f.workflowId(), runId(f), contents,
-                    codec.writeGeneratedPlan(generatedPlan()), false)).isTrue();
+                    codec.writeGeneratedPlan(generatedPlan()))).isTrue();
             assertThat(drafts.findByProjectId(f.projectId())).isPresent();
             assertThat(workflows.findById(f.workflowId()).orElseThrow().getStatus())
                     .isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
@@ -171,7 +136,7 @@ class PlanDraftMaterializationIntegrationTest {
             jdbc.update("insert into draft_task_prerequisites "
                     + "(successor_draft_task_id, prerequisite_draft_task_id) values (null, null)");
             return result;
-        }).when(storage).materialize(eq(f.workflowId()), eq(runId(f)), any(), anyString(), anyBoolean());
+        }).when(storage).materialize(eq(f.workflowId()), eq(runId(f)), any(), anyString());
         stubGeneration(generatedPlan());
 
         // The failure transaction must commit independently, even if an outer caller rolls back.
@@ -190,7 +155,7 @@ class PlanDraftMaterializationIntegrationTest {
 
         // After an explicit manual repair/retry, only the existing workflow is reused.
         doCallRealMethod().when(storage).materialize(
-                eq(f.workflowId()), eq(runId(f)), any(), anyString(), anyBoolean());
+                eq(f.workflowId()), eq(runId(f)), any(), anyString());
         prepareRetry(f);
         assertThat(workflowService.recordSuccess(f.workflowId(), runId(f), generatedPlan())).isTrue();
         assertCompleteDraft(f);
@@ -213,7 +178,7 @@ class PlanDraftMaterializationIntegrationTest {
     @Test
     void providerFailureAndRetryUseOnlyWorkflowUntilFirstSuccess() {
         Fixture f = runningWorkflow();
-        when(generation.generatePlan(any(), anyList(), anyInt(), anyList(), anyList(), any(Runnable.class)))
+        when(generation.generatePlan(any(), anyList(), anyInt(), any(Runnable.class)))
                 .thenThrow(new AiTechnicalException(AiTechnicalErrorCode.PROVIDER_UNAVAILABLE, "Nicht erreichbar"));
         coordinator.generateClaimed(work(f));
         assertNoDraft(f);
@@ -303,7 +268,7 @@ class PlanDraftMaterializationIntegrationTest {
             var workflow = workflows.findById(workflowId).orElseThrow();
             workflow.recordPreCheckResult(codec.writePreCheckResult(new AiPreCheckResult(List.of(
                     new AiPreCheckProblem(AiPreCheckSeverity.WARNING, "Nur im Pre-Check", "Ignoriert")))), true);
-            workflow.acknowledgeWarning(0);
+            workflow.acceptOpenPoint(0);
             workflow.approvePreCheck();
             workflow.startGeneration(UUID.randomUUID(), Instant.now().plusSeconds(300));
         });
@@ -323,7 +288,7 @@ class PlanDraftMaterializationIntegrationTest {
 
     private void stubGeneration(GeneratedPlanResponse response) {
         doReturn(response).when(generation).generatePlan(
-                any(), anyList(), anyInt(), anyList(), anyList(), any(Runnable.class));
+                any(), anyList(), anyInt(), any(Runnable.class));
     }
 
     private AiGenerationWork work(Fixture f) {

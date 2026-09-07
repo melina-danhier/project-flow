@@ -1,8 +1,8 @@
 package de.melinadanhier.projectflow.wizard.dto;
 
 import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
@@ -42,9 +42,6 @@ public class ProjectBasicsForm implements ProjectClassification {
     @NotNull(message = "Bitte wähle Einzel- oder Gruppenprojekt aus.")
     private CollaborationMode collaborationMode;
 
-    @NotNull(message = "Bitte wähle aus, welche Zeitangaben du machen möchtest.")
-    private ProjectTimeFrameType timeFrameType = ProjectTimeFrameType.NONE;
-
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate startDate;
 
@@ -54,6 +51,9 @@ public class ProjectBasicsForm implements ProjectClassification {
     @Positive(message = "Die Dauer muss mindestens einen Tag betragen.")
     private Integer durationDays;
 
+    @Size(max = 1000, message = "Die verfügbare Arbeitszeit darf höchstens 1000 Zeichen lang sein.")
+    private String availableWorkingTime;
+
     public static ProjectBasicsForm from(ProjectWizardState state) {
         ProjectBasicsForm form = new ProjectBasicsForm();
         form.setTitle(state.getTitle());
@@ -62,37 +62,10 @@ public class ProjectBasicsForm implements ProjectClassification {
         form.setOtherProjectTypeDescription(state.getOtherProjectTypeDescription());
         form.setSubcategory(state.getSubcategory());
         form.setCollaborationMode(state.getCollaborationMode());
-        form.setTimeFrameType(state.getTimeFrameType() == null
-                ? ProjectTimeFrameType.NONE : state.getTimeFrameType());
+        form.setStartDate(state.getStartDate());
+        form.setEndDate(state.getEndDate());
         form.setDurationDays(state.getDurationDays());
-        switch (form.getTimeFrameType()) {
-            case START_AND_END -> {
-                form.setStartDate(state.getStartDate());
-                form.setEndDate(state.getEndDate());
-            }
-            case START_AND_DURATION -> form.setStartDate(state.getStartDate());
-            case END_AND_DURATION -> form.setEndDate(state.getEndDate());
-            case NONE -> { }
-        }
+        form.setAvailableWorkingTime(state.getAvailableWorkingTime());
         return form;
-    }
-
-    public boolean isOtherCategory() {
-        return category == TemplateCategory.OTHER;
-    }
-
-    public boolean isStartDateInputActive() {
-        return timeFrameType == ProjectTimeFrameType.START_AND_END
-                || timeFrameType == ProjectTimeFrameType.START_AND_DURATION;
-    }
-
-    public boolean isEndDateInputActive() {
-        return timeFrameType == ProjectTimeFrameType.START_AND_END
-                || timeFrameType == ProjectTimeFrameType.END_AND_DURATION;
-    }
-
-    public boolean isDurationInputActive() {
-        return timeFrameType == ProjectTimeFrameType.START_AND_DURATION
-                || timeFrameType == ProjectTimeFrameType.END_AND_DURATION;
     }
 }

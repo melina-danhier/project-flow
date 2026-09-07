@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -106,7 +105,7 @@ class AiWorkflowControlServiceTest {
     void explicitGenerationStartCreatesOneBoundedRun() {
         UUID workflowId = UUID.randomUUID(), userId = UUID.randomUUID();
         owned(workflowId, userId);
-        when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED);
+        when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
 
         UUID runId = service().startGeneration(workflowId, userId);
 

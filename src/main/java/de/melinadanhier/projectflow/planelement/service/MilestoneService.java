@@ -4,7 +4,7 @@ import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneDetailsDto;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;

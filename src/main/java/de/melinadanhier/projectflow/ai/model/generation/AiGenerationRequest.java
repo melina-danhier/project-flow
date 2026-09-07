@@ -9,41 +9,27 @@ import java.util.Objects;
 
 public record AiGenerationRequest(
         AiWizardSnapshot confirmedWizardData,
-        List<AiPreCheckProblem> acknowledgedWarnings,
-        List<String> previousValidationIssues,
-        List<String> confirmedAssumptions,
-        List<RejectedCriticalAssumption> rejectedAssumptions
+        List<AiPreCheckProblem> acceptedOpenPoints,
+        List<String> previousValidationIssues
 ) {
     public AiGenerationRequest {
         Objects.requireNonNull(confirmedWizardData, "confirmedWizardData darf nicht null sein");
-        acknowledgedWarnings = acknowledgedWarnings == null
+        acceptedOpenPoints = acceptedOpenPoints == null
                 ? List.of()
-                : List.copyOf(acknowledgedWarnings);
-        if (acknowledgedWarnings.stream()
+                : List.copyOf(acceptedOpenPoints);
+        if (acceptedOpenPoints.stream()
                 .anyMatch(problem -> problem.severity() != AiPreCheckSeverity.WARNING)) {
-            throw new IllegalArgumentException("acknowledgedWarnings darf nur Warnungen enthalten");
+            throw new IllegalArgumentException("acceptedOpenPoints darf nur nicht blockierende Punkte enthalten");
         }
         previousValidationIssues = previousValidationIssues == null
                 ? List.of()
                 : List.copyOf(previousValidationIssues);
-        confirmedAssumptions = confirmedAssumptions == null ? List.of() : List.copyOf(confirmedAssumptions);
-        rejectedAssumptions = rejectedAssumptions == null ? List.of() : List.copyOf(rejectedAssumptions);
     }
 
     public AiGenerationRequest(
             AiWizardSnapshot confirmedWizardData,
-            List<AiPreCheckProblem> acknowledgedWarnings
+            List<AiPreCheckProblem> acceptedOpenPoints
     ) {
-        this(confirmedWizardData, acknowledgedWarnings, List.of(),
-                List.of(), List.of());
-    }
-
-    public AiGenerationRequest(
-            AiWizardSnapshot confirmedWizardData,
-            List<AiPreCheckProblem> acknowledgedWarnings,
-            List<String> previousValidationIssues
-    ) {
-        this(confirmedWizardData, acknowledgedWarnings, previousValidationIssues,
-                List.of(), List.of());
+        this(confirmedWizardData, acceptedOpenPoints, List.of());
     }
 }

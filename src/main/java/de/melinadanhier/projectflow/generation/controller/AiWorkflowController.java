@@ -1,25 +1,20 @@
 package de.melinadanhier.projectflow.generation.controller;
 
-import de.melinadanhier.projectflow.common.exception.DomainValidationException;
-import de.melinadanhier.projectflow.generation.dto.AssumptionReviewForm;
-import de.melinadanhier.projectflow.generation.dto.response.AiWorkflowStatusDto;
-import de.melinadanhier.projectflow.generation.service.assumption.CriticalAssumptionReviewService;
+import de.melinadanhier.projectflow.generation.dto.workflow.AiWorkflowStatusDto;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowQueryService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.UUID;
 
@@ -31,7 +26,6 @@ public class AiWorkflowController {
     private final AiWorkflowQueryService workflowQueryService;
     private final AiPreCheckReviewService preCheckReviewService;
     private final AiGenerationWorkflowService generationWorkflowService;
-    private final CriticalAssumptionReviewService assumptionReviewService;
     private final AiWorkflowControlService workflowControlService;
 
     @GetMapping("/status/{workflowId}")
@@ -40,24 +34,17 @@ public class AiWorkflowController {
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
     ) {
-        AiWorkflowStatusDto workflow = workflowQueryService.getOwnedStatus(
+        AiWorkflowStatusDto workflow = workflowQueryService.getStatus(
                 workflowId, currentUser.userId()
         );
         switch (workflow.status()) {
-            case PRE_CHECK_NEEDS_REVIEW, PRE_CHECK_SUCCEEDED, GENERATION_CANCELLED -> {
-                return problemsRedirect(workflowId);
+            case PRE_CHECK_NEEDS_REVIEW, PRE_CHECK_COMPLETED, GENERATION_CANCELLED -> {
+                return preCheckReviewRedirect(workflowId);
             }
             case GENERATION_COMPLETED -> {
                 return "redirect:/projects/" + workflow.projectId() + "/draft/review";
             }
-            case ASSUMPTIONS_REVIEW_PENDING -> {
-                return assumptionsRedirect(workflowId);
-            }
-            default -> {
-                if (workflow.failedAssumptionRegeneration()) {
-                    return assumptionsRedirect(workflowId);
-                }
-            }
+            default -> { }
         }
         model.addAttribute("workflow", workflow);
         return "generation/ai-status";
@@ -70,29 +57,8 @@ public class AiWorkflowController {
         return "redirect:/projects/new/ai/status/" + workflowId;
     }
 
-    @GetMapping("/assumptions/{workflowId}")
-    public String assumptions(@PathVariable UUID workflowId,
-                              @AuthenticationPrincipal AuthenticatedUser currentUser,
-                              Model model) {
-        model.addAttribute("review", assumptionReviewService.getReview(workflowId, currentUser.userId()));
-        return "generation/assumption-review";
-    }
-
-    @PostMapping("/assumptions/{workflowId}")
-    public String submitAssumptions(@PathVariable UUID workflowId,
-                                    @Valid @ModelAttribute AssumptionReviewForm form,
-                                    BindingResult bindingResult,
-                                    @AuthenticationPrincipal AuthenticatedUser currentUser) {
-        if (bindingResult.hasErrors()) {
-            throw new DomainValidationException("Die Annahmenprüfung ist unvollständig.");
-        }
-        assumptionReviewService.submit(
-                workflowId, currentUser.userId(), form.toRequest());
-        return "redirect:/projects/new/ai/status/" + workflowId;
-    }
-
     @GetMapping("/problems/{workflowId}")
-    public String problems(
+    public String preCheckReview(
             @PathVariable UUID workflowId,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
@@ -102,16 +68,30 @@ public class AiWorkflowController {
         return "generation/ai-problems";
     }
 
-    @PostMapping("/problems/{workflowId}/warnings/{problemIndex}/acknowledge")
-    public String acknowledgeWarning(
+    @PostMapping("/problems/{workflowId}/open-points/{problemIndex}/accept")
+    public String acceptOpenPoint(
             @PathVariable UUID workflowId,
             @PathVariable int problemIndex,
             @AuthenticationPrincipal AuthenticatedUser currentUser
     ) {
-        if (preCheckReviewService.acknowledgeWarning(workflowId, currentUser.userId(), problemIndex)) {
+        if (preCheckReviewService.acceptOpenPoint(workflowId, currentUser.userId(), problemIndex)) {
             return "redirect:/projects/new/ai/status/" + workflowId;
         }
-        return "redirect:/projects/new/ai/problems/" + workflowId;
+        return preCheckReviewRedirect(workflowId);
+    }
+
+    @PostMapping("/problems/{workflowId}/open-points/{problemIndex}/confirm")
+    public String confirmOpenPointContext(
+            @PathVariable UUID workflowId,
+            @PathVariable int problemIndex,
+            @RequestParam String planningContext,
+            @AuthenticationPrincipal AuthenticatedUser currentUser
+    ) {
+        if (preCheckReviewService.confirmOpenPointContext(
+                workflowId, currentUser.userId(), problemIndex, planningContext)) {
+            return "redirect:/projects/new/ai/status/" + workflowId;
+        }
+        return preCheckReviewRedirect(workflowId);
     }
 
     @PostMapping("/status/{workflowId}/retry")
@@ -123,12 +103,7 @@ public class AiWorkflowController {
         return "redirect:/projects/new/ai/status/" + workflowId;
     }
 
-    private String problemsRedirect(UUID workflowId) {
+    private String preCheckReviewRedirect(UUID workflowId) {
         return "redirect:/projects/new/ai/problems/" + workflowId;
     }
-
-    private String assumptionsRedirect(UUID workflowId) {
-        return "redirect:/projects/new/ai/assumptions/" + workflowId;
-    }
-
 }

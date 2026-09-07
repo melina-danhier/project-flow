@@ -9,14 +9,8 @@ import java.util.Optional;
 /** Provider-DTO für die automatische Schema-Erzeugung des OpenAI-SDKs. */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public record OpenAiGenerationOutput(
-        List<Section> sections,
-        List<CriticalAssumption> criticalAssumptions
+        List<Section> sections
 ) {
-    public OpenAiGenerationOutput(List<Section> sections) {
-        this(sections, List.of());
-    }
-
-    public record CriticalAssumption(String statement, boolean correctionRequiredIfRejected) {}
 
     public record Section(
             Optional<String> tempId,

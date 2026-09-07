@@ -1,10 +1,10 @@
 package de.melinadanhier.projectflow.plancontainer.project.mapper;
 
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectDetailsDto;
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectMemberDto;
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectSummaryDto;
+import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectDetailsDto;
+import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectMemberDto;
+import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectSummaryDto;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

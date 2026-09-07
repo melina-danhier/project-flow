@@ -28,24 +28,24 @@ class AiClientRequestTest {
     }
 
     @Test
-    void missingAcknowledgedWarningsAreNormalizedToAnEmptyImmutableList() {
+    void missingAcceptedOpenPointsAreNormalizedToAnEmptyImmutableList() {
         AiGenerationRequest request = new AiGenerationRequest(snapshot(), null);
 
-        assertThat(request.acknowledgedWarnings()).isEmpty();
-        assertThatThrownBy(() -> request.acknowledgedWarnings().add(null))
+        assertThat(request.acceptedOpenPoints()).isEmpty();
+        assertThatThrownBy(() -> request.acceptedOpenPoints().add(null))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
-    void acknowledgedWarningsAreCopiedWithoutChangingContentOrOrder() {
+    void acceptedOpenPointsAreCopiedWithoutChangingContentOrOrder() {
         var warning = new AiPreCheckProblem(AiPreCheckSeverity.WARNING, "Knapp", "Mehr Zeit einplanen");
         var otherWarning = new AiPreCheckProblem(AiPreCheckSeverity.WARNING, "Budget knapp", "Umfang reduzieren");
         var supplied = new java.util.ArrayList<>(List.of(warning, otherWarning));
         var request = new AiGenerationRequest(snapshot(), supplied);
         supplied.clear();
 
-        assertThat(request.acknowledgedWarnings()).containsExactly(warning, otherWarning);
-        assertThatThrownBy(() -> request.acknowledgedWarnings().clear())
+        assertThat(request.acceptedOpenPoints()).containsExactly(warning, otherWarning);
+        assertThatThrownBy(() -> request.acceptedOpenPoints().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

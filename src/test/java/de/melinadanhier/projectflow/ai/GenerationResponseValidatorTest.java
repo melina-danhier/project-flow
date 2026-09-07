@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.ai.validation.generation.GenerationResponseValidator;
@@ -45,24 +44,6 @@ class GenerationResponseValidatorTest {
                 scheduledRequest()), SECTION_MISSING, TASK_MISSING);
         assertCodes(validator.validate(plan(section("section-1", 1, PROJECT_START, PROJECT_END,
                 List.of(), List.of())), scheduledRequest()), SECTION_TASK_MISSING, TASK_MISSING);
-    }
-
-    @Test
-    void validatesGlobalCriticalAssumptions() {
-        var valid = validDatedPlan();
-        var blank = new GeneratedPlanResponse(valid.sections(), List.of(
-                new GeneratedCriticalAssumption("   ", true)));
-        assertCodes(validator.validate(blank, scheduledRequest()),
-                BEAN_VALIDATION_FAILED, CRITICAL_ASSUMPTION_INVALID);
-
-        var duplicate = new GeneratedPlanResponse(valid.sections(), List.of(
-                new GeneratedCriticalAssumption("Externe Dienste sind erlaubt.", false),
-                new GeneratedCriticalAssumption("  EXTERNE   DIENSTE SIND ERLAUBT. ", true)));
-        assertCodes(validator.validate(duplicate, scheduledRequest()), CRITICAL_ASSUMPTION_DUPLICATE);
-
-        var missing = new GeneratedPlanResponse(valid.sections(), null);
-        assertCodes(validator.validate(missing, scheduledRequest()),
-                BEAN_VALIDATION_FAILED, CRITICAL_ASSUMPTIONS_MISSING);
     }
 
     @Test
@@ -345,18 +326,18 @@ class GenerationResponseValidatorTest {
     }
 
     private AiGenerationRequest scheduledRequest() {
-        return request(PROJECT_START, PROJECT_END, AiProjectTimeFrameType.START_AND_END);
+        return request(PROJECT_START, PROJECT_END);
     }
 
     private AiGenerationRequest undatedRequest() {
-        return request(null, null, AiProjectTimeFrameType.NONE);
+        return request(null, null);
     }
 
-    private AiGenerationRequest request(LocalDate start, LocalDate end, AiProjectTimeFrameType type) {
+    private AiGenerationRequest request(LocalDate start, LocalDate end) {
         return new AiGenerationRequest(new AiWizardSnapshot(
                 "Projekt", null, start, end,
                 CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
-                null, null, null, type, null), List.of());
+                null, null, null, null, null), List.of());
     }
 
     private void assertCodes(GenerationValidationResult result, GenerationValidationCode... codes) {

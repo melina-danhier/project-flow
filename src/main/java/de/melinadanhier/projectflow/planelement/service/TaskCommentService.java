@@ -2,7 +2,7 @@ package de.melinadanhier.projectflow.planelement.service;
 
 import de.melinadanhier.projectflow.common.exception.ForbiddenOperationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.planelement.dto.TaskCommentDto;

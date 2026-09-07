@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 
 import java.util.Arrays;
@@ -38,22 +39,17 @@ public final class AiResponseSchemas {
     private static Map<String, Object> preCheckProblemSchema() {
         return object(Map.ofEntries(
                 entry("severity", enumeration(AiPreCheckSeverity.class)),
+                entry("type", enumeration(AiPreCheckProblemType.class)),
                 entry("message", string()),
-                entry("suggestion", string())
+                entry("suggestedUserAction", string()),
+                entry("reviewQuestion", string()),
+                entry("acceptedInterpretation", string())
         ));
     }
 
     private static Map<String, Object> generatedPlanSchema() {
         return object(Map.ofEntries(
-                entry("sections", array(sectionSchema(), MIN_SECTIONS, MAX_SECTIONS)),
-                entry("criticalAssumptions", array(criticalAssumptionSchema(), 0, MAX_CRITICAL_ASSUMPTIONS))
-        ));
-    }
-
-    private static Map<String, Object> criticalAssumptionSchema() {
-        return object(Map.of(
-                "statement", string(),
-                "correctionRequiredIfRejected", Map.of("type", "boolean")
+                entry("sections", array(sectionSchema(), MIN_SECTIONS, MAX_SECTIONS))
         ));
     }
 

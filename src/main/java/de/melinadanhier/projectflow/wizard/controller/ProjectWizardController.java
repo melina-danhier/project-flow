@@ -1,7 +1,7 @@
 package de.melinadanhier.projectflow.wizard.controller;
 
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectDetailsDto;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectDetailsDto;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
 import de.melinadanhier.projectflow.wizard.service.AiWizardCompletionService;
@@ -175,8 +175,7 @@ public class ProjectWizardController {
                 CreationType.AI, currentUser.userId(), session);
         var questions = AiProjectQuestionCatalog.questionsFor(state.getCategory(), state.getSubcategory());
         var submittedAnswers = form.getAnswers() == null ? java.util.Map.<String, String>of() : form.getAnswers();
-        if (hasText(form.getProjectGoal()) || hasText(form.getConstraints())
-                || hasText(form.getAdditionalInformation())) {
+        if (hasText(form.getProjectGoal()) || hasText(form.getConstraints())) {
             bindingResult.reject("ai.answers.obsolete",
                     "Die übermittelten Zusatzangaben verwenden nicht den aktuellen Fragenkatalog.");
         }

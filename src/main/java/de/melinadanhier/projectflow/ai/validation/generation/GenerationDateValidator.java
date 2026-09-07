@@ -2,7 +2,6 @@ package de.melinadanhier.projectflow.ai.validation.generation;
 
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedMilestone;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedTask;
-import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 
 import java.time.LocalDate;
@@ -22,9 +21,10 @@ final class GenerationDateValidator {
         this.issues = issues;
         projectStart = snapshot == null ? null : snapshot.startDate();
         projectEnd = snapshot == null ? null : snapshot.endDate();
-        datesRequired = snapshot != null && (snapshot.timeFrameType() != null
-                ? snapshot.timeFrameType() != AiProjectTimeFrameType.NONE
-                : projectStart != null || projectEnd != null);
+        // Nur ein vollständig bestätigter Kalenderzeitraum erzwingt konkrete Elementtermine.
+        // Bei einzelnen Zeitangaben oder bloßer Dauer darf die KI Termine nur aus einem
+        // akzeptierten Pre-Check-Kontext ableiten; das lässt sich hier nicht sicher parsen.
+        datesRequired = projectStart != null && projectEnd != null;
     }
 
     void validateTask(GeneratedTask task, String taskPath) {

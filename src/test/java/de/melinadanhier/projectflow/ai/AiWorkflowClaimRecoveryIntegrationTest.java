@@ -3,10 +3,10 @@ package de.melinadanhier.projectflow.ai;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
@@ -96,7 +96,7 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         workflowRepository.claimGeneration(
                 completed.getId(), completed.getActiveRunId(), Instant.now());
         completed = workflowRepository.findById(completed.getId()).orElseThrow();
-        completed.recordGenerationCompleted("{\"sections\":[],\"criticalAssumptions\":[]}", false);
+        completed.recordGenerationCompleted("{\"sections\":[]}");
         workflowRepository.saveAndFlush(completed);
         jdbcTemplate.update("update ai_plan_generation_workflows set updated_at = ? where id = ?", old, completed.getId());
 
@@ -164,10 +164,10 @@ class AiWorkflowClaimRecoveryIntegrationTest {
                 workflow.getId(), workflow.getActiveRunId(), Instant.now());
         workflow = workflowRepository.findById(workflow.getId()).orElseThrow();
         workflow.recordPreCheckResult("{}", true);
-        workflow.acknowledgeWarning(0);
+        workflow.acceptOpenPoint(0);
         workflowRepository.saveAndFlush(workflow);
         assertThat(workflowRepository.findById(workflow.getId()).orElseThrow()
-                .getAcknowledgedWarningIndices()).containsExactly(0);
+                .getAcceptedOpenPointIndices()).containsExactly(0);
 
         jdbcTemplate.update("update ai_plan_generation_workflows set status = 'PRE_CHECK_RUNNING' where id = ?",
                 workflow.getId());
@@ -176,7 +176,7 @@ class AiWorkflowClaimRecoveryIntegrationTest {
         workflowRepository.saveAndFlush(workflow);
 
         assertThat(workflowRepository.findById(workflow.getId()).orElseThrow()
-                .getAcknowledgedWarningIndices()).isEmpty();
+                .getAcceptedOpenPointIndices()).isEmpty();
     }
 
     @Test

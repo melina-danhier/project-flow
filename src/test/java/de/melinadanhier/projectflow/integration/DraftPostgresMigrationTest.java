@@ -198,7 +198,7 @@ class DraftPostgresMigrationTest {
                 connection.setSchema(schema);
                 var scoped = new JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(connection, true));
                 var cases = new java.util.ArrayList<LegacyCase>();
-                for (var value : de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory.values()) {
+                for (var value : de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory.values()) {
                     cases.add(seedClassification(scoped, value.getCategory().name(), value.getLabel(), value.name(), false));
                     cases.add(seedClassification(scoped, value.getCategory().name(), " " + value.name().toLowerCase(java.util.Locale.ROOT) + " ", value.name(), true));
                 }
@@ -282,7 +282,7 @@ class DraftPostgresMigrationTest {
                               String category, String legacy, String expected) {}
 
     @Test
-    void allMigrationsRemoveElementAssumptionsAndAddWorkflowContext() {
+    void allMigrationsRemovePostGenerationAssumptionReview() {
         assertThat(jdbc.queryForObject("""
                 select count(*) from information_schema.columns
                 where table_schema = 'public' and table_name = 'draft_plan_elements'
@@ -292,21 +292,36 @@ class DraftPostgresMigrationTest {
                 select count(*) from information_schema.columns
                 where table_schema = 'public' and table_name = 'ai_plan_generation_workflows'
                 and column_name in ('generation_assumption_context', 'pending_assumption_review')
-                """, Integer.class)).isEqualTo(2);
+                """, Integer.class)).isZero();
         String statusConstraint = jdbc.queryForObject("""
                 select pg_get_constraintdef(oid)
                 from pg_constraint
                 where conname = 'ck_ai_workflows_status'
                 """, String.class);
         assertThat(statusConstraint)
-                .contains("ASSUMPTIONS_REVIEW_PENDING")
+                .contains("PRE_CHECK_COMPLETED")
+                .doesNotContain("ASSUMPTIONS_REVIEW_PENDING")
                 .doesNotContain("DRAFT_APPLIED")
-                .doesNotContain("PRE_CHECK_PASSED");
+                .doesNotContain("PRE_CHECK_PASSED")
+                .doesNotContain("PRE_CHECK_SUCCEEDED");
         assertThat(jdbc.queryForObject("""
                 select count(*) from information_schema.columns
                 where table_schema = 'public' and table_name = 'plan_drafts'
                 and column_name = 'applied_at'
                 """, Integer.class)).isOne();
         assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success = false", Integer.class)).isZero();
+    }
+
+    @Test
+    void allMigrationsCreateStorageForUserConfirmedOpenPointContexts() {
+        assertThat(jdbc.queryForObject("""
+                select count(*) from information_schema.tables
+                where table_schema = 'public' and table_name = 'ai_workflow_open_point_contexts'
+                """, Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("""
+                select count(*) from information_schema.columns
+                where table_schema = 'public' and table_name = 'ai_workflow_open_point_contexts'
+                and column_name in ('workflow_id', 'problem_index', 'confirmed_context')
+                """, Integer.class)).isEqualTo(3);
     }
 }
