@@ -45,9 +45,9 @@ public class MilestoneService {
         milestone.setRelativeDueDay(null);
         apply(milestone, form);
         List<PlanElement> siblings = loadSiblings(projectId, section);
-        siblings.add(form.getSortOrder() == null
-                ? siblings.size() : Math.min(form.getSortOrder(), siblings.size()), milestone);
-        resequence(siblings);
+        int position = form.getSortOrder() == null
+                ? siblings.size() : Math.min(form.getSortOrder(), siblings.size());
+        PlanOrdering.place(siblings, milestone, position, PlanElement::getSortOrder, PlanElement::setSortOrder);
         return planElementMapper.toDetailsDto(milestoneRepository.save(milestone));
     }
 
@@ -103,16 +103,19 @@ public class MilestoneService {
 
         List<PlanElement> oldSiblings = loadSiblings(projectId, oldSection);
         oldSiblings.removeIf(element -> element.getId().equals(milestone.getId()));
-        resequence(oldSiblings);
         boolean sectionUnchanged = oldSection == null
                 ? newSection == null
                 : newSection != null && oldSection.getId().equals(newSection.getId());
         List<PlanElement> targetSiblings = sectionUnchanged
                 ? oldSiblings : loadSiblings(projectId, newSection);
         milestone.setPlanSection(newSection);
-        targetSiblings.add(form.getSortOrder() == null
-                ? targetSiblings.size() : Math.min(form.getSortOrder(), targetSiblings.size()), milestone);
-        resequence(targetSiblings);
+        if (!(sectionUnchanged && form.getSortOrder() != null
+                && form.getSortOrder() == milestone.getSortOrder())) {
+            int position = form.getSortOrder() == null
+                    ? targetSiblings.size() : Math.min(form.getSortOrder(), targetSiblings.size());
+            PlanOrdering.place(targetSiblings, milestone, position,
+                    PlanElement::getSortOrder, PlanElement::setSortOrder);
+        }
         return planElementMapper.toDetailsDto(milestone);
     }
 
@@ -120,10 +123,8 @@ public class MilestoneService {
     public void deleteMilestone(UUID projectId, UUID milestoneId, UUID userId) {
         authorizationService.requireEditableMemberForUpdate(projectId, userId);
         Milestone milestone = requireMilestone(projectId, milestoneId);
-        PlanSection section = milestone.getPlanSection();
         milestoneRepository.delete(milestone);
         milestoneRepository.flush();
-        resequence(loadSiblings(projectId, section));
     }
 
     private Milestone requireMilestone(UUID projectId, UUID milestoneId) {
@@ -160,12 +161,6 @@ public class MilestoneService {
                 ? planElementRepository.findAllByPlanContainerIdAndPlanSectionIsNullOrderBySortOrderAsc(projectId)
                 : planElementRepository.findAllByPlanContainerIdAndPlanSectionIdOrderBySortOrderAsc(
                         projectId, section.getId()));
-    }
-
-    private void resequence(List<PlanElement> elements) {
-        for (int index = 0; index < elements.size(); index++) {
-            elements.get(index).setSortOrder(index);
-        }
     }
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {

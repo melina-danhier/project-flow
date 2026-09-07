@@ -4,8 +4,12 @@ import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.project.service.DraftProjectPlanAccessException;
 import de.melinadanhier.projectflow.planelement.dto.DeleteSectionForm;
+import de.melinadanhier.projectflow.planelement.dto.PlanElementMoveForm;
+import de.melinadanhier.projectflow.planelement.dto.PlanSectionMoveForm;
+import de.melinadanhier.projectflow.planelement.dto.PlanSortModeForm;
 import de.melinadanhier.projectflow.planelement.dto.SectionForm;
 import de.melinadanhier.projectflow.planelement.service.SectionService;
+import de.melinadanhier.projectflow.planelement.service.ProjectPlanOrderingService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +33,7 @@ public class PlanController {
 
     private final ProjectService projectService;
     private final SectionService sectionService;
+    private final ProjectPlanOrderingService orderingService;
 
     @GetMapping("/projects/{projectId}/plan")
     public String plan(
@@ -101,8 +106,49 @@ public class PlanController {
         return "redirect:/projects/" + projectId + "/plan";
     }
 
+    @PostMapping("/projects/{projectId}/plan/sort-mode")
+    public String updateSortMode(@PathVariable UUID projectId,
+                                 @Valid @ModelAttribute PlanSortModeForm form,
+                                 BindingResult bindingResult,
+                                 @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        requireValid(bindingResult);
+        orderingService.updateSortMode(projectId, currentUser.userId(), form);
+        return planRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/plan/elements/{elementId}/move")
+    public String moveElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
+                              @Valid @ModelAttribute PlanElementMoveForm form,
+                              BindingResult bindingResult,
+                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        requireValid(bindingResult);
+        orderingService.moveElement(projectId, elementId, currentUser.userId(), form);
+        return planRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/plan/sections/{sectionId}/move")
+    public String moveSection(@PathVariable UUID projectId, @PathVariable UUID sectionId,
+                              @Valid @ModelAttribute PlanSectionMoveForm form,
+                              BindingResult bindingResult,
+                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        requireValid(bindingResult);
+        orderingService.moveSection(projectId, sectionId, currentUser.userId(), form);
+        return planRedirect(projectId);
+    }
+
     private void populatePlan(Model model, UUID projectId, UUID userId) {
         model.addAttribute("plan", projectService.getProjectPlan(projectId, userId));
+    }
+
+    private void requireValid(BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            throw new de.melinadanhier.projectflow.common.exception.DomainValidationException(
+                    "Die Sortierangaben sind ungültig.");
+        }
+    }
+
+    private String planRedirect(UUID projectId) {
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @ExceptionHandler(DraftProjectPlanAccessException.class)

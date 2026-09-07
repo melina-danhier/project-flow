@@ -62,7 +62,7 @@ public class DraftSection extends MutableEntity {
 
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "draftSection")
-    @OrderBy("sortOrder ASC")
+    @OrderBy("sortOrder ASC, id ASC")
     private List<DraftPlanElement> elements = new ArrayList<>();
 
     public void addElement(DraftPlanElement element) {

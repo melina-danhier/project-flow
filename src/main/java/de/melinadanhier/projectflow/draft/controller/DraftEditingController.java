@@ -5,7 +5,6 @@ import de.melinadanhier.projectflow.draft.dto.editing.DraftElementMoveForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftMilestoneForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionMoveForm;
-import de.melinadanhier.projectflow.draft.dto.editing.DraftSortModeForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftTaskForm;
 import de.melinadanhier.projectflow.draft.service.DraftReviewService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
@@ -90,18 +89,6 @@ public class DraftEditingController {
             throw new DomainValidationException("Die Zielposition ist ungültig.");
         }
         draftReviewService.moveSection(projectId, sectionId, currentUser.userId(), moveForm);
-        return reviewRedirect(projectId);
-    }
-
-    @PostMapping("/projects/{projectId}/draft/sort-mode")
-    public String updateSortMode(@PathVariable UUID projectId,
-                                 @Valid @ModelAttribute DraftSortModeForm sortModeForm,
-                                 BindingResult bindingResult,
-                                 @AuthenticationPrincipal AuthenticatedUser currentUser) {
-        if (bindingResult.hasErrors()) {
-            throw new DomainValidationException("Der Sortiermodus ist ungültig.");
-        }
-        draftReviewService.updateSortMode(projectId, currentUser.userId(), sortModeForm);
         return reviewRedirect(projectId);
     }
 
