@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -223,6 +225,17 @@ class AiOutputParserTest {
                 "\"sections\":", "\"unknown\":true,\"sections\":"))).isInstanceOf(AiOutputValidationException.class);
         assertThatThrownBy(() -> parseGeneration("null"))
                 .isInstanceOf(AiOutputValidationException.class);
+    }
+
+    @Test
+    void rejectsExplanatoryTextOutsideStructuredOutput() {
+        for (String json : List.of(
+                "Hier ist das Ergebnis:\n{\"problems\":[]}",
+                "{\"problems\":[]}\nDie Planung ist plausibel.",
+                "```json\n{\"problems\":[]}\n```")) {
+            assertThatThrownBy(() -> parsePreCheck(json))
+                    .isInstanceOf(AiOutputValidationException.class);
+        }
     }
 
     @Test
