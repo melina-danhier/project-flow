@@ -5,7 +5,6 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedMilestone;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedSection;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedTask;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedCriticalAssumption;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.ai.provider.AbstractProviderAiClient;
@@ -36,15 +35,7 @@ public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGe
 
     @Override
     protected GeneratedPlanResponse mapPlan(OpenAiGenerationOutput output) {
-        return new GeneratedPlanResponse(
-                mapList(output.sections(), this::map),
-                mapList(output.criticalAssumptions(), this::map)
-        );
-    }
-
-    private GeneratedCriticalAssumption map(OpenAiGenerationOutput.CriticalAssumption assumption) {
-        return new GeneratedCriticalAssumption(
-                assumption.statement(), assumption.correctionRequiredIfRejected());
+        return new GeneratedPlanResponse(mapList(output.sections(), this::map));
     }
 
     private GeneratedSection map(OpenAiGenerationOutput.Section section) {

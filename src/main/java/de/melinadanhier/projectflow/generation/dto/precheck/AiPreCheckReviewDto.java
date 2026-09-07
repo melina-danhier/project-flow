@@ -19,12 +19,12 @@ public record AiPreCheckReviewDto(
                 .anyMatch(p -> p.severity() == AiPreCheckSeverity.ERROR);
     }
 
-    public boolean hasWarnings() {
+    public boolean hasOpenPoints() {
         return problems.stream()
-                .anyMatch(problem -> problem.isWarning() && !problem.acknowledged());
+                .anyMatch(problem -> problem.isOpenPoint() && !problem.accepted());
     }
 
     public boolean canGenerate() {
-        return !hasErrors() && !hasWarnings();
+        return !hasErrors() && !hasOpenPoints();
     }
 }

@@ -13,7 +13,15 @@ public record AiPreCheckResult(
 ) {
 
     public AiPreCheckResult {
-        problems = problems == null ? null : List.copyOf(problems);
+        if (problems != null) {
+            List<AiPreCheckProblem> copy = List.copyOf(problems);
+            boolean hasErrors = copy.stream()
+                    .anyMatch(problem -> problem.severity() == AiPreCheckSeverity.ERROR);
+            // Fachliche Regel zentral am Provider-Ergebnis: Blocker verdrängen alle offenen Punkte.
+            problems = hasErrors
+                    ? copy.stream().filter(problem -> problem.severity() == AiPreCheckSeverity.ERROR).toList()
+                    : copy;
+        }
     }
 
     public static AiPreCheckResult withoutIssues() {
@@ -27,6 +35,12 @@ public record AiPreCheckResult(
     public boolean hasWarnings() {
         return problems != null && problems.stream()
                 .anyMatch(problem -> problem.severity() == AiPreCheckSeverity.WARNING);
+    }
+
+    public List<AiPreCheckProblem> openPoints() {
+        return problems == null ? List.of() : problems.stream()
+                .filter(problem -> problem.severity() == AiPreCheckSeverity.WARNING)
+                .toList();
     }
 
     public boolean hasErrors() {

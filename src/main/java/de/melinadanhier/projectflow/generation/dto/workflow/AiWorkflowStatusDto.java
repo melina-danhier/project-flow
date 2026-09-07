@@ -15,8 +15,7 @@ public record AiWorkflowStatusDto(
         int generationTotalAttemptCount,
         AiTechnicalErrorCode errorCode,
         AiOperation errorOperation,
-        Boolean errorRetryable,
-        boolean failedAssumptionRegeneration
+        Boolean errorRetryable
 ) {
     public String errorMessage() {
         return errorCode == null ? null : errorCode.getUserMessage();

@@ -29,7 +29,6 @@ public class AiWorkflowQueryService {
                 workflow.getGenerationTotalAttemptCount(),
                 workflow.getLastTechnicalError(),
                 workflow.getLastAiOperation(),
-                workflow.getLastErrorRetryable(),
-                workflow.hasFailedAssumptionRegeneration());
+                workflow.getLastErrorRetryable());
     }
 }

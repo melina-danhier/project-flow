@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.classification.P
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
 import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
@@ -29,6 +30,7 @@ import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -104,7 +106,7 @@ class AiPreCheckWizardIntegrationTest {
         verify(aiClient).preCheck(any());
         verify(aiClient).generatePlan(any());
         assertThat(workflowRepository.findById(workflowId).orElseThrow().getGeneratedPlan())
-                .contains("criticalAssumptions");
+                .contains("sections").doesNotContain("criticalAssumptions");
         UUID projectId = workflowRepository.findById(workflowId).orElseThrow().getProject().getId();
         mockMvc.perform(get(statusUrl(workflowId)).with(user(new AuthenticatedUser(
                         owner.getId(), owner.getEmail(), owner.getPasswordHash(), true))))
@@ -117,7 +119,8 @@ class AiPreCheckWizardIntegrationTest {
         long activeSectionsBefore = planSectionRepository.count();
         long activeTasksBefore = taskRepository.count();
         long activeMilestonesBefore = milestoneRepository.count();
-        when(aiClient.preCheck(any())).thenReturn(result(warning("Warnung eins"), warning("Warnung zwei")));
+        when(aiClient.preCheck(any())).thenReturn(result(
+                warning("Warnung eins"), assumption("Annahme zwei")));
         UUID workflowId = start(owner);
         awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
         MockHttpSession session = new MockHttpSession();
@@ -130,23 +133,25 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/ai-problems"))
                 .andExpect(content().string(containsString("Warnung eins")))
-                .andExpect(content().string(containsString("Warnung zwei")))
-                .andExpect(content().string(containsString("action=\"" + ignoreUrl(workflowId, 0) + "\"")))
-                .andExpect(content().string(containsString("action=\"" + ignoreUrl(workflowId, 1) + "\"")));
-        mockMvc.perform(post(ignoreUrl(workflowId, 0)).session(session).with(user(principal)).with(csrf()))
+                .andExpect(content().string(containsString("Annahme zwei")))
+                .andExpect(content().string(containsString("action=\"" + acceptUrl(workflowId, 0) + "\"")))
+                .andExpect(content().string(containsString("action=\"" + acceptUrl(workflowId, 1) + "\"")))
+                .andExpect(content().string(containsString("action=\"" + confirmUrl(workflowId, 1) + "\"")))
+                .andExpect(content().string(containsString("Welche Planungsgrundlage soll für Annahme zwei gelten?")));
+        mockMvc.perform(post(acceptUrl(workflowId, 0)).session(session).with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(problemsUrl(workflowId)));
         assertThat(workflowRepository.findById(workflowId).orElseThrow()
-                .getAcknowledgedWarningIndices()).containsExactly(0);
-        mockMvc.perform(post(ignoreUrl(workflowId, 0)).session(new MockHttpSession())
+                .getAcceptedOpenPointIndices()).containsExactly(0);
+        mockMvc.perform(post(acceptUrl(workflowId, 0)).session(new MockHttpSession())
                         .with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(problemsUrl(workflowId)));
         assertThat(workflowRepository.findById(workflowId).orElseThrow()
-                .getAcknowledgedWarningIndices()).containsExactly(0);
+                .getAcceptedOpenPointIndices()).containsExactly(0);
         mockMvc.perform(get(problemsUrl(workflowId)).session(session).with(user(principal)))
                 .andExpect(content().string(not(containsString("Warnung eins"))))
-                .andExpect(content().string(containsString("Warnung zwei")));
+                .andExpect(content().string(containsString("Annahme zwei")));
         verify(aiClient, never()).generatePlan(any());
 
         CountDownLatch generationStarted = new CountDownLatch(1);
@@ -159,7 +164,8 @@ class AiPreCheckWizardIntegrationTest {
             return generatedPlan();
         });
         long startedAt = System.nanoTime();
-        mockMvc.perform(post(ignoreUrl(workflowId, 1)).session(session).with(user(principal)).with(csrf()))
+        mockMvc.perform(post(confirmUrl(workflowId, 1)).session(session).with(user(principal)).with(csrf())
+                        .param("planningContext", "Die Umsetzung erfolgt ohne die vermutete Voraussetzung."))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(statusUrl(workflowId)));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)).isLessThan(1000);
@@ -171,9 +177,18 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(generationStarted.await(2, TimeUnit.SECONDS)).isTrue();
         releaseGeneration.countDown();
         awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
-        verify(aiClient).generatePlan(any());
+        ArgumentCaptor<de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest> requestCaptor =
+                ArgumentCaptor.forClass(de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest.class);
+        verify(aiClient).generatePlan(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().acceptedOpenPoints())
+                .extracting(AiPreCheckProblem::acceptedInterpretation)
+                .containsExactly("Verbindliche Auslegung: Warnung eins",
+                        "Die Umsetzung erfolgt ohne die vermutete Voraussetzung.");
         assertThat(workflowRepository.findById(workflowId).orElseThrow()).satisfies(workflow -> {
-            assertThat(workflow.getAcknowledgedWarningIndices()).containsExactlyInAnyOrder(0, 1);
+            assertThat(workflow.getAcceptedOpenPointIndices()).containsExactlyInAnyOrder(0, 1);
+            assertThat(workflow.getCustomOpenPointInterpretations())
+                    .containsEntry(1, "Die Umsetzung erfolgt ohne die vermutete Voraussetzung.")
+                    .doesNotContainKey(0);
             assertThat(workflow.getGenerationRoundAttemptCount()).isEqualTo(1);
             assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(1);
         });
@@ -222,7 +237,7 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     @Test
-    void errorsBlockWhileWarningsRemainIgnorableOnTheSamePage() throws Exception {
+    void errorsHideOpenPointsAndCannotBeAccepted() throws Exception {
         User owner = saveUser("precheck-error@example.org");
         when(aiClient.preCheck(any())).thenReturn(result(
                 warning("Knapper Zeitraum"),
@@ -234,26 +249,16 @@ class AiPreCheckWizardIntegrationTest {
 
         mockMvc.perform(get(problemsUrl(workflowId)).session(session).with(user(principal)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Knapper Zeitraum")))
-                .andExpect(content().string(containsString("Ziel und Rahmen widersprechen sich")))
-                .andExpect(content().string(not(containsString("action=\"" + ignoreUrl(workflowId, 1) + "\""))))
-                .andExpect(content().string(containsString("action=\"" + ignoreUrl(workflowId, 0) + "\"")));
-        mockMvc.perform(post(ignoreUrl(workflowId, 1)).session(session).with(user(principal)).with(csrf()))
-                .andExpect(status().isNotFound());
-
-        mockMvc.perform(post(ignoreUrl(workflowId, 0)).session(session).with(user(principal)).with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl(problemsUrl(workflowId)));
-        mockMvc.perform(get(problemsUrl(workflowId)).session(session).with(user(principal)))
                 .andExpect(content().string(not(containsString("Knapper Zeitraum"))))
                 .andExpect(content().string(containsString("Ziel und Rahmen widersprechen sich")))
-                .andExpect(content().string(not(containsString("action=\"" + ignoreUrl(workflowId, 0) + "\""))))
-                .andExpect(content().string(not(containsString("action=\"" + ignoreUrl(workflowId, 1) + "\""))));
+                .andExpect(content().string(not(containsString("/open-points/"))));
+        mockMvc.perform(post(acceptUrl(workflowId, 1)).session(session).with(user(principal)).with(csrf()))
+                .andExpect(status().isNotFound());
 
         assertThat(workflowRepository.findById(workflowId).orElseThrow().getStatus())
                 .isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
         assertThat(workflowRepository.findById(workflowId).orElseThrow()
-                .getAcknowledgedWarningIndices()).containsExactly(0);
+                .getAcceptedOpenPointIndices()).isEmpty();
         verify(aiClient, never()).generatePlan(any());
     }
 
@@ -318,7 +323,7 @@ class AiPreCheckWizardIntegrationTest {
 
         mockMvc.perform(get(problemsUrl(workflowId)).with(user(outsiderPrincipal)))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(post(ignoreUrl(workflowId, 0)).with(user(outsiderPrincipal)).with(csrf()))
+        mockMvc.perform(post(acceptUrl(workflowId, 0)).with(user(outsiderPrincipal)).with(csrf()))
                 .andExpect(status().isNotFound());
         mockMvc.perform(post(problemsUrl(workflowId) + "/edit").with(user(outsiderPrincipal)).with(csrf()))
                 .andExpect(status().isNotFound());
@@ -350,7 +355,17 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     private AiPreCheckProblem warning(String message) {
-        return new AiPreCheckProblem(AiPreCheckSeverity.WARNING, message, "Passe die Planung bei Bedarf an.");
+        return new AiPreCheckProblem(AiPreCheckSeverity.WARNING, AiPreCheckProblemType.RISK,
+                message, "Passe die Planung bei Bedarf an.",
+                "Welche Planungsgrundlage soll für " + message + " gelten?",
+                "Verbindliche Auslegung: " + message);
+    }
+
+    private AiPreCheckProblem assumption(String message) {
+        return new AiPreCheckProblem(AiPreCheckSeverity.WARNING, AiPreCheckProblemType.ASSUMPTION,
+                message, "Ergänze die Angabe bei Bedarf.",
+                "Welche Planungsgrundlage soll für " + message + " gelten?",
+                "Verbindliche Auslegung: " + message);
     }
 
     private AiPreCheckProblem error(String message) {
@@ -405,7 +420,11 @@ class AiPreCheckWizardIntegrationTest {
         return "/projects/new/ai/problems/" + workflowId;
     }
 
-    private String ignoreUrl(UUID workflowId, int index) {
-        return problemsUrl(workflowId) + "/warnings/" + index + "/acknowledge";
+    private String acceptUrl(UUID workflowId, int index) {
+        return problemsUrl(workflowId) + "/open-points/" + index + "/accept";
+    }
+
+    private String confirmUrl(UUID workflowId, int index) {
+        return problemsUrl(workflowId) + "/open-points/" + index + "/confirm";
     }
 }

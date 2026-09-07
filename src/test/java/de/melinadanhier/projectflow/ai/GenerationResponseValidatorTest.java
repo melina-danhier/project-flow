@@ -48,24 +48,6 @@ class GenerationResponseValidatorTest {
     }
 
     @Test
-    void validatesGlobalCriticalAssumptions() {
-        var valid = validDatedPlan();
-        var blank = new GeneratedPlanResponse(valid.sections(), List.of(
-                new GeneratedCriticalAssumption("   ", true)));
-        assertCodes(validator.validate(blank, scheduledRequest()),
-                BEAN_VALIDATION_FAILED, CRITICAL_ASSUMPTION_INVALID);
-
-        var duplicate = new GeneratedPlanResponse(valid.sections(), List.of(
-                new GeneratedCriticalAssumption("Externe Dienste sind erlaubt.", false),
-                new GeneratedCriticalAssumption("  EXTERNE   DIENSTE SIND ERLAUBT. ", true)));
-        assertCodes(validator.validate(duplicate, scheduledRequest()), CRITICAL_ASSUMPTION_DUPLICATE);
-
-        var missing = new GeneratedPlanResponse(valid.sections(), null);
-        assertCodes(validator.validate(missing, scheduledRequest()),
-                BEAN_VALIDATION_FAILED, CRITICAL_ASSUMPTIONS_MISSING);
-    }
-
-    @Test
     void beanValidationIsPerformedByGenerationValidator() {
         GeneratedTask invalid = task("task-1", " ", 1, PROJECT_START, PROJECT_START);
         var result = validator.validate(plan(section("section-1", 1, PROJECT_START, PROJECT_END,

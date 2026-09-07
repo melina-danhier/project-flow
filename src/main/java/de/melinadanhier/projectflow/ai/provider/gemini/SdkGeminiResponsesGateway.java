@@ -9,6 +9,7 @@ import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.model.AiResponseSchemas;
+import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.parser.AiResponseParser;
 import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
@@ -33,6 +34,11 @@ public class SdkGeminiResponsesGateway implements AiResponsesGateway {
     private final Models models;
     private final AiResponseParser parser;
     private final int maxOutputTokens;
+    private final float generationTemperature;
+
+    public SdkGeminiResponsesGateway(Models models, AiResponseParser parser, int maxOutputTokens) {
+        this(models, parser, maxOutputTokens, 0.1f);
+    }
 
     @Override
     public <T> T execute(String model, AiPrompt prompt, Class<T> responseType) {
@@ -43,13 +49,16 @@ public class SdkGeminiResponsesGateway implements AiResponsesGateway {
     }
 
     private GenerateContentConfig buildConfig(String systemInstructions, Class<?> responseType) {
-        return GenerateContentConfig.builder()
+        var builder = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText(systemInstructions)))
                 .responseMimeType("application/json")
                 .responseJsonSchema(AiResponseSchemas.forType(responseType))
                 .candidateCount(1)
-                .maxOutputTokens(maxOutputTokens)
-                .build();
+                .maxOutputTokens(maxOutputTokens);
+        if (responseType == GeneratedPlanResponse.class) {
+            builder.temperature(generationTemperature);
+        }
+        return builder.build();
     }
 
     private GenerateContentResponse requestContent(String model, String userData, GenerateContentConfig config) {

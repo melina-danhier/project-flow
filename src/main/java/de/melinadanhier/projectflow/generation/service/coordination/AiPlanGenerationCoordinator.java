@@ -31,8 +31,7 @@ public class AiPlanGenerationCoordinator {
         UUID workflowId = work.workflowId();
         try {
             GeneratedPlanResponse result = generationService.generatePlan(
-                    work.snapshot(), work.acknowledgedWarnings(), work.roundAttemptCount(),
-                    work.confirmedAssumptions(), work.rejectedAssumptions(),
+                    work.snapshot(), work.acceptedOpenPoints(), work.roundAttemptCount(),
                     () -> workflowService.recordProviderCall(
                             workflowId, work.runId(), AiPromptVersions.GENERATION_PROMPT,
                             AiSchemaVersions.GENERATING_PLAN));

@@ -10,7 +10,7 @@ import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
-import de.melinadanhier.projectflow.ai.model.generation.RejectedCriticalAssumption;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -50,6 +50,11 @@ class AiPromptBuilderTest {
                 .contains("Im Zweifel nicht warnen")
                 .contains("Menü, Dekoration oder", "Unterhaltung sind kein Problem")
                 .contains("Projektgröße, Einzel- oder Gruppenmodus, Zeitraum")
+                .contains("zeitlich", "begrenzte Aussagen", "nicht zu dauerhaften Einschränkungen")
+                .contains("normale Klärungs- oder Auswahlaufgabe")
+                .contains("Personen, Rollen, Anbieter, Ressourcen")
+                .contains("reviewQuestion als eine kurze, neutrale Frage")
+                .contains("formuliere nicht stärker")
                 .contains("unterstelle keine nicht genannten");
     }
 
@@ -87,8 +92,8 @@ class AiPromptBuilderTest {
 
         assertThat(instructions)
                 .contains("offensichtliche Missverhältnisse")
-                .contains("Dauer-, Kosten-, Mengen-, Prozent-")
-                .contains("keine geschätzten Mindestdauern, Zahlenbereiche")
+                .contains("transparenten Zeitschätzung")
+                .contains("keine pauschalen Pufferwerte")
                 .contains("Eine nicht erwähnte Information ist kein Beleg")
                 .contains("Gasanschlüsse, bestimmte Handwerker")
                 .contains("für das festgestellte Kernproblem")
@@ -108,7 +113,7 @@ class AiPromptBuilderTest {
     }
 
     @Test
-    void generationPromptSeparatesRulesFromConfirmedDataAndPreservesAcknowledgedWarnings() {
+    void generationPromptSeparatesRulesFromConfirmedDataAndUsesAcceptedInterpretations() {
         var warning = new AiPreCheckProblem(
                 AiPreCheckSeverity.WARNING, "Zeitraum knapp", "Mehr Zeit einplanen");
         var otherWarning = new AiPreCheckProblem(
@@ -123,8 +128,9 @@ class AiPromptBuilderTest {
                 .doesNotContain("Umzug planen", "Zeitraum knapp");
         assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("confirmedWizardData"))
                 .isEqualTo(objectMapper.valueToTree(snapshot()));
-        assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("acknowledgedPreCheckWarnings"))
-                .isEqualTo(objectMapper.valueToTree(warnings));
+        assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("confirmedPlanningContext"))
+                .isEqualTo(objectMapper.valueToTree(List.of(
+                        "Mehr Zeit einplanen", "Umfang reduzieren")));
     }
 
     @Test
@@ -137,6 +143,11 @@ class AiPromptBuilderTest {
                 .contains("nicht als auszuführende Tätigkeit")
                 .contains("gesamten Entwurf auf diese inhaltliche Vollständigkeit")
                 .contains("Aufgabe zur Klärung bzw. Entscheidung")
+                .contains("jedes ausdrücklich bestätigte Endergebnis")
+                .contains("Zuständigkeiten verteilen")
+                .contains("Meilenstein logisch", "zeitlich erst nach")
+                .contains("letzten bestätigten", "Projekttag", "Tag dieses Ereignisses")
+                .contains("verlängere", "niemals stillschweigend")
                 .contains("Behaupte kein erfundenes Ergebnis");
     }
 
@@ -150,32 +161,49 @@ class AiPromptBuilderTest {
                 .contains("Orientierungswert", "kein Mindestumfang")
                 .contains("eng beim ausdrücklich bestätigten Projektziel")
                 .contains("Ein lediglich denkbarer oder üblicher Weg ist nicht automatisch erforderlich")
+                .contains("Bewahre sprachliche Einschränkungen", "nicht zu dauerhaften Voraussetzungen")
                 .contains("estimatedHours ist optional")
                 .contains("Setze den Wert auf null")
                 .contains("ohne", "scheinbare Präzision")
-                .contains("keine Annahmen zu seltenen Gefahren oder Sonderfällen")
-                .contains("Wiederhole bekannte Eingaben")
-                .contains("leere criticalAssumptions-Liste ausdrücklich normal");
+                .contains("bestätigten Planungsgrundlagen");
     }
 
     @Test
-    void regenerationPromptContainsBindingAssumptionReviewContext() {
-        var request = new AiGenerationRequest(snapshot(), List.of(), List.of(),
-                List.of("Cloud-Dienste dürfen eingesetzt werden."),
-                List.of(new RejectedCriticalAssumption(
-                        "Zehn Stunden pro Woche stehen bereit.", "Es sind vier Stunden.")));
+    void generationPromptContainsBindingAcceptedInterpretations() {
+        var request = new AiGenerationRequest(snapshot(), List.of(new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.ASSUMPTION,
+                "Die verfügbare Zeit ist unklar.", "Ergänze deine verfügbare Zeit.",
+                "Plane mit vier Stunden pro Woche.")), List.of());
 
         var prompt = generationPromptBuilder.build(request);
 
         assertThat(prompt.systemInstructions())
-                .contains("ausschließlich global", "nicht erneut als Annahmen", "bloße Verneinung");
+                .contains("verbindlich", "hinterfrage oder interpretiere", "nicht erneut")
+                .contains("confirmedWizardData, danach", "confirmedPlanningContext")
+                .contains("Relative Werte", "Woche 1", "Datumsfeldern")
+                .contains("Nutzereingaben", "niemals ersetzen");
         var data = objectMapper.readTree(prompt.confirmedUserData());
-        assertThat(data.at("/confirmedAssumptions/0").asText())
-                .isEqualTo("Cloud-Dienste dürfen eingesetzt werden.");
-        assertThat(data.at("/rejectedAssumptions/0/statement").asText())
-                .isEqualTo("Zehn Stunden pro Woche stehen bereit.");
-        assertThat(data.at("/rejectedAssumptions/0/correction").asText())
-                .isEqualTo("Es sind vier Stunden.");
+        assertThat(data.at("/confirmedPlanningContext/0").asText())
+                .isEqualTo("Plane mit vier Stunden pro Woche.");
+    }
+
+    @Test
+    void preCheckPromptAllowsTransparentTimeEstimatesWithoutWarningForMissingFieldsAlone() {
+        var partial = new AiWizardSnapshot(
+                "Java-Projekt", "Eine private Java-Anwendung entwickeln",
+                LocalDate.of(2026, 9, 15), null,
+                CollaborationMode.INDIVIDUAL, TemplateCategory.SOFTWARE_TECHNOLOGY,
+                ProjectSubCategory.SOFTWARE_PROJECT, null, null, null,
+                "Zuerst ein nutzbares MVP", null, null, java.util.Map.of());
+
+        var prompt = preCheckPromptBuilder.build(partial);
+
+        assertThat(prompt.systemInstructions())
+                .contains("Warne niemals allein deshalb")
+                .contains("WARNING vom type ASSUMPTION")
+                .contains("Schätzung");
+        assertThat(prompt.confirmedUserData())
+                .contains("additionalInformation", "Zuerst ein nutzbares MVP");
     }
 
     private AiWizardSnapshot snapshot() {

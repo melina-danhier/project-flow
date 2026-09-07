@@ -13,6 +13,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -29,7 +30,9 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -109,14 +112,6 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     @ColumnTransformer(write = "CAST(? AS JSONB)")
     private String generatedPlan;
 
-    @Column(name = "generation_assumption_context", columnDefinition = "jsonb")
-    @ColumnTransformer(write = "CAST(? AS JSONB)")
-    private String generationAssumptionContext;
-
-    @Column(name = "pending_assumption_review", columnDefinition = "jsonb")
-    @ColumnTransformer(write = "CAST(? AS JSONB)")
-    private String pendingAssumptionReview;
-
     @Size(max = 100)
     @Column(name = "pre_check_prompt_version", length = 100)
     private String preCheckPromptVersion;
@@ -154,7 +149,16 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
             joinColumns = @JoinColumn(name = "workflow_id")
     )
     @Column(name = "problem_index", nullable = false)
-    private Set<Integer> acknowledgedWarningIndices = new HashSet<>();
+    private Set<Integer> acceptedOpenPointIndices = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "ai_workflow_open_point_contexts",
+            joinColumns = @JoinColumn(name = "workflow_id")
+    )
+    @MapKeyColumn(name = "problem_index")
+    @Column(name = "confirmed_context", nullable = false, length = 1000)
+    private Map<Integer, String> customOpenPointInterpretations = new HashMap<>();
 
     public static AiPlanGenerationWorkflow create(
             Project project,
@@ -256,8 +260,12 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         return true;
     }
 
-    public Set<Integer> getAcknowledgedWarningIndices() {
-        return Set.copyOf(acknowledgedWarningIndices);
+    public Set<Integer> getAcceptedOpenPointIndices() {
+        return Set.copyOf(acceptedOpenPointIndices);
+    }
+
+    public Map<Integer, String> getCustomOpenPointInterpretations() {
+        return Map.copyOf(customOpenPointInterpretations);
     }
 
     public void clearTechnicalError() {
@@ -276,7 +284,8 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     public void recordPreCheckResult(String serializedResult, boolean needsReview) {
         requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
         preCheckResult = serializedResult;
-        acknowledgedWarningIndices.clear();
+        acceptedOpenPointIndices.clear();
+        customOpenPointInterpretations.clear();
         clearError();
         status = needsReview
                 ? AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW
@@ -297,9 +306,19 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         status = AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED;
     }
 
-    public boolean acknowledgeWarning(int problemIndex) {
+    public boolean acceptOpenPoint(int problemIndex) {
         requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
-        return acknowledgedWarningIndices.add(problemIndex);
+        customOpenPointInterpretations.remove(problemIndex);
+        return acceptedOpenPointIndices.add(problemIndex);
+    }
+
+    public boolean confirmOpenPointContext(int problemIndex, String confirmedContext) {
+        requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+        if (confirmedContext == null || confirmedContext.isBlank() || confirmedContext.length() > 1000) {
+            throw new IllegalArgumentException("Die Planungsgrundlage muss zwischen 1 und 1000 Zeichen enthalten.");
+        }
+        customOpenPointInterpretations.put(problemIndex, confirmedContext.trim());
+        return acceptedOpenPointIndices.add(problemIndex);
     }
 
     public void recordPreCheckAttempt(String promptVersion, String schemaVersion) {
@@ -323,69 +342,12 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         return version;
     }
 
-    public void recordGenerationCompleted(String serializedPlan, boolean assumptionsNeedReview) {
+    public void recordGenerationCompleted(String serializedPlan) {
         requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING);
         generatedPlan = serializedPlan;
-        pendingAssumptionReview = null;
-        clearError();
-        status = assumptionsNeedReview
-                ? AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING
-                : AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
-        clearActiveRun();
-    }
-
-    public void confirmAssumptions() {
-        requireStatus(AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING);
-        pendingAssumptionReview = null;
-        status = AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
-        clearActiveRun();
-    }
-
-    public void confirmAssumptionsAfterFailedRegeneration() {
-        requireFailedAssumptionRegeneration();
-        pendingAssumptionReview = null;
         clearError();
         status = AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
         clearActiveRun();
-    }
-
-    public void prepareAssumptionRegeneration(String serializedContext, String serializedReview,
-                                               UUID runId, Instant expiresAt) {
-        requireStatus(AiPlanGenerationWorkflowStatus.ASSUMPTIONS_REVIEW_PENDING);
-        prepareAssumptionRegenerationRun(serializedContext, serializedReview, runId, expiresAt);
-    }
-
-    public void prepareFailedAssumptionRegeneration(String serializedContext, String serializedReview,
-                                                     UUID runId, Instant expiresAt) {
-        requireFailedAssumptionRegeneration();
-        prepareAssumptionRegenerationRun(serializedContext, serializedReview, runId, expiresAt);
-    }
-
-    private void prepareAssumptionRegenerationRun(String serializedContext, String serializedReview,
-                                                   UUID runId, Instant expiresAt) {
-        generationAssumptionContext = serializedContext;
-        pendingAssumptionReview = serializedReview;
-        generationRoundAttemptCount = 0;
-        clearError();
-        setActiveRun(runId, expiresAt);
-        status = AiPlanGenerationWorkflowStatus.GENERATION_PENDING;
-    }
-
-    private void requireFailedAssumptionRegeneration() {
-        if ((status != AiPlanGenerationWorkflowStatus.GENERATION_FAILED
-                && status != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
-                || pendingAssumptionReview == null
-                || lastAiOperation != AiOperation.PLAN_GENERATION) {
-            throw new IllegalStateException("Es liegt keine fehlgeschlagene Annahmen-Neugenerierung vor.");
-        }
-    }
-
-    /** A saved review exists only while its requested regeneration has failed. */
-    public boolean hasFailedAssumptionRegeneration() {
-        return pendingAssumptionReview != null
-                && lastAiOperation == AiOperation.PLAN_GENERATION
-                && (status == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
-                || status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
     }
 
     public void recordGenerationFailure(AiTechnicalError error) {

@@ -35,8 +35,7 @@ class AiRequestedEventListenerTest {
     void generationListenerProcessesOnlySuccessfullyClaimedRun() {
         UUID workflowId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
-        var work = new AiGenerationWork(
-                workflowId, runId, null, List.of(), List.of(), List.of(), 0);
+        var work = new AiGenerationWork(workflowId, runId, null, List.of(), 0);
         when(generationWorkflows.claimWork(workflowId, runId)).thenReturn(Optional.of(work));
         var listener = new AiGenerationRequestedEventListener(generationWorkflows, generationCoordinator);
 

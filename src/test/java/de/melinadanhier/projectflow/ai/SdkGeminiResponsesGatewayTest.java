@@ -61,6 +61,22 @@ class SdkGeminiResponsesGatewayTest {
         verify(parser).parse("{\"sections\":[]}", GeneratedPlanResponse.class);
     }
 
+    @Test
+    void appliesConfiguredLowTemperatureOnlyToPlanGeneration() {
+        var configured = new SdkGeminiResponsesGateway(models, parser, 8192, 0.1f);
+        when(models.generateContent(anyString(), anyString(), any(GenerateContentConfig.class)))
+                .thenReturn(response("STOP", "{\"problems\":[]}"))
+                .thenReturn(response("STOP", "{\"sections\":[]}"));
+
+        configured.execute("model", prompt, AiPreCheckResult.class);
+        configured.execute("model", prompt, GeneratedPlanResponse.class);
+
+        var configs = ArgumentCaptor.forClass(GenerateContentConfig.class);
+        verify(models, times(2)).generateContent(eq("model"), eq("confirmed input"), configs.capture());
+        assertThat(configs.getAllValues().get(0).temperature()).isEmpty();
+        assertThat(configs.getAllValues().get(1).temperature()).contains(0.1f);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII",
             "IMAGE_SAFETY", "IMAGE_PROHIBITED_CONTENT"})

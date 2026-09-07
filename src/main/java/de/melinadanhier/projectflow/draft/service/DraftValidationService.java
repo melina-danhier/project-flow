@@ -90,7 +90,7 @@ public class DraftValidationService {
             validationSections.add(validationSection("unsectioned-review-elements", "Ohne Bereich", null,
                     validationOrder, unsectioned, included));
         }
-        var plan = new GeneratedPlanResponse(validationSections, java.util.List.of());
+        var plan = new GeneratedPlanResponse(validationSections);
         var result = generationValidator.validatePlan(plan, snapshot);
         if (!result.isValid()) {
             throw new DomainValidationException("Der Entwurf kann noch nicht übernommen werden: "

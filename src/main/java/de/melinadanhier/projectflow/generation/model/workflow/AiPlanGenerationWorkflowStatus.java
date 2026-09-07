@@ -31,7 +31,6 @@ public enum AiPlanGenerationWorkflowStatus {
      * zu den Wizard-Eingaben zurückkehren kann.
      */
     GENERATION_CANCELLED,
-    ASSUMPTIONS_REVIEW_PENDING,
     GENERATION_COMPLETED,
     GENERATION_FAILED,
     TECHNICAL_FAILURE;

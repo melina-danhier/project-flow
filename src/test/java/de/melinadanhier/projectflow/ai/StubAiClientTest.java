@@ -63,7 +63,7 @@ class StubAiClientTest {
         properties.setPreCheckScenario(StubAiPreCheckScenario.MULTIPLE_ISSUES);
         var multiple = client.preCheck(preCheckRequest());
         assertThat(multiple.problems()).extracting("severity")
-                .containsExactly(AiPreCheckSeverity.WARNING, AiPreCheckSeverity.ERROR);
+                .containsExactly(AiPreCheckSeverity.ERROR);
     }
 
     @Test
@@ -126,7 +126,7 @@ class StubAiClientTest {
     }
 
     @ParameterizedTest
-    @CsvSource({",", ",2026-09-21", "2026-09-21,2026-09-01"})
+    @CsvSource({",", ",2026-09-21", "2026-09-01,"})
     void datedScenarioWithoutValidPeriodFallsBackToPlanWithoutDates(LocalDate start, LocalDate end) {
         properties.setGenerationScenario(StubAiGenerationScenario.WITH_DATES);
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
