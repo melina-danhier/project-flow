@@ -9,7 +9,6 @@ import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
-import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.service.AiWizardCompletionService;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
@@ -396,7 +395,7 @@ class AiPreCheckWizardIntegrationTest {
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
                 CollaborationMode.INDIVIDUAL, TemplateCategory.HOME, ProjectSubCategory.MOVING, null,
                 "Rechtzeitig umziehen", "Budget 2.000 Euro", "Kartons vorhanden",
-                AiProjectTimeFrameType.START_AND_DURATION, 21);
+                21, "Etwa 8 Stunden pro Woche");
     }
 
     private User saveUser(String email) {

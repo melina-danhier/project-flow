@@ -19,7 +19,6 @@ import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
-import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
@@ -158,7 +157,7 @@ class AiWorkflowIntegrationTest {
                 .orElse(false));
 
         AiPlanGenerationWorkflow workflow = workflowRepository.findById(completion.workflowId()).orElseThrow();
-        assertThat(workflow.getSnapshotVersion()).isEqualTo("ai-wizard-v3");
+        assertThat(workflow.getSnapshotVersion()).isEqualTo("ai-wizard-v4");
         assertThat(workflow.getCompletionToken()).isEqualTo(token);
         assertThat(workflow.getConsentConfirmedAt()).isNotNull();
         assertThat(workflow.getConsentVersion()).isEqualTo(AiWorkflowInitializationService.CONSENT_VERSION);
@@ -455,8 +454,8 @@ class AiWorkflowIntegrationTest {
                 "Bis zum Monatsende umziehen",
                 "Budget 2.000 Euro",
                 "Kartons sind vorhanden",
-                AiProjectTimeFrameType.START_AND_DURATION,
-                21
+                21,
+                "Etwa 8 Stunden pro Woche"
         );
     }
 

@@ -5,9 +5,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.Creati
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
-import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
-import de.melinadanhier.projectflow.wizard.service.ProjectTimeFrameCalculator;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -30,8 +28,6 @@ class ProjectBasicsFormTest {
         ProjectBasicsForm form = new ProjectBasicsForm();
 
         assertThat(form.getCategory()).isEqualTo(TemplateCategory.OTHER);
-        assertThat(form.getTimeFrameType()).isEqualTo(ProjectTimeFrameType.NONE);
-
         form.setTitle("Testprojekt");
         form.setCategory(null);
 
@@ -61,47 +57,69 @@ class ProjectBasicsFormTest {
     }
 
     @Test
-    void acceptsStartAndEnd() {
+    void acceptsOnlyStartDate() {
         ProjectBasicsForm form = validForm();
-        form.setTimeFrameType(ProjectTimeFrameType.START_AND_END);
         form.setStartDate(LocalDate.of(2026, 9, 1));
+
+        assertThat(validator.validate(form)).isEmpty();
+    }
+
+    @Test
+    void acceptsOnlyEndDate() {
+        ProjectBasicsForm form = validForm();
         form.setEndDate(LocalDate.of(2026, 9, 20));
 
         assertThat(validator.validate(form)).isEmpty();
     }
 
     @Test
-    void acceptsStartAndDuration() {
+    void acceptsOnlyDuration() {
         ProjectBasicsForm form = validForm();
-        form.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);
-        form.setStartDate(LocalDate.of(2026, 9, 1));
         form.setDurationDays(20);
 
         assertThat(validator.validate(form)).isEmpty();
     }
 
     @Test
-    void acceptsEndAndDuration() {
+    void acceptsOnlyAvailableWorkingTimeAndNoTimeInformation() {
         ProjectBasicsForm form = validForm();
-        form.setTimeFrameType(ProjectTimeFrameType.END_AND_DURATION);
-        form.setEndDate(LocalDate.of(2026, 9, 20));
-        form.setDurationDays(20);
+        assertThat(validator.validate(form)).isEmpty();
 
+        form.setAvailableWorkingTime("Nur am Wochenende, insgesamt etwa 5 Stunden");
         assertThat(validator.validate(form)).isEmpty();
     }
 
     @Test
-    void rejectsDurationWithoutStartOrEnd() {
-        ProjectBasicsForm form = validForm();
-        form.setDurationDays(20);
+    void acceptsIndependentTimeCombinationsIncludingAllFields() {
+        ProjectBasicsForm startAndCapacity = validForm();
+        startAndCapacity.setStartDate(LocalDate.of(2026, 9, 1));
+        startAndCapacity.setAvailableWorkingTime("2 Stunden täglich");
+        assertThat(validator.validate(startAndCapacity)).isEmpty();
 
-        assertThat(violatedProperties(form)).contains("timeFrameType");
+        ProjectBasicsForm durationAndCapacity = validForm();
+        durationAndCapacity.setDurationDays(28);
+        durationAndCapacity.setAvailableWorkingTime("8 Stunden pro Woche");
+        assertThat(validator.validate(durationAndCapacity)).isEmpty();
+
+        ProjectBasicsForm allFields = validForm();
+        allFields.setStartDate(LocalDate.of(2026, 9, 1));
+        allFields.setEndDate(LocalDate.of(2026, 9, 28));
+        allFields.setDurationDays(28);
+        allFields.setAvailableWorkingTime("Nur werktags");
+        assertThat(validator.validate(allFields)).isEmpty();
+    }
+
+    @Test
+    void rejectsAvailableWorkingTimeAboveTheTextLimit() {
+        ProjectBasicsForm form = validForm();
+        form.setAvailableWorkingTime("x".repeat(1001));
+
+        assertThat(violatedProperties(form)).contains("availableWorkingTime");
     }
 
     @Test
     void rejectsAnEndDateBeforeTheStartDateAtTheEndDateField() {
         ProjectBasicsForm form = validForm();
-        form.setTimeFrameType(ProjectTimeFrameType.START_AND_END);
         form.setStartDate(LocalDate.of(2026, 9, 20));
         form.setEndDate(LocalDate.of(2026, 9, 1));
 
@@ -111,7 +129,6 @@ class ProjectBasicsFormTest {
     @Test
     void rejectsANonPositiveDurationAtTheDurationField() {
         ProjectBasicsForm form = validForm();
-        form.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);
         form.setStartDate(LocalDate.of(2026, 9, 1));
         form.setDurationDays(0);
 
@@ -129,14 +146,13 @@ class ProjectBasicsFormTest {
     }
 
     @Test
-    void rejectsContradictoryTimeInformationAtTheSelectedMode() {
+    void rejectsDurationThatContradictsStartAndEnd() {
         ProjectBasicsForm form = validForm();
-        form.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);
         form.setStartDate(LocalDate.of(2026, 9, 1));
         form.setEndDate(LocalDate.of(2026, 9, 20));
-        form.setDurationDays(20);
+        form.setDurationDays(10);
 
-        assertThat(violatedProperties(form)).contains("timeFrameType");
+        assertThat(violatedProperties(form)).contains("durationDays");
     }
 
     @Test
@@ -151,11 +167,11 @@ class ProjectBasicsFormTest {
         ProjectBasicsForm form = validForm();
         form.setTitle("  Präsentation vorbereiten  ");
         form.setSubcategory(ProjectSubCategory.PRESENTATION_OR_REPORT);
-        form.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);
         form.setStartDate(LocalDate.of(2026, 9, 1));
         form.setDurationDays(3);
+        form.setAvailableWorkingTime("Etwa 8 Stunden pro Woche");
 
-        ProjectWizardService service = new ProjectWizardService(new ProjectTimeFrameCalculator());
+        ProjectWizardService service = new ProjectWizardService();
         service.saveBasics(form, userId, session);
         ProjectWizardState restored = service.requireOwned(userId, session);
         ProjectBasicsForm restoredForm = ProjectBasicsForm.from(restored);
@@ -164,11 +180,11 @@ class ProjectBasicsFormTest {
         assertThat(restored.getCategory()).isEqualTo(TemplateCategory.EDUCATION);
         assertThat(restored.getSubcategory()).isEqualTo(ProjectSubCategory.PRESENTATION_OR_REPORT);
         assertThat(restored.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 1));
-        assertThat(restored.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 3));
-        assertThat(restoredForm.getTimeFrameType()).isEqualTo(ProjectTimeFrameType.START_AND_DURATION);
+        assertThat(restored.getEndDate()).isNull();
         assertThat(restoredForm.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 1));
         assertThat(restoredForm.getEndDate()).isNull();
         assertThat(restoredForm.getDurationDays()).isEqualTo(3);
+        assertThat(restoredForm.getAvailableWorkingTime()).isEqualTo("Etwa 8 Stunden pro Woche");
     }
 
 
@@ -264,7 +280,7 @@ class ProjectBasicsFormTest {
 
     @Test
     void categoryChangeReplacesThePreviousSelectionAndInvalidSubmissionsDoNotMutateState() {
-        var service = new ProjectWizardService(new ProjectTimeFrameCalculator());
+        var service = new ProjectWizardService();
         var session = new MockHttpSession();
         var userId = UUID.randomUUID();
         var original = validForm();

@@ -10,7 +10,6 @@ import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepo
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
-import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import de.melinadanhier.projectflow.user.model.User;
@@ -90,8 +89,9 @@ class AiWizardSummaryIntegrationTest {
                 .andExpect(content().string(containsString("aria-labelledby=\"ai-only-data\"")))
                 .andExpect(content().string(containsString("Bis zum Monatsende umziehen")))
                 .andExpect(content().string(containsString("Budget 2.000 Euro")))
+                .andExpect(content().string(containsString("21 Tage")))
                 .andExpect(content().string(containsString("aria-labelledby=\"ai-processing-information\"")))
-                .andExpect(content().string(not(containsString("21 Tage"))));
+                .andExpect(content().string(not(containsString("Zeitrahmen-Modus"))));
     }
 
     @Test
@@ -129,7 +129,8 @@ class AiWizardSummaryIntegrationTest {
         mockMvc.perform(post("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())).with(csrf())
                         .param("answers[movingSituation]", "  Neuer Ausgangs- und Zielort  ")
-                        .param("answers[specialConditions]", "Helfer sind verfügbar"))
+                        .param("answers[specialConditions]", "Helfer sind verfügbar")
+                        .param("additionalInformation", "  Priorität hat ein stressarmer Ablauf  "))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/ai/summary"));
 
@@ -139,6 +140,7 @@ class AiWizardSummaryIntegrationTest {
             assertThat(state.getProjectSpecificAnswers())
                     .containsEntry("movingSituation", "Neuer Ausgangs- und Zielort")
                     .containsEntry("specialConditions", "Helfer sind verfügbar");
+            assertThat(state.getAdditionalInformation()).isEqualTo("Priorität hat ein stressarmer Ablauf");
         });
         mockMvc.perform(get("/projects/new/ai/summary")
                         .session(request.session()).with(user(request.user())))
@@ -310,7 +312,6 @@ class AiWizardSummaryIntegrationTest {
         state.setSubcategory(ProjectSubCategory.MOVING);
         state.setCollaborationMode(groupProject ? CollaborationMode.GROUP : CollaborationMode.INDIVIDUAL);
         state.setCreationType(CreationType.AI);
-        state.setTimeFrameType(ProjectTimeFrameType.START_AND_DURATION);
         state.setDurationDays(21);
         state.setStartDate(LocalDate.of(2026, 9, 1));
         state.setEndDate(LocalDate.of(2026, 9, 21));

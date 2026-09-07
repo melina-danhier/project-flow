@@ -1,22 +1,18 @@
 package de.melinadanhier.projectflow.wizard;
 
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
-import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
-import tools.jackson.databind.json.JsonMapper;
-import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
-import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
-import de.melinadanhier.projectflow.wizard.service.ProjectTimeFrameCalculator;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,122 +20,84 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 class ProjectWizardSnapshotTimeFrameTest {
 
-    private final ProjectWizardService service = new ProjectWizardService(new ProjectTimeFrameCalculator());
+    private final ProjectWizardService service = new ProjectWizardService();
 
-    @ParameterizedTest
-    @EnumSource(ProjectTimeFrameType.class)
-    void storesAndRestoresOriginalTimeFrameInputs(ProjectTimeFrameType mode) {
+    @Test
+    void storesAndRestoresAllIndependentTimeInputs() {
         UUID userId = UUID.randomUUID();
-        MockHttpSession originalSession = new MockHttpSession();
-        ProjectBasicsForm form = form(mode);
-        service.saveBasics(form, userId, originalSession);
-        var state = service.requireOwned(userId, originalSession);
-        AiWizardSnapshot snapshot = new AiWizardSnapshot(
-                state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
-                state.getCollaborationMode(), state.getCategory(), state.getSubcategory(), state.getOtherProjectTypeDescription(),
-                null, null, null, AiProjectTimeFrameType.valueOf(state.getTimeFrameType().name()),
-                state.getDurationDays());
+        var snapshot = snapshot(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 28),
+                28, "Montag bis Freitag jeweils etwa 2 Stunden", "Wichtigster Zusatz");
+        var session = new MockHttpSession();
 
-        MockHttpSession restoredSession = new MockHttpSession();
-        service.restoreFromSnapshot(snapshot, userId, restoredSession);
-        ProjectBasicsForm restored = ProjectBasicsForm.from(service.requireOwned(userId, restoredSession));
+        service.restoreFromSnapshot(snapshot, userId, session);
+        ProjectBasicsForm restored = ProjectBasicsForm.from(service.requireOwned(userId, session));
 
-        assertThat(restored.getTimeFrameType()).isEqualTo(mode);
-        assertThat(restored.getDurationDays()).isEqualTo(form.getDurationDays());
-        assertThat(restored.getStartDate()).isEqualTo(form.getStartDate());
-        assertThat(restored.getEndDate()).isEqualTo(form.getEndDate());
+        assertThat(restored.getStartDate()).isEqualTo(snapshot.startDate());
+        assertThat(restored.getEndDate()).isEqualTo(snapshot.endDate());
+        assertThat(restored.getDurationDays()).isEqualTo(28);
+        assertThat(restored.getAvailableWorkingTime()).isEqualTo(snapshot.availableWorkingTime());
+        assertThat(service.requireOwned(userId, session).getAdditionalInformation())
+                .isEqualTo("Wichtigster Zusatz");
     }
 
     @Test
-    void fallsBackForLegacySnapshotWithoutMode() {
-        UUID userId = UUID.randomUUID();
-        MockHttpSession session = new MockHttpSession();
-        AiWizardSnapshot legacy = new AiWizardSnapshot(
-                "Alt", null, LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Sonstiges",
-                null, null, null);
-
-        service.restoreFromSnapshot(legacy, userId, session);
-
-        assertThat(service.requireOwned(userId, session).getTimeFrameType())
-                .isEqualTo(ProjectTimeFrameType.START_AND_END);
+    void keepsAllOptionalTimeValuesNull() {
+        var snapshot = snapshot(null, null, null, null, null);
+        assertThat(snapshot.startDate()).isNull();
+        assertThat(snapshot.endDate()).isNull();
+        assertThat(snapshot.durationDays()).isNull();
+        assertThat(snapshot.availableWorkingTime()).isNull();
     }
 
-
     @Test
-    void restoresTypedClassificationFromSerializedSnapshot() {
+    void serializesAndRestoresTypedClassificationAndNewFields() {
         ProjectSubCategory subcategory = ProjectSubCategory.THESIS;
         var snapshot = new AiWizardSnapshot("Projekt", null, null, null,
                 CollaborationMode.INDIVIDUAL, subcategory.getCategory(), subcategory, null,
-                null, null, null);
+                null, null, "Hinweis", 14, "8 Stunden pro Woche", Map.of("topics", "KI"));
         var codec = new AiWorkflowPayloadCodec(JsonMapper.builder().build());
-        String json = codec.writeSnapshot(snapshot);
-        assertThat(JsonMapper.builder().build().readTree(json).get("subcategory").asText())
-                .isEqualTo(subcategory.name());
-        var restoredSnapshot = codec.readSnapshot(json);
-        assertThat(restoredSnapshot).isEqualTo(snapshot);
-        var userId = UUID.randomUUID();
-        var session = new MockHttpSession();
-        service.restoreFromSnapshot(restoredSnapshot, userId, session);
-        var form = ProjectBasicsForm.from(service.requireOwned(userId, session));
-        assertThat(form.getSubcategory()).isEqualTo(subcategory);
-        assertThat(form.getSubcategoryOptions()).contains(subcategory);
-        assertThat(service.projectData(userId, session).getSubcategory()).isEqualTo(subcategory);
-        assertThat(form.getProjectTypeLabel()).isEqualTo(subcategory.getLabel());
+
+        var restored = codec.readSnapshot(codec.writeSnapshot(snapshot));
+
+        assertThat(restored).isEqualTo(snapshot);
+        assertThat(restored.subcategory()).isEqualTo(subcategory);
+        assertThat(restored.availableWorkingTime()).isEqualTo("8 Stunden pro Woche");
     }
 
     @Test
-    void rejectsContradictoryTypedTimeFrames() {
-        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
-                LocalDate.of(2026, 9, 1), null, AiProjectTimeFrameType.NONE, null));
-        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
-                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
-                AiProjectTimeFrameType.START_AND_END, 10));
-        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
-                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 9),
-                AiProjectTimeFrameType.START_AND_DURATION, 10));
-        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
-                LocalDate.of(2026, 9, 2), LocalDate.of(2026, 9, 10),
-                AiProjectTimeFrameType.END_AND_DURATION, 10));
+    void readsLegacySnapshotWithObsoleteTimeFrameType() {
+        var codec = new AiWorkflowPayloadCodec(JsonMapper.builder().build());
+        String legacyJson = """
+                {"title":"Altprojekt","startDate":"2026-09-01","endDate":"2026-09-10",
+                 "collaborationMode":"INDIVIDUAL","category":"OTHER",
+                 "otherProjectTypeDescription":"Test","timeFrameType":"START_AND_END"}
+                """;
+
+        AiWizardSnapshot restored = codec.readSnapshot(legacyJson);
+
+        assertThat(restored.startDate()).isEqualTo(LocalDate.of(2026, 9, 1));
+        assertThat(restored.endDate()).isEqualTo(LocalDate.of(2026, 9, 10));
+        assertThat(restored.durationDays()).isNull();
+        assertThat(restored.availableWorkingTime()).isNull();
     }
 
     @Test
-    void acceptsCalculatedBoundsForDurationTimeFrames() {
-        assertThat(snapshot(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
-                AiProjectTimeFrameType.START_AND_DURATION, 10).durationDays()).isEqualTo(10);
-        assertThat(snapshot(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
-                AiProjectTimeFrameType.END_AND_DURATION, 10).durationDays()).isEqualTo(10);
+    void rejectsOnlyRealTimeContradictions() {
+        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
+                LocalDate.of(2026, 9, 2), LocalDate.of(2026, 9, 1), null, null, null));
+        assertThatIllegalArgumentException().isThrownBy(() -> snapshot(
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10), 9, null, null));
+
+        assertThat(snapshot(LocalDate.of(2026, 9, 1), null, null, null, null)).isNotNull();
+        assertThat(snapshot(null, LocalDate.of(2026, 9, 10), null, null, null)).isNotNull();
+        assertThat(snapshot(null, null, 10, null, null)).isNotNull();
+        assertThat(snapshot(null, null, null, "5 Stunden am Wochenende", null)).isNotNull();
     }
 
-    private AiWizardSnapshot snapshot(LocalDate start, LocalDate end,
-                                      AiProjectTimeFrameType type, Integer durationDays) {
+    private AiWizardSnapshot snapshot(LocalDate start, LocalDate end, Integer duration,
+                                      String workingTime, String additionalInformation) {
         return new AiWizardSnapshot("Projekt", null, start, end,
                 CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
-                null, null, null, type, durationDays, java.util.Map.of());
-    }
-
-    private ProjectBasicsForm form(ProjectTimeFrameType mode) {
-        ProjectBasicsForm form = new ProjectBasicsForm();
-        form.setTitle("Projekt");
-        form.setCategory(TemplateCategory.OTHER);
-        form.setOtherProjectTypeDescription("Test");
-        form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
-        form.setTimeFrameType(mode);
-        switch (mode) {
-            case START_AND_END -> {
-                form.setStartDate(LocalDate.of(2026, 9, 1));
-                form.setEndDate(LocalDate.of(2026, 9, 10));
-            }
-            case START_AND_DURATION -> {
-                form.setStartDate(LocalDate.of(2026, 9, 1));
-                form.setDurationDays(10);
-            }
-            case END_AND_DURATION -> {
-                form.setEndDate(LocalDate.of(2026, 9, 10));
-                form.setDurationDays(10);
-            }
-            case NONE -> { }
-        }
-        return form;
+                null, null, additionalInformation, duration, workingTime, Map.of());
     }
 }

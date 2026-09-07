@@ -10,7 +10,6 @@ import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import de.melinadanhier.projectflow.wizard.service.AiProjectQuestionCatalog;
-import de.melinadanhier.projectflow.wizard.service.ProjectTimeFrameCalculator;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
@@ -24,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AiProjectSpecificDetailsTest {
 
-    private final ProjectWizardService service = new ProjectWizardService(new ProjectTimeFrameCalculator());
+    private final ProjectWizardService service = new ProjectWizardService();
 
     @Test
     void renovationAnswersReachSummarySnapshotAndPreCheckPayload() {
