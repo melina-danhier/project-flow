@@ -4,7 +4,7 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import org.junit.jupiter.api.Test;
@@ -97,7 +97,7 @@ class ProjectWizardSnapshotTimeFrameTest {
     private AiWizardSnapshot snapshot(LocalDate start, LocalDate end, Integer duration,
                                       String workingTime, String additionalInformation) {
         return new AiWizardSnapshot("Projekt", null, start, end,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
                 null, null, additionalInformation, duration, workingTime, Map.of());
     }
 }

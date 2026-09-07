@@ -8,6 +8,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.membership.Proje
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.SectionDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionForm;
@@ -408,7 +409,7 @@ class SeparatedPlanUiIntegrationTest {
         var owner = saveUser("solo-ui-owner@example.org");
         var project = saveProject("Solo", owner);
         project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.INDIVIDUAL);
-        project.setCategory(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.EDUCATION);
+        project.setCategory(ProjectCategory.EDUCATION);
         projectRepository.saveAndFlush(project);
         var task = createTask(project, owner, null, "Meine Aufgabe");
         var membership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), owner.getId()).orElseThrow();
@@ -460,7 +461,7 @@ class SeparatedPlanUiIntegrationTest {
         var owner = saveUser("convert-ui-owner@example.org");
         var member = saveUser("convert-ui-member@example.org");
         var project = saveProject("Gemeinsames Projekt", owner);
-        project.setCategory(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.EDUCATION);
+        project.setCategory(ProjectCategory.EDUCATION);
         projectRepository.saveAndFlush(project);
         var ownerSession = login(owner.getEmail());
         var memberSession = login(member.getEmail());
@@ -502,7 +503,7 @@ class SeparatedPlanUiIntegrationTest {
     void updateRequestsRequireLockVersionWhileCreateRequestsRemainValidWithoutIt() throws Exception {
         User owner = saveUser("required-version-owner@example.org");
         Project project = saveProject("Versionsschutz", owner);
-        project.setCategory(de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.EDUCATION);
+        project.setCategory(ProjectCategory.EDUCATION);
         projectRepository.saveAndFlush(project);
         MockHttpSession session = login(owner.getEmail());
 

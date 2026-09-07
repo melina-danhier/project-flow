@@ -14,7 +14,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.Projec
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
@@ -92,7 +92,7 @@ class JpaEntityModelTest {
     @Test
     void persistsProjectAsPlanContainerSubtype() {
         Project project = newProject("Umzug", CreationType.EMPTY, ProjectStatus.ACTIVE);
-        project.setCategory(TemplateCategory.HOME);
+        project.setCategory(ProjectCategory.HOME);
         project.setSubcategory(ProjectSubCategory.MOVING);
 
         entityManager.persistAndFlush(project);
@@ -148,7 +148,7 @@ class JpaEntityModelTest {
     void persistsTemplateWithRelativeTaskDates() {
         Template template = new Template();
         template.setTitle("Studienprojekt");
-        template.setCategory(TemplateCategory.EDUCATION);
+        template.setCategory(ProjectCategory.EDUCATION);
         template.setSubcategory(ProjectSubCategory.PRESENTATION_OR_REPORT);
         template.setRecommendedDurationDays(21);
         template.setCollaborationMode(CollaborationMode.GROUP);

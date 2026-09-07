@@ -30,7 +30,7 @@ public class Template extends PlanContainer implements ProjectClassification {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false, length = 50)
-    private TemplateCategory category;
+    private ProjectCategory category;
 
     @Size(max = 100)
     @Column(name = "other_project_type_description", length = 100)

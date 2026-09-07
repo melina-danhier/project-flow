@@ -2,7 +2,7 @@ package de.melinadanhier.projectflow.plancontainer.project.dto.form;
 
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,6 +16,6 @@ public class ProjectCreateForm extends ProjectForm {
     private CreationType creationType;
 
     public ProjectCreateForm() {
-        setCategory(TemplateCategory.OTHER);
+        setCategory(ProjectCategory.OTHER);
     }
 }

@@ -1,11 +1,11 @@
 package de.melinadanhier.projectflow.plancontainer.project.model.classification;
 
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import java.util.List;
 
 /** Shared typed classification for forms, session state, entities and view DTOs. */
 public interface ProjectClassification {
-    TemplateCategory getCategory();
+    ProjectCategory getCategory();
     ProjectSubCategory getSubcategory();
     String getOtherProjectTypeDescription();
 
@@ -14,7 +14,7 @@ public interface ProjectClassification {
     }
 
     default boolean isOtherCategory() {
-        return getCategory() == TemplateCategory.OTHER;
+        return getCategory() == ProjectCategory.OTHER;
     }
 
     default String getProjectTypeLabel() {

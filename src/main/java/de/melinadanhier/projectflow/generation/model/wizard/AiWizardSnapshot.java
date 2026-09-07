@@ -3,7 +3,7 @@ package de.melinadanhier.projectflow.generation.model.wizard;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import java.time.LocalDate;
 import java.util.Map;
 
@@ -14,7 +14,7 @@ public record AiWizardSnapshot(
         LocalDate startDate,
         LocalDate endDate,
         CollaborationMode collaborationMode,
-        TemplateCategory category,
+        ProjectCategory category,
         ProjectSubCategory subcategory,
         String otherProjectTypeDescription,
         String projectGoal,
@@ -41,7 +41,7 @@ public record AiWizardSnapshot(
             LocalDate startDate,
             LocalDate endDate,
             CollaborationMode collaborationMode,
-            TemplateCategory category,
+            ProjectCategory category,
             ProjectSubCategory subcategory,
             String otherProjectTypeDescription,
             String projectGoal,
@@ -55,7 +55,7 @@ public record AiWizardSnapshot(
 
     public AiWizardSnapshot(
             String title, String description, LocalDate startDate, LocalDate endDate,
-            CollaborationMode collaborationMode, TemplateCategory category, ProjectSubCategory subcategory,
+            CollaborationMode collaborationMode, ProjectCategory category, ProjectSubCategory subcategory,
             String otherProjectTypeDescription, String projectGoal, String constraints,
             String additionalInformation, Integer durationDays, String availableWorkingTime
     ) {

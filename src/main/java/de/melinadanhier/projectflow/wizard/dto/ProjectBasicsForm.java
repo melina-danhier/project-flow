@@ -4,7 +4,7 @@ import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjec
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,7 +32,7 @@ public class ProjectBasicsForm implements ProjectClassification {
     private String description;
 
     @NotNull(message = "Bitte wähle eine Oberkategorie aus.")
-    private TemplateCategory category = TemplateCategory.OTHER;
+    private ProjectCategory category = ProjectCategory.OTHER;
 
     private ProjectSubCategory subcategory;
 
@@ -58,7 +58,7 @@ public class ProjectBasicsForm implements ProjectClassification {
         ProjectBasicsForm form = new ProjectBasicsForm();
         form.setTitle(state.getTitle());
         form.setDescription(state.getDescription());
-        form.setCategory(state.getCategory() == null ? TemplateCategory.OTHER : state.getCategory());
+        form.setCategory(state.getCategory() == null ? ProjectCategory.OTHER : state.getCategory());
         form.setOtherProjectTypeDescription(state.getOtherProjectTypeDescription());
         form.setSubcategory(state.getSubcategory());
         form.setCollaborationMode(state.getCollaborationMode());
