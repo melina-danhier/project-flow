@@ -127,7 +127,7 @@ class DraftPostgresMigrationTest {
     }
 
     @Test
-    void normalizesAllDraftPositionsToZeroBasedOrder() throws Exception {
+    void normalizesEveryPlanContainerToSparseOrder() throws Exception {
         String schema = "draft_order_test_" + java.util.UUID.randomUUID().toString().replace("-", "");
         var dataSource = java.util.Objects.requireNonNull(jdbc.getDataSource());
         jdbc.execute("CREATE SCHEMA " + schema);
@@ -135,7 +135,7 @@ class DraftPostgresMigrationTest {
             String originalSchema = connection.getSchema();
             try {
                 org.flywaydb.core.Flyway.configure().dataSource(dataSource)
-                        .schemas(schema).defaultSchema(schema).target("25").load().migrate();
+                        .schemas(schema).defaultSchema(schema).target("30").load().migrate();
                 connection.setSchema(schema);
                 var scoped = new JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(connection, true));
                 var projectId = java.util.UUID.randomUUID();
@@ -160,13 +160,16 @@ class DraftPostgresMigrationTest {
 
                 assertThat(scoped.queryForList(
                         "SELECT sort_order FROM draft_sections ORDER BY sort_order", Integer.class))
-                        .containsExactly(0, 1);
+                        .containsExactly(100, 200);
                 assertThat(scoped.queryForList(
                         "SELECT sort_order FROM draft_plan_elements WHERE draft_section_id = ? ORDER BY sort_order",
-                        Integer.class, firstSectionId)).containsExactly(0, 1);
+                        Integer.class, firstSectionId)).containsExactly(100, 200);
                 assertThat(scoped.queryForList(
                         "SELECT sort_order FROM draft_plan_elements WHERE draft_section_id IS NULL ORDER BY sort_order",
-                        Integer.class)).containsExactly(0, 1);
+                        Integer.class)).containsExactly(100, 200);
+                assertThat(scoped.queryForObject(
+                        "SELECT sort_mode FROM plan_drafts WHERE id = ?", String.class, draftId))
+                        .isEqualTo("DATE");
             } finally {
                 connection.setSchema(originalSchema);
             }
@@ -182,8 +185,6 @@ class DraftPostgresMigrationTest {
                         + "VALUES (?, now(), now(), ?, ?, ?, ?, 'AI')",
                 id, draftId, sectionId, title, sortOrder);
     }
-
-
     @Test
     void migratesTypedSubcategoriesAndSnapshotsWithoutGuessingUnknownValues() throws Exception {
         // Separate schema inside the explicitly supplied disposable database.

@@ -17,9 +17,12 @@ import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepo
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectStateService;
+import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.planelement.dto.DeleteSectionForm;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementType;
+import de.melinadanhier.projectflow.planelement.dto.PlanElementMoveForm;
+import de.melinadanhier.projectflow.planelement.dto.PlanSortModeForm;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementViewDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionDeletionMode;
 import de.melinadanhier.projectflow.planelement.dto.SectionDto;
@@ -37,6 +40,7 @@ import de.melinadanhier.projectflow.planelement.service.MilestoneService;
 import de.melinadanhier.projectflow.planelement.service.SectionService;
 import de.melinadanhier.projectflow.planelement.service.TaskDependencyService;
 import de.melinadanhier.projectflow.planelement.service.TaskService;
+import de.melinadanhier.projectflow.planelement.service.ProjectPlanOrderingService;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -65,6 +69,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         TaskService.class,
         MilestoneService.class,
         SectionService.class,
+        ProjectPlanOrderingService.class,
         TaskDependencyService.class
 })
 class ProjectCrudIntegrationTest {
@@ -80,6 +85,7 @@ class ProjectCrudIntegrationTest {
     @Autowired private MilestoneService milestoneService;
     @Autowired private SectionService sectionService;
     @Autowired private TaskDependencyService dependencyService;
+    @Autowired private ProjectPlanOrderingService orderingService;
     @Autowired private EntityManager entityManager;
 
     @Test
@@ -188,7 +194,7 @@ class ProjectCrudIntegrationTest {
                 .isEqualTo(target.getId());
         assertThat(projectService.getProjectPlan(project.getId(), owner.getId()).getSections())
                 .singleElement().satisfies(section -> {
-                    assertThat(section.getSortOrder()).isZero();
+                    assertThat(section.getSortOrder()).isEqualTo(200);
                     assertThat(section.getTaskCount()).isEqualTo(1);
                     assertThat(section.getMilestoneCount()).isEqualTo(1);
                 });
@@ -367,6 +373,62 @@ class ProjectCrudIntegrationTest {
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("Ohne 1", PlanElementType.MILESTONE),
                         org.assertj.core.groups.Tuple.tuple("Ohne 2", PlanElementType.TASK));
+    }
+
+    @Test
+    void projectUsesDateOrderByDefaultAndPersistsManualPreference() {
+        User owner = saveUser("date-order-owner@example.org");
+        Project project = saveProject("Datumssortierung", owner);
+        TaskForm late = taskForm("Spät", null);
+        late.setDueDate(LocalDate.of(2027, 3, 1));
+        taskService.createTask(project.getId(), late, owner.getId());
+        TaskForm early = taskForm("Früh", null);
+        early.setDueDate(LocalDate.of(2027, 1, 1));
+        taskService.createTask(project.getId(), early, owner.getId());
+        taskService.createTask(project.getId(), taskForm("Ohne Datum", null), owner.getId());
+
+        assertThat(projectService.getProjectPlan(project.getId(), owner.getId()).getUnsectionedElements())
+                .extracting(PlanElementViewDto::getTitle)
+                .containsExactly("Früh", "Spät", "Ohne Datum");
+
+        PlanSortModeForm manual = new PlanSortModeForm();
+        manual.setProjectLockVersion(project.getLockVersion());
+        manual.setSortMode(SortMode.MANUAL);
+        orderingService.updateSortMode(project.getId(), owner.getId(), manual);
+        assertThat(project.getSortMode()).isEqualTo(SortMode.MANUAL);
+        assertThat(projectService.getProjectPlan(project.getId(), owner.getId()).getUnsectionedElements())
+                .extracting(PlanElementViewDto::getTitle)
+                .containsExactly("Spät", "Früh", "Ohne Datum");
+    }
+
+    @Test
+    void dateModeMovesOnlyWithinSameDateGroupUsingSparseOrder() {
+        User owner = saveUser("date-move-owner@example.org");
+        Project project = saveProject("Verschieben", owner);
+        LocalDate date = LocalDate.of(2027, 2, 1);
+        TaskForm first = taskForm("Erste", null); first.setDueDate(date);
+        TaskForm second = taskForm("Zweite", null); second.setDueDate(date);
+        TaskDetailsDto firstTask = taskService.createTask(project.getId(), first, owner.getId());
+        TaskDetailsDto secondTask = taskService.createTask(project.getId(), second, owner.getId());
+
+        PlanElementMoveForm move = new PlanElementMoveForm();
+        move.setProjectLockVersion(project.getLockVersion());
+        move.setTargetDate(date.toString());
+        move.setTargetPosition(0);
+        orderingService.moveElement(project.getId(), secondTask.getId(), owner.getId(), move);
+        assertThat(projectService.getProjectPlan(project.getId(), owner.getId()).getUnsectionedElements())
+                .extracting(PlanElementViewDto::getTitle).containsExactly("Zweite", "Erste");
+        assertThat(taskRepository.findById(secondTask.getId()).orElseThrow().getSortOrder())
+                .isLessThan(taskRepository.findById(firstTask.getId()).orElseThrow().getSortOrder());
+
+        entityManager.flush();
+        PlanElementMoveForm crossDate = new PlanElementMoveForm();
+        crossDate.setProjectLockVersion(project.getLockVersion());
+        crossDate.setTargetDate("2027-03-01");
+        crossDate.setTargetPosition(0);
+        assertThatThrownBy(() -> orderingService.moveElement(
+                project.getId(), firstTask.getId(), owner.getId(), crossDate))
+                .isInstanceOf(DomainValidationException.class);
     }
 
     private void createDependency(Project project, User owner, UUID prerequisiteId, UUID successorId) {

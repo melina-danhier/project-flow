@@ -54,12 +54,12 @@ public class DraftPlan extends MutableEntity {
 
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "draftPlan", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("sortOrder ASC")
+    @OrderBy("sortOrder ASC, id ASC")
     private List<DraftSection> sections = new ArrayList<>();
 
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "draftPlan", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("sortOrder ASC")
+    @OrderBy("sortOrder ASC, id ASC")
     private List<DraftPlanElement> elements = new ArrayList<>();
 
     public void addSection(DraftSection section) {

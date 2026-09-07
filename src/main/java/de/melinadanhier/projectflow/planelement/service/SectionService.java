@@ -44,9 +44,9 @@ public class SectionService {
         apply(section, form);
         List<PlanSection> sections = new ArrayList<>(
                 planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId));
-        sections.add(form.getSortOrder() == null
-                ? sections.size() : Math.min(form.getSortOrder(), sections.size()), section);
-        resequenceSections(sections);
+        int position = form.getSortOrder() == null
+                ? sections.size() : Math.min(form.getSortOrder(), sections.size());
+        PlanOrdering.place(sections, section, position, PlanSection::getSortOrder, PlanSection::setSortOrder);
         return planElementMapper.toDto(planSectionRepository.save(section));
     }
 
@@ -56,12 +56,6 @@ public class SectionService {
         PlanSection section = requireSection(projectId, sectionId);
         requireCurrentVersion(section.getLockVersion(), form.getLockVersion());
         apply(section, form);
-        List<PlanSection> sections = new ArrayList<>(
-                planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId));
-        sections.removeIf(candidate -> candidate.getId().equals(sectionId));
-        sections.add(form.getSortOrder() == null
-                ? sections.size() : Math.min(form.getSortOrder(), sections.size()), section);
-        resequenceSections(sections);
         return planElementMapper.toDto(section);
     }
 
@@ -81,8 +75,6 @@ public class SectionService {
         }
         planSectionRepository.delete(section);
         planSectionRepository.flush();
-        resequenceSections(new ArrayList<>(
-                planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId)));
     }
 
     private void moveContents(
@@ -104,10 +96,10 @@ public class SectionService {
         List<PlanElement> targetContents = new ArrayList<>(
                 planElementRepository.findAllByPlanContainerIdAndPlanSectionIdOrderBySortOrderAsc(
                         projectId, targetSectionId));
-        int position = targetContents.size();
         for (PlanElement element : contents) {
             element.setPlanSection(target);
-            element.setSortOrder(position++);
+            PlanOrdering.place(targetContents, element, targetContents.size(),
+                    PlanElement::getSortOrder, PlanElement::setSortOrder);
         }
     }
 
@@ -140,12 +132,6 @@ public class SectionService {
         }
         section.setTitle(title);
         section.setDescription(description);
-    }
-
-    private void resequenceSections(List<PlanSection> sections) {
-        for (int index = 0; index < sections.size(); index++) {
-            sections.get(index).setSortOrder(index);
-        }
     }
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {

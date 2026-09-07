@@ -11,6 +11,7 @@ import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
 import de.melinadanhier.projectflow.planelement.model.Task;
+import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -22,16 +23,12 @@ import java.util.UUID;
 @Component
 public class DraftPlanAdoptionFactory {
 
-    private static final Comparator<DraftSection> SECTION_ORDER = Comparator
-            .comparingInt(DraftSection::getSortOrder)
-            .thenComparing(DraftSection::getId);
-    private static final Comparator<DraftPlanElement> ELEMENT_ORDER = Comparator
-            .comparingInt(DraftPlanElement::getSortOrder)
-            .thenComparing(DraftPlanElement::getId);
+    private static final Comparator<DraftSection> SECTION_ORDER = PlanOrdering
+            .manual(DraftSection::getSortOrder, DraftSection::getId);
+    private static final Comparator<DraftPlanElement> ELEMENT_ORDER = PlanOrdering
+            .manual(DraftPlanElement::getSortOrder, DraftPlanElement::getId);
 
     public void adopt(DraftPlan draft, Project project) {
-        project.setSortMode(draft.getSortMode());
-
         Map<DraftSection, PlanSection> adoptedSections = new HashMap<>();
         List<DraftSection> includedSections = draft.getSections().stream()
                 .filter(this::included)
@@ -43,7 +40,7 @@ public class DraftPlanAdoptionFactory {
             target.setTitle(source.getTitle());
             target.setDescription(source.getDescription());
             target.setOrigin(source.getOrigin());
-            target.setSortOrder(position);
+            target.setSortOrder(source.getSortOrder());
             project.addSection(target);
             adoptedSections.put(source, target);
         }
@@ -54,9 +51,9 @@ public class DraftPlanAdoptionFactory {
                     .filter(this::included)
                     .sorted(ELEMENT_ORDER)
                     .toList();
-            for (int position = 0; position < children.size(); position++) {
-                adoptElement(children.get(position), project, adoptedSections.get(sourceSection),
-                        position, adoptedTasks);
+            for (DraftPlanElement child : children) {
+                adoptElement(child, project, adoptedSections.get(sourceSection),
+                        child.getSortOrder(), adoptedTasks);
             }
         }
 
@@ -70,12 +67,14 @@ public class DraftPlanAdoptionFactory {
                 .sorted(SECTION_ORDER)
                 .flatMap(section -> section.getElements().stream().filter(this::included).sorted(ELEMENT_ORDER))
                 .toList();
-        int unsectionedPosition = 0;
         for (DraftPlanElement source : originallyUnsectioned) {
-            adoptElement(source, project, null, unsectionedPosition++, adoptedTasks);
+            adoptElement(source, project, null, source.getSortOrder(), adoptedTasks);
         }
+        int nextUnsectionedOrder = originallyUnsectioned.stream()
+                .mapToInt(DraftPlanElement::getSortOrder).max().orElse(0);
         for (DraftPlanElement source : fromRejectedSections) {
-            adoptElement(source, project, null, unsectionedPosition++, adoptedTasks);
+            nextUnsectionedOrder = Math.addExact(nextUnsectionedOrder, PlanOrdering.GAP);
+            adoptElement(source, project, null, nextUnsectionedOrder, adoptedTasks);
         }
 
         draft.getElements().stream()

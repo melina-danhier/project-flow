@@ -76,13 +76,13 @@ class GeneratedPlanDraftMapperTest {
                         List.of(new GeneratedMilestone(null, "Middle", null, 5))))));
 
         assertThat(result.sections()).extracting("title").containsExactly("Earlier", "Later");
-        assertThat(result.sections()).extracting("sortOrder").containsExactly(0, 1);
+        assertThat(result.sections()).extracting("sortOrder").containsExactly(100, 200);
         assertThat(result.sections().getFirst().getElements())
                 .extracting(DraftPlanElement::getTitle)
                 .containsExactly("First", "Middle", "Last");
         assertThat(result.sections().getFirst().getElements())
                 .extracting(DraftPlanElement::getSortOrder)
-                .containsExactly(0, 1, 2);
+                .containsExactly(100, 200, 300);
     }
 
     private void assertInvalid(GeneratedPlanResponse response) {
