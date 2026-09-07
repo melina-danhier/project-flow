@@ -35,8 +35,20 @@
                 <dd th:if="${summary.startDate == null and summary.endDate == null}">Noch nicht festgelegt</dd>
                 <dd th:if="${summary.startDate != null and summary.startDate == summary.endDate}"
                     th:text="${#temporals.format(summary.startDate, 'dd.MM.yyyy')}"></dd>
-                <dd th:if="${summary.startDate != null and summary.startDate != summary.endDate}"
+                <dd th:if="${summary.startDate != null and summary.endDate != null and summary.startDate != summary.endDate}"
                     th:text="|${#temporals.format(summary.startDate, 'dd.MM.yyyy')} bis ${#temporals.format(summary.endDate, 'dd.MM.yyyy')}|"></dd>
+                <dd th:if="${summary.startDate != null and summary.endDate == null}"
+                    th:text="|Startdatum: ${#temporals.format(summary.startDate, 'dd.MM.yyyy')}|"></dd>
+                <dd th:if="${summary.startDate == null and summary.endDate != null}"
+                    th:text="|Endtermin: ${#temporals.format(summary.endDate, 'dd.MM.yyyy')}|"></dd>
+                <th:block th:if="${summary.durationDays != null}">
+                    <dt>Dauer</dt>
+                    <dd th:text="|${summary.durationDays} Tage|"></dd>
+                </th:block>
+                <th:block th:if="${summary.availableWorkingTime != null and !summary.availableWorkingTime.isBlank()}">
+                    <dt>Verfügbare Arbeitszeit</dt>
+                    <dd th:text="${summary.availableWorkingTime}"></dd>
+                </th:block>
                 <dt>Projektart</dt><dd th:text="${summary.groupProject ? 'Gruppenprojekt' : 'Einzelprojekt'}"></dd>
                 <dt>Kategorie</dt><dd th:text="${summary.category}"></dd>
                 <dt>Art der Erstellung</dt><dd th:text="${summary.creationType}"></dd>

@@ -39,6 +39,21 @@
                 <p th:if="${question.helpText != null}" class="pf-hint" th:text="${question.helpText}"></p>
             </div>
 
+            <div class="pf-form-group">
+                <label for="additionalInformation" class="pf-label">
+                    <span>Zusätzliche Wünsche oder Einschränkungen</span>
+                    <span class="pf-hint">(optional)</span>
+                </label>
+                <textarea id="additionalInformation"
+                          class="pf-textarea"
+                          th:field="*{additionalInformation}"
+                          maxlength="2000"
+                          placeholder="z. B. Besondere Prioritäten, bestimmte Tools oder zeitliche Einschränkungen..."></textarea>
+                <div th:if="${#fields.hasErrors('additionalInformation')}"
+                     th:errors="*{additionalInformation}"
+                     class="pf-alert pf-alert--error" role="alert"></div>
+            </div>
+
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <a th:href="@{/projects/new/method}" class="pf-btn pf-btn--secondary">

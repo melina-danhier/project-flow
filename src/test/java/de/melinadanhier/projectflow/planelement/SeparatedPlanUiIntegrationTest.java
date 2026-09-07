@@ -8,6 +8,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.membership.Proje
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.SectionDto;
@@ -589,6 +590,58 @@ class SeparatedPlanUiIntegrationTest {
         form.setPlanSectionId(sectionId);
         UUID milestoneId = milestoneService.createMilestone(project.getId(), form, owner.getId()).getId();
         return milestoneRepository.findById(milestoneId).orElseThrow();
+    }
+
+    @Test
+    void planUiSupportsOrderingControlsAndSortModeChange() throws Exception {
+        User owner = saveUser("plan-ordering-owner@example.org");
+        Project project = saveProject("Ordering UI Test", owner);
+        SectionDto sec1 = createSection(project, owner, "Bereich 1");
+        SectionDto sec2 = createSection(project, owner, "Bereich 2");
+        Task task1 = createTask(project, owner, sec1.getId(), "Aufgabe 1");
+        MockHttpSession session = login(owner.getEmail());
+
+        // 1. Plan UI displays ordering elements, sort mode form, lock version, and drag handles
+        mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("projects/plan"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("plan-sort-mode-form")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("section-drag-handle")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("element-drag-handle")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"projectLockVersion\"")));
+
+        // 2. Switch SortMode to MANUAL
+        mockMvc.perform(post("/projects/{projectId}/plan/sort-mode", project.getId())
+                        .session(session).with(csrf())
+                        .param("projectLockVersion", String.valueOf(project.getLockVersion()))
+                        .param("sortMode", "MANUAL"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/plan"));
+
+        project = projectRepository.findById(project.getId()).orElseThrow();
+        assertThat(project.getSortMode()).isEqualTo(SortMode.MANUAL);
+
+        // 3. Move Section 1 to position 1
+        mockMvc.perform(post("/projects/{projectId}/plan/sections/{sectionId}/move", project.getId(), sec1.getId())
+                        .session(session).with(csrf())
+                        .param("projectLockVersion", String.valueOf(project.getLockVersion()))
+                        .param("targetPosition", "1"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/plan"));
+
+        // 4. Move Task 1 to Section 2
+        project = projectRepository.findById(project.getId()).orElseThrow();
+        mockMvc.perform(post("/projects/{projectId}/plan/elements/{elementId}/move", project.getId(), task1.getId())
+                        .session(session).with(csrf())
+                        .param("projectLockVersion", String.valueOf(project.getLockVersion()))
+                        .param("targetSectionId", sec2.getId().toString())
+                        .param("targetDate", "")
+                        .param("targetPosition", "0"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/plan"));
+
+        Task updatedTask = taskRepository.findById(task1.getId()).orElseThrow();
+        assertThat(updatedTask.getPlanSection().getId()).isEqualTo(sec2.getId());
     }
 
     private MockHttpSession login(String email) throws Exception {

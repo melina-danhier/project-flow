@@ -1871,8 +1871,59 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
         flex-direction: column;
     }
 
-    .pf-cta-banner__actions .pf-btn {
-        width: 100%;
-    }
+}
+
+/* ==========================================================================
+   Plan Ordering & Drag-and-Drop
+   ========================================================================== */
+
+.pf-drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.35rem;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-sm);
+    background: var(--pf-surface);
+    color: var(--pf-text-muted);
+    cursor: grab;
+    transition: var(--pf-transition);
+}
+
+.pf-drag-handle:hover {
+    border-color: var(--pf-primary-border);
+    color: var(--pf-primary);
+    background: var(--pf-primary-soft);
+}
+
+.pf-drag-handle:active {
+    cursor: grabbing;
+}
+
+.is-dragging {
+    opacity: 0.45;
+}
+
+.drop-target {
+    outline: 2px dashed var(--pf-primary) !important;
+    outline-offset: 3px;
+    border-radius: var(--pf-radius-md);
+    background: var(--pf-primary-soft);
+}
+
+.pf-shake {
+    animation: pfShake 0.45s ease-in-out;
+}
+
+@keyframes pfShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+.pf-ordering-buttons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
 }
 
