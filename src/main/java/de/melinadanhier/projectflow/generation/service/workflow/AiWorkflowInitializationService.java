@@ -35,7 +35,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class AiWorkflowInitializationService {
 
-    public static final String SNAPSHOT_VERSION = "ai-wizard-v3";
+    public static final String SNAPSHOT_VERSION = "ai-wizard-v4";
     public static final String CONSENT_VERSION = "v1";
 
     private final ProjectRepository projectRepository;
@@ -114,6 +114,13 @@ public class AiWorkflowInitializationService {
         if (snapshot.startDate() != null && snapshot.endDate() != null
                 && snapshot.endDate().isBefore(snapshot.startDate())) {
             throw new DomainValidationException("Das Projektende darf nicht vor dem Projektstart liegen.");
+        }
+        if (snapshot.durationDays() != null && snapshot.durationDays() < 1) {
+            throw new DomainValidationException("Die Projektdauer muss mindestens einen Tag betragen.");
+        }
+        if (snapshot.availableWorkingTime() != null
+                && snapshot.availableWorkingTime().length() > 1000) {
+            throw new DomainValidationException("Die verfügbare Arbeitszeit ist zu lang.");
         }
     }
 }

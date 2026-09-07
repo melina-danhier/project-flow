@@ -175,8 +175,7 @@ public class ProjectWizardController {
                 CreationType.AI, currentUser.userId(), session);
         var questions = AiProjectQuestionCatalog.questionsFor(state.getCategory(), state.getSubcategory());
         var submittedAnswers = form.getAnswers() == null ? java.util.Map.<String, String>of() : form.getAnswers();
-        if (hasText(form.getProjectGoal()) || hasText(form.getConstraints())
-                || hasText(form.getAdditionalInformation())) {
+        if (hasText(form.getProjectGoal()) || hasText(form.getConstraints())) {
             bindingResult.reject("ai.answers.obsolete",
                     "Die übermittelten Zusatzangaben verwenden nicht den aktuellen Fragenkatalog.");
         }

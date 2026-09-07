@@ -194,7 +194,7 @@ class AiPromptBuilderTest {
                 LocalDate.of(2026, 9, 15), null,
                 CollaborationMode.INDIVIDUAL, TemplateCategory.SOFTWARE_TECHNOLOGY,
                 ProjectSubCategory.SOFTWARE_PROJECT, null, null, null,
-                "Zuerst ein nutzbares MVP", null, null, java.util.Map.of());
+                "Zuerst ein nutzbares MVP", null, "Etwa 2 Stunden täglich", java.util.Map.of());
 
         var prompt = preCheckPromptBuilder.build(partial);
 
@@ -203,6 +203,7 @@ class AiPromptBuilderTest {
                 .contains("WARNING vom type ASSUMPTION")
                 .contains("Schätzung");
         assertThat(prompt.confirmedUserData())
+                .contains("availableWorkingTime", "Etwa 2 Stunden täglich")
                 .contains("additionalInformation", "Zuerst ein nutzbares MVP");
     }
 

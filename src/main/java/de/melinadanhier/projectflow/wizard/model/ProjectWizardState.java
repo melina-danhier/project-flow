@@ -8,7 +8,6 @@ import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectCreate
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
-import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -39,8 +38,8 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
     private CreationType creationType;
     private LocalDate startDate;
     private LocalDate endDate;
-    private ProjectTimeFrameType timeFrameType = ProjectTimeFrameType.NONE;
     private Integer durationDays;
+    private String availableWorkingTime;
     private StructureMode structureMode;
     private SortMode sortMode;
     private String projectGoal;

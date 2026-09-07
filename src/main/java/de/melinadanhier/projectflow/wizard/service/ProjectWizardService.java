@@ -4,7 +4,6 @@ import de.melinadanhier.projectflow.plancontainer.project.validation.ProjectClas
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
-import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -12,7 +11,6 @@ import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategor
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.AiWizardSummary;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
-import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +25,6 @@ import java.util.UUID;
 public class ProjectWizardService {
 
     public static final String SESSION_ATTRIBUTE = ProjectWizardState.class.getName();
-
-    private final ProjectTimeFrameCalculator timeFrameCalculator;
 
     public ProjectWizardState saveBasics(ProjectBasicsForm form, UUID userId, HttpSession session) {
         ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
@@ -46,11 +42,10 @@ public class ProjectWizardService {
         state.setOtherProjectTypeDescription(form.isOtherCategory()
                 ? normalizeOptionalText(form.getOtherProjectTypeDescription()) : null);
         state.setCollaborationMode(form.getCollaborationMode());
-        state.setTimeFrameType(form.getTimeFrameType());
+        state.setStartDate(form.getStartDate());
+        state.setEndDate(form.getEndDate());
         state.setDurationDays(form.getDurationDays());
-        ProjectTimeFrameCalculator.ProjectTimeFrame timeFrame = timeFrameCalculator.calculate(form);
-        state.setStartDate(timeFrame.startDate());
-        state.setEndDate(timeFrame.endDate());
+        state.setAvailableWorkingTime(normalizeOptionalText(form.getAvailableWorkingTime()));
         state.setCompletionToken(null);
         if (classificationChanged) {
             state.getProjectSpecificAnswers().clear();
@@ -97,6 +92,7 @@ public class ProjectWizardService {
                 state.getCollaborationMode() == CollaborationMode.GROUP,
                 categoryLabel(state.getCategory(), state.getProjectTypeLabel()),
                 "KI-generierter Plan",
+                state.getDurationDays(), state.getAvailableWorkingTime(),
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(), answers);
     }
 
@@ -123,7 +119,7 @@ public class ProjectWizardService {
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
                 state.getCollaborationMode(), state.getCategory(), state.getSubcategory(), state.getOtherProjectTypeDescription(),
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(),
-                AiProjectTimeFrameType.valueOf(state.getTimeFrameType().name()), state.getDurationDays(),
+                state.getDurationDays(), state.getAvailableWorkingTime(),
                 state.getProjectSpecificAnswers());
     }
 
@@ -175,8 +171,8 @@ public class ProjectWizardService {
         state.setCreationType(CreationType.AI);
         state.setStartDate(snapshot.startDate());
         state.setEndDate(snapshot.endDate());
-        state.setTimeFrameType(resolveTimeFrameType(snapshot));
         state.setDurationDays(snapshot.durationDays());
+        state.setAvailableWorkingTime(snapshot.availableWorkingTime());
         state.setProjectGoal(snapshot.projectGoal());
         state.setConstraints(snapshot.constraints());
         state.setAdditionalInformation(snapshot.additionalInformation());
@@ -189,15 +185,6 @@ public class ProjectWizardService {
 
     private String normalizeOptionalText(String value) {
         return value == null || value.isBlank() ? null : value.trim();
-    }
-
-    private ProjectTimeFrameType resolveTimeFrameType(AiWizardSnapshot snapshot) {
-        if (snapshot.timeFrameType() != null) {
-            return ProjectTimeFrameType.valueOf(snapshot.timeFrameType().name());
-        }
-        return snapshot.startDate() == null && snapshot.endDate() == null
-                ? ProjectTimeFrameType.NONE
-                : ProjectTimeFrameType.START_AND_END;
     }
 
     private String categoryLabel(TemplateCategory category, String projectTypeLabel) {
