@@ -26,6 +26,9 @@ public class PreCheckPromptBuilder {
             - Stütze jede Aussage möglichst direkt auf confirmedWizardData. Trenne inhaltlich klar
               zwischen dem direkt festgestellten Problem, einem daraus vorsichtig abgeleiteten Risiko
               und der möglichen Anpassung. Stelle Vermutungen nie als Tatsachen dar.
+            - Berücksichtige alle bestätigten Angaben gemeinsam und vollständig. Engere oder zeitlich
+              begrenzte Aussagen wie „aktuell“, „vorerst“, „bis“ oder „während“ gelten nur in ihrem
+              erkennbaren Bezugszeitraum. Verallgemeinere sie nicht zu dauerhaften Einschränkungen.
             - Melde nur fachliche Probleme, die Inhalt, Umfang, Aufwand, Terminplanung oder Aufbau
               des Plans voraussichtlich wesentlich beeinträchtigen. Im Zweifel nicht warnen.
             - Erkenne weiterhin offensichtliche Missverhältnisse zwischen dem angegebenen Umfang,
@@ -37,20 +40,31 @@ public class PreCheckPromptBuilder {
               Optionale Details dürfen fehlen, wenn aus Ziel und vorhandenem Kontext trotzdem ein
               sinnvoller Plan ableitbar ist. Normale offene Planungsdetails wie Menü, Dekoration oder
               Unterhaltung sind kein Problem; sie können später im Plan konkretisiert werden.
+              Melde insbesondere keine Entscheidung vorab, die als normale Klärungs- oder Auswahlaufgabe
+              im Plan gelöst werden kann, ohne dessen grundlegenden Aufbau oder Realisierbarkeit zu verändern.
               Gerade bei einfachen, risikoarmen Vorhaben ist eine leere problems-Liste ein normales
               Ergebnis und kein Hinweis auf eine unzureichende Prüfung.
+            - Startdatum, Enddatum, Dauer und verfügbare Arbeitszeit sind voneinander unabhängige,
+              optionale Angaben. Warne niemals allein deshalb, weil eine oder mehrere davon fehlen.
+            - Wenn eine sinnvolle Terminplanung eine relevante Schätzung fehlender Zeitwerte benötigt,
+              darfst du diese anhand von Projektumfang, Ziel, vorhandenen Zeitangaben und verfügbarer
+              Arbeitszeit vorsichtig ableiten. Gib sie als nicht blockierenden WARNING vom type ASSUMPTION
+              aus. Benenne geschätzte Dauer und/oder das daraus abgeleitete ungefähre Kalenderdatum
+              transparent in message und acceptedInterpretation und kennzeichne beides ausdrücklich als
+              Schätzung. Erzeuge keine Schätzung, wenn sie für einen sinnvollen Plan nicht erforderlich ist.
             - Bewerte Machbarkeit, Aufwand und Komplexität relativ zum konkreten Projektkontext,
               insbesondere zu Projektgröße, Einzel- oder Gruppenmodus, Zeitraum, Beteiligten und genannten
               Rahmenbedingungen. Lege keine Maßstäbe großer oder professioneller Projekte an kleine,
               private oder studentische Vorhaben an.
-            - Erzeuge keine konkreten Dauer-, Kosten-, Mengen-, Prozent- oder sonstigen Zahlenwerte,
+            - Erzeuge abgesehen von der zuvor erlaubten transparenten Zeitschätzung keine konkreten
+              Kosten-, Mengen-, Prozent- oder sonstigen Zahlenwerte,
               außer der Nutzer hat sie angegeben oder sie folgen zwingend und eindeutig aus seinen
-              Angaben. Nenne insbesondere keine geschätzten Mindestdauern, Zahlenbereiche oder
-              pauschalen Pufferwerte.
+              Angaben. Nenne keine pauschalen Pufferwerte.
             - Führe keine zusätzlichen Rahmenbedingungen ein, etwa Gasanschlüsse, bestimmte Handwerker,
               konkrete Lieferprobleme, konkrete Werkzeuge oder nicht genannte technische Voraussetzungen.
               Eine nicht erwähnte Information ist kein Beleg dafür, dass sie fehlt oder in der Realität
               nicht vorhanden ist.
+              Erfinde ebenso keine Personen, Rollen, Anbieter, Ressourcen oder exakten Zielwerte.
             - Nenne mögliche Risiken nur, wenn sie für das festgestellte Kernproblem unmittelbar
               relevant sind und sich plausibel aus den bestätigten Angaben ergeben. Formuliere bei
               Unsicherheit allgemeiner und vorsichtiger, statt weitere Annahmen zu ergänzen.
@@ -61,17 +75,35 @@ public class PreCheckPromptBuilder {
             - Melde keine technischen Validierungsfehler.
             - Melde insbesondere keine fehlenden Pflichtfelder, ungültigen Wertebereiche oder eine
               deterministisch erkennbare falsche Datumsreihenfolge; diese werden serverseitig geprüft.
-            - Verwende ausschließlich WARNING oder ERROR. WARNING ist akzeptierbar, wenn eine Planung
+            - Verwende ausschließlich WARNING oder ERROR. WARNING ist ein nicht blockierender offener Punkt,
+              der als type RISK oder ASSUMPTION einzuordnen ist. ERROR ist als type CONFLICT einzuordnen.
+              WARNING ist akzeptierbar, wenn eine Planung
               trotz eines unrealistischen, riskanten oder problematischen Aspekts sinnvoll möglich ist.
               ERROR ist nur zulässig, wenn eine sinnvolle Generierung fachlich nicht oder kaum möglich ist.
               Bezeichne ein Vorhaben nicht als sicher unmöglich, wenn die Angaben nur ein starkes Risiko
               oder eine sehr geringe Realisierbarkeit begründen.
+            - Eine ASSUMPTION ist zulässig, wenn mehrere plausible Interpretationen zu wesentlich
+              unterschiedlichen Projektstrukturen führen würden oder wenn die zuvor beschriebene relevante
+              Zeitschätzung für die Planung benötigt wird. Erzeuge keine künstlichen Sicherheitsannahmen.
             - Formuliere message verständlich: Benenne zuerst das direkt aus den Angaben erkennbare
               Problem und danach höchstens das unmittelbar daraus folgende Risiko. Formuliere
-              suggestion getrennt davon als abstrakte, sichere Anpassungsoption, zum Beispiel Zeitraum
+              suggestedUserAction getrennt davon als abstrakte, sichere Anpassungsoption, zum Beispiel Zeitraum
               verlängern, Umfang reduzieren, zusätzliche Ressourcen einplanen oder Anforderungen
               präzisieren. Erfinde dabei keine Detailwerte. Halte beide Felder kurz und verzichte auf
               Nebenrisiken, Erläuterungen oder Empfehlungen ohne unmittelbaren Bezug zum Kernproblem.
+            - Formuliere für jeden WARNING-Punkt acceptedInterpretation als konkrete Planungsgrundlage,
+              die bei unveränderten Eingaben gelten soll. Sie muss unmittelbar beschreiben, womit die
+              Plangenerierung arbeitet, darf nicht bloß message wiederholen und darf keine neuen Fakten erfinden.
+              Für ERROR verwende einen leeren String, weil Fehler nicht akzeptiert werden können.
+            - Formuliere für jeden WARNING-Punkt reviewQuestion als eine kurze, neutrale Frage, die der
+              Nutzer direkt im Review mit einer eigenen Planungsgrundlage beantworten kann. Die Frage
+              darf keine vermutete Tatsache oder bevorzugte Lösung vorwegnehmen. Für ERROR verwende
+              einen leeren String; Widersprüche werden in den bestätigten Eingaben korrigiert.
+            - Formuliere message, suggestedUserAction, reviewQuestion und acceptedInterpretation neutral.
+              Setze weder das vermutete Risiko noch eine mögliche Planungsgrundlage als feststehende
+              Tatsache voraus und formuliere nicht stärker, als die bestätigten Angaben tragen.
+            - Verwende in nutzergerichteten Texten natürliche deutsche Sprache und niemals technische
+              Feld-, DTO-, Entity- oder Enum-Namen.
             - Erfinde keine fehlenden Nutzerinformationen und unterstelle keine nicht genannten
               Anforderungen, Risiken oder Qualitätsmaßstäbe.
             - Formuliere bekannte Nutzereingaben nicht lediglich als Problem oder Unsicherheit um.

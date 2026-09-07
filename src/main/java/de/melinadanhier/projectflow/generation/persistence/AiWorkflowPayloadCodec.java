@@ -3,8 +3,6 @@ package de.melinadanhier.projectflow.generation.persistence;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
-import de.melinadanhier.projectflow.generation.model.workflow.GenerationAssumptionContext;
-import de.melinadanhier.projectflow.generation.dto.AssumptionReviewRequest;
 import de.melinadanhier.projectflow.common.exception.GenerationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -41,24 +39,6 @@ public class AiWorkflowPayloadCodec {
 
     public GeneratedPlanResponse readGeneratedPlan(String json) {
         return read(json, GeneratedPlanResponse.class, "Der generierte Plan konnte nicht gelesen werden.");
-    }
-
-    public String writeAssumptionContext(GenerationAssumptionContext context) {
-        return write(context, "Der Annahmenkontext konnte nicht serialisiert werden.");
-    }
-
-    public GenerationAssumptionContext readAssumptionContext(String json) {
-        return json == null || json.isBlank() ? GenerationAssumptionContext.empty()
-                : read(json, GenerationAssumptionContext.class, "Der Annahmenkontext konnte nicht gelesen werden.");
-    }
-
-    public String writeAssumptionReview(AssumptionReviewRequest review) {
-        return write(review, "Die Annahmenprüfung konnte nicht serialisiert werden.");
-    }
-
-    public AssumptionReviewRequest readAssumptionReview(String json) {
-        return json == null || json.isBlank() ? new AssumptionReviewRequest(java.util.List.of())
-                : read(json, AssumptionReviewRequest.class, "Die Annahmenprüfung konnte nicht gelesen werden.");
     }
 
     private <T> T read(String json, Class<T> type, String errorMessage) {

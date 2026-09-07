@@ -46,7 +46,7 @@ class AiOutputParserTest {
 
         assertThat(result.problems()).singleElement().satisfies(problem -> {
             assertThat(problem.severity()).isEqualTo(AiPreCheckSeverity.WARNING);
-            assertThat(problem.suggestion()).isEqualTo("Plane mehr Zeit ein.");
+            assertThat(problem.suggestedUserAction()).isEqualTo("Plane mehr Zeit ein.");
         });
         assertThat(result.hasWarnings()).isTrue();
         assertThat(result.hasErrors()).isFalse();
@@ -62,16 +62,17 @@ class AiOutputParserTest {
     }
 
     @Test
-    void parsesMultipleProblems() {
+    void errorsSuppressSimultaneousNonBlockingProblems() {
         var result = parsePreCheck("""
                 {"problems":[
-                  {"severity":"WARNING","message":"Knapp.","suggestion":"Mehr Zeit einplanen."},
-                  {"severity":"ERROR","message":"Ziel widerspricht der Frist.","suggestion":"Ziel reduzieren."}
+                  {"severity":"WARNING","type":"RISK","message":"Knapp.","suggestedUserAction":"Mehr Zeit einplanen.","reviewQuestion":"Welche Priorisierung soll gelten?","acceptedInterpretation":"Im Zeitraum priorisieren."},
+                  {"severity":"ERROR","type":"CONFLICT","message":"Ziel widerspricht der Frist.","suggestedUserAction":"Ziel reduzieren.","reviewQuestion":"","acceptedInterpretation":""}
                 ]}
                 """);
 
-        assertThat(result.problems()).hasSize(2);
-        assertThat(result.hasWarnings()).isTrue();
+        assertThat(result.problems()).singleElement()
+                .extracting("severity").isEqualTo(AiPreCheckSeverity.ERROR);
+        assertThat(result.hasWarnings()).isFalse();
         assertThat(result.hasErrors()).isTrue();
     }
 
@@ -100,7 +101,7 @@ class AiOutputParserTest {
     @Test
     void preCheckBeanValidationIsSeparateFromParsing() {
         var incomplete = parsePreCheck("""
-                {"problems":[{"severity":"ERROR","message":"Fehler","suggestion":""}]}
+                {"problems":[{"severity":"ERROR","type":"CONFLICT","message":"Fehler","suggestedUserAction":"","reviewQuestion":"","acceptedInterpretation":""}]}
                 """);
 
         assertThatThrownBy(() -> preCheckValidator.validate(incomplete))
@@ -269,7 +270,7 @@ class AiOutputParserTest {
     private String problemJson(String severity, String message) {
         return """
                 {"problems":[{
-                  "severity":"%s","message":"%s","suggestion":"Plane mehr Zeit ein."
+                  "severity":"%s","type":"RISK","message":"%s","suggestedUserAction":"Plane mehr Zeit ein.","reviewQuestion":"Welche Priorisierung soll gelten?","acceptedInterpretation":"Im Zeitraum priorisieren."
                 }]}
                 """.formatted(severity, message);
     }
@@ -290,8 +291,7 @@ class AiOutputParserTest {
                     ],
                     "milestones":[{"tempId":"milestone-1","title":"Vorbereitung abgeschlossen",
                                    "date":"2026-08-27","order":1}]
-                  }],
-                  "criticalAssumptions":[{"statement":"Kartons sind vorhanden","correctionRequiredIfRejected":false}]
+                  }]
                 }
                 """;
     }

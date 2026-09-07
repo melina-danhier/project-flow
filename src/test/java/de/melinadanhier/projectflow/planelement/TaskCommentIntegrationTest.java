@@ -1,12 +1,12 @@
 package de.melinadanhier.projectflow.planelement;
 
 import de.melinadanhier.projectflow.common.exception.ForbiddenOperationException;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;

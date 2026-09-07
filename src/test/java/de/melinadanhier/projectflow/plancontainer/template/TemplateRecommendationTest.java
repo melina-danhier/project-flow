@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.plancontainer.template;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;

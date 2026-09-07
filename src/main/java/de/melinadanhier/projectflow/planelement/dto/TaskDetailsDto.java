@@ -13,7 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
-import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectMemberDto;
+import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectMemberDto;
 import java.util.UUID;
 
 @Getter

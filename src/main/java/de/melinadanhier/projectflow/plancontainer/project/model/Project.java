@@ -3,6 +3,13 @@ package de.melinadanhier.projectflow.plancontainer.project.model;
 import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectClassification;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.collaboration.ProjectCollaboration;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import jakarta.persistence.CascadeType;
@@ -33,7 +40,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @ValidProjectClassification(requireOtherDescription = false)
-public class Project extends PlanContainer implements ProjectClassification {
+public class Project extends PlanContainer implements ProjectClassification, ProjectCollaboration {
 
     @Column(name = "start_date")
     private LocalDate startDate;
@@ -56,10 +63,6 @@ public class Project extends PlanContainer implements ProjectClassification {
     @Enumerated(EnumType.STRING)
     @Column(name = "collaboration_mode", length = 20)
     private CollaborationMode collaborationMode;
-
-    public boolean isGroupProject() {
-        return collaborationMode == CollaborationMode.GROUP;
-    }
 
     @NotNull
     @Enumerated(EnumType.STRING)

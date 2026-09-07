@@ -1,6 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.model.AiOperation;
@@ -19,17 +19,16 @@ import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
-import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameType;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.service.retry.AiRetryBackoff;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowInitializationService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -158,14 +157,14 @@ class AiWorkflowIntegrationTest {
                 .orElse(false));
 
         AiPlanGenerationWorkflow workflow = workflowRepository.findById(completion.workflowId()).orElseThrow();
-        assertThat(workflow.getSnapshotVersion()).isEqualTo("ai-wizard-v3");
+        assertThat(workflow.getSnapshotVersion()).isEqualTo("ai-wizard-v4");
         assertThat(workflow.getCompletionToken()).isEqualTo(token);
         assertThat(workflow.getConsentConfirmedAt()).isNotNull();
         assertThat(workflow.getConsentVersion()).isEqualTo(AiWorkflowInitializationService.CONSENT_VERSION);
         assertThat(workflow.getPreCheckPromptVersion()).isEqualTo(AiPromptVersions.PRE_CHECK_PROMPT);
-        assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo("precheck-schema-v1");
+        assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo("precheck-schema-v2");
         assertThat(workflow.getGenerationPromptVersion()).isEqualTo(AiPromptVersions.GENERATION_PROMPT);
-        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("generation-schema-v1");
+        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("generation-schema-v2");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
         assertThat(workflow.getPreCheckRetryCount()).isZero();
         assertThat(snapshotCodec.readGeneratedPlan(workflow.getGeneratedPlan())).isEqualTo(generatedPlan());
@@ -455,8 +454,8 @@ class AiWorkflowIntegrationTest {
                 "Bis zum Monatsende umziehen",
                 "Budget 2.000 Euro",
                 "Kartons sind vorhanden",
-                AiProjectTimeFrameType.START_AND_DURATION,
-                21
+                21,
+                "Etwa 8 Stunden pro Woche"
         );
     }
 
@@ -537,7 +536,7 @@ class AiWorkflowIntegrationTest {
 
         var completion = completionService.complete(UUID.randomUUID(), owner.getId(), this::snapshot);
         await(() -> workflowRepository.findById(completion.workflowId())
-                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED)
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED)
                 .orElse(false));
 
         try (var executor = Executors.newFixedThreadPool(2)) {
@@ -593,7 +592,7 @@ class AiWorkflowIntegrationTest {
 
     private void startGenerationAfterPreCheck(UUID workflowId, UUID userId) throws Exception {
         await(() -> workflowRepository.findById(workflowId)
-                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_SUCCEEDED)
+                .map(workflow -> workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED)
                 .orElse(false));
         workflowControlService.startGeneration(workflowId, userId);
     }

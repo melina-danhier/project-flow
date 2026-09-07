@@ -1,12 +1,13 @@
 package de.melinadanhier.projectflow.generation.model.wizard;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
-
 import java.time.LocalDate;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record AiWizardSnapshot(
         String title,
         String description,
@@ -19,13 +20,19 @@ public record AiWizardSnapshot(
         String projectGoal,
         String constraints,
         String additionalInformation,
-        AiProjectTimeFrameType timeFrameType,
         Integer durationDays,
+        String availableWorkingTime,
         Map<String, String> projectSpecificAnswers
 ) {
     public AiWizardSnapshot {
         projectSpecificAnswers = projectSpecificAnswers == null ? Map.of() : Map.copyOf(projectSpecificAnswers);
-        validateTimeFrame(startDate, endDate, timeFrameType, durationDays);
+        validateTimeFrame(startDate, endDate, durationDays);
+        if (availableWorkingTime != null && availableWorkingTime.length() > 1000) {
+            throw new IllegalArgumentException("Die verfügbare Arbeitszeit darf höchstens 1000 Zeichen lang sein.");
+        }
+        if (additionalInformation != null && additionalInformation.length() > 2000) {
+            throw new IllegalArgumentException("Die weiteren Hinweise dürfen höchstens 2000 Zeichen lang sein.");
+        }
     }
 
     public AiWizardSnapshot(
@@ -50,62 +57,24 @@ public record AiWizardSnapshot(
             String title, String description, LocalDate startDate, LocalDate endDate,
             CollaborationMode collaborationMode, TemplateCategory category, ProjectSubCategory subcategory,
             String otherProjectTypeDescription, String projectGoal, String constraints,
-            String additionalInformation, AiProjectTimeFrameType timeFrameType, Integer durationDays
+            String additionalInformation, Integer durationDays, String availableWorkingTime
     ) {
         this(title, description, startDate, endDate, collaborationMode, category, subcategory,
                 otherProjectTypeDescription, projectGoal, constraints, additionalInformation,
-                timeFrameType, durationDays, Map.of());
+                durationDays, availableWorkingTime, Map.of());
     }
 
-    private static void validateTimeFrame(LocalDate startDate, LocalDate endDate,
-                                          AiProjectTimeFrameType timeFrameType, Integer durationDays) {
-        // Persisted legacy snapshots may not contain type/duration metadata.
-        if (timeFrameType == null) {
-            if (durationDays != null) {
-                throw new IllegalArgumentException("Eine Dauer benötigt eine Zeitrahmen-Art.");
-            }
-            return;
-        }
+    private static void validateTimeFrame(LocalDate startDate, LocalDate endDate, Integer durationDays) {
         if (durationDays != null && durationDays < 1) {
             throw new IllegalArgumentException("Die Projektdauer muss mindestens einen Tag betragen.");
         }
-        switch (timeFrameType) {
-            case NONE -> {
-                if (startDate != null || endDate != null || durationDays != null) {
-                    throw new IllegalArgumentException("Ohne Zeitrahmen dürfen keine Datums- oder Dauerwerte vorliegen.");
-                }
-            }
-            case START_AND_END -> {
-                requireDates(startDate, endDate);
-                if (durationDays != null) {
-                    throw new IllegalArgumentException("Ein fester Projektzeitraum darf keine zusätzliche Dauer enthalten.");
-                }
-            }
-            case START_AND_DURATION -> {
-                requireDatesAndDuration(startDate, endDate, durationDays);
-                if (!endDate.equals(startDate.plusDays(durationDays - 1L))) {
-                    throw new IllegalArgumentException("Projektstart, Projektdauer und berechnetes Enddatum widersprechen sich.");
-                }
-            }
-            case END_AND_DURATION -> {
-                requireDatesAndDuration(startDate, endDate, durationDays);
-                if (!startDate.equals(endDate.minusDays(durationDays - 1L))) {
-                    throw new IllegalArgumentException("Projektende, Projektdauer und berechnetes Startdatum widersprechen sich.");
-                }
-            }
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Das Projektende darf nicht vor dem Projektstart liegen.");
         }
-    }
-
-    private static void requireDates(LocalDate startDate, LocalDate endDate) {
-        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException("Der Projektzeitraum benötigt einen gültigen Start und ein gültiges Ende.");
-        }
-    }
-
-    private static void requireDatesAndDuration(LocalDate startDate, LocalDate endDate, Integer durationDays) {
-        requireDates(startDate, endDate);
-        if (durationDays == null) {
-            throw new IllegalArgumentException("Für diese Zeitrahmen-Art ist eine Projektdauer erforderlich.");
+        if (startDate != null && endDate != null && durationDays != null
+                && java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1 != durationDays) {
+            throw new IllegalArgumentException(
+                    "Projektstart, Projektende und Projektdauer widersprechen sich.");
         }
     }
 }

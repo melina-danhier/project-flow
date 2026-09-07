@@ -7,6 +7,8 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import java.time.Duration;
 
 @Setter
@@ -27,5 +29,9 @@ public class AiExecutionProperties {
 
     @NotNull
     private Duration retryInitialDelay = Duration.ofSeconds(1);
+
+    @DecimalMin("0.0")
+    @DecimalMax("2.0")
+    private float generationTemperature = 0.1f;
 
 }

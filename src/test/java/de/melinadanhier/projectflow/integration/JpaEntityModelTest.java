@@ -1,17 +1,17 @@
 package de.melinadanhier.projectflow.integration;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.draft.model.DraftMilestone;
 import de.melinadanhier.projectflow.draft.model.DraftSection;
 import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;

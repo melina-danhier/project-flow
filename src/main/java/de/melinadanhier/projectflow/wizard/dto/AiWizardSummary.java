@@ -11,6 +11,8 @@ public record AiWizardSummary(
         boolean groupProject,
         String category,
         String creationType,
+        Integer durationDays,
+        String availableWorkingTime,
         String projectGoal,
         String constraints,
         String additionalInformation,

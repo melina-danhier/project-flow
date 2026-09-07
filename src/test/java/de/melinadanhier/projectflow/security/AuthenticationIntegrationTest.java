@@ -1,17 +1,17 @@
 package de.melinadanhier.projectflow.security;
 
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
-import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectLocation;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMember;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectMemberRole;
-import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
@@ -177,8 +177,7 @@ class AuthenticationIntegrationTest {
                         .session(session)
                         .param("title", "Controller-Projekt")
                         .param("category", "HOME")
-                        .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/projects/new")
@@ -186,8 +185,7 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Controller-Projekt")
                         .param("category", "HOME")
-                        .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/method"));
         mockMvc.perform(post("/projects/new/method")
@@ -241,7 +239,6 @@ class AuthenticationIntegrationTest {
                         .param("category", "EDUCATION")
                         .param("subcategory", "THESIS")
                         .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "START_AND_DURATION")
                         .param("startDate", "2026-09-01")
                         .param("durationDays", "21"))
                 .andExpect(status().is3xxRedirection())
@@ -255,7 +252,9 @@ class AuthenticationIntegrationTest {
                     assertThat(state.getCreationType()).isNull();
                     assertThat(state.getTitle()).isEqualTo("MVC KI-Projekt");
                     assertThat(state.getSubcategory()).isEqualTo(ProjectSubCategory.THESIS);
-                    assertThat(state.getEndDate()).hasToString("2026-09-21");
+                    assertThat(state.getStartDate()).hasToString("2026-09-01");
+                    assertThat(state.getEndDate()).isNull();
+                    assertThat(state.getDurationDays()).isEqualTo(21);
                 });
 
         mockMvc.perform(get("/projects/new/method").session(ownerSession))
@@ -318,8 +317,7 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Anderes Projekt")
                         .param("category", "OTHER")
-                        .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("wizard/basics"))
                 .andExpect(model().attributeHasFieldErrors(
@@ -331,8 +329,7 @@ class AuthenticationIntegrationTest {
                         .param("title", "Anderes Projekt")
                         .param("category", "OTHER")
                         .param("description", "Privaten Flohmarkt organisieren")
-                        .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/method"));
 
@@ -358,8 +355,7 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Ursprünglicher Titel")
                         .param("category", "EDUCATION")
-                        .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().is3xxRedirection());
 
         long projectsBefore = projectRepository.count();
@@ -370,7 +366,6 @@ class AuthenticationIntegrationTest {
                         .param("category", "EDUCATION")
                         .param("subcategory", "PRESENTATION_OR_REPORT")
                         .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "START_AND_END")
                         .param("startDate", "2026-09-20")
                         .param("endDate", "2026-09-01"))
                 .andExpect(status().isOk())
@@ -404,8 +399,7 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Vorlagenprojekt")
                         .param("category", "EVENT")
-                        .param("collaborationMode", "GROUP")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "GROUP"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/method"));
         mockMvc.perform(post("/projects/new/method")
@@ -441,8 +435,7 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Bestehendes Projekt")
                         .param("category", "HOME")
-                        .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().is3xxRedirection());
         mockMvc.perform(post("/projects/new/method")
                         .session(session)
@@ -456,8 +449,7 @@ class AuthenticationIntegrationTest {
                         .param("title", "Abbrechen")
                         .param("category", "OTHER")
                         .param("otherProjectTypeDescription", "Privates Vorhaben")
-                        .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().is3xxRedirection());
         assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isNotNull();
         session.setAttribute("unrelated-session-data", "bleibt erhalten");
@@ -524,8 +516,7 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Darstellungsprojekt")
                         .param("category", "EDUCATION")
-                        .param("collaborationMode", "INDIVIDUAL")
-                        .param("timeFrameType", "NONE"))
+                        .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().is3xxRedirection());
         mockMvc.perform(post("/projects/new/method")
                         .session(session)
