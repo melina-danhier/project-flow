@@ -13,6 +13,51 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ProjectCreationMigrationTest {
 
     @Test
+    void persistsActivePlanReviewStatusAndBackfillsUncheckedOrigins() throws Exception {
+        try (var connection = DriverManager.getConnection(
+                "jdbc:h2:mem:active-plan-review-status;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("CREATE TABLE plan_sections (id UUID PRIMARY KEY, origin VARCHAR(20) NOT NULL)");
+                statement.execute("CREATE TABLE plan_elements (id UUID PRIMARY KEY, origin VARCHAR(20) NOT NULL)");
+                statement.execute("""
+                        INSERT INTO plan_sections (id, origin) VALUES
+                            (RANDOM_UUID(), 'USER'), (RANDOM_UUID(), 'TEMPLATE'), (RANDOM_UUID(), 'AI_MODIFIED')
+                        """);
+                statement.execute("""
+                        INSERT INTO plan_elements (id, origin) VALUES
+                            (RANDOM_UUID(), 'USER'), (RANDOM_UUID(), 'AI'), (RANDOM_UUID(), 'TEMPLATE_MODIFIED')
+                        """);
+            }
+
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(
+                    "db/migration/V33__persist_active_plan_review_status.sql"));
+
+            try (var statement = connection.createStatement()) {
+                try (var result = statement.executeQuery(
+                        "SELECT origin, review_status FROM plan_sections ORDER BY origin")) {
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getString("origin")).isEqualTo("AI_MODIFIED");
+                    assertThat(result.getString("review_status")).isEqualTo("CONFIRMED");
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getString("origin")).isEqualTo("TEMPLATE");
+                    assertThat(result.getString("review_status")).isEqualTo("UNREVIEWED");
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getString("origin")).isEqualTo("USER");
+                    assertThat(result.getString("review_status")).isEqualTo("CONFIRMED");
+                }
+                try (var result = statement.executeQuery(
+                        "SELECT review_status FROM plan_elements WHERE origin = 'AI'")) {
+                    assertThat(result.next()).isTrue();
+                    assertThat(result.getString("review_status")).isEqualTo("UNREVIEWED");
+                }
+                assertThatThrownBy(() -> statement.execute(
+                        "UPDATE plan_elements SET review_status = 'UNKNOWN'"))
+                        .isInstanceOf(SQLException.class);
+            }
+        }
+    }
+
+    @Test
     void removesRedundantProjectStatusAndPreservesLocation() throws Exception {
         try (var connection = DriverManager.getConnection(
                 "jdbc:h2:mem:project-status-removal;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")) {

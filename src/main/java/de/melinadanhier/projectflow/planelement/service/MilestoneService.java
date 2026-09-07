@@ -13,6 +13,7 @@ import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
+import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
@@ -42,6 +43,7 @@ public class MilestoneService {
         milestone.setPlanContainer(project);
         milestone.setPlanSection(section);
         milestone.setOrigin(ElementOrigin.USER);
+        milestone.setReviewStatus(PlanReviewStatus.CONFIRMED);
         milestone.setRelativeDueDay(null);
         apply(milestone, form);
         List<PlanElement> siblings = loadSiblings(projectId, section);
@@ -154,6 +156,7 @@ public class MilestoneService {
         milestone.setDueDate(form.getDueDate());
         milestone.setRelativeDueDay(null);
         milestone.setCompleted(form.isCompleted());
+        milestone.setReviewStatus(PlanReviewStatus.CONFIRMED);
     }
 
     private List<PlanElement> loadSiblings(UUID projectId, PlanSection section) {

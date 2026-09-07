@@ -13,6 +13,7 @@ import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
+import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
@@ -41,6 +42,7 @@ public class SectionService {
         PlanSection section = new PlanSection();
         section.setPlanContainer(project);
         section.setOrigin(ElementOrigin.USER);
+        section.setReviewStatus(PlanReviewStatus.CONFIRMED);
         apply(section, form);
         List<PlanSection> sections = new ArrayList<>(
                 planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId));
@@ -132,6 +134,7 @@ public class SectionService {
         }
         section.setTitle(title);
         section.setDescription(description);
+        section.setReviewStatus(PlanReviewStatus.CONFIRMED);
     }
 
     private void requireCurrentVersion(long actualVersion, Long submittedVersion) {

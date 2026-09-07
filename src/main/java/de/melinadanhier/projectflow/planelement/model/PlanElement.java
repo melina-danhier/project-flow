@@ -55,4 +55,9 @@ public abstract class PlanElement extends MutableEntity {
     @Column(name = "origin", nullable = false, length = 20)
     private ElementOrigin origin;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "review_status", nullable = false, length = 20)
+    private PlanReviewStatus reviewStatus = PlanReviewStatus.CONFIRMED;
+
 }

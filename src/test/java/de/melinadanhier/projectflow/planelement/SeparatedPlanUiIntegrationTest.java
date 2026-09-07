@@ -14,6 +14,8 @@ import de.melinadanhier.projectflow.planelement.dto.SectionDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionForm;
 import de.melinadanhier.projectflow.planelement.dto.TaskForm;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
+import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
+import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
@@ -39,6 +41,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -542,6 +545,105 @@ class SeparatedPlanUiIntegrationTest {
         assertThat(taskRepository.findById(task.getId()).orElseThrow().getTitle()).isEqualTo("Aufgabe");
         assertThat(milestoneRepository.findById(milestone.getId()).orElseThrow().getTitle()).isEqualTo("Meilenstein");
         assertThat(projectRepository.findById(project.getId()).orElseThrow().getTitle()).isEqualTo("Versionsschutz");
+    }
+
+    @Test
+    void planOverviewShowsCollapsiblePhasesCombinedElementsAndUnderstandableMetadata() throws Exception {
+        User owner = saveUser("plan-overview-owner@example.org");
+        Project project = saveProject("Vollständige Planansicht", owner);
+        SectionDto phase = createSection(project, owner, "Vorbereitung");
+        Task task = createTask(project, owner, phase.getId(), "Unterlagen sammeln");
+        task.setDueDate(LocalDate.of(2027, 1, 12));
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        taskRepository.saveAndFlush(task);
+        Milestone milestone = createMilestone(project, owner, phase.getId(), "Freigabe");
+        milestone.setDueDate(LocalDate.of(2027, 1, 8));
+        milestone.setCompleted(true);
+        milestone.setOrigin(ElementOrigin.AI);
+        milestone.setReviewStatus(PlanReviewStatus.UNREVIEWED);
+        milestoneRepository.saveAndFlush(milestone);
+        createTask(project, owner, null, "Planelement ohne Phase");
+
+        String html = mockMvc.perform(get("/projects/{projectId}/plan", project.getId())
+                        .session(login(owner.getEmail())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("class=\"pf-plan-section plan-phase plan-section\"")))
+                .andExpect(content().string(containsString("<summary")))
+                .andExpect(content().string(containsString("Planelemente ohne Phase")))
+                .andExpect(content().string(containsString("Fällig: 12.01.2027")))
+                .andExpect(content().string(containsString("Termin: 08.01.2027")))
+                .andExpect(content().string(containsString("In Bearbeitung")))
+                .andExpect(content().string(containsString("Erreicht")))
+                .andExpect(content().string(containsString("KI-Vorschlag")))
+                .andExpect(content().string(containsString("Prüfung offen")))
+                .andExpect(content().string(containsString("plan-sort-mode-form")))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html.indexOf("Freigabe")).isLessThan(html.indexOf("Unterlagen sammeln"));
+        assertThat(html).doesNotContain("class=\"pf-plan-section plan-phase plan-section\" open");
+    }
+
+    @Test
+    void manualOrderingIsProtectedPersistedAndStableAfterReopening() throws Exception {
+        User owner = saveUser("stable-order-owner@example.org");
+        User outsider = saveUser("stable-order-outsider@example.org");
+        Project project = saveProject("Stabile Sortierung", owner);
+        SectionDto firstPhase = createSection(project, owner, "Erste Phase");
+        SectionDto secondPhase = createSection(project, owner, "Zweite Phase");
+        Task firstTask = createTask(project, owner, firstPhase.getId(), "Erste Aufgabe");
+        Milestone secondElement = createMilestone(project, owner, firstPhase.getId(), "Zweites Element");
+        MockHttpSession ownerSession = login(owner.getEmail());
+
+        mockMvc.perform(post("/projects/{projectId}/plan/sort-mode", project.getId())
+                        .session(login(outsider.getEmail())).with(csrf())
+                        .param("projectLockVersion", String.valueOf(project.getLockVersion()))
+                        .param("sortMode", "MANUAL"))
+                .andExpect(status().isNotFound());
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().getSortMode()).isEqualTo(SortMode.DATE);
+
+        mockMvc.perform(post("/projects/{projectId}/plan/sort-mode", project.getId())
+                        .session(ownerSession).with(csrf())
+                        .param("projectLockVersion", String.valueOf(project.getLockVersion()))
+                        .param("sortMode", "MANUAL"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/plan"));
+
+        project = projectRepository.findById(project.getId()).orElseThrow();
+        mockMvc.perform(post("/projects/{projectId}/plan/sections/{sectionId}/move",
+                                project.getId(), secondPhase.getId())
+                        .session(ownerSession).with(csrf())
+                        .param("projectLockVersion", String.valueOf(project.getLockVersion()))
+                        .param("targetPosition", "0"))
+                .andExpect(status().is3xxRedirection());
+
+        project = projectRepository.findById(project.getId()).orElseThrow();
+        mockMvc.perform(post("/projects/{projectId}/plan/elements/{elementId}/move",
+                                project.getId(), secondElement.getId())
+                        .session(ownerSession).with(csrf())
+                        .param("projectLockVersion", String.valueOf(project.getLockVersion()))
+                        .param("targetSectionId", firstPhase.getId().toString())
+                        .param("targetDate", "")
+                        .param("targetPosition", "0"))
+                .andExpect(status().is3xxRedirection());
+
+        String firstOpen = mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(ownerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Manuell")))
+                .andExpect(content().string(containsString("Phase nach oben")))
+                .andExpect(content().string(containsString("Nach unten")))
+                .andReturn().getResponse().getContentAsString();
+        String reopened = mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(ownerSession))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        assertThat(firstOpen.indexOf("Zweite Phase")).isLessThan(firstOpen.indexOf("Erste Phase"));
+        assertThat(firstOpen.indexOf("Zweites Element")).isLessThan(firstOpen.indexOf("Erste Aufgabe"));
+        assertThat(reopened.indexOf("Zweite Phase")).isLessThan(reopened.indexOf("Erste Phase"));
+        assertThat(reopened.indexOf("Zweites Element")).isLessThan(reopened.indexOf("Erste Aufgabe"));
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().getSortMode()).isEqualTo(SortMode.MANUAL);
+        assertThat(sectionRepository.findById(secondPhase.getId()).orElseThrow().getSortOrder())
+                .isLessThan(sectionRepository.findById(firstPhase.getId()).orElseThrow().getSortOrder());
+        assertThat(milestoneRepository.findById(secondElement.getId()).orElseThrow().getSortOrder())
+                .isLessThan(taskRepository.findById(firstTask.getId()).orElseThrow().getSortOrder());
     }
 
     private User saveUser(String email) {

@@ -93,49 +93,49 @@
                 <rect x="14" y="14" width="7" height="7"></rect>
                 <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
-            Projektbereiche & Aufgaben
+            Phasen und Planelemente
         </h2>
 
         <!-- Sections Container for Drag-and-Drop -->
         <div id="plan-sections">
             <!-- Sections Loop -->
-            <div th:each="section, sectionStat : ${plan.sections}"
-                 class="pf-plan-section plan-section"
-                 th:attr="data-section-id=${section.id},data-position=${sectionStat.index},data-move-url=@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})},draggable=${plan.editable}">
-                <div class="pf-plan-section__header">
+            <details th:each="section, sectionStat : ${plan.sections}"
+                 class="pf-plan-section plan-phase plan-section"
+                 th:attr="data-section-id=${section.id},data-position=${sectionStat.index},data-move-url=@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})},draggable=${plan.editable},open=${editingSectionId == section.id ? 'open' : null}">
+                <summary class="pf-plan-section__header" style="cursor: pointer; list-style-position: inside;">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <button th:if="${plan.editable}" type="button" class="section-drag-handle pf-drag-handle" title="Bereich verschieben" aria-label="Bereich verschieben">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="9" cy="5" r="1.5"></circle>
-                                <circle cx="9" cy="12" r="1.5"></circle>
-                                <circle cx="9" cy="19" r="1.5"></circle>
-                                <circle cx="15" cy="5" r="1.5"></circle>
-                                <circle cx="15" cy="12" r="1.5"></circle>
-                                <circle cx="15" cy="19" r="1.5"></circle>
-                            </svg>
-                        </button>
                         <div>
-                            <h3 th:text="${section.title}" style="margin: 0; font-size: 1.2rem;">Bereich</h3>
+                            <strong th:text="${section.title}" style="font-size: 1.2rem;">Phase</strong>
                             <p th:if="${section.description}" th:text="${section.description}" style="margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--pf-text-muted);"></p>
                         </div>
                     </div>
                     <div class="pf-cluster">
                         <span class="pf-badge pf-badge--blue" th:text="${section.taskCount + ' Aufgaben'}">0 Aufgaben</span>
                         <span class="pf-badge pf-badge--purple" th:text="${section.milestoneCount + ' Meilensteine'}">0 Meilensteine</span>
-                        <!-- Accessible section reorder buttons -->
-                        <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Bereich neu anordnen">
-                            <form th:if="${!sectionStat.first}" th:action="@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="display:inline; margin:0;">
-                                <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                                <input type="hidden" name="targetPosition" th:value="${sectionStat.index - 1}">
-                                <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" title="Bereich nach oben verschieben" aria-label="Bereich nach oben verschieben" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">▲</button>
-                            </form>
-                            <form th:if="${!sectionStat.last}" th:action="@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="display:inline; margin:0;">
-                                <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                                <input type="hidden" name="targetPosition" th:value="${sectionStat.index + 1}">
-                                <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" title="Bereich nach unten verschieben" aria-label="Bereich nach unten verschieben" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">▼</button>
-                            </form>
-                        </div>
+                        <span class="pf-badge pf-badge--outline" th:if="${section.originLabel}" th:text="${section.originLabel}"></span>
+                        <span class="pf-badge" th:if="${section.reviewStatusLabel}"
+                              th:classappend="${section.reviewWarning ? 'pf-badge--yellow' : 'pf-badge--green'}"
+                              th:text="${section.reviewStatusLabel}"></span>
                     </div>
+                </summary>
+
+                <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Phase neu anordnen" style="margin-bottom: 0.75rem;">
+                    <button type="button" class="section-drag-handle pf-drag-handle" title="Phase ziehen" aria-label="Phase ziehen">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
+                            <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
+                        </svg>
+                    </button>
+                    <form th:if="${!sectionStat.first}" th:action="@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="display:inline; margin:0;">
+                        <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+                        <input type="hidden" name="targetPosition" th:value="${sectionStat.index - 1}">
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" title="Phase nach oben verschieben" aria-label="Phase nach oben verschieben">Phase nach oben</button>
+                    </form>
+                    <form th:if="${!sectionStat.last}" th:action="@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="display:inline; margin:0;">
+                        <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+                        <input type="hidden" name="targetPosition" th:value="${sectionStat.index + 1}">
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" title="Phase nach unten verschieben" aria-label="Phase nach unten verschieben">Phase nach unten</button>
+                    </form>
                 </div>
 
                 <!-- Elements in this Section -->
@@ -164,16 +164,24 @@
                                 ◆
                             </span>
                             <div>
+                                <span class="pf-badge" th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-badge--purple' : 'pf-badge--blue'}"
+                                      th:text="${element.typeLabel}"></span>
                                 <a th:if="${element.type.name() == 'TASK'}"
                                    th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
-                                   th:text="${element.title}" style="font-weight: 600;"></a>
+                                   th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
                                 <a th:if="${element.type.name() == 'MILESTONE'}"
                                    th:href="@{/projects/{projectId}/milestones/{elementId}/edit(projectId=${plan.project.id},elementId=${element.id})}"
-                                   th:text="${element.title}" style="font-weight: 600;"></a>
+                                   th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
+                                <small th:if="${element.description}" th:text="${element.description}" style="color: var(--pf-text-muted);"></small>
                             </div>
                         </div>
                         <div class="pf-cluster">
-                            <span class="pf-badge pf-badge--outline" th:if="${element.relevantDate}" th:text="${element.relevantDate}">Datum</span>
+                            <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
+                            <span class="pf-badge pf-badge--gray" th:if="${element.stateLabel}" th:text="${element.stateLabel}"></span>
+                            <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
+                            <span class="pf-badge" th:if="${element.reviewStatusLabel}"
+                                  th:classappend="${element.reviewWarning ? 'pf-badge--yellow' : 'pf-badge--green'}"
+                                  th:text="${element.reviewStatusLabel}"></span>
                             <!-- Accessible element move controls when editable -->
                             <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Element anordnen">
                                 <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost element-move-btn element-move-up" title="Nach oben verschieben" aria-label="Nach oben verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">▲</button>
@@ -248,7 +256,7 @@
                         </form>
                     </div>
                 </details>
-            </div>
+            </details>
         </div>
 
         <!-- Add New Section Card -->
@@ -274,7 +282,7 @@
     <!-- Unsectioned Elements -->
     <div th:unless="${#lists.isEmpty(plan.unsectionedElements)}" class="pf-plan-section plan-section unsectioned" style="margin-top: 2rem; border-style: dashed;"
          data-section-id="">
-        <h2>Elemente ohne Bereich</h2>
+        <h2>Planelemente ohne Phase</h2>
         <ul class="pf-element-list plan-elements" data-section-id="">
             <li th:each="element, elementStat : ${plan.unsectionedElements}"
                 class="pf-element-item plan-element"
@@ -293,16 +301,24 @@
                     <span class="pf-element-item__icon pf-element-item__icon--task" th:if="${element.type.name() == 'TASK'}">☐</span>
                     <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}">◆</span>
                     <div>
+                        <span class="pf-badge" th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-badge--purple' : 'pf-badge--blue'}"
+                              th:text="${element.typeLabel}"></span>
                         <a th:if="${element.type.name() == 'TASK'}"
                            th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
-                           th:text="${element.title}" style="font-weight: 600;"></a>
+                           th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
                         <a th:if="${element.type.name() == 'MILESTONE'}"
                            th:href="@{/projects/{projectId}/milestones/{elementId}/edit(projectId=${plan.project.id},elementId=${element.id})}"
-                           th:text="${element.title}" style="font-weight: 600;"></a>
+                           th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
+                        <small th:if="${element.description}" th:text="${element.description}" style="color: var(--pf-text-muted);"></small>
                     </div>
                 </div>
                 <div class="pf-cluster">
-                    <span class="pf-badge pf-badge--outline" th:if="${element.relevantDate}" th:text="${element.relevantDate}">Datum</span>
+                    <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
+                    <span class="pf-badge pf-badge--gray" th:if="${element.stateLabel}" th:text="${element.stateLabel}"></span>
+                    <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
+                    <span class="pf-badge" th:if="${element.reviewStatusLabel}"
+                          th:classappend="${element.reviewWarning ? 'pf-badge--yellow' : 'pf-badge--green'}"
+                          th:text="${element.reviewStatusLabel}"></span>
                     <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Element anordnen">
                         <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost element-move-btn element-move-up" title="Nach oben verschieben" aria-label="Nach oben verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">▲</button>
                         <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost element-move-btn element-move-down" title="Nach unten verschieben" aria-label="Nach unten verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">▼</button>
