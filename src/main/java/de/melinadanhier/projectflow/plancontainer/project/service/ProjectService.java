@@ -160,7 +160,13 @@ public class ProjectService {
             PlanElement copy = copyElement(source, project);
             project.addElement(copy);
             if (source.getPlanSection() != null) {
-                sections.get(source.getPlanSection()).addElement(copy);
+                PlanSection copiedSection = sections.get(source.getPlanSection());
+                if (copiedSection == null) {
+                    throw new IllegalStateException(
+                            "Vorlageninhalt verweist auf einen Bereich außerhalb der Vorlage."
+                    );
+                }
+                copiedSection.addElement(copy);
             }
             elements.put(source, copy);
         }
@@ -180,6 +186,7 @@ public class ProjectService {
         if (source instanceof Task sourceTask) {
             Task task = new Task();
             task.setPriority(sourceTask.getPriority());
+            task.setEstimatedHours(sourceTask.getEstimatedHours());
             task.setStartDate(toAbsoluteDate(project, sourceTask.getStartDate(), sourceTask.getRelativeStartDay()));
             task.setDueDate(toAbsoluteDate(project, sourceTask.getDueDate(), sourceTask.getRelativeDueDay()));
             task.setRelativeStartDay(null);

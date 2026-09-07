@@ -8,6 +8,7 @@ import de.melinadanhier.projectflow.plancontainer.template.dto.TemplateDetailsDt
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.planelement.dto.TaskDependencyDto;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
+import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,15 +60,21 @@ public class TemplateService {
     public TemplateDetailsDto getTemplate(UUID templateId) {
         var template = templateRepository.findByIdAndActiveTrue(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vorlage wurde nicht gefunden."));
-        var tasks = taskRepository.findPlanTasks(templateId);
+        var planOrder = Comparator
+                .comparingInt((PlanElement element) -> element.getPlanSection() == null
+                        ? Integer.MAX_VALUE : element.getPlanSection().getSortOrder())
+                .thenComparingInt(PlanElement::getSortOrder)
+                .thenComparing(PlanElement::getId);
+        var tasks = taskRepository.findPlanTasks(templateId).stream().sorted(planOrder).toList();
+        var milestones = milestoneRepository.findAllByPlanContainerIdOrderBySortOrderAsc(templateId).stream()
+                .sorted(planOrder)
+                .toList();
         TemplateDetailsDto dto = templateMapper.toDetailsDto(template);
         dto.setSections(planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(templateId).stream()
                 .map(planElementMapper::toDto)
                 .toList());
         dto.setTasks(tasks.stream().map(planElementMapper::toDetailsDto).toList());
-        dto.setMilestones(milestoneRepository.findAllByPlanContainerIdOrderBySortOrderAsc(templateId).stream()
-                .map(planElementMapper::toDetailsDto)
-                .toList());
+        dto.setMilestones(milestones.stream().map(planElementMapper::toDetailsDto).toList());
         dto.setDependencies(tasks.stream()
                 .flatMap(successor -> successor.getPrerequisites().stream()
                         .map(prerequisite -> new TaskDependencyDto(
