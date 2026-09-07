@@ -56,7 +56,7 @@ public class PlanSection extends MutableEntity {
 
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "planSection")
-    @OrderBy("sortOrder ASC")
+    @OrderBy("sortOrder ASC, id ASC")
     private List<PlanElement> elements = new ArrayList<>();
 
     public void addElement(PlanElement element) {

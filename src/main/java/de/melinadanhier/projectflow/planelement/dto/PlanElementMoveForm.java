@@ -1,4 +1,4 @@
-package de.melinadanhier.projectflow.draft.dto.editing;
+package de.melinadanhier.projectflow.planelement.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -10,8 +10,8 @@ import java.util.UUID;
 
 @Getter
 @Setter
-public class DraftElementMoveForm {
-    @NotNull private Long lockVersion;
+public class PlanElementMoveForm {
+    @NotNull private Long projectLockVersion;
     private UUID targetSectionId;
     @NotNull @Size(max = 10) private String targetDate;
     @PositiveOrZero private int targetPosition;

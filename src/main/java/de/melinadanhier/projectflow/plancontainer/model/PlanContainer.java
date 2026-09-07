@@ -53,12 +53,12 @@ public abstract class PlanContainer extends MutableEntity {
 
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "planContainer", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("sortOrder ASC")
+    @OrderBy("sortOrder ASC, id ASC")
     private List<PlanSection> sections = new ArrayList<>();
 
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "planContainer", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("sortOrder ASC")
+    @OrderBy("sortOrder ASC, id ASC")
     private List<PlanElement> elements = new ArrayList<>();
 
     public void addSection(PlanSection section) {

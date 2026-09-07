@@ -152,14 +152,12 @@ public class TaskService {
         authorizationService.requireEditableMemberForUpdate(projectId, userId);
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
-        PlanSection section = task.getPlanSection();
         taskRepository.findSuccessors(projectId, taskId)
                 .forEach(successor -> successor.removePrerequisite(task));
         task.getPrerequisites().clear();
         taskRepository.flush();
         taskRepository.delete(task);
         taskRepository.flush();
-        resequence(loadSiblings(projectId, section));
     }
 
     private void apply(Task task, TaskForm form, ProjectMember assignee) {
@@ -211,8 +209,7 @@ public class TaskService {
     private void insertAtRequestedPosition(Task task, UUID projectId, PlanSection section, Integer requested) {
         List<PlanElement> siblings = loadSiblings(projectId, section);
         int position = requested == null ? siblings.size() : Math.min(requested, siblings.size());
-        siblings.add(position, task);
-        resequence(siblings);
+        PlanOrdering.place(siblings, task, position, PlanElement::getSortOrder, PlanElement::setSortOrder);
     }
 
     private void moveToRequestedPosition(
@@ -224,8 +221,6 @@ public class TaskService {
     ) {
         List<PlanElement> oldSiblings = loadSiblings(projectId, oldSection);
         oldSiblings.removeIf(element -> element.getId().equals(task.getId()));
-        resequence(oldSiblings);
-
         boolean sectionUnchanged = oldSection == null
                 ? newSection == null
                 : newSection != null && oldSection.getId().equals(newSection.getId());
@@ -234,8 +229,10 @@ public class TaskService {
                 : loadSiblings(projectId, newSection);
         task.setPlanSection(newSection);
         int position = requested == null ? targetSiblings.size() : Math.min(requested, targetSiblings.size());
-        targetSiblings.add(position, task);
-        resequence(targetSiblings);
+        if (sectionUnchanged && requested != null && requested == task.getSortOrder()) {
+            return;
+        }
+        PlanOrdering.place(targetSiblings, task, position, PlanElement::getSortOrder, PlanElement::setSortOrder);
     }
 
     private List<PlanElement> loadSiblings(UUID projectId, PlanSection section) {
@@ -243,12 +240,6 @@ public class TaskService {
                 ? planElementRepository.findAllByPlanContainerIdAndPlanSectionIsNullOrderBySortOrderAsc(projectId)
                 : planElementRepository.findAllByPlanContainerIdAndPlanSectionIdOrderBySortOrderAsc(
                         projectId, section.getId()));
-    }
-
-    private void resequence(List<PlanElement> elements) {
-        for (int index = 0; index < elements.size(); index++) {
-            elements.get(index).setSortOrder(index);
-        }
     }
 
     private void validateDates(LocalDate start, LocalDate due) {

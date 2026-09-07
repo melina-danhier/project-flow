@@ -124,6 +124,65 @@ class DraftPostgresMigrationTest {
         }
     }
 
+    @Test
+    void normalizesEveryPlanContainerToSparseOrder() throws Exception {
+        String schema = "draft_order_test_" + java.util.UUID.randomUUID().toString().replace("-", "");
+        var dataSource = java.util.Objects.requireNonNull(jdbc.getDataSource());
+        jdbc.execute("CREATE SCHEMA " + schema);
+        try (var connection = dataSource.getConnection()) {
+            String originalSchema = connection.getSchema();
+            try {
+                org.flywaydb.core.Flyway.configure().dataSource(dataSource)
+                        .schemas(schema).defaultSchema(schema).target("30").load().migrate();
+                connection.setSchema(schema);
+                var scoped = new JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(connection, true));
+                var projectId = java.util.UUID.randomUUID();
+                var draftId = java.util.UUID.randomUUID();
+                var firstSectionId = java.util.UUID.randomUUID();
+                var secondSectionId = java.util.UUID.randomUUID();
+                scoped.update("INSERT INTO plan_containers (id, created_at, updated_at, title) VALUES (?, now(), now(), 'Reihenfolge')", projectId);
+                scoped.update("INSERT INTO projects (id, creation_type, status, location) VALUES (?, 'AI', 'DRAFT', 'DRAFT')", projectId);
+                scoped.update("INSERT INTO plan_drafts (id, created_at, updated_at, project_id, status) VALUES (?, now(), now(), ?, 'READY_FOR_REVIEW')",
+                        draftId, projectId);
+                scoped.update("INSERT INTO draft_sections (id, created_at, updated_at, plan_draft_id, title, sort_order) VALUES (?, now(), now(), ?, 'Zweiter', 20)",
+                        secondSectionId, draftId);
+                scoped.update("INSERT INTO draft_sections (id, created_at, updated_at, plan_draft_id, title, sort_order) VALUES (?, now(), now(), ?, 'Erster', 10)",
+                        firstSectionId, draftId);
+                insertDraftElement(scoped, java.util.UUID.randomUUID(), draftId, firstSectionId, "B", 8);
+                insertDraftElement(scoped, java.util.UUID.randomUUID(), draftId, firstSectionId, "A", 3);
+                insertDraftElement(scoped, java.util.UUID.randomUUID(), draftId, null, "Ohne 2", 9);
+                insertDraftElement(scoped, java.util.UUID.randomUUID(), draftId, null, "Ohne 1", 4);
+
+                org.flywaydb.core.Flyway.configure().dataSource(dataSource)
+                        .schemas(schema).defaultSchema(schema).load().migrate();
+
+                assertThat(scoped.queryForList(
+                        "SELECT sort_order FROM draft_sections ORDER BY sort_order", Integer.class))
+                        .containsExactly(100, 200);
+                assertThat(scoped.queryForList(
+                        "SELECT sort_order FROM draft_plan_elements WHERE draft_section_id = ? ORDER BY sort_order",
+                        Integer.class, firstSectionId)).containsExactly(100, 200);
+                assertThat(scoped.queryForList(
+                        "SELECT sort_order FROM draft_plan_elements WHERE draft_section_id IS NULL ORDER BY sort_order",
+                        Integer.class)).containsExactly(100, 200);
+                assertThat(scoped.queryForObject(
+                        "SELECT sort_mode FROM plan_drafts WHERE id = ?", String.class, draftId))
+                        .isEqualTo("DATE");
+            } finally {
+                connection.setSchema(originalSchema);
+            }
+        } finally {
+            jdbc.execute("DROP SCHEMA " + schema + " CASCADE");
+        }
+    }
+
+    private void insertDraftElement(JdbcTemplate scoped, java.util.UUID id, java.util.UUID draftId,
+                                    java.util.UUID sectionId, String title, int sortOrder) {
+        scoped.update("INSERT INTO draft_plan_elements "
+                        + "(id, created_at, updated_at, plan_draft_id, draft_section_id, title, sort_order, ai_origin) "
+                        + "VALUES (?, now(), now(), ?, ?, ?, ?, 'AI')",
+                id, draftId, sectionId, title, sortOrder);
+    }
 
     @Test
     void migratesTypedSubcategoriesAndSnapshotsWithoutGuessingUnknownValues() throws Exception {
