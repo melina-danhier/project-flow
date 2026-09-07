@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.wizard.dto;
 
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
@@ -16,7 +17,7 @@ public class ProjectBasicsValidator implements ConstraintValidator<ValidProjectB
         }
 
         boolean valid = true;
-        if (form.getCategory() == de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory.OTHER
+        if (form.getCategory() == ProjectCategory.OTHER
                 && (form.getDescription() == null || form.getDescription().isBlank())
                 && (form.getOtherProjectTypeDescription() == null
                     || form.getOtherProjectTypeDescription().isBlank())) {

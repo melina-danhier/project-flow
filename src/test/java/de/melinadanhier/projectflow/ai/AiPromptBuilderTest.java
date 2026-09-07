@@ -8,7 +8,7 @@ import de.melinadanhier.projectflow.ai.prompt.AiPromptVersions;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.RejectedCriticalAssumption;
 import org.junit.jupiter.api.Test;
@@ -75,7 +75,7 @@ class AiPromptBuilderTest {
                 LocalDate.of(2026, 9, 5),
                 LocalDate.of(2026, 9, 6),
                 CollaborationMode.INDIVIDUAL,
-                TemplateCategory.HOME,
+                ProjectCategory.HOME,
                 ProjectSubCategory.RENOVATION_OR_HOME_PROJECT,
                 null,
                 "Die vollständige Renovierung an einem Wochenende abschließen",
@@ -182,7 +182,7 @@ class AiPromptBuilderTest {
         return new AiWizardSnapshot(
                 "Umzug planen", "Wohnungswechsel organisieren",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
-                CollaborationMode.GROUP, TemplateCategory.HOME, ProjectSubCategory.MOVING, null,
+                CollaborationMode.GROUP, ProjectCategory.HOME, ProjectSubCategory.MOVING, null,
                 "Bis Monatsende umziehen", "Budget 2.000 Euro", "Kartons sind vorhanden");
     }
 
@@ -191,7 +191,7 @@ class AiPromptBuilderTest {
                 "Keller ausmisten",
                 "Nicht mehr benötigte Gegenstände aussortieren und Keller übersichtlich neu ordnen",
                 LocalDate.of(2026, 9, 5), LocalDate.of(2026, 9, 25),
-                CollaborationMode.INDIVIDUAL, TemplateCategory.HOME,
+                CollaborationMode.INDIVIDUAL, ProjectCategory.HOME,
                 ProjectSubCategory.RENOVATION_OR_HOME_PROJECT, null,
                 "Keller ausmisten und neu ordnen", null, null);
     }

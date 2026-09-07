@@ -9,7 +9,7 @@ import de.melinadanhier.projectflow.ai.provider.gemini.*;
 import de.melinadanhier.projectflow.ai.provider.stub.*;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -27,7 +27,7 @@ class GeminiAiClientTest {
         var prePrompts = mock(PreCheckPromptBuilder.class);
         var planPrompts = mock(GenerationPromptBuilder.class);
         var snapshot = new AiWizardSnapshot("Projekt", null, null, null,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test", null, null, null);
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test", null, null, null);
         var preRequest = new AiPreCheckRequest(snapshot);
         var planRequest = new AiGenerationRequest(snapshot, List.of());
         var prePrompt = new AiPrompt("pre-v1", "pre instructions", "pre data");

@@ -8,7 +8,7 @@ import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.*;
 import de.melinadanhier.projectflow.plancontainer.project.model.*;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
@@ -299,7 +299,7 @@ class DraftReviewIntegrationTest {
         Fixture f = fixture(null, null);
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             Project project = projects.findById(f.projectId()).orElseThrow();
-            project.setCategory(TemplateCategory.HOME);
+            project.setCategory(ProjectCategory.HOME);
             project.setSubcategory(ProjectSubCategory.MOVING);
             project.setStartDate(LocalDate.of(2026, 9, 1));
             project.setEndDate(LocalDate.of(2026, 10, 13));

@@ -4,7 +4,7 @@ import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjec
 import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.plancontainer.model.PlanContainer;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,7 +43,7 @@ public class Project extends PlanContainer implements ProjectClassification {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "category", length = 50)
-    private TemplateCategory category;
+    private ProjectCategory category;
 
     @Size(max = 100)
     @Column(name = "other_project_type_description", length = 100)
@@ -80,7 +80,7 @@ public class Project extends PlanContainer implements ProjectClassification {
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectMember> memberships = new LinkedHashSet<>();
 
-    @OneToOne(mappedBy = "project", fetch = jakarta.persistence.FetchType.LAZY)
+    @OneToOne(mappedBy = "project")
     private DraftPlan currentDraft;
 
     public void addMembership(ProjectMember membership) {

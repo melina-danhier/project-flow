@@ -8,11 +8,10 @@ import de.melinadanhier.projectflow.plancontainer.template.dto.TemplateDetailsDt
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.planelement.dto.TaskDependencyDto;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
-import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +40,7 @@ public class TemplateService {
 
     @Transactional(readOnly = true)
     public Optional<TemplateSummaryDto> findRecommendation(
-            TemplateCategory category,
+            ProjectCategory category,
             ProjectSubCategory subcategory
     ) {
         if (category == null) {

@@ -5,7 +5,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCatego
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,7 +28,7 @@ public class TemplateDetailsDto implements ProjectClassification {
     private String description;
     private StructureMode structureMode;
     private SortMode sortMode;
-    private TemplateCategory category;
+    private ProjectCategory category;
     private String otherProjectTypeDescription;
 
     private ProjectSubCategory subcategory;

@@ -8,7 +8,7 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiProjectTimeFrameTy
 import de.melinadanhier.projectflow.plancontainer.project.dto.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.AiWizardSummary;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
@@ -199,7 +199,7 @@ public class ProjectWizardService {
                 : ProjectTimeFrameType.START_AND_END;
     }
 
-    private String categoryLabel(TemplateCategory category, String projectTypeLabel) {
+    private String categoryLabel(ProjectCategory category, String projectTypeLabel) {
         String label = switch (category) {
             case EDUCATION -> "Bildung und Studium";
             case SOFTWARE_TECHNOLOGY -> "Software und Technik";

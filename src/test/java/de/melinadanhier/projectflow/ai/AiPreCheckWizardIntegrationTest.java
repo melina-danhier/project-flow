@@ -21,7 +21,7 @@ import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectStatus;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
@@ -379,7 +379,7 @@ class AiPreCheckWizardIntegrationTest {
         return new AiWizardSnapshot(
                 "Umzug planen", "Wohnungswechsel organisieren",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
-                CollaborationMode.INDIVIDUAL, TemplateCategory.HOME, ProjectSubCategory.MOVING, null,
+                CollaborationMode.INDIVIDUAL, ProjectCategory.HOME, ProjectSubCategory.MOVING, null,
                 "Rechtzeitig umziehen", "Budget 2.000 Euro", "Kartons vorhanden",
                 AiProjectTimeFrameType.START_AND_DURATION, 21);
     }

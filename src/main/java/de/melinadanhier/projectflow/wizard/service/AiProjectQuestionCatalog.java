@@ -1,7 +1,7 @@
 package de.melinadanhier.projectflow.wizard.service;
 
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.model.AiProjectQuestion;
 import de.melinadanhier.projectflow.wizard.model.AiQuestionType;
 
@@ -26,8 +26,8 @@ public final class AiProjectQuestionCatalog {
     private AiProjectQuestionCatalog() { }
 
     public static List<AiProjectQuestion> questionsFor(
-            TemplateCategory category, ProjectSubCategory subcategory) {
-        if (category == null || category == TemplateCategory.OTHER || subcategory == null
+            ProjectCategory category, ProjectSubCategory subcategory) {
+        if (category == null || category == ProjectCategory.OTHER || subcategory == null
                 || subcategory.getCategory() != category) {
             return GENERIC;
         }
@@ -35,7 +35,7 @@ public final class AiProjectQuestionCatalog {
     }
 
     public static Map<String, String> sanitize(
-            TemplateCategory category, ProjectSubCategory subcategory, Map<String, String> submitted) {
+            ProjectCategory category, ProjectSubCategory subcategory, Map<String, String> submitted) {
         if (submitted == null || submitted.isEmpty()) {
             return Map.of();
         }
@@ -51,7 +51,7 @@ public final class AiProjectQuestionCatalog {
     }
 
     public static boolean containsUnknownKey(
-            TemplateCategory category, ProjectSubCategory subcategory, Map<String, String> submitted) {
+            ProjectCategory category, ProjectSubCategory subcategory, Map<String, String> submitted) {
         if (submitted == null) {
             return false;
         }

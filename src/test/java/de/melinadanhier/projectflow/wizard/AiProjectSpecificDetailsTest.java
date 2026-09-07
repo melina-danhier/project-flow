@@ -5,7 +5,7 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
@@ -54,23 +54,23 @@ class AiProjectSpecificDetailsTest {
     @Test
     void softwareQuestionsDoNotAcceptRenovationFields() {
         var questions = AiProjectQuestionCatalog.questionsFor(
-                TemplateCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT);
+                ProjectCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT);
 
         assertThat(questions).extracting("key")
                 .contains("goalAndScope", "technologies", "technicalConstraints")
                 .doesNotContain("affectedRooms", "plannedWork");
         assertThat(AiProjectQuestionCatalog.containsUnknownKey(
-                TemplateCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT,
+                ProjectCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT,
                 Map.of("affectedRooms", "Wohnzimmer"))).isTrue();
         assertThat(AiProjectQuestionCatalog.sanitize(
-                TemplateCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT,
+                ProjectCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT,
                 Map.of("goalAndScope", "Kleine Webanwendung", "affectedRooms", "Wohnzimmer")))
                 .containsOnlyKeys("goalAndScope");
     }
 
     @Test
     void otherUsesGenericQuestionsWithoutInventingASubcategory() {
-        assertThat(AiProjectQuestionCatalog.questionsFor(TemplateCategory.OTHER, null))
+        assertThat(AiProjectQuestionCatalog.questionsFor(ProjectCategory.OTHER, null))
                 .extracting("key")
                 .containsExactly("desiredOutcome", "currentSituation", "relevantConditions", "specialConstraints");
     }

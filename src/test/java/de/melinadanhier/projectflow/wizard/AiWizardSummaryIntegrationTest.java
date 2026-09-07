@@ -8,7 +8,7 @@ import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkfl
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
@@ -158,7 +158,7 @@ class AiWizardSummaryIntegrationTest {
                 .andExpect(content().string(containsString("Konkret geplante Arbeiten")))
                 .andExpect(content().string(not(containsString("Festgelegte Technologien"))));
 
-        request.state().setCategory(TemplateCategory.SOFTWARE_TECHNOLOGY);
+        request.state().setCategory(ProjectCategory.SOFTWARE_TECHNOLOGY);
         request.state().setSubcategory(ProjectSubCategory.SOFTWARE_PROJECT);
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
@@ -171,7 +171,7 @@ class AiWizardSummaryIntegrationTest {
     @Test
     void rejectsManipulatedQuestionKeysWithoutChangingWizardState() throws Exception {
         WizardRequest request = wizardRequest(false);
-        request.state().setCategory(TemplateCategory.SOFTWARE_TECHNOLOGY);
+        request.state().setCategory(ProjectCategory.SOFTWARE_TECHNOLOGY);
         request.state().setSubcategory(ProjectSubCategory.SOFTWARE_PROJECT);
         request.state().getProjectSpecificAnswers().put("technologies", "Java");
 
@@ -306,7 +306,7 @@ class AiWizardSummaryIntegrationTest {
         state.setUserId(userId);
         state.setTitle("Umzug planen");
         state.setDescription("Wohnungswechsel organisieren");
-        state.setCategory(TemplateCategory.HOME);
+        state.setCategory(ProjectCategory.HOME);
         state.setSubcategory(ProjectSubCategory.MOVING);
         state.setCollaborationMode(groupProject ? CollaborationMode.GROUP : CollaborationMode.INDIVIDUAL);
         state.setCreationType(CreationType.AI);

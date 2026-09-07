@@ -3,7 +3,7 @@ package de.melinadanhier.projectflow.wizard;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectTimeFrameType;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
@@ -29,7 +29,7 @@ class ProjectBasicsFormTest {
     void defaultsToOtherAndRejectsANullCategory() {
         ProjectBasicsForm form = new ProjectBasicsForm();
 
-        assertThat(form.getCategory()).isEqualTo(TemplateCategory.OTHER);
+        assertThat(form.getCategory()).isEqualTo(ProjectCategory.OTHER);
         assertThat(form.getTimeFrameType()).isEqualTo(ProjectTimeFrameType.NONE);
 
         form.setTitle("Testprojekt");
@@ -51,7 +51,7 @@ class ProjectBasicsFormTest {
     @Test
     void otherRequiresAProjectTypeDescription() {
         ProjectBasicsForm form = validForm();
-        form.setCategory(TemplateCategory.OTHER);
+        form.setCategory(ProjectCategory.OTHER);
 
         form.setOtherProjectTypeDescription("   ");
         assertThat(violatedProperties(form)).contains("otherProjectTypeDescription");
@@ -161,7 +161,7 @@ class ProjectBasicsFormTest {
         ProjectBasicsForm restoredForm = ProjectBasicsForm.from(restored);
 
         assertThat(restored.getTitle()).isEqualTo("Präsentation vorbereiten");
-        assertThat(restored.getCategory()).isEqualTo(TemplateCategory.EDUCATION);
+        assertThat(restored.getCategory()).isEqualTo(ProjectCategory.EDUCATION);
         assertThat(restored.getSubcategory()).isEqualTo(ProjectSubCategory.PRESENTATION_OR_REPORT);
         assertThat(restored.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 1));
         assertThat(restored.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 3));
@@ -179,24 +179,24 @@ class ProjectBasicsFormTest {
         form.setCategory(subcategory.getCategory());
         form.setSubcategory(subcategory);
         assertThat(validator.validate(form)).isEmpty();
-        form.setCategory(TemplateCategory.OTHER);
+        form.setCategory(ProjectCategory.OTHER);
         form.setOtherProjectTypeDescription("Anderes Vorhaben");
         assertThat(violatedProperties(form)).containsExactly("subcategory");
-        form.setCategory(subcategory.getCategory() == TemplateCategory.HOME
-                ? TemplateCategory.EDUCATION : TemplateCategory.HOME);
+        form.setCategory(subcategory.getCategory() == ProjectCategory.HOME
+                ? ProjectCategory.EDUCATION : ProjectCategory.HOME);
         assertThat(violatedProperties(form)).containsExactly("subcategory");
     }
 
     @Test
     void dropdownMappingIsCompleteOrderedAndHasNoOtherValues() {
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.EDUCATION)).containsExactly(
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.EDUCATION)).containsExactly(
                 ProjectSubCategory.PRESENTATION_OR_REPORT,
                 ProjectSubCategory.EXAM_PREPARATION,
                 ProjectSubCategory.LEARNING_PLAN,
                 ProjectSubCategory.TERM_PAPER,
                 ProjectSubCategory.THESIS,
                 ProjectSubCategory.OTHER_EDUCATION);
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.SOFTWARE_TECHNOLOGY)).containsExactly(
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.SOFTWARE_TECHNOLOGY)).containsExactly(
                 ProjectSubCategory.SOFTWARE_PROJECT,
                 ProjectSubCategory.WEB_OR_MOBILE_APP,
                 ProjectSubCategory.EXTEND_EXISTING_APPLICATION,
@@ -204,7 +204,7 @@ class ProjectBasicsFormTest {
                 ProjectSubCategory.DATABASE_PROJECT,
                 ProjectSubCategory.HARDWARE_OR_RASPBERRY_PI_PROJECT,
                 ProjectSubCategory.OTHER_SOFTWARE_AND_TECHNOLOGY);
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.EVENT)).containsExactly(
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.EVENT)).containsExactly(
                 ProjectSubCategory.PRIVATE_CELEBRATION,
                 ProjectSubCategory.WORKSHOP_TRAINING_OR_INFORMATION_EVENT,
                 ProjectSubCategory.CLUB_OR_COMMUNITY_EVENT,
@@ -214,13 +214,13 @@ class ProjectBasicsFormTest {
                 ProjectSubCategory.TOURNAMENT_OR_COMPETITION,
                 ProjectSubCategory.STUDY_EVENT,
                 ProjectSubCategory.OTHER_EVENT);
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.HOME)).containsExactly(
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.HOME)).containsExactly(
                 ProjectSubCategory.MOVING,
                 ProjectSubCategory.RENOVATION_OR_HOME_PROJECT,
                 ProjectSubCategory.DECLUTTERING_OR_HOUSEHOLD_ORGANIZATION,
                 ProjectSubCategory.GARDEN_PROJECT,
                 ProjectSubCategory.OTHER_HOME);
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.CREATIVE)).containsExactly(
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.CREATIVE)).containsExactly(
                 ProjectSubCategory.WRITING_PROJECT,
                 ProjectSubCategory.PODCAST,
                 ProjectSubCategory.VIDEO_OR_SHORT_FILM_PROJECT,
@@ -230,7 +230,7 @@ class ProjectBasicsFormTest {
                 ProjectSubCategory.BLOG_OR_SOCIAL_MEDIA_CAMPAIGN,
                 ProjectSubCategory.BOARD_GAME_OR_CREATIVE_PROTOTYPE,
                 ProjectSubCategory.OTHER_CREATIVE_PROJECT);
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.CAREER)).containsExactly(
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.CAREER)).containsExactly(
                 ProjectSubCategory.JOB_SEARCH_AND_APPLICATION,
                 ProjectSubCategory.CREATE_PORTFOLIO,
                 ProjectSubCategory.TRAINING_OR_CERTIFICATION,
@@ -239,14 +239,14 @@ class ProjectBasicsFormTest {
                 ProjectSubCategory.PROCESS_IMPROVEMENT,
                 ProjectSubCategory.PRODUCT_OR_BUSINESS_IDEA,
                 ProjectSubCategory.OTHER_CAREER);
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.HEALTH_PERSONAL_DEVELOPMENT)).containsExactly(
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.HEALTH_PERSONAL_DEVELOPMENT)).containsExactly(
                 ProjectSubCategory.FITNESS_OR_RUNNING_GOAL,
                 ProjectSubCategory.COMPETITION_PREPARATION,
                 ProjectSubCategory.NUTRITION_PROJECT,
                 ProjectSubCategory.HABIT_OR_PERSONAL_CHALLENGE,
                 ProjectSubCategory.DIGITAL_DETOX_OR_DAILY_LIFE_CHANGE,
                 ProjectSubCategory.OTHER_HEALTH_AND_PERSONAL_DEVELOPMENT);
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.TRAVEL)).containsExactly(
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.TRAVEL)).containsExactly(
                 ProjectSubCategory.TRIP_OR_VACATION,
                 ProjectSubCategory.ROAD_TRIP,
                 ProjectSubCategory.FESTIVAL_OR_CONCERT_TRIP,
@@ -254,11 +254,11 @@ class ProjectBasicsFormTest {
                 ProjectSubCategory.BICYCLE_TOUR,
                 ProjectSubCategory.OTHER_TRAVEL);
         assertThat(ProjectSubCategory.values()).hasSize(56);
-        assertThat(ProjectSubCategory.forCategory(TemplateCategory.OTHER)).isEmpty();
+        assertThat(ProjectSubCategory.forCategory(ProjectCategory.OTHER)).isEmpty();
         assertThat(ProjectSubCategory.forCategory(null)).isEmpty();
         assertThat(ProjectSubCategory.values()).allSatisfy(value -> {
             assertThat(value.getLabel()).isNotBlank();
-            assertThat(value.getCategory()).isNotEqualTo(TemplateCategory.OTHER);
+            assertThat(value.getCategory()).isNotEqualTo(ProjectCategory.OTHER);
         });
     }
 
@@ -272,7 +272,7 @@ class ProjectBasicsFormTest {
         service.saveBasics(original, userId, session);
 
         var changed = validForm();
-        changed.setCategory(TemplateCategory.HOME);
+        changed.setCategory(ProjectCategory.HOME);
         changed.setSubcategory(ProjectSubCategory.THESIS);
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.saveBasics(changed, userId, session))
                 .isInstanceOf(de.melinadanhier.projectflow.common.exception.DomainValidationException.class);
@@ -280,14 +280,14 @@ class ProjectBasicsFormTest {
 
         changed.setSubcategory(null);
         service.saveBasics(changed, userId, session);
-        assertThat(service.requireOwned(userId, session).getCategory()).isEqualTo(TemplateCategory.HOME);
+        assertThat(service.requireOwned(userId, session).getCategory()).isEqualTo(ProjectCategory.HOME);
         assertThat(ProjectBasicsForm.from(service.requireOwned(userId, session)).getSubcategory()).isNull();
     }
 
     private ProjectBasicsForm validForm() {
         ProjectBasicsForm form = new ProjectBasicsForm();
         form.setTitle("Testprojekt");
-        form.setCategory(TemplateCategory.EDUCATION);
+        form.setCategory(ProjectCategory.EDUCATION);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         return form;
     }

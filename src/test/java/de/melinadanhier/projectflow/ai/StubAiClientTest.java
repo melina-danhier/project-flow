@@ -10,7 +10,7 @@ import de.melinadanhier.projectflow.ai.provider.stub.StubAiGenerationScenario;
 import de.melinadanhier.projectflow.ai.provider.stub.StubAiPreCheckScenario;
 import de.melinadanhier.projectflow.ai.provider.stub.StubAiProperties;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -41,7 +41,7 @@ class StubAiClientTest {
             assertThat(client.generatePlan(datedRequest)).isEqualTo(client.generatePlan(datedRequest));
             properties.setGenerationScenario(StubAiGenerationScenario.WITHOUT_DATES);
             var noDates = new AiGenerationRequest(new AiWizardSnapshot("Projekt", null, null, null,
-                    CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test", null, null, null), List.of());
+                    CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test", null, null, null), List.of());
             assertThat(generationValidator.validate(client.generatePlan(noDates), noDates).isValid()).isTrue();
             assertThat(client.generatePlan(noDates)).isEqualTo(client.generatePlan(noDates));
         }
@@ -110,7 +110,7 @@ class StubAiClientTest {
         LocalDate projectEnd = LocalDate.of(2026, 10, 12);
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
                 "Kurzes Projekt", null, projectStart, projectEnd,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
                 null, null, null);
 
         var response = client.generatePlan(new AiGenerationRequest(snapshot, List.of()));
@@ -131,7 +131,7 @@ class StubAiClientTest {
         properties.setGenerationScenario(StubAiGenerationScenario.WITH_DATES);
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
                 "Projekt ohne Terminbasis", null, start, end,
-                CollaborationMode.INDIVIDUAL, TemplateCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
                 null, null, null);
 
         var response = client.generatePlan(new AiGenerationRequest(snapshot, List.of()));
@@ -157,7 +157,7 @@ class StubAiClientTest {
         return new AiWizardSnapshot(
                 "Umzug planen", "Wohnungswechsel organisieren",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
-                CollaborationMode.GROUP, TemplateCategory.HOME, ProjectSubCategory.MOVING, null,
+                CollaborationMode.GROUP, ProjectCategory.HOME, ProjectSubCategory.MOVING, null,
                 "Bis Monatsende umziehen", "Budget 2.000 Euro", "Kartons sind vorhanden");
     }
 }

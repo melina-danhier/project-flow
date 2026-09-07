@@ -7,7 +7,7 @@ import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.project.model.CreationType;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -35,7 +35,7 @@ public class ProjectCreateForm implements ProjectClassification {
     private LocalDate endDate;
 
     @NotNull
-    private TemplateCategory category = TemplateCategory.OTHER;
+    private ProjectCategory category = ProjectCategory.OTHER;
 
     @Size(max = 100)
     private String otherProjectTypeDescription;

@@ -2,7 +2,7 @@ package de.melinadanhier.projectflow.plancontainer.project.dto;
 
 import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.plancontainer.project.validation.ValidProjectClassification;
-import de.melinadanhier.projectflow.plancontainer.template.model.TemplateCategory;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import jakarta.validation.constraints.AssertTrue;
 import de.melinadanhier.projectflow.plancontainer.project.model.ProjectSubCategory;
@@ -33,7 +33,7 @@ public class ProjectUpdateForm implements ProjectClassification {
     private String description;
 
     @NotNull(message = "Bitte wähle eine Oberkategorie aus.")
-    private TemplateCategory category;
+    private ProjectCategory category;
     private ProjectSubCategory subcategory;
     @Size(max = 100, message = "Die Beschreibung darf höchstens 100 Zeichen lang sein.")
     private String otherProjectTypeDescription;
