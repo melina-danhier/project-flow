@@ -1,10 +1,15 @@
-document.addEventListener('DOMContentLoaded', () => {
+const initializePlanOrdering = () => {
     const main = document.querySelector('main[data-sort-mode]');
-    if (!main || main.dataset.editable !== 'true') return;
+    if (!main || main.dataset.editable !== 'true' || main.dataset.orderingInitialized === 'true') return;
+    main.dataset.orderingInitialized = 'true';
 
     let dragged = null;
 
     const submitMove = (url, fields) => {
+        if (window.ProjectFlowPlan?.submit) {
+            window.ProjectFlowPlan.submit(url, fields);
+            return;
+        }
         const form = document.createElement('form');
         form.method = 'post';
         form.action = url;
@@ -174,4 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
-});
+};
+
+document.addEventListener('DOMContentLoaded', initializePlanOrdering);
+document.addEventListener('projectflow:plan-updated', initializePlanOrdering);
