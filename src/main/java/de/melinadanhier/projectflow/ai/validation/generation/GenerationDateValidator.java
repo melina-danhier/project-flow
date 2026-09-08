@@ -28,9 +28,6 @@ final class GenerationDateValidator {
     }
 
     void validateTask(GeneratedTask task, String taskPath) {
-        if (datesRequired && task.dueDate() == null) {
-            addIssue(TASK_DUE_DATE_MISSING, taskPath + ".dueDate");
-        }
         dateOrder(
                 TASK_DATES_INVALID,
                 task.startDate(), task.dueDate()

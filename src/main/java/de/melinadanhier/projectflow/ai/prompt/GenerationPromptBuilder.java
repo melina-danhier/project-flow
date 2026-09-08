@@ -59,6 +59,9 @@ public class GenerationPromptBuilder {
               Bestätigte Nutzereingaben haben Vorrang und dürfen weder überschrieben noch umgedeutet werden.
               Konkrete Kalenderdaten dürfen nur verwendet werden, wenn sie aus confirmedWizardData oder
               einer akzeptierten Zeitschätzung in confirmedPlanningContext plausibel ableitbar sind.
+              Bei einem terminierten Projekt dürfen Aufgaben konkrete Termine erhalten. Wenn konkrete
+              Termine vergeben werden, müssen sie vollständig konsistent innerhalb des Projektzeitraums liegen.
+              Aufgaben ohne notwendige zeitliche Bindung dürfen ohne Fälligkeitsdatum bleiben.
               Ergänze keine fehlenden Datumswerte durch bloße technische Annahmen. Ohne ausreichend
               konkrete Grundlage bleiben Aufgaben-startDate, Aufgaben-dueDate und Meilenstein-date null.
             - Verwende in Datumsfeldern ausschließlich konkrete Kalenderdaten im vorgesehenen ISO-Format
@@ -92,9 +95,17 @@ public class GenerationPromptBuilder {
             - Erzeuge keine detaillierte Personal- oder Ressourceneinsatzplanung, wenn sie nicht ausdrücklich
               verlangt wurde. Plane bei Gruppenprojekten bei Bedarf eine kompakte organisatorische Aufgabe
               wie „Zuständigkeiten verteilen“, statt unbestätigte Personen einzelnen Aufgaben zuzuweisen.
-            - Platziere einen Meilenstein logisch und bei terminierter Planung auch zeitlich erst nach den
+            - Platziere einen Meilenstein logisch und bei terminierter Planung auch zeitlich erst nach allen
               Aufgaben, durch die sein Zustand erreicht wird. Sein Datum darf nicht vor dem Fälligkeitsdatum
               einer dafür erforderlichen Aufgabe liegen.
+              Bei einer Planung mit festgelegtem Start- und Enddatum muss jeder erzeugte Meilenstein ein
+              konkretes Datum innerhalb des Projektzeitraums besitzen. Das Datum muss nach allen Aufgaben liegen,
+              durch die der Meilenstein erreicht wird. Wenn kein sinnvoller Meilenstein mit einem plausiblen
+              Datum bestimmt werden kann, soll kein Meilenstein erzeugt werden.
+            - Tasks und Milestones innerhalb einer Section teilen sich denselben Nummernkreis für das Feld
+              order und bilden gemeinsam eine eindeutige Reihenfolge (z. B. Task 100, Task 200, Milestone 300,
+              Task 400). Verwende als Konvention 100er-Schritte. Jeder order-Wert innerhalb einer Section muss
+              über alle Aufgaben und Meilensteine hinweg eindeutig und positiv sein.
             - Interpretiere bei einem Projekt mit eindeutigem Abschlussereignis den letzten bestätigten
               Projekttag standardmäßig als Tag dieses Ereignisses, sofern die bestätigten Angaben nichts
               anderes sagen. Plane keine Nachbereitung außerhalb des bestätigten Zeitraums und verlängere

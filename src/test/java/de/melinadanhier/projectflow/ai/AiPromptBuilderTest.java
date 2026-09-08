@@ -146,6 +146,12 @@ class AiPromptBuilderTest {
                 .contains("jedes ausdrücklich bestätigte Endergebnis")
                 .contains("Zuständigkeiten verteilen")
                 .contains("Meilenstein logisch", "zeitlich erst nach")
+                .contains("Bei einer Planung mit festgelegtem Start- und Enddatum muss jeder erzeugte Meilenstein")
+                .contains("konkretes Datum innerhalb des Projektzeitraums besitzen")
+                .contains("Das Datum muss nach allen Aufgaben liegen")
+                .contains("durch die der Meilenstein erreicht wird")
+                .contains("Wenn kein sinnvoller Meilenstein mit einem plausiblen")
+                .contains("Datum bestimmt werden kann, soll kein Meilenstein erzeugt werden")
                 .contains("letzten bestätigten", "Projekttag", "Tag dieses Ereignisses")
                 .contains("verlängere", "niemals stillschweigend")
                 .contains("Behaupte kein erfundenes Ergebnis");

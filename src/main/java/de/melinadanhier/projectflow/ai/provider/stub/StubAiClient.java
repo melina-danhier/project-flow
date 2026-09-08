@@ -51,15 +51,15 @@ public class StubAiClient implements AiClient {
 
         List<GeneratedTask> tasks = List.of(
                 task("task-1", "Anforderungen festhalten", GeneratedElementOrigin.USER_INPUT,
-                        1, startDate, requirementsDueDate),
+                        100, startDate, requirementsDueDate),
                 task("task-2", "Ressourcen organisieren", GeneratedElementOrigin.AI_INFERRED,
-                        2, requirementsDueDate, endDate));
+                        200, requirementsDueDate, endDate));
         GeneratedMilestone milestone = new GeneratedMilestone(
-                "milestone-1", "Vorbereitung abgeschlossen", endDate, 1);
+                "milestone-1", "Vorbereitung abgeschlossen", endDate, 300);
 
         return new GeneratedSection(
                 "section-1", "Vorbereitung", "Grundlagen und Organisation",
-                1, tasks, List.of(milestone));
+                100, tasks, List.of(milestone));
     }
 
     private GeneratedSection implementationSection(LocalDate projectStart, LocalDate projectEnd) {
@@ -69,15 +69,15 @@ public class StubAiClient implements AiClient {
 
         List<GeneratedTask> tasks = List.of(
                 task("task-3", "Kernaufgabe durchführen", GeneratedElementOrigin.AI_INFERRED,
-                        1, startDate, executionDueDate),
+                        100, startDate, executionDueDate),
                 task("task-4", "Ergebnis kontrollieren", GeneratedElementOrigin.AI_INFERRED,
-                        2, endDate, endDate));
+                        200, endDate, endDate));
         GeneratedMilestone milestone = new GeneratedMilestone(
-                "milestone-2", "Projektziel erreicht", endDate, 1);
+                "milestone-2", "Projektziel erreicht", endDate, 300);
 
         return new GeneratedSection(
                 "section-2", "Umsetzung", "Geplante Schritte durchführen",
-                2, tasks, List.of(milestone));
+                200, tasks, List.of(milestone));
     }
 
     private AiPreCheckResult response(AiPreCheckProblem... problems) {

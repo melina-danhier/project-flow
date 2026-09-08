@@ -461,14 +461,14 @@ class AiWorkflowIntegrationTest {
     private GeneratedPlanResponse generatedPlan() {
         return new GeneratedPlanResponse(
                 List.of(new GeneratedSection(
-                        "section-1", "Vorbereitung", null, 1,
+                        "section-1", "Vorbereitung", null, 100,
                         List.of(
-                                generatedTask("task-1", "Erster Schritt", 1),
-                                generatedTask("task-2", "Zweiter Schritt", 2),
-                                generatedTask("task-3", "Dritter Schritt", 3)),
+                                generatedTask("task-1", "Erster Schritt", 100),
+                                generatedTask("task-2", "Zweiter Schritt", 200),
+                                generatedTask("task-3", "Dritter Schritt", 300)),
                         List.of(new GeneratedMilestone(
                                 "milestone-1", "Vorbereitung abgeschlossen",
-                                LocalDate.of(2026, 9, 21), 2)))));
+                                LocalDate.of(2026, 9, 21), 400)))));
     }
 
     private GeneratedTask generatedTask(String id, String title, int order) {
