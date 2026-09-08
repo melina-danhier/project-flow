@@ -156,6 +156,7 @@ class AiWizardSummaryIntegrationTest {
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Wie viel Zeit kannst du ungefähr für das Projekt einplanen?")))
                 .andExpect(content().string(containsString("Betroffene Räume oder Fläche")))
                 .andExpect(content().string(containsString("Konkret geplante Arbeiten")))
                 .andExpect(content().string(not(containsString("Festgelegte Technologien"))));
@@ -165,9 +166,23 @@ class AiWizardSummaryIntegrationTest {
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Wie viel Zeit kannst du ungefähr für das Projekt einplanen?")))
                 .andExpect(content().string(containsString("Ziel und Funktionsumfang")))
                 .andExpect(content().string(containsString("Festgelegte Technologien")))
                 .andExpect(content().string(not(containsString("Betroffene Räume oder Fläche"))));
+    }
+
+    @Test
+    void keepsAvailableWorkingTimeInAiOnlyReviewAndNotInGeneralProjectData() throws Exception {
+        WizardRequest request = wizardRequest(true);
+        request.state().setAvailableWorkingTime("5 Stunden pro Woche");
+
+        mockMvc.perform(get("/projects/new/ai/summary")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Verfügbare Arbeitszeit")))
+                .andExpect(content().string(not(containsString("<dt>Verfügbare Arbeitszeit</dt>\s*</dd>"))))
+                .andExpect(content().string(containsString("5 Stunden pro Woche")));
     }
 
     @Test

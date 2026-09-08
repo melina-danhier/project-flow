@@ -22,6 +22,9 @@ public class AiProjectDetailsForm {
     @Size(max = 2000, message = "Die Rahmenbedingungen dürfen höchstens 2000 Zeichen lang sein.")
     private String constraints;
 
+    @Size(max = 1000, message = "Die verfügbare Arbeitszeit darf höchstens 1000 Zeichen lang sein.")
+    private String availableWorkingTime;
+
     @Size(max = 2000, message = "Die weiteren Angaben dürfen höchstens 2000 Zeichen lang sein.")
     private String additionalInformation;
 
@@ -29,6 +32,7 @@ public class AiProjectDetailsForm {
         AiProjectDetailsForm form = new AiProjectDetailsForm();
         form.setProjectGoal(state.getProjectGoal());
         form.setConstraints(state.getConstraints());
+        form.setAvailableWorkingTime(state.getAvailableWorkingTime());
         form.setAdditionalInformation(state.getAdditionalInformation());
         form.setAnswers(new LinkedHashMap<>(state.getProjectSpecificAnswers()));
         return form;
