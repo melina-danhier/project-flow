@@ -15,7 +15,6 @@ import de.melinadanhier.projectflow.planelement.dto.SectionForm;
 import de.melinadanhier.projectflow.planelement.dto.TaskForm;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
-import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
@@ -42,6 +41,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -560,7 +560,6 @@ class SeparatedPlanUiIntegrationTest {
         milestone.setDueDate(LocalDate.of(2027, 1, 8));
         milestone.setCompleted(true);
         milestone.setOrigin(ElementOrigin.AI);
-        milestone.setReviewStatus(PlanReviewStatus.UNREVIEWED);
         milestoneRepository.saveAndFlush(milestone);
         createTask(project, owner, null, "Planelement ohne Phase");
 
@@ -575,7 +574,8 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(content().string(containsString("In Bearbeitung")))
                 .andExpect(content().string(containsString("Erreicht")))
                 .andExpect(content().string(containsString("KI-Vorschlag")))
-                .andExpect(content().string(containsString("Prüfung offen")))
+                .andExpect(content().string(not(containsString("Prüfung offen"))))
+                .andExpect(content().string(not(containsString("Geprüft"))))
                 .andExpect(content().string(containsString("plan-sort-mode-form")))
                 .andReturn().getResponse().getContentAsString();
 

@@ -1,7 +1,6 @@
 package de.melinadanhier.projectflow.planelement.dto;
 
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
-import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,7 +20,6 @@ public class SectionDto {
     private String description;
     private int sortOrder;
     private ElementOrigin origin;
-    private PlanReviewStatus reviewStatus;
     private List<PlanElementViewDto> elements = new ArrayList<>();
     private int taskCount;
     private int milestoneCount;
@@ -38,12 +36,4 @@ public class SectionDto {
         };
     }
 
-    public String getReviewStatusLabel() {
-        if (reviewStatus == null) return null;
-        return reviewStatus == PlanReviewStatus.CONFIRMED ? "Geprüft" : "Prüfung offen";
-    }
-
-    public boolean isReviewWarning() {
-        return reviewStatus == PlanReviewStatus.UNREVIEWED;
-    }
 }

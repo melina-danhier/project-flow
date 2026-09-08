@@ -26,7 +26,6 @@ import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
-import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneDetailsDto;
@@ -162,7 +161,6 @@ public class ProjectService {
             copy.setDescription(source.getDescription());
             copy.setSortOrder(source.getSortOrder());
             copy.setOrigin(ElementOrigin.TEMPLATE);
-            copy.setReviewStatus(PlanReviewStatus.UNREVIEWED);
             project.addSection(copy);
             sections.put(source, copy);
         }
@@ -217,7 +215,6 @@ public class ProjectService {
         copy.setDescription(source.getDescription());
         copy.setSortOrder(source.getSortOrder());
         copy.setOrigin(ElementOrigin.TEMPLATE);
-        copy.setReviewStatus(PlanReviewStatus.UNREVIEWED);
         return copy;
     }
 
@@ -558,7 +555,6 @@ public class ProjectService {
         dto.setPlanSectionId(element.getPlanSection() == null ? null : element.getPlanSection().getId());
         dto.setSortOrder(element.getSortOrder());
         dto.setOrigin(element.getOrigin());
-        dto.setReviewStatus(element.getReviewStatus());
         return dto;
     }
 
