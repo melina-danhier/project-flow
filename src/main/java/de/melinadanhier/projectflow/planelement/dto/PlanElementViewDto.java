@@ -1,7 +1,6 @@
 package de.melinadanhier.projectflow.planelement.dto;
 
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
-import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
 import lombok.Getter;
@@ -28,7 +27,6 @@ public class PlanElementViewDto {
     private TaskPriority taskPriority;
     private boolean milestoneCompleted;
     private ElementOrigin origin;
-    private PlanReviewStatus reviewStatus;
 
     public String getTypeLabel() {
         return type == PlanElementType.MILESTONE ? "Meilenstein" : "Aufgabe";
@@ -63,12 +61,4 @@ public class PlanElementViewDto {
         };
     }
 
-    public String getReviewStatusLabel() {
-        if (reviewStatus == null) return null;
-        return reviewStatus == PlanReviewStatus.CONFIRMED ? "Geprüft" : "Prüfung offen";
-    }
-
-    public boolean isReviewWarning() {
-        return reviewStatus == PlanReviewStatus.UNREVIEWED;
-    }
 }

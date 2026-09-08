@@ -29,7 +29,6 @@ import de.melinadanhier.projectflow.planelement.dto.TaskForm;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapperImpl;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
-import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
@@ -287,7 +286,6 @@ class StaticProjectTemplateIntegrationTest {
                 milestone.setTitle(MILESTONE_TITLES.get(sectionIndex));
                 milestone.setSortOrder((titles.size() + 1) * 100);
                 milestone.setOrigin(ElementOrigin.TEMPLATE);
-                milestone.setReviewStatus(PlanReviewStatus.UNREVIEWED);
                 template.addElement(milestone);
                 section.addElement(milestone);
             }
@@ -311,7 +309,6 @@ class StaticProjectTemplateIntegrationTest {
         section.setTitle(title);
         section.setSortOrder(sortOrder);
         section.setOrigin(ElementOrigin.TEMPLATE);
-        section.setReviewStatus(PlanReviewStatus.UNREVIEWED);
         template.addSection(section);
         return section;
     }
@@ -322,7 +319,6 @@ class StaticProjectTemplateIntegrationTest {
         task.setSortOrder(sortOrder);
         task.setPriority(TaskPriority.MEDIUM);
         task.setOrigin(ElementOrigin.TEMPLATE);
-        task.setReviewStatus(PlanReviewStatus.UNREVIEWED);
         return task;
     }
 

@@ -9,7 +9,6 @@ import de.melinadanhier.projectflow.draft.model.DraftTask;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.PlanElement;
-import de.melinadanhier.projectflow.planelement.model.PlanReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.PlanSection;
 import de.melinadanhier.projectflow.planelement.model.Task;
 import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
@@ -41,7 +40,6 @@ public class DraftPlanAdoptionFactory {
             target.setTitle(source.getTitle());
             target.setDescription(source.getDescription());
             target.setOrigin(source.getOrigin());
-            target.setReviewStatus(reviewStatus(source.getReviewStatus()));
             target.setSortOrder(source.getSortOrder());
             project.addSection(target);
             adoptedSections.put(source, target);
@@ -131,14 +129,7 @@ public class DraftPlanAdoptionFactory {
         target.setTitle(source.getTitle());
         target.setDescription(source.getDescription());
         target.setOrigin(source.getOrigin());
-        target.setReviewStatus(reviewStatus(source.getReviewStatus()));
         return target;
-    }
-
-    private PlanReviewStatus reviewStatus(DraftReviewStatus status) {
-        return status == DraftReviewStatus.ACCEPTED
-                ? PlanReviewStatus.CONFIRMED
-                : PlanReviewStatus.UNREVIEWED;
     }
 
     private boolean included(DraftSection section) {
