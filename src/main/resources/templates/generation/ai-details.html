@@ -25,6 +25,22 @@
             <div th:if="${#fields.hasAnyErrors()}" th:each="error : ${#fields.allErrors()}"
                  class="pf-alert pf-alert--error" th:text="${error}" role="alert"></div>
 
+            <div class="pf-form-group">
+                <label for="availableWorkingTime" class="pf-label">
+                   <span>Wie viel Zeit kannst du ungefähr für das Projekt einplanen?</span>
+                   <span class="pf-hint">(optional)</span>
+                </label>
+                <input id="availableWorkingTime"
+                      class="pf-input"
+                      type="text"
+                      th:field="*{availableWorkingTime}"
+                      maxlength="1000"
+                      placeholder="z. B. ca. 5 Stunden pro Woche oder nur am Wochenende">
+                <div th:if="${#fields.hasErrors('availableWorkingTime')}"
+                    th:errors="*{availableWorkingTime}"
+                    class="pf-alert pf-alert--error" role="alert"></div>
+            </div>
+
             <div th:each="question : ${questions}" class="pf-form-group">
                 <label th:for="|answer-${question.key}|" class="pf-label">
                     <span th:text="${question.label}">Frage</span>

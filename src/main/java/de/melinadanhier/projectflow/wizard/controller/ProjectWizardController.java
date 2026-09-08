@@ -295,6 +295,10 @@ public class ProjectWizardController {
             bindingResult.reject("ai.answers.obsolete",
                     "Die übermittelten Zusatzangaben verwenden nicht den aktuellen Fragenkatalog.");
         }
+        if (form.getAvailableWorkingTime() != null && form.getAvailableWorkingTime().length() > 1000) {
+            bindingResult.rejectValue("availableWorkingTime", "ai.availableWorkingTime.tooLong",
+                    "Die verfügbare Arbeitszeit darf höchstens 1000 Zeichen lang sein.");
+        }
         if (AiProjectQuestionCatalog.containsUnknownKey(
                 state.getCategory(), state.getSubcategory(), submittedAnswers)) {
             bindingResult.reject("ai.answers.unknown",

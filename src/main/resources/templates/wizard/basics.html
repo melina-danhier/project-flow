@@ -71,15 +71,6 @@
                 </div>
             </div>
 
-            <div class="pf-form-group" style="margin-top: 1rem;">
-                <label for="availableWorkingTime" class="pf-label">
-                    <span>Wie viel Zeit kannst du ungefähr für das Projekt einplanen?</span>
-                    <span class="pf-hint">(optional)</span>
-                </label>
-                <input id="availableWorkingTime" type="text" th:field="*{availableWorkingTime}" class="pf-input" maxlength="1000" placeholder="z. B. ca. 5 Stunden pro Woche oder nur am Wochenende">
-                <div th:if="${#fields.hasErrors('availableWorkingTime')}" th:errors="*{availableWorkingTime}" class="pf-alert pf-alert--error" role="alert"></div>
-            </div>
-
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
                     Assistent abbrechen

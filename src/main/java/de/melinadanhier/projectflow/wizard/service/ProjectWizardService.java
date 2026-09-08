@@ -87,6 +87,7 @@ public class ProjectWizardService {
         ProjectWizardState state = requireOwnedFor(CreationType.AI, userId, session);
         state.setProjectSpecificAnswers(new java.util.LinkedHashMap<>(
                 AiProjectQuestionCatalog.sanitize(state.getCategory(), state.getSubcategory(), form.getAnswers())));
+        state.setAvailableWorkingTime(normalizeOptionalText(form.getAvailableWorkingTime()));
         state.setAdditionalInformation(normalizeOptionalText(form.getAdditionalInformation()));
         state.setAiDetailsCompleted(true);
         state.setCompletionToken(null);

@@ -54,6 +54,20 @@ class AiProjectSpecificDetailsTest {
     }
 
     @Test
+    void workingTimeIsSavedAndVisibleAsFirstAiWizardInput() {
+        Context context = context(ProjectSubCategory.RENOVATION_OR_HOME_PROJECT, CollaborationMode.INDIVIDUAL);
+        AiProjectDetailsForm details = new AiProjectDetailsForm();
+        details.setAvailableWorkingTime("  5 Stunden pro Woche  ");
+
+        service.saveAiDetails(details, context.userId(), context.session());
+
+        assertThat(service.requireOwned(context.userId(), context.session()).getAvailableWorkingTime())
+                .isEqualTo("5 Stunden pro Woche");
+        assertThat(service.aiSummary(context.userId(), context.session()).availableWorkingTime())
+                .isEqualTo("5 Stunden pro Woche");
+    }
+
+    @Test
     void softwareQuestionsDoNotAcceptRenovationFields() {
         var questions = AiProjectQuestionCatalog.questionsFor(
                 ProjectCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT);
