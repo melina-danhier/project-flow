@@ -19,6 +19,9 @@
     </div>
 
     <div class="pf-card" style="max-width: 760px;">
+        <div th:if="${selectedTemplate}" class="pf-alert pf-alert--info" style="margin-bottom:1rem">
+            Ausgewählte Vorlage: <strong th:text="${selectedTemplate.title}">Vorlage</strong>. Sie bleibt während des Assistenten gespeichert.
+        </div>
         <form th:action="@{/projects/new}" th:object="${projectBasicsForm}" method="post">
             <th:block th:replace="~{fragments/form-fields :: title-field('Projekttitel')}" />
             

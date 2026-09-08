@@ -1,52 +1,68 @@
 <!doctype html>
-<html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <th:block th:replace="~{fragments/layout :: head('Vorlagen')}" />
-</head>
+<html lang="de" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head><th:block th:replace="~{fragments/layout :: head('Projektvorlagen')}" /></head>
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
-
 <main>
-    <div class="pf-page-header">
-        <div class="pf-page-header__left">
-            <a th:href="@{/projects}" class="pf-page-header__back">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                Zurück zur Projektübersicht
-            </a>
-            <h1 style="margin: 0;">Projektvorlagen</h1>
-            <p class="pf-page-header__subtitle">Wähle eine erprobte Struktur für deine Anforderungen oder starte direkt ein neues Projekt daraus.</p>
-        </div>
-        <div class="pf-page-header__actions">
-            <a class="pf-btn pf-btn--primary" th:href="@{/projects/new}">
-                Neues Projekt mit Wizard
-            </a>
-        </div>
-    </div>
+    <div class="pf-page-header"><div class="pf-page-header__left">
+        <a th:if="${wizardContext}" th:href="@{/projects/new/method}" class="pf-page-header__back">← Zur Methodenauswahl</a>
+        <a th:unless="${wizardContext}" sec:authorize="isAuthenticated()" th:href="@{/projects}" class="pf-page-header__back">← Zur Projektübersicht</a>
+        <a th:unless="${wizardContext}" sec:authorize="!isAuthenticated()" th:href="@{/}" class="pf-page-header__back">← Zur Startseite</a>
+        <h1 style="margin:0" th:text="${wizardContext ? 'Vorlage auswählen' : 'Projektvorlagen'}">Projektvorlagen</h1>
+        <p class="pf-page-header__subtitle" th:text="${wizardContext ? 'Deine bisherigen Projektangaben bleiben beim Stöbern erhalten.' : 'Entdecke erprobte Strukturen und sieh dir alle Inhalte vor der Verwendung an.'}"></p>
+    </div></div>
 
-    <div class="pf-project-grid">
-        <div th:each="template : ${templates}" class="pf-project-card">
-            <div>
-                <div class="pf-project-card__top">
-                    <span class="pf-badge pf-badge--gray" th:if="${template.projectTypeLabel}" th:text="${template.projectTypeLabel}">Kategorie</span>
-                    <span class="pf-badge pf-badge--blue">Vorlage</span>
+    <div class="pf-template-catalog-layout">
+        <aside class="pf-card" aria-label="Vorlagenkategorien" style="padding:1rem">
+            <strong style="display:block;margin-bottom:.75rem">Kategorien</strong>
+            <nav style="display:grid;gap:.35rem">
+                <a th:each="category : ${categories}"
+                   th:href="${wizardContext} ? @{/projects/new/template(category=${category})} : @{/templates(category=${category})}"
+                   class="pf-btn pf-btn--sm"
+                   th:classappend="${selectedCategory == category ? ' pf-btn--primary' : ' pf-btn--ghost'}"
+                   th:text="${category.label}">Kategorie</a>
+                <a th:href="${wizardContext} ? @{/projects/new/template(q='')} : @{/templates/search}"
+                   class="pf-btn pf-btn--sm"
+                   th:classappend="${searchPage ? ' pf-btn--primary' : ' pf-btn--ghost'}">Suche</a>
+            </nav>
+        </aside>
+
+        <div>
+            <form th:action="${wizardContext} ? @{/projects/new/template} : @{/templates/search}" method="get" class="pf-card" style="display:flex;gap:.75rem;padding:1rem;margin-bottom:1.25rem">
+                <label for="template-search" style="position:absolute;left:-10000px">Vorlagen durchsuchen</label>
+                <input id="template-search" class="pf-input" name="q" th:value="${query}" placeholder="Titel oder Beschreibung durchsuchen">
+                <button class="pf-btn pf-btn--primary" type="submit">Suchen</button>
+            </form>
+
+            <section th:if="${wizardContext and !searchPage and !#lists.isEmpty(recommendedTemplates)}" style="margin-bottom:1.75rem">
+                <h2 style="margin-bottom:.25rem">Passend zu deinen Angaben</h2>
+                <p style="color:var(--pf-text-muted);margin-top:0">Ausgewählt anhand deiner Projektkategorie.</p>
+                <div class="pf-project-grid">
+                    <div th:each="item : ${recommendedTemplates}" class="pf-project-card">
+                        <div><div class="pf-project-card__top"><span class="pf-badge pf-badge--purple">Empfohlen</span><span class="pf-badge pf-badge--gray" th:text="${item.subcategory != null ? item.subcategory.label : (item.category != null ? item.category.label : 'Sonstiges')}">Kategorie</span></div>
+                            <h3 class="pf-project-card__title"><a th:href="@{/projects/new/template/{id}(id=${item.id},category=${selectedCategory})}" th:text="${item.title}">Vorlage</a></h3>
+                            <p th:if="${item.description}" th:text="${item.description}" style="font-size:.88rem;color:var(--pf-text-muted);margin-top:.5rem"></p></div>
+                        <div class="pf-project-card__meta" style="justify-content:space-between"><span th:text="${item.taskCount + ' Aufgaben'}"></span><span th:text="${item.milestoneCount + ' Meilensteine'}"></span></div>
+                    </div>
                 </div>
-                <h3 class="pf-project-card__title">
-                    <a th:href="@{/templates/{id}(id=${template.id})}" th:text="${template.title}">Vorlagentitel</a>
-                </h3>
-                <p th:if="${template.description}" th:text="${template.description}" style="font-size: 0.88rem; color: var(--pf-text-muted); margin-top: 0.5rem;"></p>
+            </section>
+
+            <h2 th:text="${searchPage ? (query.isBlank() ? 'Vorlagen suchen' : 'Suchergebnisse für „' + query + '“') : (selectedCategory == null ? 'Alle Vorlagen' : selectedCategory.label)}">Kategorie</h2>
+            <div th:if="${#lists.isEmpty(templates)}" class="pf-empty-state">
+                <div class="pf-empty-state__title" th:text="${searchPage and query.isBlank() ? 'Gib einen Suchbegriff ein' : 'Keine Vorlagen gefunden'}"></div>
+                <p class="pf-empty-state__text">Die Suche berücksichtigt ausschließlich Titel und Beschreibung.</p>
             </div>
-            <div class="pf-project-card__meta">
-                <a th:href="@{/templates/{id}(id=${template.id})}" class="pf-btn pf-btn--sm pf-btn--outline" style="width: 100%;">
-                    Details ansehen →
-                </a>
+            <div class="pf-project-grid" th:unless="${#lists.isEmpty(templates)}">
+                <div th:each="item : ${templates}" class="pf-project-card">
+                    <div><div class="pf-project-card__top"><span class="pf-badge pf-badge--gray" th:text="${item.subcategory != null ? item.subcategory.label : (item.category != null ? item.category.label : 'Sonstiges')}">Kategorie</span></div>
+                        <h3 class="pf-project-card__title"><a th:href="${wizardContext} ? @{/projects/new/template/{id}(id=${item.id},category=${selectedCategory},q=${searchPage ? query : null})} : @{/templates/{id}(id=${item.id},category=${selectedCategory},q=${searchPage ? query : null})}" th:text="${item.title}">Vorlage</a></h3>
+                        <p th:if="${item.description}" th:text="${item.description}" style="font-size:.88rem;color:var(--pf-text-muted);margin-top:.5rem"></p></div>
+                    <div class="pf-project-card__meta" style="justify-content:space-between"><span th:text="${item.taskCount + (item.taskCount == 1 ? ' Aufgabe' : ' Aufgaben')}"></span><span th:text="${item.milestoneCount + (item.milestoneCount == 1 ? ' Meilenstein' : ' Meilensteine')}"></span></div>
+                </div>
             </div>
         </div>
     </div>
 </main>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />
-</body>
-</html>
+</body></html>

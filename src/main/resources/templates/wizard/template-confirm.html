@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{fragments/layout :: head('Vorlage übernehmen')}" /></head>
+<body><th:block th:replace="~{fragments/layout :: site-header}" />
+<main>
+    <div class="pf-page-header"><div class="pf-page-header__left"><a th:href="@{/projects/new/template/{id}(id=${template.id})}" class="pf-page-header__back">← Zur Vorlagenvorschau</a><h1 style="margin:0">Vorlage übernehmen</h1><p class="pf-page-header__subtitle">Prüfe die Auswirkung auf dein Projekt, bevor die Vorlage materialisiert wird.</p></div></div>
+    <div class="pf-card" style="max-width:760px">
+        <h2 th:text="${template.title}">Vorlage</h2>
+        <div th:if="${dateAssessment.hasRelativeDates and dateAssessment.convertible}" class="pf-alert pf-alert--info">Die relativen Termine werden anhand deines Projektstarts in konkrete Daten umgerechnet.</div>
+        <div th:if="${dateAssessment.hasRelativeDates and !dateAssessment.convertible}" class="pf-alert pf-alert--warning">Ohne Projektstartdatum können die relativen Termine nicht zuverlässig umgerechnet werden. Sie werden bei der Übernahme entfernt; es werden keine Daten erfunden.</div>
+        <div th:unless="${dateAssessment.hasRelativeDates}" class="pf-alert pf-alert--info">Diese Vorlage enthält keine relativen Termine. Ihre Struktur wird unverändert übernommen.</div>
+        <div th:if="${confirmationError}" class="pf-alert pf-alert--error" th:text="${confirmationError}"></div>
+        <form th:action="@{/projects/new/template/confirm}" method="post">
+            <label class="pf-choice-card" style="margin:1rem 0"><input type="checkbox" name="confirmed" value="true"><span th:if="${dateAssessment.hasRelativeDates and dateAssessment.convertible}">Ich bestätige die Umrechnung und die Übernahme dieser Vorlage.</span><span th:if="${dateAssessment.hasRelativeDates and !dateAssessment.convertible}">Ich bestätige die Übernahme und akzeptiere, dass nicht umrechenbare relative Termine entfernt werden.</span><span th:unless="${dateAssessment.hasRelativeDates}">Ich bestätige die Übernahme dieser Vorlage.</span></label>
+            <div style="display:flex;justify-content:flex-end"><button class="pf-btn pf-btn--primary" type="submit">Projekt aus Vorlage erstellen →</button></div>
+        </form>
+    </div>
+</main><th:block th:replace="~{fragments/layout :: site-footer}" /></body></html>

@@ -58,7 +58,26 @@ public class ProjectWizardService {
             CreationType creationType, UUID userId, HttpSession session) {
         ProjectWizardState state = requireOwned(userId, session);
         state.setCreationType(creationType);
+        if (creationType != CreationType.TEMPLATE) {
+            state.setSelectedTemplateId(null);
+        }
         state.setCompletionToken(null);
+        session.setAttribute(SESSION_ATTRIBUTE, state);
+        return state;
+    }
+
+    public ProjectWizardState startWithTemplate(UUID templateId, UUID userId, HttpSession session) {
+        ProjectWizardState state = findOwned(userId, session).orElseGet(ProjectWizardState::new);
+        state.setUserId(userId);
+        state.setCreationType(CreationType.TEMPLATE);
+        state.setSelectedTemplateId(templateId);
+        session.setAttribute(SESSION_ATTRIBUTE, state);
+        return state;
+    }
+
+    public ProjectWizardState selectTemplate(UUID templateId, UUID userId, HttpSession session) {
+        ProjectWizardState state = requireOwnedFor(CreationType.TEMPLATE, userId, session);
+        state.setSelectedTemplateId(templateId);
         session.setAttribute(SESSION_ATTRIBUTE, state);
         return state;
     }

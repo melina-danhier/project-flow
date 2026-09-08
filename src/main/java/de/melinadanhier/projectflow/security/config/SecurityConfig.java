@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,12 +22,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/", "/login", "/register", "/error", "/css/**", "/js/**", "/images/**")
                         .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/templates", "/templates/**")
+                        .permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
                         .usernameParameter("email")
-                        .defaultSuccessUrl("/projects", true)
+                        .defaultSuccessUrl("/projects")
                         .failureUrl("/login?error")
                         .permitAll())
                 .logout(logout -> logout
