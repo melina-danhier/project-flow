@@ -175,6 +175,7 @@
                         <div class="pf-cluster">
                             <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
                             <span class="pf-badge pf-badge--gray" th:if="${element.stateLabel}" th:text="${element.stateLabel}"></span>
+                            <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
                             <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
                             <!-- Accessible element move controls when editable -->
                             <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Element anordnen">
@@ -309,6 +310,7 @@
                 <div class="pf-cluster">
                     <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
                     <span class="pf-badge pf-badge--gray" th:if="${element.stateLabel}" th:text="${element.stateLabel}"></span>
+                    <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
                     <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
                     <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Element anordnen">
                         <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost element-move-btn element-move-up" title="Nach oben verschieben" aria-label="Nach oben verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">▲</button>

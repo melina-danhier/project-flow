@@ -26,6 +26,7 @@ public class PlanElementViewDto {
     private TaskStatus taskStatus;
     private TaskPriority taskPriority;
     private boolean milestoneCompleted;
+    private boolean blocked;
     private ElementOrigin origin;
 
     public String getTypeLabel() {

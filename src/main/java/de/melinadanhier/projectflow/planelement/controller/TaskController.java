@@ -224,6 +224,8 @@ public class TaskController {
         model.addAttribute("sections", context.getAvailableSections());
         model.addAttribute("assignees", context.getAvailableAssignees());
         model.addAttribute("groupProject", context.isGroupProject());
+        model.addAttribute("taskBlocked", context.isBlocked());
+        model.addAttribute("openPrerequisites", context.getOpenPrerequisites());
         model.addAttribute("editing", editing);
     }
 

@@ -98,6 +98,12 @@ public class TaskService {
         dto.setSuccessors(successors.stream()
                 .map(successor -> new TaskReferenceDto(successor.getId(), successor.getTitle()))
                 .toList());
+        dto.setOpenPrerequisites(task.getPrerequisites().stream()
+                .filter(prerequisite -> prerequisite.getStatus() != TaskStatus.COMPLETED)
+                .map(prerequisite -> new TaskReferenceDto(prerequisite.getId(), prerequisite.getTitle()))
+                .toList());
+        dto.setBlocked(TaskDependencyPolicy.isBlocked(task));
+        dto.setTemporalDependencyWarnings(TaskDependencyPolicy.temporalWarnings(task, successors));
         dto.setAffectedDependencyCount(dto.getPredecessors().size() + dto.getSuccessors().size());
         populateOptions(dto, projectId);
         dto.setAvailablePrerequisites(taskRepository.findPlanTasks(projectId).stream()

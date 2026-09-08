@@ -28,6 +28,7 @@ import de.melinadanhier.projectflow.planelement.dto.SectionForm;
 import de.melinadanhier.projectflow.planelement.dto.TaskDependencyForm;
 import de.melinadanhier.projectflow.planelement.dto.TaskDetailsDto;
 import de.melinadanhier.projectflow.planelement.dto.TaskForm;
+import de.melinadanhier.projectflow.planelement.dto.TaskReferenceDto;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapperImpl;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
@@ -161,6 +162,63 @@ class ProjectCrudIntegrationTest {
         assertThat(taskRepository.findById(middle.getId())).isEmpty();
         assertThat(taskService.getTaskDetail(project.getId(), last.getId(), owner.getId()).getPredecessors())
                 .isEmpty();
+        assertThat(taskService.getTaskDetail(project.getId(), first.getId(), owner.getId()).getSuccessors())
+                .isEmpty();
+    }
+
+    @Test
+    void dependencyWarningsTrackDateChangesAndOpenPrerequisitesWithoutBlockingUpdates() {
+        User owner = saveUser("dependency-warning-owner@example.org");
+        Project project = saveProject("Hinweise", owner);
+        TaskForm prerequisiteCreate = taskForm("Konzept", null);
+        prerequisiteCreate.setDueDate(LocalDate.of(2026, 10, 10));
+        TaskDetailsDto prerequisite = taskService.createTask(project.getId(), prerequisiteCreate, owner.getId());
+        TaskForm successorCreate = taskForm("Umsetzung", null);
+        successorCreate.setStartDate(LocalDate.of(2026, 10, 11));
+        successorCreate.setDueDate(LocalDate.of(2026, 10, 20));
+        TaskDetailsDto successor = taskService.createTask(project.getId(), successorCreate, owner.getId());
+        createDependency(project, owner, prerequisite.getId(), successor.getId());
+
+        TaskDetailsDto initial = taskService.getTaskDetail(project.getId(), successor.getId(), owner.getId());
+        assertThat(initial.isBlocked()).isTrue();
+        assertThat(initial.getOpenPrerequisites()).extracting(TaskReferenceDto::getTitle)
+                .containsExactly("Konzept");
+        assertThat(initial.getTemporalDependencyWarnings()).isEmpty();
+
+        TaskForm conflictingDates = updateForm(initial);
+        conflictingDates.setStartDate(LocalDate.of(2026, 10, 5));
+        taskService.updateTask(project.getId(), successor.getId(), conflictingDates, owner.getId());
+
+        TaskDetailsDto withWarning = taskService.getTaskDetail(
+                project.getId(), successor.getId(), owner.getId());
+        assertThat(withWarning.getStartDate()).isEqualTo(LocalDate.of(2026, 10, 5));
+        assertThat(withWarning.getTemporalDependencyWarnings()).singleElement()
+                .asString().contains("Konzept", "10.10.2026", "Umsetzung", "05.10.2026");
+
+        TaskDetailsDto currentPrerequisite = taskService.getTaskDetail(
+                project.getId(), prerequisite.getId(), owner.getId());
+        TaskForm completePrerequisite = updateForm(currentPrerequisite);
+        completePrerequisite.setStatus(TaskStatus.COMPLETED);
+        taskService.updateTask(project.getId(), prerequisite.getId(), completePrerequisite, owner.getId());
+        assertThat(taskService.getTaskDetail(project.getId(), successor.getId(), owner.getId()).isBlocked())
+                .isFalse();
+
+        TaskDetailsDto reopenContext = taskService.getTaskDetail(
+                project.getId(), prerequisite.getId(), owner.getId());
+        TaskForm reopenPrerequisite = updateForm(reopenContext);
+        reopenPrerequisite.setStatus(TaskStatus.OPEN);
+        taskService.updateTask(project.getId(), prerequisite.getId(), reopenPrerequisite, owner.getId());
+
+        TaskDetailsDto completionContext = taskService.getTaskDetail(
+                project.getId(), successor.getId(), owner.getId());
+        TaskForm completeDespiteBlocker = updateForm(completionContext);
+        completeDespiteBlocker.setStatus(TaskStatus.COMPLETED);
+        taskService.updateTask(project.getId(), successor.getId(), completeDespiteBlocker, owner.getId());
+        TaskDetailsDto completed = taskService.getTaskDetail(
+                project.getId(), successor.getId(), owner.getId());
+        assertThat(completed.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        assertThat(completed.isBlocked()).isFalse();
+        assertThat(completed.getTemporalDependencyWarnings()).hasSize(1);
     }
 
     @Test
@@ -452,6 +510,19 @@ class ProjectCrudIntegrationTest {
         form.setTitle(title);
         form.setPriority(TaskPriority.MEDIUM);
         form.setPlanSectionId(sectionId);
+        return form;
+    }
+
+    private TaskForm updateForm(TaskDetailsDto task) {
+        TaskForm form = taskForm(task.getTitle(), task.getPlanSectionId());
+        form.setDescription(task.getDescription());
+        form.setSortOrder(task.getSortOrder());
+        form.setPriority(task.getPriority());
+        form.setStatus(task.getStatus());
+        form.setStartDate(task.getStartDate());
+        form.setDueDate(task.getDueDate());
+        form.setAssigneeId(task.getAssigneeId());
+        form.setLockVersion(task.getLockVersion());
         return form;
     }
 

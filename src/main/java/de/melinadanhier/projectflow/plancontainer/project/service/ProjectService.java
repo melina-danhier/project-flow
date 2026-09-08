@@ -41,6 +41,7 @@ import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
 import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
+import de.melinadanhier.projectflow.planelement.service.TaskDependencyPolicy;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -552,6 +553,7 @@ public class ProjectService {
         dto.setRelevantDate(task.getDueDate());
         dto.setTaskStatus(task.getStatus());
         dto.setTaskPriority(task.getPriority());
+        dto.setBlocked(TaskDependencyPolicy.isBlocked(task));
         return dto;
     }
 
