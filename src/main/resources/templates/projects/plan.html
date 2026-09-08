@@ -74,7 +74,7 @@
         <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/plan/sort-mode(projectId=${plan.project.id})}" method="post" class="pf-cluster" id="plan-sort-mode-form" style="margin: 0;">
             <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
             <label for="plan-sort-mode-select" class="pf-label" style="margin-bottom: 0; font-size: 0.85rem; color: var(--pf-text-secondary); font-weight: 600;">Modus ändern:</label>
-            <select id="plan-sort-mode-select" name="sortMode" class="pf-select" style="width: auto; padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="this.form.submit()">
+            <select id="plan-sort-mode-select" name="sortMode" class="pf-select" style="width: auto; padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="this.form.requestSubmit()">
                 <option value="DATE" th:selected="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</option>
                 <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
             </select>
@@ -355,6 +355,7 @@
     </div>
 </main>
 
+<script th:src="@{/js/plan-interactions.js}"></script>
 <script th:src="@{/js/plan-ordering.js}"></script>
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>
