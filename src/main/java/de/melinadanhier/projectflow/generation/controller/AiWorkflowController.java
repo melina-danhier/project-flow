@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.generation.controller;
 
 import de.melinadanhier.projectflow.generation.dto.workflow.AiWorkflowStatusDto;
+import de.melinadanhier.projectflow.generation.dto.precheck.OpenPointConfirmationForm;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
@@ -15,6 +16,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.validation.BindingResult;
+import jakarta.validation.Valid;
 
 import java.util.UUID;
 
@@ -84,11 +88,18 @@ public class AiWorkflowController {
     public String confirmOpenPointContext(
             @PathVariable UUID workflowId,
             @PathVariable int problemIndex,
-            @RequestParam String planningContext,
-            @AuthenticationPrincipal AuthenticatedUser currentUser
+            @Valid @ModelAttribute("openPointConfirmationForm") OpenPointConfirmationForm form,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model
     ) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("review", preCheckReviewService.getReview(workflowId, currentUser.userId()));
+            model.addAttribute("editingProblemIndex", problemIndex);
+            return "generation/ai-problems";
+        }
         if (preCheckReviewService.confirmOpenPointContext(
-                workflowId, currentUser.userId(), problemIndex, planningContext)) {
+                workflowId, currentUser.userId(), problemIndex, form.getPlanningContext())) {
             return "redirect:/projects/new/ai/status/" + workflowId;
         }
         return preCheckReviewRedirect(workflowId);

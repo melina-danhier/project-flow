@@ -91,6 +91,9 @@
             <form id="ai-confirmation-form" th:action="@{/projects/new/ai/confirm}"
                   th:object="${aiProcessingConsentForm}" method="post">
                 <input type="hidden" th:field="*{completionToken}">
+                <p th:if="${#fields.hasErrors('completionToken')}" class="pf-alert pf-alert--error" role="alert">
+                    Die Zusammenfassung ist nicht mehr aktuell. Bitte lade die Seite neu.
+                </p>
                 
                 <label for="consent" style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer;">
                     <input id="consent" type="checkbox" th:field="*{consent}" style="margin-top: 0.25rem;">

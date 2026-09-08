@@ -66,15 +66,33 @@
                 <th:block th:if="${draft.status.name() != 'APPLIED'}">
                     <div th:replace="~{fragments/draft-components :: review-actions('sections', ${section.id}, ${draft.projectId}, ${section.reviewStatus.name()}, ${draft.lockVersion})}"></div>
                 </th:block>
-                <details class="section-edit" th:if="${draft.status.name() != 'APPLIED'}">
+                <details class="section-edit" th:if="${draft.status.name() != 'APPLIED'}"
+                         th:open="${editingDraftSectionId == section.id}">
                     <summary>Bearbeiten</summary>
-                    <form th:action="@{/projects/{projectId}/draft/sections/{sectionId}(projectId=${draft.projectId},sectionId=${section.id})}" method="post">
+                    <form th:unless="${editingDraftSectionId == section.id}"
+                          th:action="@{/projects/{projectId}/draft/sections/{sectionId}(projectId=${draft.projectId},sectionId=${section.id})}" method="post">
                         <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
                         <label th:for="${'draft-section-title-' + section.id}">Titel</label>
                         <input th:id="${'draft-section-title-' + section.id}" name="title" th:value="${section.title}" required maxlength="100">
                         <label th:for="${'draft-section-description-' + section.id}">Beschreibung</label>
                         <textarea th:id="${'draft-section-description-' + section.id}" name="description" maxlength="2000"
                                   th:text="${section.description}" placeholder="Optionale Beschreibung"></textarea>
+                        <button type="submit">Bereich speichern</button>
+                    </form>
+                    <form th:if="${editingDraftSectionId == section.id}" th:object="${draftSectionForm}"
+                          th:action="@{/projects/{projectId}/draft/sections/{sectionId}(projectId=${draft.projectId},sectionId=${section.id})}" method="post">
+                        <input type="hidden" th:field="*{lockVersion}">
+                        <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error" role="alert">
+                            Der Entwurf konnte nicht gespeichert werden, weil der Bearbeitungsstand ungültig ist. Bitte lade die Seite neu.
+                        </div>
+                        <div th:each="error : ${#fields.globalErrors()}" th:text="${error}" class="pf-alert pf-alert--error" role="alert"></div>
+                        <label th:for="${'draft-section-title-' + section.id}">Titel</label>
+                        <input th:id="${'draft-section-title-' + section.id}" th:field="*{title}" required maxlength="100">
+                        <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="pf-alert pf-alert--error" role="alert"></div>
+                        <label th:for="${'draft-section-description-' + section.id}">Beschreibung</label>
+                        <textarea th:id="${'draft-section-description-' + section.id}" th:field="*{description}" maxlength="2000"
+                                  placeholder="Optionale Beschreibung"></textarea>
+                        <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="pf-alert pf-alert--error" role="alert"></div>
                         <button type="submit">Bereich speichern</button>
                     </form>
                 </details>
@@ -93,9 +111,10 @@
                         <div th:if="${element.type == 'TASK' and element.startDate != null}"><dt>Startdatum</dt><dd><time th:datetime="${element.startDate}" th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy')}"></time></dd></div>
                         <div th:if="${element.dueDate != null}"><dt th:text="${element.type == 'TASK' ? 'Fällig am' : 'Datum'}"></dt><dd><time th:datetime="${element.dueDate}" th:text="${#temporals.format(element.dueDate, 'dd.MM.yyyy')}"></time></dd></div>
                     </dl>
-                    <details class="element-edit" th:if="${draft.status.name() != 'APPLIED'}">
+                    <details class="element-edit" th:if="${draft.status.name() != 'APPLIED'}"
+                             th:open="${editingDraftTaskId == element.id or editingDraftMilestoneId == element.id}">
                         <summary>Bearbeiten</summary>
-                        <th:block th:replace="~{fragments/draft-components :: element-edit-forms(${element}, ${draft.projectId}, ${draft.lockVersion})}" />
+                        <th:block th:replace="~{fragments/draft-components :: element-edit-forms(${element}, ${draft.projectId}, ${draft.lockVersion}, ${editingDraftTaskId}, ${editingDraftMilestoneId})}" />
                     </details>
                 </li>
             </ol>

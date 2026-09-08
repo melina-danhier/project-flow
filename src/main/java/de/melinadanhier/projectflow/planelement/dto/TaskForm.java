@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.AssertTrue;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -46,4 +47,9 @@ public class TaskForm {
     @PositiveOrZero
     @NotNull(groups = UpdateValidation.class)
     private Long lockVersion;
+
+    @AssertTrue(message = "Das Fälligkeitsdatum darf nicht vor dem Startdatum liegen.")
+    public boolean isDateRangeValid() {
+        return startDate == null || dueDate == null || !dueDate.isBefore(startDate);
+    }
 }

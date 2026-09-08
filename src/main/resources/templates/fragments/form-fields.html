@@ -41,6 +41,8 @@
         <option value="">Ohne Bereich (Allgemein)</option>
         <option th:each="s : ${sectionList}" th:value="${s.id}" th:text="${s.title}"></option>
     </select>
+    <div th:if="${#fields.hasErrors('planSectionId')}" class="pf-alert pf-alert--error"
+         th:errors="*{planSectionId}" role="alert"></div>
 </div>
 
 </body>

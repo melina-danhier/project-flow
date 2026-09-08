@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Änderungskonflikt')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+<main>
+    <div class="pf-card" style="max-width: 680px; margin: 3rem auto; text-align: center;">
+        <span class="pf-badge pf-badge--yellow">Konflikt</span>
+        <h1>Die Änderung konnte nicht übernommen werden</h1>
+        <p th:text="${errorMessage}">Der Zustand wurde zwischenzeitlich geändert.</p>
+        <button class="pf-btn pf-btn--primary" type="button" onclick="window.location.reload()">Seite neu laden</button>
+        <a class="pf-btn pf-btn--secondary" th:href="@{/projects}">Zur Projektübersicht</a>
+    </div>
+</main>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

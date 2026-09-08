@@ -60,6 +60,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -152,6 +153,22 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(content().string(not(containsString("Warnung eins"))))
                 .andExpect(content().string(containsString("Annahme zwei")));
         verify(aiClient, never()).generatePlan(any());
+
+        String invalidContext = "Zu ausführliche Planungsgrundlage ".repeat(40);
+        mockMvc.perform(post(confirmUrl(workflowId, 1)).session(session).with(user(principal)).with(csrf())
+                        .param("planningContext", invalidContext))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/ai-problems"))
+                .andExpect(model().attributeHasFieldErrors(
+                        "openPointConfirmationForm", "planningContext"))
+                .andExpect(content().string(containsString(
+                        org.springframework.web.util.HtmlUtils.htmlEscape(invalidContext))))
+                .andExpect(content().string(containsString(
+                        "Die Planungsgrundlage darf höchstens 1000 Zeichen lang sein.")));
+        assertThat(workflowRepository.findById(workflowId).orElseThrow()
+                .getAcceptedOpenPointIndices()).containsExactly(0);
+        assertThat(workflowRepository.findById(workflowId).orElseThrow()
+                .getCustomOpenPointInterpretations()).doesNotContainKey(1);
 
         CountDownLatch generationStarted = new CountDownLatch(1);
         CountDownLatch releaseGeneration = new CountDownLatch(1);

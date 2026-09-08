@@ -38,8 +38,8 @@
           th:text="${element.reviewStatus.name() == 'PENDING' ? 'Offen' : (element.reviewStatus.name() == 'ACCEPTED' ? 'Übernommen' : 'Verworfen')}"></span>
 </div>
 
-<th:block th:fragment="element-edit-forms(element, projectId, lockVersion)">
-    <form th:if="${element.type == 'TASK'}"
+<th:block th:fragment="element-edit-forms(element, projectId, lockVersion, editingDraftTaskId, editingDraftMilestoneId)">
+    <form th:if="${element.type == 'TASK' and editingDraftTaskId != element.id}"
           th:action="@{/projects/{pId}/draft/tasks/{tId}(pId=${projectId},tId=${element.id})}"
           method="post">
         <input type="hidden" name="lockVersion" th:value="${lockVersion}">
@@ -66,7 +66,41 @@
                th:value="${element.dueDate}">
         <button type="submit">Aufgabe speichern</button>
     </form>
-    <form th:if="${element.type == 'MILESTONE'}"
+    <form th:if="${element.type == 'TASK' and editingDraftTaskId == element.id}"
+          th:object="${draftTaskForm}"
+          th:action="@{/projects/{pId}/draft/tasks/{tId}(pId=${projectId},tId=${element.id})}"
+          method="post">
+        <input type="hidden" th:field="*{lockVersion}">
+        <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error" role="alert">
+            Der Entwurf konnte nicht gespeichert werden, weil der Bearbeitungsstand ungültig ist. Bitte lade die Seite neu.
+        </div>
+        <div th:each="error : ${#fields.globalErrors()}" th:text="${error}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'task-title-' + element.id}">Titel</label>
+        <input th:id="${'task-title-' + element.id}" th:field="*{title}" required maxlength="100">
+        <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'task-description-' + element.id}">Beschreibung</label>
+        <textarea th:id="${'task-description-' + element.id}" th:field="*{description}" maxlength="2000"></textarea>
+        <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'task-priority-' + element.id}">Priorität</label>
+        <select th:id="${'task-priority-' + element.id}" th:field="*{priority}">
+            <option value="LOW">Niedrig</option>
+            <option value="MEDIUM">Mittel</option>
+            <option value="HIGH">Hoch</option>
+        </select>
+        <div th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'task-hours-' + element.id}">Aufwand in Stunden</label>
+        <input th:id="${'task-hours-' + element.id}" type="number" th:field="*{estimatedHours}" min="1">
+        <div th:if="${#fields.hasErrors('estimatedHours')}" th:errors="*{estimatedHours}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'task-start-' + element.id}">Startdatum</label>
+        <input th:id="${'task-start-' + element.id}" type="date" th:field="*{startDate}">
+        <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'task-due-' + element.id}">Deadline</label>
+        <input th:id="${'task-due-' + element.id}" type="date" th:field="*{dueDate}">
+        <div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error" role="alert"></div>
+        <div th:if="${#fields.hasErrors('dateRangeValid')}" th:errors="*{dateRangeValid}" class="pf-alert pf-alert--error" role="alert"></div>
+        <button type="submit">Aufgabe speichern</button>
+    </form>
+    <form th:if="${element.type == 'MILESTONE' and editingDraftMilestoneId != element.id}"
           th:action="@{/projects/{pId}/draft/milestones/{mId}(pId=${projectId},mId=${element.id})}"
           method="post">
         <input type="hidden" name="lockVersion" th:value="${lockVersion}">
@@ -76,6 +110,23 @@
         <label th:for="${'milestone-date-' + element.id}">Datum</label>
         <input th:id="${'milestone-date-' + element.id}" type="date" name="dueDate"
                th:value="${element.dueDate}">
+        <button type="submit">Meilenstein speichern</button>
+    </form>
+    <form th:if="${element.type == 'MILESTONE' and editingDraftMilestoneId == element.id}"
+          th:object="${draftMilestoneForm}"
+          th:action="@{/projects/{pId}/draft/milestones/{mId}(pId=${projectId},mId=${element.id})}"
+          method="post">
+        <input type="hidden" th:field="*{lockVersion}">
+        <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error" role="alert">
+            Der Entwurf konnte nicht gespeichert werden, weil der Bearbeitungsstand ungültig ist. Bitte lade die Seite neu.
+        </div>
+        <div th:each="error : ${#fields.globalErrors()}" th:text="${error}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'milestone-title-' + element.id}">Titel</label>
+        <input th:id="${'milestone-title-' + element.id}" th:field="*{title}" required maxlength="100">
+        <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'milestone-date-' + element.id}">Datum</label>
+        <input th:id="${'milestone-date-' + element.id}" type="date" th:field="*{dueDate}">
+        <div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error" role="alert"></div>
         <button type="submit">Meilenstein speichern</button>
     </form>
 </th:block>

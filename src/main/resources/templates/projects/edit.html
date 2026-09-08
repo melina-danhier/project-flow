@@ -24,6 +24,9 @@
     <div class="pf-card" style="max-width: 760px;">
         <form th:action="@{/projects/{id}/edit(id=${project.id})}" th:object="${projectForm}" method="post">
             <input type="hidden" th:field="*{lockVersion}">
+            <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error" role="alert">
+                Das Projekt konnte nicht gespeichert werden, weil der Bearbeitungsstand ungültig ist. Bitte lade die Seite neu.
+            </div>
             
             <div th:each="error : ${#fields.globalErrors()}" th:text="${error}" class="pf-alert pf-alert--error" role="alert"></div>
 
@@ -51,12 +54,15 @@
                 <div class="pf-form-group">
                     <label for="startDate" class="pf-label">Startdatum</label>
                     <input id="startDate" type="date" th:field="*{startDate}" class="pf-input">
+                    <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
                 <div class="pf-form-group">
                     <label for="endDate" class="pf-label">Enddatum</label>
                     <input id="endDate" type="date" th:field="*{endDate}" class="pf-input">
+                    <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
             </div>
+            <div th:if="${#fields.hasErrors('dateRangeValid')}" th:errors="*{dateRangeValid}" class="pf-alert pf-alert--error" role="alert"></div>
 
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <a th:href="@{/projects/{id}/plan(id=${project.id})}" class="pf-btn pf-btn--secondary">Abbrechen</a>
