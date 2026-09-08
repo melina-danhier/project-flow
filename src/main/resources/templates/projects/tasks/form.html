@@ -39,6 +39,15 @@
                         <option value="IN_PROGRESS">In Bearbeitung</option>
                         <option value="COMPLETED">Erledigt</option>
                     </select>
+                    <div id="blocked-completion-warning" th:if="${editing and taskBlocked}"
+                         class="pf-alert pf-alert--warning" role="status" hidden style="margin-top: 0.75rem;">
+                        <div>
+                            <span>Folgende Voraussetzungen sind noch offen. Du kannst die Aufgabe trotzdem als erledigt speichern:</span>
+                            <ul style="margin: 0.5rem 0 0 1.25rem;">
+                                <li th:each="prerequisite : ${openPrerequisites}" th:text="${prerequisite.title}"></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="pf-form-group">
@@ -81,6 +90,16 @@
         </form>
     </div>
 </main>
+
+<script th:if="${editing and taskBlocked}">
+    (() => {
+        const status = document.getElementById('status');
+        const warning = document.getElementById('blocked-completion-warning');
+        const updateWarning = () => warning.hidden = status.value !== 'COMPLETED';
+        status.addEventListener('change', updateWarning);
+        updateWarning();
+    })();
+</script>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>

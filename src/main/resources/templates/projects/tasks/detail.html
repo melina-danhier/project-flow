@@ -23,6 +23,7 @@
                 <span class="pf-badge"
                       th:classappend="${task.priority != null and task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority != null and task.priority.name() == 'MEDIUM' ? 'pf-badge--yellow' : 'pf-badge--gray')}"
                       th:text="${task.priority}">Priorität</span>
+                <span class="pf-badge pf-badge--warning" th:if="${task.blocked}">Blockiert</span>
             </div>
         </div>
 
@@ -80,6 +81,20 @@
             <!-- Prerequisites Card -->
             <div class="pf-card">
                 <h3 style="margin-bottom: 0.85rem;">Voraussetzungen</h3>
+                <div th:if="${task.blocked}" class="pf-alert pf-alert--warning" role="status">
+                    <span>Diese Aufgabe wartet noch auf:</span>
+                    <ul style="margin: 0.5rem 0 0 1.25rem;">
+                        <li th:each="prerequisite : ${task.openPrerequisites}" th:text="${prerequisite.title}"></li>
+                    </ul>
+                </div>
+                <div th:unless="${#lists.isEmpty(task.temporalDependencyWarnings)}"
+                     class="pf-alert pf-alert--warning" role="status" style="display: block;">
+                    <strong>Hinweis zur zeitlichen Reihenfolge</strong>
+                    <ul style="margin: 0.5rem 0 0 1.25rem;">
+                        <li th:each="warning : ${task.temporalDependencyWarnings}" th:text="${warning}"></li>
+                    </ul>
+                    <small>Die Planung bleibt trotzdem speicherbar.</small>
+                </div>
                 <p th:if="${#lists.isEmpty(task.predecessors)}" style="color: var(--pf-text-muted); font-size: 0.9rem;">Keine Voraussetzungen definiert.</p>
                 <ul th:unless="${#lists.isEmpty(task.predecessors)}" class="pf-element-list" style="margin-bottom: 1rem;">
                     <li th:each="prerequisite : ${task.predecessors}" class="pf-element-item">

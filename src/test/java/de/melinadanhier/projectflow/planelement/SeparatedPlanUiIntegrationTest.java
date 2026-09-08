@@ -303,6 +303,64 @@ class SeparatedPlanUiIntegrationTest {
     }
 
     @Test
+    void dependencyAndCompletionWarningsAreVisibleButDoNotBlockSaving() throws Exception {
+        User owner = saveUser("dependency-warning-ui-owner@example.org");
+        Project project = saveProject("Abhängigkeitshinweise", owner);
+        SectionDto section = createSection(project, owner, "Umsetzung");
+        Task prerequisite = createTask(project, owner, section.getId(), "Vorbereitung");
+        prerequisite.setDueDate(LocalDate.of(2026, 10, 10));
+        taskRepository.saveAndFlush(prerequisite);
+        Task successor = createTask(project, owner, section.getId(), "Durchführung");
+        successor.setStartDate(LocalDate.of(2026, 10, 5));
+        successor.setDueDate(LocalDate.of(2026, 10, 20));
+        taskRepository.saveAndFlush(successor);
+        MockHttpSession session = login(owner.getEmail());
+
+        mockMvc.perform(post("/projects/{projectId}/tasks/{taskId}/dependencies",
+                                project.getId(), successor.getId())
+                        .session(session).with(csrf())
+                        .param("prerequisiteTaskId", prerequisite.getId().toString()))
+                .andExpect(status().is3xxRedirection());
+
+        mockMvc.perform(get("/projects/{projectId}/tasks/{taskId}", project.getId(), successor.getId())
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Blockiert")))
+                .andExpect(content().string(containsString("Hinweis zur zeitlichen Reihenfolge")))
+                .andExpect(content().string(containsString("10.10.2026")))
+                .andExpect(content().string(containsString("05.10.2026")))
+                .andExpect(content().string(containsString("Die Planung bleibt trotzdem speicherbar.")));
+
+        mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Blockiert")));
+
+        mockMvc.perform(get("/projects/{projectId}/tasks/{taskId}/edit", project.getId(), successor.getId())
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "Folgende Voraussetzungen sind noch offen. Du kannst die Aufgabe trotzdem als erledigt speichern:")))
+                .andExpect(content().string(containsString("Vorbereitung")));
+
+        Task current = taskRepository.findById(successor.getId()).orElseThrow();
+        mockMvc.perform(post("/projects/{projectId}/tasks/{taskId}", project.getId(), successor.getId())
+                        .session(session).with(csrf())
+                        .param("title", current.getTitle())
+                        .param("priority", current.getPriority().name())
+                        .param("status", TaskStatus.COMPLETED.name())
+                        .param("planSectionId", section.getId().toString())
+                        .param("startDate", current.getStartDate().toString())
+                        .param("dueDate", current.getDueDate().toString())
+                        .param("sortOrder", String.valueOf(current.getSortOrder()))
+                        .param("lockVersion", String.valueOf(current.getLockVersion())))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/tasks/" + successor.getId()));
+
+        assertThat(taskRepository.findById(successor.getId()).orElseThrow().getStatus())
+                .isEqualTo(TaskStatus.COMPLETED);
+    }
+
+    @Test
     void memberManagementIsOwnerOnlyActiveAndRemovalClearsTaskAssignments() throws Exception {
         User owner = saveUser("members-ui-owner@example.org");
         User member = saveUser("members-ui-member@example.org");

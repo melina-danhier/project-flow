@@ -28,12 +28,15 @@ public interface PlanElementMapper {
     @Mapping(target = "prerequisiteIds", source = "prerequisites")
     @Mapping(target = "predecessors", ignore = true)
     @Mapping(target = "successors", ignore = true)
+    @Mapping(target = "openPrerequisites", ignore = true)
+    @Mapping(target = "temporalDependencyWarnings", ignore = true)
     @Mapping(target = "availablePrerequisites", ignore = true)
     @Mapping(target = "availableAssignees", ignore = true)
     @Mapping(target = "affectedDependencyCount", ignore = true)
     @Mapping(target = "editable", ignore = true)
     @Mapping(target = "availableSections", ignore = true)
     @Mapping(target = "groupProject", ignore = true)
+    @Mapping(target = "blocked", ignore = true)
     TaskDetailsDto toDetailsDto(Task task);
 
     @Mapping(target = "planContainerId", source = "planContainer.id")
