@@ -371,7 +371,7 @@ public class ProjectWizardController {
         return "redirect:/projects";
     }
 
-    @PostMapping("/projects/new/ai/problems/{workflowId}/edit")
+    @PostMapping({"/projects/new/ai/problems/{workflowId}/edit", "/projects/new/ai/status/{workflowId}/edit"})
     public String editAiInputsAfterPreCheck(
             @PathVariable UUID workflowId,
             @AuthenticationPrincipal AuthenticatedUser currentUser,

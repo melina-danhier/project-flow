@@ -16,6 +16,22 @@ class AiWorkflowStatusDtoTest {
     void onlyRetryablePlanGenerationFailureCanBeRestartedFromStatusPage() {
         assertThat(status(AiOperation.PLAN_GENERATION).canRetry()).isTrue();
         assertThat(status(AiOperation.PRE_CHECK).canRetry()).isFalse();
+        assertThat(new AiWorkflowStatusDto(
+                UUID.randomUUID(), UUID.randomUUID(),
+                AiPlanGenerationWorkflowStatus.GENERATION_FAILED,
+                0, 1, 1,
+                AiTechnicalErrorCode.INVALID_AI_RESPONSE,
+                AiOperation.PLAN_GENERATION, false).canRetry()).isTrue();
+    }
+
+    @Test
+    void canReturnToSummaryWhenNotProcessingAndNotCompleted() {
+        assertThat(status(AiPlanGenerationWorkflowStatus.GENERATION_FAILED).canReturnToSummary()).isTrue();
+        assertThat(status(AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE).canReturnToSummary()).isTrue();
+        assertThat(status(AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED).canReturnToSummary()).isTrue();
+        assertThat(status(AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED).canReturnToSummary()).isTrue();
+        assertThat(status(AiPlanGenerationWorkflowStatus.GENERATION_RUNNING).canReturnToSummary()).isFalse();
+        assertThat(status(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED).canReturnToSummary()).isFalse();
     }
 
     @Test

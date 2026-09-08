@@ -41,17 +41,17 @@ public class AiPlanGenerationCoordinator {
             workflowService.recordSuccess(workflowId, work.runId(), result);
         } catch (AiOutputValidationException exception) {
             var error = classify(exception);
-            log.warn("Plangenerierung für Workflow {} endete ohne valide Modellausgabe.",
-                    workflowId, error.cause());
+            log.warn("Plangenerierung für Workflow {} endete ohne valide Modellausgabe. Validierungsfehler: {}",
+                    workflowId, exception.getValidationIssues(), error.cause());
             workflowService.recordGenerationFailure(workflowId, work.runId(), error);
         } catch (AiTechnicalException exception) {
             var error = classify(exception);
-            log.warn("Plangenerierung für Workflow {} ist technisch fehlgeschlagen (Fehlercode {}).",
-                    workflowId, error.errorCode(), error.cause());
+            log.warn("Plangenerierung für Workflow {} ist technisch fehlgeschlagen (Fehlercode {}): {}.",
+                    workflowId, error.errorCode(), exception.getMessage(), error.cause());
             workflowService.recordTechnicalFailure(workflowId, work.runId(), error);
         } catch (RuntimeException exception) {
-            log.error("Plangenerierung für Workflow {} ist technisch fehlgeschlagen (Fehlertyp {}).",
-                    workflowId, exception.getClass().getSimpleName(), exception);
+            log.error("Plangenerierung für Workflow {} ist technisch fehlgeschlagen (Fehlertyp {}): {}.",
+                    workflowId, exception.getClass().getSimpleName(), exception.getMessage(), exception);
             workflowService.recordTechnicalFailure(workflowId, work.runId(), classify(exception));
         }
     }

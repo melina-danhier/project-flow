@@ -148,8 +148,11 @@ public class AiGenerationWorkflowService {
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
         if ((workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_FAILED
                 && workflow.getStatus() != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
-                || workflow.getLastAiOperation() != AiOperation.PLAN_GENERATION
-                || !Boolean.TRUE.equals(workflow.getLastErrorRetryable())) {
+                || workflow.getLastAiOperation() != AiOperation.PLAN_GENERATION) {
+            throw new ConflictException("Die Generierung kann in diesem Zustand nicht erneut gestartet werden.");
+        }
+        if (workflow.getStatus() == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
+                && workflow.getLastTechnicalError() == AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR) {
             throw new ConflictException("Die Generierung kann in diesem Zustand nicht erneut gestartet werden.");
         }
         Instant now = Instant.now(clock);

@@ -54,7 +54,7 @@ public class PreCheckResultValidator {
         }
         if (!issues.isEmpty()) {
             throw new AiOutputValidationException(
-                    "Der KI-Pre-Check verletzt das erwartete Output-Schema.", issues);
+                    "Der KI-Pre-Check verletzt das erwartete Output-Schema: " + issues, issues);
         }
     }
 }
