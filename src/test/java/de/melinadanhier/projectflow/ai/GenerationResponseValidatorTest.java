@@ -70,10 +70,10 @@ class GenerationResponseValidatorTest {
     @Test
     void sectionAndMilestoneIdsAreNotPartOfTheTaskReferenceNamespace() {
         GeneratedSection section = section("shared", 1, PROJECT_START, PROJECT_END, List.of(
-                task("shared", "Aufgabe 1", 1, PROJECT_START, PROJECT_START),
-                task("task-2", "Aufgabe 2", 2, PROJECT_START, PROJECT_START),
-                task("task-3", "Aufgabe 3", 3, PROJECT_START, PROJECT_START)),
-                List.of(milestone("shared", 1, PROJECT_END)));
+                task("shared", "Aufgabe 1", 100, PROJECT_START, PROJECT_START),
+                task("task-2", "Aufgabe 2", 200, PROJECT_START, PROJECT_START),
+                task("task-3", "Aufgabe 3", 300, PROJECT_START, PROJECT_START)),
+                List.of(milestone("shared", 400, PROJECT_END)));
         assertThat(validator.validate(plan(section), scheduledRequest()).isValid()).isTrue();
     }
 
@@ -102,8 +102,8 @@ class GenerationResponseValidatorTest {
                         task("task-2", "Zwei", 2, PROJECT_START, PROJECT_START),
                         task("task-3", "Drei", 2, PROJECT_START, PROJECT_START)),
                 List.of(
-                        milestone("milestone-1", 1, PROJECT_START),
-                        milestone("milestone-2", 1, PROJECT_START)));
+                        milestone("milestone-1", 10, PROJECT_START),
+                        milestone("milestone-2", 10, PROJECT_START)));
         GeneratedSection second = section("section-2", 1, PROJECT_START, PROJECT_END,
                 List.of(task("task-4", "Vier", 1, PROJECT_START, PROJECT_START)), List.of());
 
@@ -113,17 +113,40 @@ class GenerationResponseValidatorTest {
     }
 
     @Test
-    void scheduledTasksRequireOnlyTheDueDate() {
-        GeneratedSection section = section("section-1", 1, PROJECT_START, PROJECT_END,
+    void rejectsDuplicateOrderBetweenTaskAndMilestoneWithinSameSection() {
+        GeneratedSection section = section("section-1", 100, PROJECT_START, PROJECT_END,
+                List.of(
+                        task("task-1", "Aufgabe 1", 100, PROJECT_START, PROJECT_START),
+                        task("task-2", "Aufgabe 2", 200, PROJECT_START, PROJECT_START),
+                        task("task-3", "Aufgabe 3", 300, PROJECT_START, PROJECT_START)),
+                List.of(
+                        milestone("milestone-1", 200, PROJECT_END)));
+
+        assertCodes(validator.validate(plan(section), scheduledRequest()), MILESTONE_ORDER_DUPLICATE);
+    }
+
+    @Test
+    void acceptsSparseAndNonSequentialOrdersAcrossTasksAndMilestones() {
+        GeneratedSection section = section("section-1", 100, PROJECT_START, PROJECT_END,
+                List.of(
+                        task("task-1", "Aufgabe 1", 100, PROJECT_START, PROJECT_START),
+                        task("task-2", "Aufgabe 2", 200, PROJECT_START, PROJECT_START),
+                        task("task-3", "Aufgabe 3", 400, PROJECT_START, PROJECT_START)),
+                List.of(
+                        milestone("milestone-1", 300, PROJECT_END)));
+
+        assertThat(validator.validate(plan(section), scheduledRequest()).isValid()).isTrue();
+    }
+
+    @Test
+    void scheduledTasksMayHaveConcreteDatesOrRemainUndated() {
+        GeneratedSection validSection = section("section-1", 1, PROJECT_START, PROJECT_END,
                 List.of(
                         task("task-1", "Nur Start", 1, PROJECT_START, null),
                         task("task-2", "Nur Ende", 2, null, PROJECT_END),
-                        task("task-3", "Nur Ende", 3, null, PROJECT_END)), List.of());
+                        task("task-3", "Ohne Datum", 3, null, null)), List.of());
 
-        assertThat(validator.validate(plan(section), scheduledRequest()).issues())
-                .filteredOn(issue -> issue.code() == TASK_DUE_DATE_MISSING)
-                .singleElement().satisfies(issue -> assertThat(issue.fieldPath())
-                        .isEqualTo("sections[0].tasks[0].dueDate"));
+        assertThat(validator.validate(plan(validSection), scheduledRequest()).isValid()).isTrue();
     }
 
     @Test
@@ -132,7 +155,7 @@ class GenerationResponseValidatorTest {
         LocalDate after = PROJECT_END.plusDays(1);
         GeneratedSection section = section("section-1", 1, before, after,
                 List.of(task("task-1", "Aufgabe", 1, before, after)),
-                List.of(milestone("milestone-1", 1, after)));
+                List.of(milestone("milestone-1", 2, after)));
 
         assertCodes(validator.validate(plan(section), scheduledRequest()),
                 TASK_DATE_OUTSIDE_PROJECT, MILESTONE_DATE_OUTSIDE_PROJECT);
@@ -141,15 +164,15 @@ class GenerationResponseValidatorTest {
     @Test
     void scheduledMilestonesRequireDatesWhileUndatedPlansMayContainDates() {
         GeneratedSection scheduled = section("section-1", 1, null, null, validTasks(),
-                List.of(milestone("milestone-1", 1, null)));
+                List.of(milestone("milestone-1", 4, null)));
         assertCodes(validator.validate(plan(scheduled), scheduledRequest()), MILESTONE_DATE_MISSING);
 
         GeneratedSection undated = section("section-1", 1, null, null,
                 List.of(
-                        task("task-1", "Aufgabe 1", 1, PROJECT_START, PROJECT_START),
-                        task("task-2", "Aufgabe 2", 2, null, null),
-                        task("task-3", "Aufgabe 3", 3, null, PROJECT_END)),
-                List.of(milestone("milestone-1", 1, PROJECT_END)));
+                        task("task-1", "Aufgabe 1", 100, PROJECT_START, PROJECT_START),
+                        task("task-2", "Aufgabe 2", 200, null, null),
+                        task("task-3", "Aufgabe 3", 300, null, PROJECT_END)),
+                List.of(milestone("milestone-1", 400, PROJECT_END)));
         assertThat(validator.validate(plan(undated), undatedRequest()).isValid()).isTrue();
     }
 
@@ -240,7 +263,7 @@ class GenerationResponseValidatorTest {
                 tooManyTasks, List.of())), undatedRequest()), TASK_LIMIT_EXCEEDED);
 
         List<GeneratedMilestone> tooManyMilestones = IntStream.rangeClosed(1, 101)
-                .mapToObj(index -> milestone("milestone-" + index, index, null)).toList();
+                .mapToObj(index -> milestone("milestone-" + index, 1000 + index, null)).toList();
         assertCodes(validator.validate(plan(section("section-1", 1, null, null,
                 validTasks(), tooManyMilestones)), undatedRequest()), MILESTONE_LIMIT_EXCEEDED);
 
@@ -288,7 +311,7 @@ class GenerationResponseValidatorTest {
                         task("task-1", "Aufgabe 1", 1, PROJECT_START, PROJECT_END),
                         task("task-2", "Aufgabe 2", 2, PROJECT_START, PROJECT_END),
                         task("task-3", "Aufgabe 3", 3, PROJECT_START, PROJECT_END)),
-                List.of(milestone("milestone-1", 1, PROJECT_END))));
+                List.of(milestone("milestone-1", 4, PROJECT_END))));
     }
 
     private GeneratedPlanResponse plan(GeneratedSection... sections) {

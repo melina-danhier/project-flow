@@ -55,11 +55,12 @@ final class GenerationStructureValidator {
         requiredText(SECTION_TITLE_MISSING, section.title());
         optionalText(SECTION_DESCRIPTION_BLANK, path + ".description", section.description());
         positiveOrder(SECTION_ORDER_INVALID, SECTION_ORDER_DUPLICATE, section.order(), orders);
-        validateTasks(section, path);
-        validateMilestones(section, path);
+        Set<Integer> elementOrders = new HashSet<>();
+        validateTasks(section, path, elementOrders);
+        validateMilestones(section, path, elementOrders);
     }
 
-    private void validateTasks(GeneratedSection section, String sectionPath) {
+    private void validateTasks(GeneratedSection section, String sectionPath, Set<Integer> elementOrders) {
         List<GeneratedTask> tasks = section.tasks();
         if (tasks == null) {
             addIssue(TASKS_MISSING);
@@ -71,7 +72,6 @@ final class GenerationStructureValidator {
         }
 
         taskCount += tasks.size();
-        Set<Integer> orders = new HashSet<>();
         for (int index = 0; index < tasks.size(); index++) {
             GeneratedTask task = tasks.get(index);
             String path = sectionPath + ".tasks[" + index + "]";
@@ -82,14 +82,14 @@ final class GenerationStructureValidator {
             if (task.prerequisiteTaskTempIds() != null) {
                 dependencyCount += task.prerequisiteTaskTempIds().size();
             }
-            validateTask(task, path, orders);
+            validateTask(task, path, elementOrders);
         }
     }
 
-    private void validateTask(GeneratedTask task, String path, Set<Integer> orders) {
+    private void validateTask(GeneratedTask task, String path, Set<Integer> elementOrders) {
         requiredText(TASK_TITLE_MISSING, task.title());
         optionalText(TASK_DESCRIPTION_BLANK, path + ".description", task.description());
-        positiveOrder(TASK_ORDER_INVALID, TASK_ORDER_DUPLICATE, task.order(), orders);
+        positiveOrder(TASK_ORDER_INVALID, TASK_ORDER_DUPLICATE, task.order(), elementOrders);
         dependencies.register(task, path);
         if (task.origin() == null) {
             addIssue(TASK_ORIGIN_MISSING);
@@ -101,14 +101,13 @@ final class GenerationStructureValidator {
         dates.validateTask(task, path);
     }
 
-    private void validateMilestones(GeneratedSection section, String sectionPath) {
+    private void validateMilestones(GeneratedSection section, String sectionPath, Set<Integer> elementOrders) {
         List<GeneratedMilestone> milestones = section.milestones();
         if (milestones == null) {
             addIssue(MILESTONES_MISSING);
             return;
         }
         milestoneCount += milestones.size();
-        Set<Integer> orders = new HashSet<>();
         for (int index = 0; index < milestones.size(); index++) {
             GeneratedMilestone milestone = milestones.get(index);
             String path = sectionPath + ".milestones[" + index + "]";
@@ -117,7 +116,7 @@ final class GenerationStructureValidator {
                 continue;
             }
             requiredText(MILESTONE_TITLE_MISSING, milestone.title());
-            positiveOrder(MILESTONE_ORDER_INVALID, MILESTONE_ORDER_DUPLICATE, milestone.order(), orders);
+            positiveOrder(MILESTONE_ORDER_INVALID, MILESTONE_ORDER_DUPLICATE, milestone.order(), elementOrders);
             dates.validateMilestone(milestone, path);
         }
     }
