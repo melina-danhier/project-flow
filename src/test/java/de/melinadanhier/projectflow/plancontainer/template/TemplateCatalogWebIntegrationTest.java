@@ -8,6 +8,10 @@ import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMo
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
+import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -45,17 +50,22 @@ class TemplateCatalogWebIntegrationTest {
     @Autowired TemplateRepository templateRepository;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired ProjectRepository projectRepository;
+    @Autowired TaskRepository taskRepository;
 
     private UUID templateId;
+    private UUID currentUserId;
 
     @BeforeEach
     void setUp() {
+        projectRepository.deleteAll();
         templateRepository.deleteAll();
         Template template = new Template();
         template.setTitle("Umzug kompakt planen");
         template.setDescription("Eine Checkliste für den Wohnungswechsel");
         template.setCategory(ProjectCategory.HOME);
         template.setCollaborationMode(CollaborationMode.BOTH);
+        template.setRecommendedDurationDays(4);
         PlanSection section = new PlanSection();
         section.setTitle("Vorbereitung");
         section.setSortOrder(100);
@@ -132,5 +142,142 @@ class TemplateCatalogWebIntegrationTest {
                     org.assertj.core.api.Assertions.assertThat(state.getCreationType())
                             .isEqualTo(de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType.TEMPLATE);
                 });
+    }
+
+    @Test
+    void directCatalogSelectionUsesAnEndDateAndSkipsConfirmationWhenConversionIsPossible() throws Exception {
+        MockHttpSession session = login("direct-template@example.org");
+        ProjectWizardState state = wizardState(null, java.time.LocalDate.of(2026, 9, 20));
+        session.setAttribute(ProjectWizardService.SESSION_ATTRIBUTE, state);
+
+        mockMvc.perform(get("/projects/new/template").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Direkt verwenden")));
+        mockMvc.perform(post("/projects/new/template/{id}", templateId).session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/projects/*/plan"));
+
+        Project project = projectRepository.findAll().getFirst();
+        org.assertj.core.api.Assertions.assertThat(project.getStartDate()).isNull();
+        org.assertj.core.api.Assertions.assertThat(project.getEndDate())
+                .isEqualTo(java.time.LocalDate.of(2026, 9, 20));
+        org.assertj.core.api.Assertions.assertThat(taskRepository.findPlanTasks(project.getId())).singleElement()
+                .satisfies(task -> {
+                    org.assertj.core.api.Assertions.assertThat(task.getDueDate())
+                            .isEqualTo(java.time.LocalDate.of(2026, 9, 20));
+                    org.assertj.core.api.Assertions.assertThat(task.getRelativeDueDay()).isNull();
+                });
+    }
+
+    @Test
+    void durationConflictRequiresConfirmationOrChangedProjectInputs() throws Exception {
+        MockHttpSession session = login("conflict-template@example.org");
+        ProjectWizardState state = wizardState(
+                java.time.LocalDate.of(2026, 9, 1), java.time.LocalDate.of(2026, 9, 2));
+        session.setAttribute(ProjectWizardService.SESSION_ATTRIBUTE, state);
+
+        mockMvc.perform(post("/projects/new/template/{id}", templateId).session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/template/confirm"));
+        mockMvc.perform(get("/projects/new/template/confirm").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Vorlage benötigt <strong>4</strong> Tage")))
+                .andExpect(content().string(containsString("Projektzeitraum umfasst aber nur <strong>2</strong> Tage")))
+                .andExpect(content().string(containsString("Projektangaben ändern")));
+
+        mockMvc.perform(post("/projects/new/template/confirm").session(session).with(csrf())
+                        .param("confirmed", "true"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/projects/*/plan"));
+
+        Project project = projectRepository.findAll().getFirst();
+        org.assertj.core.api.Assertions.assertThat(project.getStartDate())
+                .isEqualTo(java.time.LocalDate.of(2026, 9, 1));
+        org.assertj.core.api.Assertions.assertThat(project.getEndDate())
+                .isEqualTo(java.time.LocalDate.of(2026, 9, 2));
+        org.assertj.core.api.Assertions.assertThat(taskRepository.findPlanTasks(project.getId())).singleElement()
+                .satisfies(task -> {
+                    org.assertj.core.api.Assertions.assertThat(task.getDueDate()).isNull();
+                    org.assertj.core.api.Assertions.assertThat(task.getRelativeDueDay()).isNull();
+                });
+    }
+
+    @Test
+    void templateWithoutRelativeDatesIsCreatedDirectlyWithoutConfirmation() throws Exception {
+        var tasks = taskRepository.findPlanTasks(templateId);
+        tasks.forEach(task -> task.setRelativeDueDay(null));
+        taskRepository.saveAllAndFlush(tasks);
+        MockHttpSession session = login("undated-template@example.org");
+        session.setAttribute(ProjectWizardService.SESSION_ATTRIBUTE, wizardState(null, null));
+
+        mockMvc.perform(post("/projects/new/template/{id}", templateId).session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/projects/*/plan"));
+    }
+
+    @Test
+    void missingProjectDatesWarnsAndRequiresExplicitIgnoreConfirmation() throws Exception {
+        MockHttpSession session = login("missing-dates-template@example.org");
+        session.setAttribute(ProjectWizardService.SESSION_ATTRIBUTE, wizardState(null, null));
+
+        mockMvc.perform(post("/projects/new/template/{id}", templateId).session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/template/confirm"));
+        mockMvc.perform(get("/projects/new/template/confirm").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Ohne Start- oder Enddatum")));
+        mockMvc.perform(post("/projects/new/template/confirm").session(session).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Bitte bestätige die Übernahme")));
+        org.assertj.core.api.Assertions.assertThat(projectRepository.count()).isZero();
+
+        mockMvc.perform(post("/projects/new/template/confirm").session(session).with(csrf())
+                        .param("confirmed", "true"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/projects/*/plan"));
+        Project project = projectRepository.findAll().getFirst();
+        org.assertj.core.api.Assertions.assertThat(taskRepository.findPlanTasks(project.getId())).singleElement()
+                .satisfies(task -> {
+                    org.assertj.core.api.Assertions.assertThat(task.getDueDate()).isNull();
+                    org.assertj.core.api.Assertions.assertThat(task.getRelativeDueDay()).isNull();
+                });
+    }
+
+    @Test
+    void directTemplateAdoptionRequiresLoginAndCsrf() throws Exception {
+        mockMvc.perform(post("/projects/new/template/{id}", templateId).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+
+        MockHttpSession session = login("protected-template@example.org");
+        session.setAttribute(ProjectWizardService.SESSION_ATTRIBUTE,
+                wizardState(null, java.time.LocalDate.of(2026, 9, 20)));
+        mockMvc.perform(post("/projects/new/template/{id}", templateId).session(session))
+                .andExpect(status().isForbidden());
+        org.assertj.core.api.Assertions.assertThat(projectRepository.count()).isZero();
+    }
+
+    private MockHttpSession login(String email) throws Exception {
+        User user = new User();
+        user.setEmail(email);
+        user.setDisplayName("Template Test");
+        user.setPasswordHash(passwordEncoder.encode("richtiges-passwort"));
+        user.setEnabled(true);
+        currentUserId = userRepository.saveAndFlush(user).getId();
+        return (MockHttpSession) mockMvc.perform(post("/login")
+                        .param("email", email).param("password", "richtiges-passwort").with(csrf()))
+                .andExpect(status().is3xxRedirection()).andReturn().getRequest().getSession(false);
+    }
+
+    private ProjectWizardState wizardState(java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        ProjectWizardState state = new ProjectWizardState();
+        state.setUserId(currentUserId);
+        state.setTitle("Projekt aus Vorlage");
+        state.setCategory(ProjectCategory.HOME);
+        state.setCollaborationMode(CollaborationMode.INDIVIDUAL);
+        state.setCreationType(CreationType.TEMPLATE);
+        state.setStartDate(startDate);
+        state.setEndDate(endDate);
+        return state;
     }
 }

@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.plancontainer.template;
 
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
+import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectCreateForm;
@@ -242,6 +243,29 @@ class StaticProjectTemplateIntegrationTest {
     }
 
     @Test
+    void dependencyOutsideTemplateLeavesNoPartialProject() {
+        User owner = saveUser("rollback-dependency-template@example.org");
+        Template foreignTemplate = newTemplate("Fremde Abhängigkeit");
+        Task foreignTask = newTask("Fremde Aufgabe", 100);
+        foreignTemplate.addElement(foreignTask);
+        templateRepository.saveAndFlush(foreignTemplate);
+
+        Template malformed = newTemplate("Vorlage mit fremder Abhängigkeit");
+        Task task = newTask("Abhängige Aufgabe", 100);
+        task.addPrerequisite(foreignTask);
+        malformed.addElement(task);
+        templateRepository.saveAndFlush(malformed);
+        entityManager.clear();
+        long projectCount = projectRepository.count();
+
+        assertThatThrownBy(() -> projectService.createProjectFromTemplate(
+                malformed.getId(), projectForm(), owner.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("außerhalb der Vorlage");
+        assertThat(projectRepository.count()).isEqualTo(projectCount);
+    }
+
+    @Test
     void relativeDatesRequireAnExplicitConversionOrIgnoreDecision() {
         User owner = saveUser("relative-template@example.org");
         Template template = newTemplate("Relative Vorlage");
@@ -267,6 +291,75 @@ class StaticProjectTemplateIntegrationTest {
                 template.getId(), datedForm, owner.getId(), TemplateDateHandling.CONVERT);
         assertThat(taskRepository.findPlanTasks(converted.getId())).singleElement()
                 .extracting(Task::getDueDate).isEqualTo(java.time.LocalDate.of(2026, 9, 14));
+    }
+
+    @Test
+    void convertsRelativeDatesFromEndDateWithoutPersistingACalculatedStartDate() {
+        User owner = saveUser("end-date-template@example.org");
+        Template template = newTemplate("Vom Ende geplante Vorlage");
+        template.setRecommendedDurationDays(5);
+        Task first = newTask("Erster Schritt", 100);
+        first.setRelativeStartDay(0);
+        Task last = newTask("Letzter Schritt", 200);
+        last.setRelativeDueDay(4);
+        template.addElement(first);
+        template.addElement(last);
+        templateRepository.saveAndFlush(template);
+
+        ProjectCreateForm form = projectForm();
+        form.setEndDate(java.time.LocalDate.of(2026, 9, 20));
+        var assessment = templateService.assessRelativeDates(template.getId(), null, form.getEndDate());
+
+        assertThat(assessment.convertible()).isTrue();
+        assertThat(assessment.conversionStartDate()).isEqualTo(java.time.LocalDate.of(2026, 9, 16));
+        assertThat(assessment.boundaryConflict()).isFalse();
+
+        var created = projectService.createProjectFromTemplate(
+                template.getId(), form, owner.getId(), TemplateDateHandling.CONVERT);
+        Project project = projectRepository.findById(created.getId()).orElseThrow();
+        assertThat(project.getStartDate()).isNull();
+        assertThat(project.getEndDate()).isEqualTo(java.time.LocalDate.of(2026, 9, 20));
+        assertThat(taskRepository.findPlanTasks(created.getId()))
+                .extracting(Task::getStartDate, Task::getDueDate)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(java.time.LocalDate.of(2026, 9, 16), null),
+                        org.assertj.core.groups.Tuple.tuple(null, java.time.LocalDate.of(2026, 9, 20))
+                );
+    }
+
+    @Test
+    void rejectsOnlyWhenTemplateDurationExceedsTheEnteredProjectRange() {
+        User owner = saveUser("duration-conflict-template@example.org");
+        Template template = newTemplate("Fünftägige Vorlage");
+        template.setRecommendedDurationDays(5);
+        Task task = newTask("Relativer Schritt", 100);
+        task.setRelativeDueDay(4);
+        template.addElement(task);
+        templateRepository.saveAndFlush(template);
+
+        ProjectCreateForm shortRange = projectForm();
+        shortRange.setStartDate(java.time.LocalDate.of(2026, 9, 1));
+        shortRange.setEndDate(java.time.LocalDate.of(2026, 9, 4));
+        assertThat(templateService.assessRelativeDates(
+                template.getId(), shortRange.getStartDate(), shortRange.getEndDate()).boundaryConflict()).isTrue();
+        assertThatThrownBy(() -> projectService.createProjectFromTemplate(
+                template.getId(), shortRange, owner.getId(), TemplateDateHandling.CONVERT))
+                .isInstanceOf(DomainValidationException.class)
+                .hasMessageContaining("überschreitet");
+
+        ProjectCreateForm matchingRange = projectForm();
+        matchingRange.setTitle("Passender Zeitraum");
+        matchingRange.setStartDate(java.time.LocalDate.of(2026, 9, 1));
+        matchingRange.setEndDate(java.time.LocalDate.of(2026, 9, 5));
+        assertThat(templateService.assessRelativeDates(
+                template.getId(), matchingRange.getStartDate(), matchingRange.getEndDate()).boundaryConflict()).isFalse();
+
+        ProjectCreateForm longerRange = projectForm();
+        longerRange.setTitle("Längerer Zeitraum");
+        longerRange.setStartDate(java.time.LocalDate.of(2026, 9, 1));
+        longerRange.setEndDate(java.time.LocalDate.of(2026, 9, 10));
+        assertThat(templateService.assessRelativeDates(
+                template.getId(), longerRange.getStartDate(), longerRange.getEndDate()).boundaryConflict()).isFalse();
     }
 
     private Template saveStaticEventTemplate() {
