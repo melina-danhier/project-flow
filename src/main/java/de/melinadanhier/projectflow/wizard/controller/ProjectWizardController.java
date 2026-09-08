@@ -6,6 +6,7 @@ import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService.TemplateDateHandling;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
+import de.melinadanhier.projectflow.plancontainer.template.service.TemplateDateAssessment;
 import de.melinadanhier.projectflow.wizard.service.AiWizardCompletionService;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
@@ -115,7 +116,7 @@ public class ProjectWizardController {
             case EMPTY -> createManualProject(currentUser.userId(), session, redirectAttributes);
             case TEMPLATE -> state.getSelectedTemplateId() == null
                     ? "redirect:/projects/new/template"
-                    : "redirect:/projects/new/template/confirm";
+                    : continueWithSelectedTemplate(state, currentUser.userId(), session, redirectAttributes);
             case AI -> "redirect:/projects/new/ai/details";
         };
     }
@@ -175,8 +176,8 @@ public class ProjectWizardController {
             RedirectAttributes redirectAttributes
     ) {
         templateService.getTemplate(templateId);
-        wizardService.selectTemplate(templateId, currentUser.userId(), session);
-        return "redirect:/projects/new/template/confirm";
+        ProjectWizardState state = wizardService.selectTemplate(templateId, currentUser.userId(), session);
+        return continueWithSelectedTemplate(state, currentUser.userId(), session, redirectAttributes);
     }
 
     @GetMapping("/projects/new/template/confirm")
@@ -189,6 +190,9 @@ public class ProjectWizardController {
                 CreationType.TEMPLATE, currentUser.userId(), session);
         if (state.getSelectedTemplateId() == null) {
             return "redirect:/projects/new/template";
+        }
+        if (!dateAssessment(state).requiresConfirmation()) {
+            return "redirect:/projects/new/template/" + state.getSelectedTemplateId();
         }
         populateTemplateConfirmation(model, state);
         return "wizard/template-confirm";
@@ -212,22 +216,52 @@ public class ProjectWizardController {
             model.addAttribute("confirmationError", "Bitte bestätige die Übernahme der Vorlage.");
             return "wizard/template-confirm";
         }
-        var assessment = templateService.assessRelativeDates(state.getSelectedTemplateId(), state.getStartDate());
-        TemplateDateHandling dateHandling = assessment.convertible()
-                ? TemplateDateHandling.CONVERT : TemplateDateHandling.IGNORE;
-        ProjectDetailsDto project = projectService.createProjectFromTemplate(
-                state.getSelectedTemplateId(), wizardService.projectData(currentUser.userId(), session),
-                currentUser.userId(), dateHandling);
-        wizardService.clearOwned(currentUser.userId(), session);
-        redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde aus der Vorlage angelegt.");
-        return "redirect:/projects/" + project.getId() + "/plan";
+        var assessment = dateAssessment(state);
+        if (!assessment.requiresConfirmation()) {
+            return materializeSelectedTemplate(
+                    state, currentUser.userId(), session, redirectAttributes, TemplateDateHandling.CONVERT);
+        }
+        return materializeSelectedTemplate(
+                state, currentUser.userId(), session, redirectAttributes, TemplateDateHandling.IGNORE);
     }
 
     private void populateTemplateConfirmation(Model model, ProjectWizardState state) {
         model.addAttribute("wizardState", state);
         model.addAttribute("template", templateService.getTemplate(state.getSelectedTemplateId()));
-        model.addAttribute("dateAssessment", templateService.assessRelativeDates(
-                state.getSelectedTemplateId(), state.getStartDate()));
+        model.addAttribute("dateAssessment", dateAssessment(state));
+    }
+
+    private String continueWithSelectedTemplate(
+            ProjectWizardState state,
+            UUID userId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes
+    ) {
+        var assessment = dateAssessment(state);
+        if (assessment.requiresConfirmation()) {
+            return "redirect:/projects/new/template/confirm";
+        }
+        return materializeSelectedTemplate(
+                state, userId, session, redirectAttributes, TemplateDateHandling.CONVERT);
+    }
+
+    private String materializeSelectedTemplate(
+            ProjectWizardState state,
+            UUID userId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes,
+            TemplateDateHandling dateHandling
+    ) {
+        ProjectDetailsDto project = projectService.createProjectFromTemplate(
+                state.getSelectedTemplateId(), wizardService.projectData(userId, session), userId, dateHandling);
+        wizardService.clearOwned(userId, session);
+        redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde aus der Vorlage angelegt.");
+        return "redirect:/projects/" + project.getId() + "/plan";
+    }
+
+    private TemplateDateAssessment dateAssessment(ProjectWizardState state) {
+        return templateService.assessRelativeDates(
+                state.getSelectedTemplateId(), state.getStartDate(), state.getEndDate());
     }
 
     @GetMapping({"/projects/new/ai", "/projects/new/ai/details"})

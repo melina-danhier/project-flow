@@ -43,6 +43,7 @@
                             <h3 class="pf-project-card__title"><a th:href="@{/projects/new/template/{id}(id=${item.id},category=${selectedCategory})}" th:text="${item.title}">Vorlage</a></h3>
                             <p th:if="${item.description}" th:text="${item.description}" style="font-size:.88rem;color:var(--pf-text-muted);margin-top:.5rem"></p></div>
                         <div class="pf-project-card__meta" style="justify-content:space-between"><span th:text="${item.taskCount + ' Aufgaben'}"></span><span th:text="${item.milestoneCount + ' Meilensteine'}"></span></div>
+                        <form th:action="@{/projects/new/template/{id}(id=${item.id})}" method="post"><button class="pf-btn pf-btn--primary pf-btn--sm" type="submit">Direkt verwenden</button></form>
                     </div>
                 </div>
             </section>
@@ -58,6 +59,7 @@
                         <h3 class="pf-project-card__title"><a th:href="${wizardContext} ? @{/projects/new/template/{id}(id=${item.id},category=${selectedCategory},q=${searchPage ? query : null})} : @{/templates/{id}(id=${item.id},category=${selectedCategory},q=${searchPage ? query : null})}" th:text="${item.title}">Vorlage</a></h3>
                         <p th:if="${item.description}" th:text="${item.description}" style="font-size:.88rem;color:var(--pf-text-muted);margin-top:.5rem"></p></div>
                     <div class="pf-project-card__meta" style="justify-content:space-between"><span th:text="${item.taskCount + (item.taskCount == 1 ? ' Aufgabe' : ' Aufgaben')}"></span><span th:text="${item.milestoneCount + (item.milestoneCount == 1 ? ' Meilenstein' : ' Meilensteine')}"></span></div>
+                    <form th:if="${wizardContext}" th:action="@{/projects/new/template/{id}(id=${item.id})}" method="post"><button class="pf-btn pf-btn--primary pf-btn--sm" type="submit">Direkt verwenden</button></form>
                 </div>
             </div>
         </div>

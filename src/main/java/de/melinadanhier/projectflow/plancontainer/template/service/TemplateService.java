@@ -128,11 +128,18 @@ public class TemplateService {
 
     @Transactional(readOnly = true)
     public TemplateDateAssessment assessRelativeDates(UUID templateId, java.time.LocalDate projectStartDate) {
-        TemplateDetailsDto template = getTemplate(templateId);
-        boolean hasRelativeDates = template.getTasks().stream()
-                .anyMatch(task -> task.getRelativeStartDay() != null || task.getRelativeDueDay() != null)
-                || template.getMilestones().stream().anyMatch(milestone -> milestone.getRelativeDueDay() != null);
-        return new TemplateDateAssessment(hasRelativeDates, hasRelativeDates && projectStartDate != null);
+        return assessRelativeDates(templateId, projectStartDate, null);
+    }
+
+    @Transactional(readOnly = true)
+    public TemplateDateAssessment assessRelativeDates(
+            UUID templateId,
+            java.time.LocalDate projectStartDate,
+            java.time.LocalDate projectEndDate
+    ) {
+        var template = templateRepository.findByIdAndActiveTrue(templateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vorlage wurde nicht gefunden."));
+        return TemplateDatePolicy.assess(template, projectStartDate, projectEndDate);
     }
 
     private TemplateSummaryDto toSummary(de.melinadanhier.projectflow.plancontainer.template.model.Template template) {
@@ -146,9 +153,6 @@ public class TemplateService {
 
     private boolean contains(String value, String normalizedQuery) {
         return value != null && value.toLowerCase(Locale.GERMAN).contains(normalizedQuery);
-    }
-
-    public record TemplateDateAssessment(boolean hasRelativeDates, boolean convertible) {
     }
 
     private int recommendationScore(TemplateSummaryDto template, ProjectSubCategory subcategory) {
