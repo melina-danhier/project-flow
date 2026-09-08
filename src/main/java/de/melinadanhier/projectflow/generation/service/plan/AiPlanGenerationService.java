@@ -74,11 +74,12 @@ public class AiPlanGenerationService {
     private AiOutputValidationException invalidResponse(
             GenerationValidationResult validation
     ) {
+        List<String> issues = validation.issues().stream()
+                .map(issue -> issue.code().name() + " | " + issue.fieldPath() + " | " + issue.message())
+                .toList();
         return new AiOutputValidationException(
-                "Der generierte Plan verletzt deterministische Ausgabebedingungen.",
-                validation.issues().stream()
-                        .map(issue -> issue.code().name() + " | " + issue.fieldPath() + " | " + issue.message())
-                        .toList());
+                "Der generierte Plan verletzt deterministische Ausgabebedingungen: " + issues,
+                issues);
     }
 
     private void waitBeforeRetry(int retryNumber) {

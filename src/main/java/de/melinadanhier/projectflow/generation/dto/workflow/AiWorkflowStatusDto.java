@@ -26,10 +26,15 @@ public record AiWorkflowStatusDto(
     }
 
     public boolean canRetry() {
-        return Boolean.TRUE.equals(errorRetryable)
-                && errorOperation == AiOperation.PLAN_GENERATION
-                && (status == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
-                || status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
+        return (Boolean.TRUE.equals(errorRetryable)
+                || status == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
+                || (status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE
+                && errorCode != AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR))
+                && errorOperation == AiOperation.PLAN_GENERATION;
+    }
+
+    public boolean canReturnToSummary() {
+        return !isProcessing() && status != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
     }
 
     public boolean canCancel() {

@@ -43,7 +43,7 @@
 
         <p th:if="${workflow.status.name() == 'GENERATION_FAILED' or workflow.status.name() == 'TECHNICAL_FAILURE'}" style="color: var(--pf-text-muted); font-size: 0.9rem;">
             Deine bestätigten Angaben bleiben erhalten.
-            <span th:if="${workflow.canRetry()}">Du kannst die Generierung mit demselben Stand erneut versuchen.</span>
+            <span th:if="${workflow.canRetry()}">Du kannst die Generierung mit demselben Stand erneut versuchen oder zu deinen Eingaben zurückkehren.</span>
         </p>
 
         <div style="display: flex; justify-content: center; gap: 0.85rem; flex-wrap: wrap; margin-top: 1.5rem;">
@@ -56,7 +56,13 @@
             <form th:if="${workflow.canRetry()}"
                   th:action="@{/projects/new/ai/status/{workflowId}/retry(workflowId=${workflow.workflowId})}"
                   method="post" style="margin: 0;">
-                <button type="submit" class="pf-btn pf-btn--primary">Generierung erneut versuchen</button>
+                <button type="submit" class="pf-btn pf-btn--primary">Plan neu generieren</button>
+            </form>
+
+            <form th:if="${workflow.canReturnToSummary()}"
+                  th:action="@{/projects/new/ai/status/{workflowId}/edit(workflowId=${workflow.workflowId})}"
+                  method="post" style="margin: 0;">
+                <button type="submit" class="pf-btn pf-btn--secondary">Zurück zur Zusammenfassung der Eingaben</button>
             </form>
 
             <a th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}"

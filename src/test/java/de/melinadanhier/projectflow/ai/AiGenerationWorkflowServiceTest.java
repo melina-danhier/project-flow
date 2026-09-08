@@ -122,7 +122,22 @@ class AiGenerationWorkflowServiceTest {
         when(workflowRepository.findOwnedByIdForUpdate(workflowId, userId)).thenReturn(Optional.of(workflow));
         when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE);
         when(workflow.getLastAiOperation()).thenReturn(AiOperation.PLAN_GENERATION);
-        when(workflow.getLastErrorRetryable()).thenReturn(true);
+
+        service().retry(workflowId, userId);
+
+        var runId = org.mockito.ArgumentCaptor.forClass(UUID.class);
+        verify(workflow).startGeneration(runId.capture(), any(Instant.class));
+        verify(eventPublisher).publishEvent(new AiGenerationRequestedEvent(workflowId, runId.getValue()));
+    }
+
+    @Test
+    void failedGenerationCanBeRetried() {
+        UUID workflowId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        var workflow = mock(AiPlanGenerationWorkflow.class);
+        when(workflowRepository.findOwnedByIdForUpdate(workflowId, userId)).thenReturn(Optional.of(workflow));
+        when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.GENERATION_FAILED);
+        when(workflow.getLastAiOperation()).thenReturn(AiOperation.PLAN_GENERATION);
 
         service().retry(workflowId, userId);
 

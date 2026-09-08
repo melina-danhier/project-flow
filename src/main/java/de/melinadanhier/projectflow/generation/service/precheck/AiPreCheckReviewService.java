@@ -130,7 +130,9 @@ public class AiPreCheckReviewService {
     public de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot returnToWizard(
             UUID workflowId, UUID userId) {
         AiPlanGenerationWorkflow workflow = requireOwned(workflowId, userId);
-        requireReviewable(workflow);
+        if (workflow.getConfirmedSnapshot() == null) {
+            throw new ConflictException("Für diesen KI-Workflow liegen keine gespeicherten Eingaben vor.");
+        }
         return snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot());
     }
 

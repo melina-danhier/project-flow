@@ -56,9 +56,9 @@ public class AiPreCheckProcessor {
             } catch (AiTechnicalException exception) {
                 AiTechnicalError error = classify(exception);
                 int attemptNumber = completedRetries + 1;
-                log.warn("Technischer KI-Pre-Check-Fehler workflowId={} attempt={} schemaVersion={} errorCode={}.",
+                log.warn("Technischer KI-Pre-Check-Fehler workflowId={} attempt={} schemaVersion={} errorCode={} message={}.",
                         workflowId, attemptNumber,
-                        AiSchemaVersions.PRE_CHECK, error.errorCode());
+                        AiSchemaVersions.PRE_CHECK, error.errorCode(), exception.getMessage());
                 if (!error.isRetryable()
                         || attemptNumber >= executionProperties.getMaxAttempts()) {
                     finishWithTechnicalFailure(workflowId, runId, error);
@@ -96,9 +96,9 @@ public class AiPreCheckProcessor {
 
     private void finishWithTechnicalFailure(UUID workflowId, UUID runId,
                                             AiTechnicalError error) {
-        log.error("KI-Pre-Check beendet workflowId={} schemaVersion={} errorCode={}.",
+        log.error("KI-Pre-Check beendet workflowId={} schemaVersion={} errorCode={} message={}.",
                 workflowId, AiSchemaVersions.PRE_CHECK,
-                error.errorCode(), error.cause());
+                error.errorCode(), error.technicalMessage(), error.cause());
         try {
             workflowService.recordFailure(workflowId, runId, error);
         } catch (RuntimeException persistenceException) {

@@ -329,6 +329,45 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     @Test
+    void editFromStatusPageReturnsToSummary() throws Exception {
+        User owner = saveUser("status-edit@example.org");
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        when(aiClient.generatePlan(any())).thenReturn(new GeneratedPlanResponse(List.of())); // invalid plan -> GENERATION_FAILED
+
+        UUID workflowId = start(owner);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
+
+        mockMvc.perform(post(statusUrl(workflowId) + "/generate")
+                        .with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_FAILED);
+
+        MockHttpSession session = new MockHttpSession();
+        AuthenticatedUser principal = principal(owner);
+
+        mockMvc.perform(get(statusUrl(workflowId)).session(session).with(user(principal)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Plan neu generieren")))
+                .andExpect(content().string(containsString("Zurück zur Zusammenfassung der Eingaben")));
+
+        mockMvc.perform(post(statusUrl(workflowId) + "/edit")
+                        .session(session).with(user(principal)).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/ai/summary"));
+
+        assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .isInstanceOf(ProjectWizardState.class);
+
+        // Also test retry / regeneration after failure
+        when(aiClient.generatePlan(any())).thenReturn(generatedPlan());
+        mockMvc.perform(post(statusUrl(workflowId) + "/retry")
+                        .session(session).with(user(principal)).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(statusUrl(workflowId)));
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+    }
+
+    @Test
     void foreignWorkflowCannotBeViewedOrChanged() throws Exception {
         User owner = saveUser("precheck-owner@example.org");
         User outsider = saveUser("precheck-outsider@example.org");
