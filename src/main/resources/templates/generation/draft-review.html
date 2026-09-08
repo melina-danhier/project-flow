@@ -145,7 +145,7 @@
     </section>
 
     <p th:if="${draft.sections.isEmpty() and draft.unsectionedElements.isEmpty()}">Keine Elemente entsprechen dem gewählten Filter.</p>
-    <form class="apply-draft" th:if="${draft.status.name() != 'APPLIED'}" th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
+    <form class="apply-draft" th:if="${draft.owner and draft.status.name() != 'APPLIED'}" th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
         <button type="submit">Entwurf ausdrücklich übernehmen</button>
     </form>
 </main>

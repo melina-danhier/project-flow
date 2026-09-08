@@ -15,6 +15,7 @@ public interface DraftMapper {
     @Mapping(target = "projectStartDate", source = "project.startDate")
     @Mapping(target = "projectEndDate", source = "project.endDate")
     @Mapping(target = "categoryLabel", ignore = true)
+    @Mapping(target = "owner", ignore = true)
     @Mapping(target = "activeReviewStatus", ignore = true)
     @Mapping(target = "reviewedElementCount", ignore = true)
     @Mapping(target = "totalElementCount", ignore = true)

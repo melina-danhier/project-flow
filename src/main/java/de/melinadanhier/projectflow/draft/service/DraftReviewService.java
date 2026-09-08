@@ -23,6 +23,7 @@ import jakarta.persistence.LockModeType;
 import jakarta.validation.Validator;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
+import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -55,12 +56,13 @@ public class DraftReviewService {
 
     @Transactional(readOnly = true)
     public DraftReviewDto review(UUID projectId, UUID userId, DraftReviewStatus reviewStatus) {
-        authorizationService.requireOwner(projectId, userId);
+        var membership = authorizationService.requireMember(projectId, userId);
         DraftPlan draft = draftRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Für dieses Projekt ist kein Planentwurf vorhanden."
                 ));
         DraftReviewDto review = draftMapper.toReviewDto(draft);
+        review.setOwner(membership.getRole() == ProjectMemberRole.OWNER);
         review.setActiveReviewStatus(reviewStatus);
         review.setTotalElementCount(draft.getSections().size() + draft.getElements().size());
         review.setReviewedElementCount((int) java.util.stream.Stream.concat(
@@ -317,7 +319,7 @@ public class DraftReviewService {
     }
 
     private DraftPlan editable(UUID projectId, UUID userId, long version) {
-        authorizationService.requireOwner(projectId, userId);
+        authorizationService.requireMember(projectId, userId);
         requireReleasedDraft(projectId);
         DraftPlan draft = draftRepository.findForUpdateByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Planentwurf nicht gefunden."));

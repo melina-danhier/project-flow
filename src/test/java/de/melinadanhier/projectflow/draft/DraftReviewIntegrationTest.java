@@ -300,6 +300,44 @@ class DraftReviewIntegrationTest {
     }
 
     @Test
+    void activeDraftMemberCanListReviewAndEditButCannotApplyOrRegenerate() throws Exception {
+        Fixture f = fixture("Material ist verfügbar", null);
+        AuthenticatedUser member = addDraftMember(f);
+
+        mvc.perform(get("/projects/drafts").with(user(member)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Testprojekt")));
+        mvc.perform(get("/projects/search")
+                        .param("query", "Testprojekt")
+                        .param("location", "DRAFT")
+                        .with(user(member)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Testprojekt")));
+
+        DraftReviewDto draft = reviews.review(f.projectId(), member.userId());
+        mvc.perform(get(f.reviewUrl()).with(user(member)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("KI-Entwurf prüfen")))
+                .andExpect(content().string(not(containsString("Entwurf ausdrücklich übernehmen"))));
+        mvc.perform(post(f.url() + "/elements/" + draft.getElements().getFirst().getId() + "/accept")
+                        .param("lockVersion", String.valueOf(draft.getLockVersion()))
+                        .with(user(member)).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(f.reviewUrl()));
+
+        DraftReviewDto edited = reviews.review(f.projectId(), member.userId());
+        assertThat(edited.getElements().getFirst().getReviewStatus()).isEqualTo(DraftReviewStatus.ACCEPTED);
+        mvc.perform(post(f.url() + "/apply").with(user(member)).with(csrf()))
+                .andExpect(status().isForbidden());
+        mvc.perform(post(f.url() + "/regenerate")
+                        .param("draftId", edited.getId().toString())
+                        .param("lockVersion", String.valueOf(edited.getLockVersion()))
+                        .with(user(member)).with(csrf()))
+                .andExpect(status().isForbidden());
+        assertEmptyPlan(f);
+    }
+
+    @Test
     void reviewUsesPersistedProjectHeaderAndPrefersSubcategory() throws Exception {
         Fixture f = fixture(null, null);
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
@@ -603,6 +641,24 @@ class DraftReviewIntegrationTest {
     }
 
     private DraftReviewDto review(Fixture f) { return reviews.review(f.projectId(), f.owner().userId()); }
+    private AuthenticatedUser addDraftMember(Fixture f) {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            User member = new User();
+            member.setEmail(UUID.randomUUID() + "@example.org");
+            member.setDisplayName("Draft Member");
+            member.setPasswordHash("test-hash");
+            member.setEnabled(true);
+            users.saveAndFlush(member);
+            Project project = projects.findById(f.projectId()).orElseThrow();
+            ProjectMember membership = new ProjectMember();
+            membership.setUser(member);
+            membership.setRole(ProjectMemberRole.MEMBER);
+            membership.setActive(true);
+            project.addMembership(membership);
+            projects.saveAndFlush(project);
+            return new AuthenticatedUser(member.getId(), member.getEmail(), member.getPasswordHash(), true);
+        });
+    }
     private void writePreview(String name, String html) throws java.io.IOException {
         if (Boolean.getBoolean("projectflow.test.export-draft-html")) {
             var directory = java.nio.file.Path.of("target", "draft-ui-check");

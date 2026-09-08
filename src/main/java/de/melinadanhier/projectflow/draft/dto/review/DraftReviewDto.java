@@ -26,6 +26,7 @@ public class DraftReviewDto {
     private LocalDate projectEndDate;
     private long lockVersion;
     private DraftPlanStatus status;
+    private boolean owner;
     private Instant generatedAt;
     private SortMode sortMode;
     private DraftReviewStatus activeReviewStatus;
