@@ -11,6 +11,8 @@ public interface TemplateMapper {
 
     @Mapping(target = "subcategoryOptions", ignore = true)
     @Mapping(target = "allSubcategories", ignore = true)
+    @Mapping(target = "taskCount", ignore = true)
+    @Mapping(target = "milestoneCount", ignore = true)
     TemplateSummaryDto toSummaryDto(Template template);
 
     @Mapping(target = "sections", ignore = true)

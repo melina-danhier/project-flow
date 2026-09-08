@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,8 +37,49 @@ public class TemplateService {
     @Transactional(readOnly = true)
     public List<TemplateSummaryDto> getTemplates() {
         return templateRepository.findAllByActiveTrueOrderByTitleAsc().stream()
-                .map(templateMapper::toSummaryDto)
+                .map(this::toSummary)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TemplateSummaryDto> getTemplates(ProjectCategory category) {
+        ProjectCategory selected = category == null ? ProjectCategory.OTHER : category;
+        return getTemplates().stream()
+                .filter(template -> template.getCategory() == selected
+                        || (selected == ProjectCategory.OTHER && template.getCategory() == null))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TemplateSummaryDto> search(String query) {
+        String normalized = query == null ? "" : query.trim().toLowerCase(Locale.GERMAN);
+        if (normalized.isEmpty()) {
+            return List.of();
+        }
+        return getTemplates().stream()
+                .filter(template -> contains(template.getTitle(), normalized)
+                        || contains(template.getDescription(), normalized))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TemplateSummaryDto> recommendations(
+            ProjectCategory category,
+            ProjectSubCategory subcategory
+    ) {
+        if (category == null) {
+            return List.of();
+        }
+        List<TemplateSummaryDto> categoryMatches = getTemplates().stream()
+                .filter(template -> template.getCategory() == category)
+                .toList();
+        if (subcategory == null) {
+            return categoryMatches;
+        }
+        List<TemplateSummaryDto> exactMatches = categoryMatches.stream()
+                .filter(template -> template.getSubcategory() == subcategory)
+                .toList();
+        return exactMatches.isEmpty() ? categoryMatches : exactMatches;
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +124,31 @@ public class TemplateService {
                                 successor.getId(), successor.getTitle())))
                 .toList());
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public TemplateDateAssessment assessRelativeDates(UUID templateId, java.time.LocalDate projectStartDate) {
+        TemplateDetailsDto template = getTemplate(templateId);
+        boolean hasRelativeDates = template.getTasks().stream()
+                .anyMatch(task -> task.getRelativeStartDay() != null || task.getRelativeDueDay() != null)
+                || template.getMilestones().stream().anyMatch(milestone -> milestone.getRelativeDueDay() != null);
+        return new TemplateDateAssessment(hasRelativeDates, hasRelativeDates && projectStartDate != null);
+    }
+
+    private TemplateSummaryDto toSummary(de.melinadanhier.projectflow.plancontainer.template.model.Template template) {
+        TemplateSummaryDto summary = templateMapper.toSummaryDto(template);
+        summary.setTaskCount((int) template.getElements().stream()
+                .filter(de.melinadanhier.projectflow.planelement.model.Task.class::isInstance).count());
+        summary.setMilestoneCount((int) template.getElements().stream()
+                .filter(de.melinadanhier.projectflow.planelement.model.Milestone.class::isInstance).count());
+        return summary;
+    }
+
+    private boolean contains(String value, String normalizedQuery) {
+        return value != null && value.toLowerCase(Locale.GERMAN).contains(normalizedQuery);
+    }
+
+    public record TemplateDateAssessment(boolean hasRelativeDates, boolean convertible) {
     }
 
     private int recommendationScore(TemplateSummaryDto template, ProjectSubCategory subcategory) {

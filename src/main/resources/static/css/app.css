@@ -1927,3 +1927,16 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     gap: 0.2rem;
 }
 
+/* Template catalog keeps its navigation useful without causing horizontal overflow. */
+.pf-template-catalog-layout {
+    display: grid;
+    grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 720px) {
+    .pf-template-catalog-layout {
+        grid-template-columns: 1fr;
+    }
+}

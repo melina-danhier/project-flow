@@ -40,4 +40,12 @@ public class TemplateDetailsDto implements ProjectClassification {
     private List<TaskDetailsDto> tasks = new ArrayList<>();
     private List<MilestoneDetailsDto> milestones = new ArrayList<>();
     private List<TaskDependencyDto> dependencies = new ArrayList<>();
+
+    public int getTaskCount() {
+        return tasks.size();
+    }
+
+    public int getMilestoneCount() {
+        return milestones.size();
+    }
 }

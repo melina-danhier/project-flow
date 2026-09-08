@@ -30,6 +30,7 @@ public class TaskDetailsDto {
     private ElementOrigin origin;
     private TaskStatus status;
     private TaskPriority priority;
+    private Integer estimatedHours;
     private LocalDate startDate;
     private LocalDate dueDate;
     private Integer relativeStartDay;

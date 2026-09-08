@@ -84,6 +84,12 @@ public class ProjectService {
 
     @Transactional
     public ProjectDetailsDto createProjectFromTemplate(UUID templateId, ProjectCreateForm form, UUID ownerUserId) {
+        return createProjectFromTemplate(templateId, form, ownerUserId, TemplateDateHandling.CONVERT);
+    }
+
+    @Transactional
+    public ProjectDetailsDto createProjectFromTemplate(
+            UUID templateId, ProjectCreateForm form, UUID ownerUserId, TemplateDateHandling dateHandling) {
         User owner = userRepository.findById(ownerUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Nutzerkonto wurde nicht gefunden."));
         Template template = templateRepository.findById(templateId)
@@ -110,7 +116,13 @@ public class ProjectService {
         if (form.getSortMode() == null) {
             project.setSortMode(template.getSortMode());
         }
-        copyTemplateContents(template, project);
+        if (dateHandling == TemplateDateHandling.CONVERT && project.getStartDate() == null
+                && hasRelativeDates(template)) {
+            throw new DomainValidationException(
+                    "Relative Vorlagentermine können nur mit einem Projektstartdatum umgerechnet werden."
+            );
+        }
+        copyTemplateContents(template, project, dateHandling);
         return projectMapper.toDetailsDto(projectRepository.save(project));
     }
 
@@ -142,7 +154,7 @@ public class ProjectService {
         return project;
     }
 
-    private void copyTemplateContents(Template template, Project project) {
+    private void copyTemplateContents(Template template, Project project, TemplateDateHandling dateHandling) {
         Map<PlanSection, PlanSection> sections = new HashMap<>();
         for (PlanSection source : template.getSections()) {
             PlanSection copy = new PlanSection();
@@ -157,7 +169,7 @@ public class ProjectService {
 
         Map<PlanElement, PlanElement> elements = new HashMap<>();
         for (PlanElement source : template.getElements()) {
-            PlanElement copy = copyElement(source, project);
+            PlanElement copy = copyElement(source, project, dateHandling);
             project.addElement(copy);
             if (source.getPlanSection() != null) {
                 PlanSection copiedSection = sections.get(source.getPlanSection());
@@ -181,21 +193,21 @@ public class ProjectService {
         }
     }
 
-    private PlanElement copyElement(PlanElement source, Project project) {
+    private PlanElement copyElement(PlanElement source, Project project, TemplateDateHandling dateHandling) {
         PlanElement copy;
         if (source instanceof Task sourceTask) {
             Task task = new Task();
             task.setPriority(sourceTask.getPriority());
             task.setEstimatedHours(sourceTask.getEstimatedHours());
-            task.setStartDate(toAbsoluteDate(project, sourceTask.getStartDate(), sourceTask.getRelativeStartDay()));
-            task.setDueDate(toAbsoluteDate(project, sourceTask.getDueDate(), sourceTask.getRelativeDueDay()));
+            task.setStartDate(toAbsoluteDate(project, sourceTask.getStartDate(), sourceTask.getRelativeStartDay(), dateHandling));
+            task.setDueDate(toAbsoluteDate(project, sourceTask.getDueDate(), sourceTask.getRelativeDueDay(), dateHandling));
             task.setRelativeStartDay(null);
             task.setRelativeDueDay(null);
             copy = task;
         } else if (source instanceof Milestone sourceMilestone) {
             Milestone milestone = new Milestone();
             milestone.setDueDate(toAbsoluteDate(
-                    project, sourceMilestone.getDueDate(), sourceMilestone.getRelativeDueDay()));
+                    project, sourceMilestone.getDueDate(), sourceMilestone.getRelativeDueDay(), dateHandling));
             milestone.setRelativeDueDay(null);
             copy = milestone;
         } else {
@@ -494,16 +506,22 @@ public class ProjectService {
         return summaries;
     }
 
-    private LocalDate toAbsoluteDate(Project project, LocalDate absoluteDate, Integer relativeDay) {
+    private LocalDate toAbsoluteDate(Project project, LocalDate absoluteDate, Integer relativeDay,
+                                     TemplateDateHandling dateHandling) {
         if (absoluteDate != null || relativeDay == null) {
             return absoluteDate;
         }
-        if (project.getStartDate() == null) {
-            throw new DomainValidationException(
-                    "Für eine Vorlage mit relativen Terminen muss ein Projektstartdatum angegeben werden."
-            );
+        if (dateHandling == TemplateDateHandling.IGNORE) {
+            return null;
         }
         return project.getStartDate().plusDays(relativeDay);
+    }
+
+    private boolean hasRelativeDates(Template template) {
+        return template.getElements().stream().anyMatch(element ->
+                element instanceof Task task
+                        && (task.getRelativeStartDay() != null || task.getRelativeDueDay() != null)
+                        || element instanceof Milestone milestone && milestone.getRelativeDueDay() != null);
     }
 
     private PlanElementViewDto toViewElement(PlanElement element) {
@@ -542,5 +560,10 @@ public class ProjectService {
         dto.setOrigin(element.getOrigin());
         dto.setReviewStatus(element.getReviewStatus());
         return dto;
+    }
+
+    public enum TemplateDateHandling {
+        CONVERT,
+        IGNORE
     }
 }

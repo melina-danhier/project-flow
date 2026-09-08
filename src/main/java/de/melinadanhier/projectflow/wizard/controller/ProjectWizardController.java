@@ -3,6 +3,8 @@ package de.melinadanhier.projectflow.wizard.controller;
 import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectDetailsDto;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService.TemplateDateHandling;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.plancontainer.template.service.TemplateService;
 import de.melinadanhier.projectflow.wizard.service.AiWizardCompletionService;
 import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletion;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
@@ -44,14 +47,24 @@ public class ProjectWizardController {
 
     @GetMapping("/projects/new")
     public String basics(
+            @RequestParam(required = false) UUID templateId,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             HttpSession session,
             Model model
     ) {
+        if (templateId != null) {
+            templateService.getTemplate(templateId);
+            wizardService.startWithTemplate(templateId, currentUser.userId(), session);
+        }
         ProjectBasicsForm form = wizardService.findOwned(currentUser.userId(), session)
                 .map(ProjectBasicsForm::from)
                 .orElseGet(ProjectBasicsForm::new);
         model.addAttribute("projectBasicsForm", form);
+        wizardService.findOwned(currentUser.userId(), session)
+                .map(ProjectWizardState::getSelectedTemplateId)
+                .filter(java.util.Objects::nonNull)
+                .map(templateService::getTemplate)
+                .ifPresent(template -> model.addAttribute("selectedTemplate", template));
         return "wizard/basics";
     }
 
@@ -100,29 +113,45 @@ public class ProjectWizardController {
         wizardService.selectCreationType(form.getCreationType(), currentUser.userId(), session);
         return switch (form.getCreationType()) {
             case EMPTY -> createManualProject(currentUser.userId(), session, redirectAttributes);
-            case TEMPLATE -> "redirect:/projects/new/template";
+            case TEMPLATE -> state.getSelectedTemplateId() == null
+                    ? "redirect:/projects/new/template"
+                    : "redirect:/projects/new/template/confirm";
             case AI -> "redirect:/projects/new/ai/details";
         };
     }
 
     @GetMapping("/projects/new/template")
     public String templateCatalog(
+            @RequestParam(required = false) ProjectCategory category,
+            @RequestParam(required = false) String q,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             HttpSession session,
             Model model
     ) {
         ProjectWizardState state = wizardService.requireOwnedFor(
                 CreationType.TEMPLATE, currentUser.userId(), session);
+        ProjectCategory selected = category == null ? state.getCategory() : category;
+        if (selected == null) {
+            selected = ProjectCategory.EDUCATION;
+        }
+        boolean search = q != null;
         model.addAttribute("wizardState", state);
-        model.addAttribute("templates", templateService.getTemplates());
-        templateService.findRecommendation(state.getCategory(), state.getSubcategory())
-                .ifPresent(template -> model.addAttribute("recommendedTemplateId", template.getId()));
+        model.addAttribute("categories", ProjectCategory.values());
+        model.addAttribute("selectedCategory", search ? null : selected);
+        model.addAttribute("templates", search ? templateService.search(q) : templateService.getTemplates(selected));
+        model.addAttribute("recommendedTemplates", templateService.recommendations(
+                state.getCategory(), state.getSubcategory()));
+        model.addAttribute("searchPage", search);
+        model.addAttribute("query", q == null ? "" : q);
+        model.addAttribute("wizardContext", true);
         return "wizard/template-catalog";
     }
 
     @GetMapping("/projects/new/template/{templateId}")
     public String templatePreview(
             @PathVariable UUID templateId,
+            @RequestParam(required = false) ProjectCategory category,
+            @RequestParam(required = false) String q,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             HttpSession session,
             Model model
@@ -130,6 +159,11 @@ public class ProjectWizardController {
         model.addAttribute("wizardState", wizardService.requireOwnedFor(
                 CreationType.TEMPLATE, currentUser.userId(), session));
         model.addAttribute("template", templateService.getTemplate(templateId));
+        model.addAttribute("wizardContext", true);
+        model.addAttribute("backUrl", q == null ? "/projects/new/template"
+                + (category == null ? "" : "?category=" + category.name())
+                : org.springframework.web.util.UriComponentsBuilder.fromPath("/projects/new/template")
+                        .queryParam("q", q).build().encode().toUriString());
         return "wizard/template-preview";
     }
 
@@ -140,12 +174,60 @@ public class ProjectWizardController {
             HttpSession session,
             RedirectAttributes redirectAttributes
     ) {
-        wizardService.requireOwnedFor(CreationType.TEMPLATE, currentUser.userId(), session);
+        templateService.getTemplate(templateId);
+        wizardService.selectTemplate(templateId, currentUser.userId(), session);
+        return "redirect:/projects/new/template/confirm";
+    }
+
+    @GetMapping("/projects/new/template/confirm")
+    public String confirmTemplate(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
+            Model model
+    ) {
+        ProjectWizardState state = wizardService.requireOwnedFor(
+                CreationType.TEMPLATE, currentUser.userId(), session);
+        if (state.getSelectedTemplateId() == null) {
+            return "redirect:/projects/new/template";
+        }
+        populateTemplateConfirmation(model, state);
+        return "wizard/template-confirm";
+    }
+
+    @PostMapping("/projects/new/template/confirm")
+    public String materializeTemplate(
+            @RequestParam(defaultValue = "false") boolean confirmed,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        ProjectWizardState state = wizardService.requireOwnedFor(
+                CreationType.TEMPLATE, currentUser.userId(), session);
+        if (state.getSelectedTemplateId() == null) {
+            return "redirect:/projects/new/template";
+        }
+        if (!confirmed) {
+            populateTemplateConfirmation(model, state);
+            model.addAttribute("confirmationError", "Bitte bestätige die Übernahme der Vorlage.");
+            return "wizard/template-confirm";
+        }
+        var assessment = templateService.assessRelativeDates(state.getSelectedTemplateId(), state.getStartDate());
+        TemplateDateHandling dateHandling = assessment.convertible()
+                ? TemplateDateHandling.CONVERT : TemplateDateHandling.IGNORE;
         ProjectDetailsDto project = projectService.createProjectFromTemplate(
-                templateId, wizardService.projectData(currentUser.userId(), session), currentUser.userId());
+                state.getSelectedTemplateId(), wizardService.projectData(currentUser.userId(), session),
+                currentUser.userId(), dateHandling);
         wizardService.clearOwned(currentUser.userId(), session);
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde aus der Vorlage angelegt.");
         return "redirect:/projects/" + project.getId() + "/plan";
+    }
+
+    private void populateTemplateConfirmation(Model model, ProjectWizardState state) {
+        model.addAttribute("wizardState", state);
+        model.addAttribute("template", templateService.getTemplate(state.getSelectedTemplateId()));
+        model.addAttribute("dateAssessment", templateService.assessRelativeDates(
+                state.getSelectedTemplateId(), state.getStartDate()));
     }
 
     @GetMapping({"/projects/new/ai", "/projects/new/ai/details"})

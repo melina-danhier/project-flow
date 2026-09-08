@@ -27,9 +27,8 @@ import lombok.Setter;
 @ValidProjectClassification(requireOtherDescription = false)
 public class Template extends PlanContainer implements ProjectClassification {
 
-    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "category", nullable = false, length = 50)
+    @Column(name = "category", length = 50)
     private ProjectCategory category;
 
     @Size(max = 100)

@@ -12,6 +12,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.Projec
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService.TemplateDateHandling;
 import de.melinadanhier.projectflow.plancontainer.template.dto.TemplateDetailsDto;
 import de.melinadanhier.projectflow.plancontainer.template.mapper.TemplateMapperImpl;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
@@ -239,6 +240,34 @@ class StaticProjectTemplateIntegrationTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("außerhalb der Vorlage");
         assertThat(projectRepository.count()).isEqualTo(projectCount);
+    }
+
+    @Test
+    void relativeDatesRequireAnExplicitConversionOrIgnoreDecision() {
+        User owner = saveUser("relative-template@example.org");
+        Template template = newTemplate("Relative Vorlage");
+        Task task = newTask("Relativ fällig", 100);
+        task.setRelativeDueDay(4);
+        template.addElement(task);
+        templateRepository.saveAndFlush(template);
+
+        assertThat(templateService.assessRelativeDates(template.getId(), null))
+                .satisfies(assessment -> {
+                    assertThat(assessment.hasRelativeDates()).isTrue();
+                    assertThat(assessment.convertible()).isFalse();
+                });
+        var ignored = projectService.createProjectFromTemplate(
+                template.getId(), projectForm(), owner.getId(), TemplateDateHandling.IGNORE);
+        assertThat(taskRepository.findPlanTasks(ignored.getId())).singleElement()
+                .extracting(Task::getDueDate).isNull();
+
+        ProjectCreateForm datedForm = projectForm();
+        datedForm.setTitle("Datiertes Projekt");
+        datedForm.setStartDate(java.time.LocalDate.of(2026, 9, 10));
+        var converted = projectService.createProjectFromTemplate(
+                template.getId(), datedForm, owner.getId(), TemplateDateHandling.CONVERT);
+        assertThat(taskRepository.findPlanTasks(converted.getId())).singleElement()
+                .extracting(Task::getDueDate).isEqualTo(java.time.LocalDate.of(2026, 9, 14));
     }
 
     private Template saveStaticEventTemplate() {

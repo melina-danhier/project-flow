@@ -26,4 +26,6 @@ public class TemplateSummaryDto implements ProjectClassification {
     private CollaborationMode collaborationMode;
     private boolean active;
     private int version;
+    private int taskCount;
+    private int milestoneCount;
 }
