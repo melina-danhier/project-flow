@@ -390,6 +390,38 @@ class DraftReviewIntegrationTest {
     }
 
     @Test
+    void invalidDraftTaskKeepsInputVisibleAndDoesNotPersistChanges() throws Exception {
+        Fixture f = fixture(null, null);
+        DraftReviewDto before = review(f);
+        var task = before.getElements().getFirst();
+        String invalidTitle = "U".repeat(101);
+
+        mvc.perform(post(f.url() + "/tasks/" + task.getId())
+                        .param("lockVersion", String.valueOf(before.getLockVersion()))
+                        .param("title", invalidTitle)
+                        .param("description", "Diese Korrektur darf nicht verloren gehen")
+                        .param("startDate", "2026-09-10")
+                        .param("dueDate", "2026-09-01")
+                        .param("priority", "HIGH")
+                        .with(user(f.owner())).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/draft-review"))
+                .andExpect(model().attributeHasFieldErrors(
+                        "draftTaskForm", "title", "dateRangeValid"))
+                .andExpect(model().attribute("editingDraftTaskId", task.getId()))
+                .andExpect(content().string(containsString(
+                        "<details class=\"element-edit\" open")))
+                .andExpect(content().string(containsString(invalidTitle)))
+                .andExpect(content().string(containsString(
+                        "Diese Korrektur darf nicht verloren gehen")))
+                .andExpect(content().string(containsString(
+                        "Die Deadline darf nicht vor dem Startdatum liegen.")));
+
+        assertThat(review(f).getElements().getFirst().getTitle()).isEqualTo(task.getTitle());
+        assertThat(review(f).getElements().getFirst().getDescription()).isEqualTo(task.getDescription());
+    }
+
+    @Test
     void reviewStatusFilterKeepsMatchingChildSectionVisible() {
         Fixture f = fixture("Kritische Annahme", null);
         DraftReviewDto initial = review(f);
@@ -527,7 +559,9 @@ class DraftReviewIntegrationTest {
                         .param("title", "Nicht erlaubt").with(user(f.owner())).with(csrf()))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/projects/" + UUID.randomUUID() + "/draft/review").with(user(f.owner())))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(view().name("error/404"))
+                .andExpect(content().string(containsString("nicht gefunden")));
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
                 drafts.delete(drafts.findByProjectId(f.projectId()).orElseThrow()));

@@ -27,6 +27,9 @@
               th:object="${taskForm}" method="post">
             <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
             <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
+            <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error" role="alert">
+                Die Aufgabe konnte nicht gespeichert werden, weil der Bearbeitungsstand ungültig ist. Bitte lade die Seite neu.
+            </div>
             
             <th:block th:replace="~{fragments/form-fields :: title-field('Aufgabentitel')}" />
             <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung', false)}" />
@@ -39,6 +42,7 @@
                         <option value="IN_PROGRESS">In Bearbeitung</option>
                         <option value="COMPLETED">Erledigt</option>
                     </select>
+                    <div th:if="${#fields.hasErrors('status')}" th:errors="*{status}" class="pf-alert pf-alert--error" role="alert"></div>
                     <div id="blocked-completion-warning" th:if="${editing and taskBlocked}"
                          class="pf-alert pf-alert--warning" role="status" hidden style="margin-top: 0.75rem;">
                         <div>
@@ -67,12 +71,15 @@
                 <div class="pf-form-group">
                     <label for="startDate" class="pf-label">Startdatum</label>
                     <input id="startDate" type="date" th:field="*{startDate}" class="pf-input">
+                    <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
                 <div class="pf-form-group">
                     <label for="dueDate" class="pf-label">Fälligkeitsdatum</label>
                     <input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input">
+                    <div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
             </div>
+            <div th:if="${#fields.hasErrors('dateRangeValid')}" th:errors="*{dateRangeValid}" class="pf-alert pf-alert--error" role="alert"></div>
 
             <div th:if="${groupProject}" class="pf-form-group">
                 <label for="assignee" class="pf-label">Zuständigkeit</label>
@@ -80,6 +87,7 @@
                     <option value="">Nicht zugewiesen</option>
                     <option th:each="member : ${assignees}" th:value="${member.id}" th:text="${member.displayName}"></option>
                 </select>
+                <div th:if="${#fields.hasErrors('assigneeId')}" th:errors="*{assigneeId}" class="pf-alert pf-alert--error" role="alert"></div>
             </div>
 
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">

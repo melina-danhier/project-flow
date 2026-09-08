@@ -93,6 +93,7 @@
 
                     <!-- Action B: Confirm Custom Context -->
                     <form th:if="${problem.reviewQuestion != null and !problem.reviewQuestion.isBlank()}"
+                          th:unless="${editingProblemIndex == problem.index}"
                           th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/confirm(workflowId=${review.workflowId},problemIndex=${problem.index})}"
                           method="post" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--pf-border);">
                         <div class="pf-form-group" style="margin-bottom: 0.5rem;">
@@ -107,6 +108,29 @@
                                       required
                                       placeholder="Beschreibe deine Planungsgrundlage..."
                                       style="min-height: 70px; margin-bottom: 0.5rem;"></textarea>
+                        </div>
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">
+                            Kontext speichern
+                        </button>
+                    </form>
+                    <form th:if="${problem.reviewQuestion != null and !problem.reviewQuestion.isBlank() and editingProblemIndex == problem.index}"
+                          th:object="${openPointConfirmationForm}"
+                          th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/confirm(workflowId=${review.workflowId},problemIndex=${problem.index})}"
+                          method="post" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--pf-border);">
+                        <div class="pf-form-group" style="margin-bottom: 0.5rem;">
+                            <label th:for="|planningContext-${problem.index}|" class="pf-label" style="font-size: 0.88rem;">
+                                <span th:text="${problem.reviewQuestion}">Welche Planungsgrundlage soll gelten?</span>
+                                <span class="pf-required-star" aria-hidden="true">*</span>
+                            </label>
+                            <textarea th:id="|planningContext-${problem.index}|"
+                                      th:field="*{planningContext}"
+                                      class="pf-textarea"
+                                      maxlength="1000"
+                                      required
+                                      placeholder="Beschreibe deine Planungsgrundlage..."
+                                      style="min-height: 70px; margin-bottom: 0.5rem;"></textarea>
+                            <div th:if="${#fields.hasErrors('planningContext')}" th:errors="*{planningContext}"
+                                 class="pf-alert pf-alert--error" role="alert"></div>
                         </div>
                         <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">
                             Kontext speichern

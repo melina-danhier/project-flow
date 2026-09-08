@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.ui.Model;
 
 import java.util.UUID;
 
@@ -33,11 +34,17 @@ public class DraftEditingController {
                                 @Valid @ModelAttribute DraftSectionForm sectionForm,
                                 BindingResult bindingResult,
                                 @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                Model model,
                                 RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
-            throw new DomainValidationException("Bitte prüfe Titel und Beschreibung des Bereichs.");
+            return renderInvalidSection(projectId, sectionId, currentUser.userId(), model);
         }
-        draftReviewService.updateSection(projectId, sectionId, currentUser.userId(), sectionForm);
+        try {
+            draftReviewService.updateSection(projectId, sectionId, currentUser.userId(), sectionForm);
+        } catch (DomainValidationException exception) {
+            bindingResult.reject("draftSection", exception.getMessage());
+            return renderInvalidSection(projectId, sectionId, currentUser.userId(), model);
+        }
         redirectAttributes.addFlashAttribute("successMessage", "Der Bereich wurde aktualisiert.");
         return reviewRedirect(projectId);
     }
@@ -46,13 +53,17 @@ public class DraftEditingController {
     public String updateTask(@PathVariable UUID projectId, @PathVariable UUID taskId,
                              @Valid @ModelAttribute DraftTaskForm taskForm,
                              BindingResult bindingResult,
-                             @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                             @AuthenticationPrincipal AuthenticatedUser currentUser,
+                             Model model) {
         if (bindingResult.hasErrors()) {
-            throw new DomainValidationException(
-                    "Bitte prüfe die Aufgabenangaben, insbesondere Datums- und Zahlenfelder."
-            );
+            return renderInvalidTask(projectId, taskId, currentUser.userId(), model);
         }
-        draftReviewService.updateTask(projectId, taskId, currentUser.userId(), taskForm);
+        try {
+            draftReviewService.updateTask(projectId, taskId, currentUser.userId(), taskForm);
+        } catch (DomainValidationException exception) {
+            bindingResult.reject("draftTask", exception.getMessage());
+            return renderInvalidTask(projectId, taskId, currentUser.userId(), model);
+        }
         return reviewRedirect(projectId);
     }
 
@@ -60,11 +71,17 @@ public class DraftEditingController {
     public String updateMilestone(@PathVariable UUID projectId, @PathVariable UUID milestoneId,
                                   @Valid @ModelAttribute DraftMilestoneForm milestoneForm,
                                   BindingResult bindingResult,
-                                  @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                                  @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                  Model model) {
         if (bindingResult.hasErrors()) {
-            throw new DomainValidationException("Bitte prüfe die Meilensteinangaben.");
+            return renderInvalidMilestone(projectId, milestoneId, currentUser.userId(), model);
         }
-        draftReviewService.updateMilestone(projectId, milestoneId, currentUser.userId(), milestoneForm);
+        try {
+            draftReviewService.updateMilestone(projectId, milestoneId, currentUser.userId(), milestoneForm);
+        } catch (DomainValidationException exception) {
+            bindingResult.reject("draftMilestone", exception.getMessage());
+            return renderInvalidMilestone(projectId, milestoneId, currentUser.userId(), model);
+        }
         return reviewRedirect(projectId);
     }
 
@@ -102,5 +119,25 @@ public class DraftEditingController {
 
     private String reviewRedirect(UUID projectId) {
         return "redirect:/projects/" + projectId + "/draft/review";
+    }
+
+    private String renderInvalidSection(UUID projectId, UUID sectionId, UUID userId, Model model) {
+        model.addAttribute("editingDraftSectionId", sectionId);
+        return renderReview(projectId, userId, model);
+    }
+
+    private String renderInvalidTask(UUID projectId, UUID taskId, UUID userId, Model model) {
+        model.addAttribute("editingDraftTaskId", taskId);
+        return renderReview(projectId, userId, model);
+    }
+
+    private String renderInvalidMilestone(UUID projectId, UUID milestoneId, UUID userId, Model model) {
+        model.addAttribute("editingDraftMilestoneId", milestoneId);
+        return renderReview(projectId, userId, model);
+    }
+
+    private String renderReview(UUID projectId, UUID userId, Model model) {
+        model.addAttribute("draft", draftReviewService.review(projectId, userId, null));
+        return "generation/draft-review";
     }
 }

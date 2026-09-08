@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.draft.dto.editing;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class DraftSectionForm {
     @Size(max = 2000)
     private String description;
 
+    @NotNull
     @PositiveOrZero
-    private long lockVersion;
+    private Long lockVersion;
 }

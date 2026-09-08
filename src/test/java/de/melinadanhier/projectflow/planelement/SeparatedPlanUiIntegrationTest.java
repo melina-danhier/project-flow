@@ -156,11 +156,19 @@ class SeparatedPlanUiIntegrationTest {
                         .session(session).with(csrf())
                         .param("title", "")
                         .param("description", "Eingabe bleibt sichtbar")
-                        .param("priority", "HIGH"))
+                        .param("priority", "HIGH")
+                        .param("startDate", "2026-08-21")
+                        .param("dueDate", "2026-08-20")
+                        .param("lockVersion", String.valueOf(task.getLockVersion())))
                 .andExpect(status().isOk())
                 .andExpect(view().name("projects/tasks/form"))
-                .andExpect(model().attributeHasFieldErrors("taskForm", "title"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Eingabe bleibt sichtbar")));
+                .andExpect(model().attributeHasFieldErrors("taskForm", "title", "dateRangeValid"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Eingabe bleibt sichtbar")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "Das Fälligkeitsdatum darf nicht vor dem Startdatum liegen.")));
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getTitle()).isEqualTo("Ausarbeitung");
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getDescription())
+                .isEqualTo("Alle Felder bleiben erhalten");
 
         mockMvc.perform(post("/projects/{projectId}/tasks/{taskId}", project.getId(), task.getId())
                         .session(session).with(csrf())
@@ -412,7 +420,10 @@ class SeparatedPlanUiIntegrationTest {
         project.setLocation(ProjectLocation.ARCHIVE);
         projectRepository.saveAndFlush(project);
         mockMvc.perform(get("/projects/{projectId}/members", project.getId()).session(ownerSession))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(view().name("error/409"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "Die Änderung konnte nicht übernommen werden")));
     }
 
     @Test

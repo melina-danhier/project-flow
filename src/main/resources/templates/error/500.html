@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Interner Fehler')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+<main>
+    <div class="pf-card" style="max-width: 680px; margin: 3rem auto; text-align: center;">
+        <span class="pf-badge pf-badge--red">Fehler</span>
+        <h1>Das hat leider nicht funktioniert</h1>
+        <p th:text="${errorMessage}">Ein unerwarteter Fehler ist aufgetreten.</p>
+        <a class="pf-btn pf-btn--primary" th:href="@{/projects}">Zur Projektübersicht</a>
+    </div>
+</main>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>
