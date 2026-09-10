@@ -48,7 +48,7 @@
             <a th:if="${plan.owner}" class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/edit(projectId=${plan.project.id})}">
                 Projektdetails bearbeiten
             </a>
-            <a th:if="${plan.owner and plan.project.groupProject}" class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/members(projectId=${plan.project.id})}">
+            <a th:if="${plan.project.groupProject}" class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/members(projectId=${plan.project.id})}">
                 Mitglieder verwalten
             </a>
         </nav>

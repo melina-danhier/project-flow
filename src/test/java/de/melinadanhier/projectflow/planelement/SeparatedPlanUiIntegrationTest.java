@@ -369,9 +369,10 @@ class SeparatedPlanUiIntegrationTest {
     }
 
     @Test
-    void memberManagementIsOwnerOnlyActiveAndRemovalClearsTaskAssignments() throws Exception {
+    void activeMembersCanManageTheMemberListButOnlyOwnerCanRemoveMembers() throws Exception {
         User owner = saveUser("members-ui-owner@example.org");
         User member = saveUser("members-ui-member@example.org");
+        User addedByMember = saveUser("members-ui-added@example.org");
         Project project = saveProject("Mitgliederseite", owner);
         MockHttpSession ownerSession = login(owner.getEmail());
         MockHttpSession memberSession = login(member.getEmail());
@@ -396,8 +397,20 @@ class SeparatedPlanUiIntegrationTest {
         ProjectMember membership = projectMemberRepository
                 .findByProjectIdAndUserId(project.getId(), member.getId()).orElseThrow();
 
+        mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(memberSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Mitglieder verwalten")));
         mockMvc.perform(get("/projects/{projectId}/members", project.getId()).session(memberSession))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Mitglied hinzufügen")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Entfernen</button>"))));
+        mockMvc.perform(post("/projects/{projectId}/members", project.getId())
+                        .session(memberSession).with(csrf())
+                        .param("email", addedByMember.getEmail()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/members"));
+        assertThat(projectMemberRepository.findByProjectIdAndUserId(
+                project.getId(), addedByMember.getId())).get().extracting(ProjectMember::isActive).isEqualTo(true);
         mockMvc.perform(post("/projects/{projectId}/members", project.getId())
                         .session(ownerSession).with(csrf())
                         .param("email", member.getEmail()))
@@ -409,6 +422,12 @@ class SeparatedPlanUiIntegrationTest {
         Task assignedTask = createTask(project, owner, null, "Zugewiesene Aufgabe");
         assignedTask.setAssignee(membership);
         taskRepository.saveAndFlush(assignedTask);
+        mockMvc.perform(post("/projects/{projectId}/members/{memberId}/remove",
+                                project.getId(), membership.getId())
+                        .session(memberSession).with(csrf()))
+                .andExpect(status().isForbidden());
+        assertThat(projectMemberRepository.findById(membership.getId())).get()
+                .extracting(ProjectMember::isActive).isEqualTo(true);
         mockMvc.perform(post("/projects/{projectId}/members/{memberId}/remove",
                                 project.getId(), membership.getId())
                         .session(ownerSession).with(csrf()))
