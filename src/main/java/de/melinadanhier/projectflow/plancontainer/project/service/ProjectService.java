@@ -251,14 +251,12 @@ public class ProjectService {
     public List<ProjectSummaryDto> findAccessibleProjects(ProjectLocation location, UUID userId) {
         ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
         return toSummariesWithProgress(
-                projectRepository.findAllAccessibleByUserIdAndLocation(userId, selectedLocation));
+                projectRepository.findAllAccessibleByUserIdAndLocation(userId, selectedLocation), userId);
     }
 
     @Transactional(readOnly = true)
     public List<ProjectSummaryDto> findDraftProjects(UUID userId) {
-        return projectRepository.findAllDraftsAccessibleByUserId(userId).stream()
-                .map(projectMapper::toSummaryDto)
-                .toList();
+        return toSummaries(projectRepository.findAllDraftsAccessibleByUserId(userId), userId);
     }
 
     @Transactional(readOnly = true)
@@ -270,7 +268,7 @@ public class ProjectService {
         ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
         String normalizedQuery = query == null ? "" : query.trim();
         return toSummariesWithProgress(projectRepository.searchAccessibleByUserIdAndLocation(
-                userId, selectedLocation, normalizedQuery));
+                userId, selectedLocation, normalizedQuery), userId);
     }
 
     @Transactional(readOnly = true)
@@ -399,6 +397,17 @@ public class ProjectService {
             throw new ConflictException("Nur Projekte aus der Übersicht können archiviert werden.");
         }
         project.setLocation(ProjectLocation.ARCHIVE);
+        project.getMemberships().forEach(membership -> membership.setPinned(false));
+    }
+
+    @Transactional
+    public void setPinned(UUID projectId, UUID userId, boolean pinned) {
+        ProjectMember membership = authorizationService.requireMember(projectId, userId);
+        Project project = membership.getProject();
+        if (project.getLocation() != ProjectLocation.OVERVIEW) {
+            throw new ConflictException("Nur aktive Projekte können angepinnt werden.");
+        }
+        membership.setPinned(pinned);
     }
 
     @Transactional
@@ -491,8 +500,8 @@ public class ProjectService {
         }
     }
 
-    private List<ProjectSummaryDto> toSummariesWithProgress(List<Project> projects) {
-        List<ProjectSummaryDto> summaries = projects.stream().map(projectMapper::toSummaryDto).toList();
+    private List<ProjectSummaryDto> toSummariesWithProgress(List<Project> projects, UUID userId) {
+        List<ProjectSummaryDto> summaries = toSummaries(projects, userId);
         if (projects.isEmpty()) {
             return summaries;
         }
@@ -510,6 +519,19 @@ public class ProjectService {
             }
         });
         return summaries;
+    }
+
+    private List<ProjectSummaryDto> toSummaries(List<Project> projects, UUID userId) {
+        return projects.stream().map(project -> {
+            ProjectSummaryDto summary = projectMapper.toSummaryDto(project);
+            ProjectMember membership = project.getMemberships().stream()
+                    .filter(candidate -> candidate.isActive() && candidate.getUser().getId().equals(userId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Aktive Projektmitgliedschaft fehlt."));
+            summary.setOwner(membership.getRole() == ProjectMemberRole.OWNER);
+            summary.setPinned(membership.isPinned());
+            return summary;
+        }).toList();
     }
 
     private LocalDate toAbsoluteDate(LocalDate conversionStartDate, LocalDate absoluteDate, Integer relativeDay,

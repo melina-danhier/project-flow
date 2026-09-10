@@ -55,6 +55,9 @@ public class ProjectMember extends MutableEntity {
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
+    @Column(name = "pinned", nullable = false)
+    private boolean pinned;
+
     @PrePersist
     protected void initializeJoinedAt() {
         if (joinedAt == null) {

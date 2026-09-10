@@ -1,0 +1,2 @@
+ALTER TABLE project_members
+    ADD COLUMN pinned BOOLEAN NOT NULL DEFAULT FALSE;

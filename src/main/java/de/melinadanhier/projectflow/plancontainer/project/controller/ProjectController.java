@@ -147,6 +147,28 @@ public class ProjectController {
         return "redirect:/projects?location=ARCHIVE";
     }
 
+    @PostMapping("/projects/{projectId}/pin")
+    public String pin(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            RedirectAttributes redirectAttributes
+    ) {
+        projectService.setPinned(projectId, currentUser.userId(), true);
+        redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde angepinnt.");
+        return "redirect:/projects";
+    }
+
+    @PostMapping("/projects/{projectId}/unpin")
+    public String unpin(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            RedirectAttributes redirectAttributes
+    ) {
+        projectService.setPinned(projectId, currentUser.userId(), false);
+        redirectAttributes.addFlashAttribute("successMessage", "Projekt wird nicht mehr angepinnt.");
+        return "redirect:/projects";
+    }
+
     @PostMapping("/projects/{projectId}/reactivate")
     public String reactivate(
             @PathVariable UUID projectId,

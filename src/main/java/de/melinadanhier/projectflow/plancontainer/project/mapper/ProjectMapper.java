@@ -14,6 +14,8 @@ public interface ProjectMapper {
     @Mapping(target = "subcategoryOptions", ignore = true)
     @Mapping(target = "allSubcategories", ignore = true)
     @Mapping(target = "progress", ignore = true)
+    @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "pinned", ignore = true)
     ProjectSummaryDto toSummaryDto(Project project);
 
     @Mapping(target = "subcategoryOptions", ignore = true)

@@ -17,12 +17,12 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     java.util.Optional<UUID> findForUpdate(@Param("projectId") UUID projectId);
 
     @Query("""
-            select distinct project
+            select project
             from Project project
             join project.memberships membership
             where membership.user.id = :userId and membership.active = true
               and project.location = :location
-            order by project.updatedAt desc
+            order by membership.pinned desc, project.updatedAt desc
             """)
     List<Project> findAllAccessibleByUserIdAndLocation(
             @Param("userId") UUID userId,
@@ -30,14 +30,14 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     );
 
     @Query("""
-            select distinct project
+            select project
             from Project project
             join project.memberships membership
             where membership.user.id = :userId and membership.active = true
               and project.location = :location
               and (lower(project.title) like lower(concat('%', :query, '%'))
                    or lower(coalesce(project.description, '')) like lower(concat('%', :query, '%')))
-            order by project.updatedAt desc
+            order by membership.pinned desc, project.updatedAt desc
             """)
     List<Project> searchAccessibleByUserIdAndLocation(
             @Param("userId") UUID userId,
