@@ -9,6 +9,9 @@ import de.melinadanhier.projectflow.ai.model.improvement.AiTextImprovementRespon
 import de.melinadanhier.projectflow.ai.model.improvement.AiTaskReplanResponse;
 import de.melinadanhier.projectflow.ai.model.improvement.AiMilestoneReplanResponse;
 import de.melinadanhier.projectflow.ai.model.improvement.AiTaskEffortResponse;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeOperation;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeApplicability;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeResponse;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 
 import java.util.Arrays;
@@ -51,7 +54,58 @@ public final class AiResponseSchemas {
                     entry("estimatedHours", positiveInteger(MAX_ESTIMATED_HOURS)),
                     entry("explanation", boundedString(500))));
         }
+        if (type == AiPlanChangeResponse.class) return planChangeSchema();
         throw new IllegalArgumentException("Kein KI-Ausgabeschema für " + type.getName());
+    }
+
+    private static Map<String, Object> planChangeSchema() {
+        return object(Map.ofEntries(
+                entry("applicability", enumeration(AiPlanChangeApplicability.class)),
+                entry("rejectionReason", nullable(boundedString(500))),
+                entry("summary", boundedString(500)),
+                entry("sections", array(sectionChangeSchema(), 0, 20)),
+                entry("tasks", array(taskChangeSchema(), 0, 100)),
+                entry("milestones", array(milestoneChangeSchema(), 0, 50))));
+    }
+
+    private static Map<String, Object> sectionChangeSchema() {
+        return object(Map.ofEntries(
+                entry("operation", enumeration(AiPlanChangeOperation.class)),
+                entry("existingSectionId", nullable(string())),
+                entry("newSectionReference", nullable(string())),
+                entry("changedFields", array(stringEnumeration("title", "description", "position"), 1, 3)),
+                entry("title", nullable(string())), entry("description", nullable(string())),
+                entry("beforeSectionId", nullable(string())), entry("afterSectionId", nullable(string())),
+                entry("explanation", nullable(boundedString(500)))));
+    }
+
+    private static Map<String, Object> taskChangeSchema() {
+        return object(Map.ofEntries(
+                entry("operation", enumeration(AiPlanChangeOperation.class)),
+                entry("existingTaskId", nullable(string())), entry("targetSectionId", nullable(string())),
+                entry("changedFields", array(stringEnumeration("title", "description", "priority", "estimatedHours",
+                        "startDate", "dueDate", "section", "position"), 1, 8)),
+                entry("title", nullable(string())), entry("description", nullable(string())),
+                entry("priority", nullable(enumeration(TaskPriority.class))),
+                entry("estimatedHours", nullable(positiveInteger(MAX_ESTIMATED_HOURS))),
+                entry("startDate", nullable(date())), entry("dueDate", nullable(date())),
+                entry("placement", relativePlacementSchema()),
+                entry("explanation", nullable(boundedString(500)))));
+    }
+
+    private static Map<String, Object> milestoneChangeSchema() {
+        return object(Map.ofEntries(
+                entry("operation", enumeration(AiPlanChangeOperation.class)),
+                entry("existingMilestoneId", nullable(string())), entry("targetSectionId", nullable(string())),
+                entry("changedFields", array(stringEnumeration("title", "description", "dueDate", "section", "position"), 1, 5)), entry("title", nullable(string())),
+                entry("description", nullable(string())), entry("dueDate", nullable(date())),
+                entry("placement", relativePlacementSchema()),
+                entry("explanation", nullable(boundedString(500)))));
+    }
+
+    private static Map<String, Object> relativePlacementSchema() {
+        return object(Map.ofEntries(entry("beforeElementId", nullable(string())),
+                entry("afterElementId", nullable(string()))));
     }
 
     private static Map<String, Object> textImprovementSchema() {
@@ -149,6 +203,10 @@ public final class AiResponseSchemas {
 
     private static Map<String, Object> string() {
         return Map.of("type", "string");
+    }
+
+    private static Map<String, Object> stringEnumeration(String... values) {
+        return Map.of("type", "string", "enum", List.of(values));
     }
 
     private static Map<String, Object> boundedString(int maxLength) {

@@ -9,6 +9,7 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementRequest;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementResponse;
+import de.melinadanhier.projectflow.ai.model.planchange.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -69,6 +70,23 @@ public class StubAiClient implements AiClient {
                     case ESTIMATE_EFFORT -> "Der Aufwand berücksichtigt Inhalt und Umfang der Aufgabe.";
                     case IMPROVE, EXPAND, SIMPLIFY -> null;
                 });
+    }
+
+    @Override
+    public AiPlanChangeResponse proposePlanChanges(AiPlanChangeRequest request) {
+        var firstSection = request.currentPlan().sections().stream()
+                .filter(section -> section.reference() != null).findFirst().orElse(null);
+        if (firstSection == null) return new AiPlanChangeResponse(
+                AiPlanChangeApplicability.APPLICABLE, null, "Ein neuer Bereich ergänzt den Plan.",
+                List.of(new AiSectionChange(AiPlanChangeOperation.NEW, null, "new-section-1",
+                        List.of("title", "description"), "Ergänzungen", "Vorgeschlagene Ergänzungen",
+                        null, null, null)), List.of(), List.of());
+        return new AiPlanChangeResponse(AiPlanChangeApplicability.APPLICABLE, null,
+                "Eine passende Aufgabe ergänzt den vorhandenen Plan.", List.of(),
+                List.of(new AiTaskChange(AiPlanChangeOperation.NEW, null, firstSection.reference(),
+                        List.of("title", "description", "priority"), "Änderungswunsch umsetzen",
+                        request.changeRequest(), de.melinadanhier.projectflow.planelement.model.TaskPriority.MEDIUM,
+                        null, null, null, new AiRelativePlacement(null, null), null)), List.of());
     }
 
     private String append(String current, String addition) {

@@ -12,6 +12,7 @@ import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.ImprovementPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.PlanChangePromptBuilder;
 import de.melinadanhier.projectflow.ai.provider.AbstractProviderAiClient;
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
@@ -28,7 +29,8 @@ public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGe
             GenerationPromptBuilder generationPromptBuilder
     ) {
         this(gateway, properties, preCheckPromptBuilder, generationPromptBuilder,
-                new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper()));
+                new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper()),
+                new PlanChangePromptBuilder(new tools.jackson.databind.ObjectMapper()));
     }
 
     public OpenAiProjectFlowAIClient(
@@ -38,6 +40,18 @@ public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGe
             GenerationPromptBuilder generationPromptBuilder,
             ImprovementPromptBuilder improvementPromptBuilder
     ) {
+        this(gateway, properties, preCheckPromptBuilder, generationPromptBuilder, improvementPromptBuilder,
+                new PlanChangePromptBuilder(new tools.jackson.databind.ObjectMapper()));
+    }
+
+    public OpenAiProjectFlowAIClient(
+            AiResponsesGateway gateway,
+            OpenAiProperties properties,
+            PreCheckPromptBuilder preCheckPromptBuilder,
+            GenerationPromptBuilder generationPromptBuilder,
+            ImprovementPromptBuilder improvementPromptBuilder,
+            PlanChangePromptBuilder planChangePromptBuilder
+    ) {
         super(
                 "openai",
                 gateway,
@@ -46,7 +60,8 @@ public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGe
                 OpenAiGenerationOutput.class,
                 preCheckPromptBuilder,
                 generationPromptBuilder,
-                improvementPromptBuilder
+                improvementPromptBuilder,
+                planChangePromptBuilder
         );
     }
 
