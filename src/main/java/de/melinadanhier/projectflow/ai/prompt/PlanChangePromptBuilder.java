@@ -23,15 +23,35 @@ public class PlanChangePromptBuilder {
                 hinein. Bei Unsicherheit lehne eher ab, statt fachfremde Inhalte einzubauen.
                 Setze applicability=NOT_APPLICABLE, gib eine kurze nutzerbezogene rejectionReason an und liefere leere
                 Änderungslisten, wenn der Wunsch außerhalb des Projekts liegt. Setze sonst applicability=APPLICABLE,
-                rejectionReason=null und erzeuge den nachfolgenden Diff. NOT_APPLICABLE ist eine fachliche Entscheidung,
-                kein technischer Fehler.
+                rejectionReason=null und erzeuge den nachfolgenden Diff mit mindestens einer tatsächlichen Änderung.
+                Verwende summary oder explanation niemals als rejectionReason. NOT_APPLICABLE ist eine fachliche
+                Entscheidung, kein technischer Fehler.
                 Schlage ausschließlich die für den Änderungswunsch notwendigen Änderungen am vorhandenen Plan vor.
                 Gib einen Diff und niemals einen vollständigen Ersatzplan zurück. Keine Löschungen. Erfinde keine IDs.
+                Interpretiere den Änderungswunsch ausschließlich als Kombination der unterstützten Operationen
+                ADD, MODIFY, MOVE und REPLAN. ADD erzeugt neue Sections, Tasks oder Milestones. MODIFY ändert nur
+                die im Schema freigegebenen fachlichen Felder. MOVE ändert nur Section-Zuordnung oder relative
+                Position. REPLAN ändert Start-/Fälligkeitsdaten, die fachlich passende Reihenfolge und nur wenn
+                dafür erforderlich die Section-Zuordnung. Erfinde keine weiteren Operationen.
+                Nicht unterstützt sind: bestehende Elemente löschen, den ganzen Plan ersetzen oder neu generieren,
+                Dependencies oder Assignees automatisch ändern, Completion-State ändern sowie technische oder
+                sonstige nicht freigegebene Felder. Deute solche Wünsche nicht kreativ in eine erlaubte Operation um.
+                Wenn ein Wunsch nicht sinnvoll vollständig mit ADD, MODIFY, MOVE und REPLAN abbildbar ist, antworte
+                mit NOT_APPLICABLE, leeren Änderungslisten und einer kurzen nutzerverständlichen rejectionReason.
+                Beispiele dafür sind: "Lösche alle bisherigen Aufgaben", "Ersetze den gesamten Plan durch einen
+                besseren", "Ändere automatisch alle Abhängigkeiten" sowie fachfremde Wünsche.
+                Setze alle ausdrücklich gewünschten, fachlich anwendbaren Änderungen gemeinsam in genau einem Diff um.
+                Mehrere Änderungen, mehrere neue Elemente und Änderungen über mehrere Sections sind ausdrücklich
+                erlaubt und dürfen nicht auf eine Section oder ein Element reduziert werden.
                 MODIFIED referenziert genau eine vorhandene ID aus currentPlan; NEW hat keine bestehende ID.
                 changedFields nennt exakt die fachlichen Felder, die sich ändern. Nicht genannte Felder bleiben null.
                 Verwende in changedFields ausschließlich die im Schema vorgegebenen, exakt geschriebenen Werte.
                 Bei NEW sind existingSectionId, existingTaskId beziehungsweise existingMilestoneId immer null.
-                Wenn keine relative Position erforderlich ist, sind before- und after-Referenz beide null, nicht leer.
+                Das Placement-Objekt unterstützt ausschließlich beforeElementId und afterElementId. Wenn eine relative
+                Position geändert wird, setze exakt eine dieser beiden Referenzen auf eine gültige Element-reference
+                und die jeweils andere auf null. Verwende keine Synonyme oder Werte wie start, end, first, last,
+                beforeElement oder afterElement. Wenn keine Positionsänderung erforderlich ist, setze placement auf
+                ein Objekt mit beforeElementId=null und afterElementId=null und nenne position nicht in changedFields.
                 targetSectionId bleibt bei MODIFIED null, solange die Section nicht geändert wird; bei einer
                 Section-Änderung und bei NEW enthält es eine gültige vorhandene Section-ID oder die Referenz einer
                 im selben Diff neu vorgeschlagenen Section.
@@ -50,6 +70,11 @@ public class PlanChangePromptBuilder {
                 Neue Elemente müssen mindestens Titel und Ziel-Section angeben; neue Tasks außerdem priority.
                 Bewahre den übrigen Plan. summary und optionale explanations sind kurz, nutzerbezogen und enthalten
                 keine internen Gedankengänge, IDs oder technischen Feldnamen.
+
+                Eindeutige Ergebnisfälle:
+                APPLICABLE: rejectionReason ist null; mindestens sections, tasks oder milestones enthält eine Änderung.
+                Beispiel: Zwei gewünschte Aufgaben in zwei vorhandenen Sections ergeben zwei NEW-Einträge in tasks.
+                NOT_APPLICABLE: sections, tasks und milestones sind leer; rejectionReason enthält den kurzen Ablehnungsgrund.
                 """;
         try {
             return new AiPrompt(AiPromptVersions.PLAN_CHANGE_PROMPT, instructions,

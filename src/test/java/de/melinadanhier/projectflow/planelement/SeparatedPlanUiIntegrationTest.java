@@ -277,7 +277,7 @@ class SeparatedPlanUiIntegrationTest {
                         .param("planSectionId", section.getId().toString())
                         .param("startDate", "2026-08-15")
                         .param("dueDate", "2026-08-20")
-                        .param("assigneeId", ownerMembership.getId().toString()))
+                        .param("assigneeIds", ownerMembership.getId().toString()))
                 .andExpect(status().is3xxRedirection())
                 .andReturn();
 
@@ -290,7 +290,7 @@ class SeparatedPlanUiIntegrationTest {
         assertThat(task.getPriority()).isEqualTo(TaskPriority.HIGH);
         assertThat(task.getStartDate()).isEqualTo(LocalDate.of(2026, 8, 15));
         assertThat(task.getDueDate()).isEqualTo(LocalDate.of(2026, 8, 20));
-        assertThat(task.getAssignee().getId()).isEqualTo(ownerMembership.getId());
+        assertThat(task.getAssignees()).extracting(ProjectMember::getId).containsExactly(ownerMembership.getId());
 
         mockMvc.perform(get("/projects/{projectId}/tasks/{taskId}", project.getId(), task.getId())
                         .session(session))
@@ -315,7 +315,7 @@ class SeparatedPlanUiIntegrationTest {
         assertThat(taskForm.getPriority()).isEqualTo(TaskPriority.HIGH);
         assertThat(taskForm.getStartDate()).isEqualTo(LocalDate.of(2026, 8, 15));
         assertThat(taskForm.getDueDate()).isEqualTo(LocalDate.of(2026, 8, 20));
-        assertThat(taskForm.getAssigneeId()).isEqualTo(ownerMembership.getId());
+        assertThat(taskForm.getAssigneeIds()).containsExactly(ownerMembership.getId());
 
         mockMvc.perform(post("/projects/{projectId}/tasks/{taskId}", project.getId(), task.getId())
                         .session(session).with(csrf())
@@ -344,7 +344,7 @@ class SeparatedPlanUiIntegrationTest {
                         .param("planSectionId", section.getId().toString())
                         .param("startDate", task.getStartDate().toString())
                         .param("dueDate", task.getDueDate().toString())
-                        .param("assigneeId", ownerMembership.getId().toString())
+                        .param("assigneeIds", ownerMembership.getId().toString())
                         .param("sortOrder", String.valueOf(task.getSortOrder()))
                         .param("lockVersion", String.valueOf(task.getLockVersion())))
                 .andExpect(status().is3xxRedirection())
@@ -586,8 +586,7 @@ class SeparatedPlanUiIntegrationTest {
                         org.hamcrest.Matchers.not(org.hamcrest.Matchers.blankOrNullString())));
 
         Task assignedTask = createTask(project, owner, null, "Zugewiesene Aufgabe");
-        assignedTask.setAssignee(membership);
-        taskRepository.saveAndFlush(assignedTask);
+        assignTask(project, owner, assignedTask, membership);
         mockMvc.perform(post("/projects/{projectId}/members/{memberId}/remove",
                                 project.getId(), membership.getId())
                         .session(memberSession).with(csrf()))
@@ -600,7 +599,9 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/" + project.getId() + "/members"));
         assertThat(projectMemberRepository.findById(membership.getId()).orElseThrow().isActive()).isFalse();
-        assertThat(taskRepository.findById(assignedTask.getId()).orElseThrow().getAssignee()).isNull();
+        assertThat(taskRepository.findPlanTasks(project.getId()))
+                .filteredOn(candidate -> candidate.getId().equals(assignedTask.getId()))
+                .singleElement().satisfies(candidate -> assertThat(candidate.getAssignees()).isEmpty());
 
         project.setLocation(ProjectLocation.ARCHIVE);
         projectRepository.saveAndFlush(project);
@@ -678,22 +679,24 @@ class SeparatedPlanUiIntegrationTest {
         for (String path : new String[] {"/tasks/new", "/tasks/" + task.getId() + "/edit", "/tasks/" + task.getId()}) {
             mockMvc.perform(get("/projects/" + project.getId() + path).session(session))
                     .andExpect(status().isOk())
-                    .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Zuständigkeit"))));
+                    .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Zugewiesen an"))));
         }
         mockMvc.perform(get("/projects/{id}/members", project.getId()).session(session)).andExpect(status().isNotFound());
         mockMvc.perform(post("/projects/{id}/members", project.getId()).session(session).with(csrf())
                         .param("email", owner.getEmail())).andExpect(status().isNotFound());
         mockMvc.perform(post("/projects/{id}/tasks", project.getId()).session(session).with(csrf())
                         .param("title", "Manipuliert").param("priority", "MEDIUM")
-                        .param("assigneeId", membership.getId().toString()))
+                        .param("assigneeIds", membership.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeExists("errorMessage"));
         mockMvc.perform(post("/projects/{id}/tasks/{taskId}", project.getId(), task.getId()).session(session).with(csrf())
                         .param("title", "Manipuliert").param("priority", "MEDIUM")
-                        .param("assigneeId", membership.getId().toString())
+                        .param("assigneeIds", membership.getId().toString())
                         .param("lockVersion", String.valueOf(task.getLockVersion())))
                 .andExpect(model().attributeExists("errorMessage"));
-        assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee()).isNull();
+        assertThat(taskRepository.findPlanTasks(project.getId()))
+                .filteredOn(candidate -> candidate.getId().equals(task.getId()))
+                .singleElement().satisfies(candidate -> assertThat(candidate.getAssignees()).isEmpty());
         assertThat(taskRepository.findPlanTasks(project.getId())).hasSize(1);
 
         mockMvc.perform(get("/projects/{id}/edit", project.getId()).session(session))
@@ -710,7 +713,7 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(status().is3xxRedirection());
         mockMvc.perform(get("/projects/{id}/members", project.getId()).session(session)).andExpect(status().isOk());
         mockMvc.perform(get("/projects/{id}/tasks/new", project.getId()).session(session))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Zuständigkeit")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Zugewiesen an")));
     }
 
     @Test
@@ -726,8 +729,7 @@ class SeparatedPlanUiIntegrationTest {
                         .param("email", member.getEmail())).andExpect(status().is3xxRedirection());
         var task = createTask(project, owner, null, "Bleibt erhalten");
         var membership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), member.getId()).orElseThrow();
-        task.setAssignee(membership);
-        taskRepository.saveAndFlush(task);
+        assignTask(project, owner, task, membership);
         long projectVersion = projectRepository.findById(project.getId()).orElseThrow().getLockVersion();
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(memberSession).with(csrf())
                         .param("title", "Solo").param("category", "EDUCATION")
@@ -741,7 +743,9 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(model().attributeHasErrors("projectForm"))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Bitte bestätige")));
         assertThat(projectRepository.findById(project.getId()).orElseThrow().isGroupProject()).isTrue();
-        assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee()).isNotNull();
+        assertThat(taskRepository.findPlanTasks(project.getId()))
+                .filteredOn(candidate -> candidate.getId().equals(task.getId()))
+                .singleElement().satisfies(candidate -> assertThat(candidate.getAssignees()).isNotEmpty());
 
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(ownerSession).with(csrf())
                         .param("title", "Solo").param("category", "EDUCATION")
@@ -749,11 +753,13 @@ class SeparatedPlanUiIntegrationTest {
                         .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().is3xxRedirection());
         assertThat(projectMemberRepository.findById(membership.getId())).isEmpty();
-        assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee()).isNull();
+        assertThat(taskRepository.findPlanTasks(project.getId()))
+                .filteredOn(candidate -> candidate.getId().equals(task.getId()))
+                .singleElement().satisfies(candidate -> assertThat(candidate.getAssignees()).isEmpty());
         mockMvc.perform(get("/projects/{id}/plan", project.getId()).session(memberSession)).andExpect(status().isNotFound());
         mockMvc.perform(get("/projects/{id}/tasks/{taskId}", project.getId(), task.getId()).session(ownerSession))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Zuständigkeit"))));
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Zugewiesen an"))));
     }
 
     @Test
@@ -938,6 +944,23 @@ class SeparatedPlanUiIntegrationTest {
         form.setPlanSectionId(sectionId);
         UUID taskId = taskService.createTask(project.getId(), form, owner.getId()).getId();
         return taskRepository.findById(taskId).orElseThrow();
+    }
+
+    private void assignTask(Project project, User owner, Task task, ProjectMember membership) {
+        var current = taskService.getTaskForEditing(project.getId(), task.getId(), owner.getId());
+        TaskForm form = new TaskForm();
+        form.setTitle(current.getTitle());
+        form.setDescription(current.getDescription());
+        form.setPriority(current.getPriority());
+        form.setStatus(current.getStatus());
+        form.setPlanSectionId(current.getPlanSectionId());
+        form.setSortOrder(current.getSortOrder());
+        form.setStartDate(current.getStartDate());
+        form.setDueDate(current.getDueDate());
+        form.setEstimatedHours(current.getEstimatedHours());
+        form.setAssigneeIds(java.util.Set.of(membership.getId()));
+        form.setLockVersion(current.getLockVersion());
+        taskService.updateTask(project.getId(), task.getId(), form, owner.getId());
     }
 
     private Milestone createMilestone(Project project, User owner, UUID sectionId, String title) {

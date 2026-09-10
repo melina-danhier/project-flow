@@ -3,6 +3,7 @@ package de.melinadanhier.projectflow.ai;
 import de.melinadanhier.projectflow.ai.model.AiResponseSchemas;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeResponse;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,25 @@ class AiResponseSchemasTest {
         var sectionProperties = (Map<String, Object>) section.get("properties");
         assertThat(sectionProperties).containsKeys("title", "description", "order", "tasks", "milestones")
                 .doesNotContainKeys("startDate", "endDate");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void planChangeSchemaEncodesApplicabilityAndExclusivePlacementInvariants() {
+        Map<String, Object> schema = AiResponseSchemas.forType(AiPlanChangeResponse.class);
+        assertThat((List<?>) schema.get("anyOf")).hasSize(4);
+        String schemaText = schema.toString();
+        assertThat(schemaText).contains("APPLICABLE", "NOT_APPLICABLE", "minItems=1", "maxItems=0")
+                .contains("rejectionReason={type=null}");
+
+        var properties = (Map<String, Object>) schema.get("properties");
+        var tasks = (Map<String, Object>) properties.get("tasks");
+        var task = (Map<String, Object>) tasks.get("items");
+        var taskProperties = (Map<String, Object>) task.get("properties");
+        var placement = (Map<String, Object>) taskProperties.get("placement");
+        assertThat((List<?>) placement.get("anyOf")).hasSize(3);
+        assertThat(placement.toString()).contains("beforeElementId", "afterElementId")
+                .doesNotContain("start", "end", "first", "last", "beforeElement=");
     }
 
     @SuppressWarnings("unchecked")

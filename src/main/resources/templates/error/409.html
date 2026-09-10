@@ -10,8 +10,8 @@
         <span class="pf-badge pf-badge--yellow">Konflikt</span>
         <h1>Die Änderung konnte nicht übernommen werden</h1>
         <p th:text="${errorMessage}">Der Zustand wurde zwischenzeitlich geändert.</p>
-        <button class="pf-btn pf-btn--primary" type="button" onclick="window.location.reload()">Seite neu laden</button>
-        <a class="pf-btn pf-btn--secondary" th:href="@{/projects}">Zur Projektübersicht</a>
+        <button class="pf-btn pf-btn--primary" type="button" onclick="window.history.back()">Zurück zur vorherigen Seite</button>
+        <a class="pf-btn pf-btn--secondary" th:href="@{/projects}">Zu meinen Projekten</a>
     </div>
 </main>
 <th:block th:replace="~{fragments/layout :: site-footer}" />

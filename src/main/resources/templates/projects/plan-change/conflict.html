@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('KI-Vorschlag nicht verfügbar')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+<main>
+    <div class="pf-card" style="max-width: 680px; margin: 3rem auto; text-align: center;">
+        <span class="pf-badge pf-badge--yellow">Vorschlag nicht verfügbar</span>
+        <h1>Der KI-Vorschlag kann nicht übernommen werden</h1>
+        <p th:text="${errorMessage}">Der KI-Vorschlag wurde bereits übernommen oder ist nicht mehr verfügbar.</p>
+        <p class="pf-text-muted">Du kannst zum Projekt zurückkehren oder denselben Änderungswunsch erneut ausführen.</p>
+        <div class="pf-cluster" style="justify-content: center;">
+            <a class="pf-btn pf-btn--primary" th:href="@{/projects/{id}/plan(id=${projectId})}">Zurück zum Projekt</a>
+            <form th:if="${canRegenerate}" method="post"
+                  th:action="@{/projects/{id}/plan/ai-change/regenerate-last(id=${projectId})}">
+                <button class="pf-btn pf-btn--secondary" type="submit">Mit gleichem Wunsch neu generieren</button>
+            </form>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>
