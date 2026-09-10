@@ -138,9 +138,11 @@ class SeparatedPlanUiIntegrationTest {
 
         MvcResult taskEdit = mockMvc.perform(get(
                         "/projects/{projectId}/tasks/{taskId}/edit", project.getId(), task.getId())
-                        .session(session))
+                .session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("projects/tasks/form"))
+                .andExpect(content().string(containsString("name=\"startDate\" value=\"2026-08-15\"")))
+                .andExpect(content().string(containsString("name=\"dueDate\" value=\"2026-08-20\"")))
                 .andReturn();
         TaskForm taskForm = (TaskForm) taskEdit.getModelAndView().getModel().get("taskForm");
         assertThat(taskForm.getTitle()).isEqualTo("Ausarbeitung");
@@ -204,9 +206,10 @@ class SeparatedPlanUiIntegrationTest {
                 .findFirst().orElseThrow();
         MvcResult milestoneEdit = mockMvc.perform(get(
                         "/projects/{projectId}/milestones/{milestoneId}/edit", project.getId(), milestone.getId())
-                        .session(session))
+                .session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("projects/milestones/form"))
+                .andExpect(content().string(containsString("name=\"dueDate\" value=\"2026-08-21\"")))
                 .andReturn();
         MilestoneForm milestoneForm = (MilestoneForm) milestoneEdit.getModelAndView().getModel().get("milestoneForm");
         assertThat(milestoneForm.getTitle()).isEqualTo("Abnahme");

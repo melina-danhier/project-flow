@@ -75,6 +75,11 @@
                             <div style="font-weight: 500; margin-top: 0.2rem;" th:text="${task.dueDate ?: 'Nicht festgelegt'}"></div>
                         </div>
                     </div>
+                    <div style="padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">
+                        <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Aufwand</span>
+                        <div style="font-weight: 500; margin-top: 0.2rem;"
+                             th:text="${task.estimatedHours != null ? task.estimatedHours + ' Stunden' : 'Nicht festgelegt'}"></div>
+                    </div>
                 </div>
             </div>
 

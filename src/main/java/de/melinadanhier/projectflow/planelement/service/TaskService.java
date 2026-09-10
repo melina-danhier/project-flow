@@ -173,6 +173,7 @@ public class TaskService {
         if (!java.util.Objects.equals(task.getTitle(), title)
                 || !java.util.Objects.equals(task.getDescription(), description)
                 || task.getPriority() != form.getPriority()
+                || !java.util.Objects.equals(task.getEstimatedHours(), form.getEstimatedHours())
                 || !java.util.Objects.equals(task.getStartDate(), form.getStartDate())
                 || !java.util.Objects.equals(task.getDueDate(), form.getDueDate())
                 || !java.util.Objects.equals(task.getAssignee(), assignee)) {
@@ -181,6 +182,7 @@ public class TaskService {
         task.setTitle(title);
         task.setDescription(description);
         task.setPriority(form.getPriority());
+        task.setEstimatedHours(form.getEstimatedHours());
         task.setStartDate(form.getStartDate());
         task.setDueDate(form.getDueDate());
         task.setRelativeStartDay(null);
