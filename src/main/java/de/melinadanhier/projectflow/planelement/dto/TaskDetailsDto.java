@@ -35,9 +35,8 @@ public class TaskDetailsDto {
     private LocalDate dueDate;
     private Integer relativeStartDay;
     private Integer relativeDueDay;
-    private UUID assigneeId;
-    private UUID assigneeUserId;
-    private String assigneeDisplayName;
+    private Set<UUID> assigneeIds = new LinkedHashSet<>();
+    private List<ProjectMemberDto> assignees = new ArrayList<>();
     private Set<UUID> prerequisiteIds = new LinkedHashSet<>();
     private List<TaskReferenceDto> predecessors = new ArrayList<>();
     private List<TaskReferenceDto> successors = new ArrayList<>();

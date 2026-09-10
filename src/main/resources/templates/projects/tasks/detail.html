@@ -64,8 +64,9 @@
                             </div>
                         </div>
                         <div th:if="${task.groupProject}">
-                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Zuständigkeit</span>
-                            <div style="font-weight: 600; margin-top: 0.2rem;" th:text="${task.assigneeDisplayName ?: 'Nicht zugewiesen'}"></div>
+                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Zugewiesen an</span>
+                            <div style="font-weight: 600; margin-top: 0.2rem;"
+                                 th:text="${#lists.isEmpty(task.assignees) ? 'Nicht zugewiesen' : #strings.listJoin(task.assignees.![displayName], ', ')}"></div>
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">

@@ -10,6 +10,8 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -28,6 +30,7 @@ public class PlanElementViewDto {
     private boolean milestoneCompleted;
     private boolean blocked;
     private ElementOrigin origin;
+    private List<String> assigneeDisplayNames = new ArrayList<>();
 
     public String getTypeLabel() {
         return type == PlanElementType.MILESTONE ? "Meilenstein" : "Aufgabe";

@@ -103,7 +103,7 @@ public class ProjectMembershipService {
             throw new ForbiddenOperationException("Der Projekteigentümer kann nicht entfernt werden oder das Projekt verlassen.");
         }
         membership.setActive(false);
-        taskRepository.clearAssignee(membership.getId());
+        taskRepository.clearAssignments(membership.getId());
     }
 
     private ProjectMember requireActiveMembership(UUID projectId, UUID userId) {

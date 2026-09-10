@@ -86,11 +86,13 @@ class DraftApplicationIntegrationTest {
                 String.class, fixture.projectId())).containsExactly("Offene Aufgabe", "Angenommener Meilenstein");
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ? and title = 'Verworfene Aufgabe'",
                 Integer.class, fixture.projectId())).isZero();
-        assertThat(jdbc.queryForMap("select t.status, t.assignee_id, t.priority, t.estimated_hours, pe.origin "
+        assertThat(jdbc.queryForMap("select t.status, t.priority, t.estimated_hours, pe.origin "
                 + "from tasks t join plan_elements pe on pe.id = t.id where pe.plan_container_id = ? and pe.title = 'Offene Aufgabe'",
                 fixture.projectId())).containsEntry("STATUS", "OPEN").containsEntry("PRIORITY", "HIGH")
-                .containsEntry("ESTIMATED_HOURS", 8).containsEntry("ORIGIN", "AI_MODIFIED")
-                .containsEntry("ASSIGNEE_ID", null);
+                .containsEntry("ESTIMATED_HOURS", 8).containsEntry("ORIGIN", "AI_MODIFIED");
+        assertThat(jdbc.queryForObject("select count(*) from task_assignees ta join plan_elements pe "
+                + "on pe.id = ta.task_id where pe.plan_container_id = ? and pe.title = 'Offene Aufgabe'",
+                Integer.class, fixture.projectId())).isZero();
         assertThat(jdbc.queryForObject("select count(*) from task_prerequisites tp join plan_elements pe "
                 + "on pe.id = tp.successor_task_id where pe.plan_container_id = ?", Integer.class, fixture.projectId())).isOne();
 

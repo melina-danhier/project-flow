@@ -240,7 +240,7 @@ public class TaskController {
         form.setStartDate(task.getStartDate());
         form.setDueDate(task.getDueDate());
         form.setEstimatedHours(task.getEstimatedHours());
-        form.setAssigneeId(task.getAssigneeId());
+        form.setAssigneeIds(task.getAssigneeIds());
         form.setLockVersion(task.getLockVersion());
         return form;
     }

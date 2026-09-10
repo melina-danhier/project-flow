@@ -111,7 +111,7 @@ class AiElementImprovementServiceTest {
         ProjectMember assignee = org.mockito.Mockito.mock(ProjectMember.class);
         Task prerequisite = new Task();
         task.setPlanSection(section);
-        task.setAssignee(assignee);
+        task.getAssignees().add(assignee);
         task.addPrerequisite(prerequisite);
         when(authorizationService.requireEditableMember(projectId, userId)).thenReturn(membership);
         when(taskRepository.findByIdAndPlanContainerId(elementId, projectId)).thenReturn(Optional.of(task));
@@ -130,7 +130,7 @@ class AiElementImprovementServiceTest {
         assertThat(request.getValue().comment()).isEqualTo("Schwerpunkt auf Ergebnis");
         assertThat(request.getValue().element()).hasNoNullFieldsOrPropertiesExcept("description");
         assertThat(task.getPlanSection()).isSameAs(section);
-        assertThat(task.getAssignee()).isSameAs(assignee);
+        assertThat(task.getAssignees()).containsExactly(assignee);
         assertThat(task.getPrerequisites()).containsExactly(prerequisite);
     }
 
@@ -324,7 +324,7 @@ class AiElementImprovementServiceTest {
         ProjectMember assignee = org.mockito.Mockito.mock(ProjectMember.class);
         Task prerequisite = new Task();
         task.setPlanSection(section);
-        task.setAssignee(assignee);
+        task.getAssignees().add(assignee);
         task.addPrerequisite(prerequisite);
         task.setSortOrder(700);
         task.setStatus(TaskStatus.IN_PROGRESS);
@@ -345,7 +345,7 @@ class AiElementImprovementServiceTest {
         assertThat(task.getDueDate()).isEqualTo(LocalDate.of(2026, 9, 16));
         assertThat(task.getOrigin()).isEqualTo(ElementOrigin.AI_MODIFIED);
         assertThat(task.getPlanSection()).isSameAs(section);
-        assertThat(task.getAssignee()).isSameAs(assignee);
+        assertThat(task.getAssignees()).containsExactly(assignee);
         assertThat(task.getPrerequisites()).containsExactly(prerequisite);
         assertThat(task.getSortOrder()).isEqualTo(700);
         assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);

@@ -511,9 +511,9 @@ class ProjectSecurityIntegrationTest {
 
         Task reloadedOpen = taskRepository.findById(openTask.getId()).orElseThrow();
         Task reloadedCompleted = taskRepository.findById(completedTask.getId()).orElseThrow();
-        assertThat(reloadedOpen.getAssignee()).isNull();
+        assertThat(reloadedOpen.getAssignees()).isEmpty();
         assertThat(reloadedOpen.getStatus()).isEqualTo(TaskStatus.OPEN);
-        assertThat(reloadedCompleted.getAssignee()).isNull();
+        assertThat(reloadedCompleted.getAssignees()).isEmpty();
         assertThat(reloadedCompleted.getStatus()).isEqualTo(TaskStatus.COMPLETED);
         assertThat(reloadedCompleted.getCompletedAt())
                 .isCloseTo(completedAt, within(1, ChronoUnit.MICROS));
@@ -531,7 +531,7 @@ class ProjectSecurityIntegrationTest {
         Task task = saveTask(project, "Zuweisen", TaskStatus.OPEN, null);
 
         planElementService.assignTask(project.getId(), task.getId(), member.getId(), member.getId());
-        assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignee().getUser().getId())
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getAssignees().iterator().next().getUser().getId())
                 .isEqualTo(member.getId());
         assertThatThrownBy(() -> planElementService.assignTask(
                 project.getId(), task.getId(), inactive.getId(), member.getId()))
@@ -559,7 +559,7 @@ class ProjectSecurityIntegrationTest {
         assertThatThrownBy(() -> projectService.updateProject(project.getId(), form, owner.getId()))
                 .isInstanceOf(DomainValidationException.class).hasMessageContaining("bestätige");
         assertThat(project.getCollaborationMode()).isEqualTo(CollaborationMode.GROUP);
-        assertThat(taskRepository.findById(open.getId()).orElseThrow().getAssignee()).isEqualTo(membership);
+        assertThat(taskRepository.findById(open.getId()).orElseThrow().getAssignees()).containsExactly(membership);
 
         form.setConfirmIndividualConversion(true);
         projectService.updateProject(project.getId(), form, owner.getId());
@@ -576,11 +576,11 @@ class ProjectSecurityIntegrationTest {
                     assertThat(remaining.isActive()).isTrue();
                 });
         assertThat(taskRepository.findPlanTasks(project.getId())).hasSize(2)
-                .allSatisfy(task -> assertThat(task.getAssignee()).isNull());
+                .allSatisfy(task -> assertThat(task.getAssignees()).isEmpty());
         assertThat(taskRepository.findById(done.getId()).orElseThrow().getCompletedAt())
                 .isCloseTo(completionTime, within(1, ChronoUnit.MICROS));
         assertThat(taskRepository.findById(done.getId()).orElseThrow().getStatus()).isEqualTo(TaskStatus.COMPLETED);
-        assertThat(taskRepository.findById(otherTask.getId()).orElseThrow().getAssignee().getId())
+        assertThat(taskRepository.findById(otherTask.getId()).orElseThrow().getAssignees().iterator().next().getId())
                 .isEqualTo(otherMembership.getId());
         assertThatThrownBy(() -> authorizationService.requireMember(project.getId(), member.getId()))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -591,7 +591,7 @@ class ProjectSecurityIntegrationTest {
         entityManager.flush();
         entityManager.clear();
         assertThat(projectMemberRepository.findAllByProjectId(project.getId())).hasSize(1);
-        assertThat(taskRepository.findPlanTasks(project.getId())).allSatisfy(task -> assertThat(task.getAssignee()).isNull());
+        assertThat(taskRepository.findPlanTasks(project.getId())).allSatisfy(task -> assertThat(task.getAssignees()).isEmpty());
         assertThat(projectRepository.findById(project.getId()).orElseThrow().isGroupProject()).isTrue();
     }
 
@@ -667,7 +667,7 @@ class ProjectSecurityIntegrationTest {
         task.setTitle(title);
         task.setOrigin(ElementOrigin.USER);
         task.setStatus(status);
-        task.setAssignee(assignee);
+        if (assignee != null) task.getAssignees().add(assignee);
         task.setPlanContainer(project);
         return taskRepository.saveAndFlush(task);
     }
