@@ -3,8 +3,14 @@ package de.melinadanhier.projectflow.draft.controller;
 import de.melinadanhier.projectflow.draft.dto.application.DraftApplyResult;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationPersistenceException;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
+import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.feedback.domain.AiFeedbackContext;
+import de.melinadanhier.projectflow.feedback.service.AiFeedbackOpportunity;
+import de.melinadanhier.projectflow.study.domain.StudyEventType;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,16 +30,20 @@ public class DraftApplicationController {
 
     private final DraftApplicationService draftApplicationService;
     private final AiGenerationWorkflowService generationWorkflowService;
+    private final StudyTrackingService studyTrackingService;
+    private final DraftRepository draftRepository;
 
     @PostMapping("/projects/{projectId}/draft/apply")
     public String apply(@PathVariable UUID projectId,
                         @AuthenticationPrincipal AuthenticatedUser currentUser,
                         RedirectAttributes redirectAttributes,
-                        Model model) {
+                        Model model, HttpSession session) {
+        UUID draftId = draftRepository.findByProjectId(projectId)
+                .map(draft -> draft.getId()).orElse(projectId);
         DraftApplyResult result = executeApplication(
                 () -> draftApplicationService.apply(projectId, currentUser.userId()));
         return switch (result.status()) {
-            case APPLIED -> appliedRedirect(projectId, redirectAttributes);
+            case APPLIED -> appliedRedirect(projectId, draftId, redirectAttributes, session);
             case PENDING_CONFIRMATION_REQUIRED, EMPTY_DRAFT_CONFIRMATION_REQUIRED -> {
                 model.addAttribute("summary", result.summary());
                 yield "generation/draft-pending-confirmation";
@@ -46,10 +56,10 @@ public class DraftApplicationController {
                                       @RequestParam UUID draftId,
                                       @RequestParam long lockVersion,
                                       @AuthenticationPrincipal AuthenticatedUser currentUser,
-                                      RedirectAttributes redirectAttributes) {
+                                      RedirectAttributes redirectAttributes, HttpSession session) {
         executeApplication(() -> draftApplicationService.continueWithPending(
                 projectId, draftId, currentUser.userId(), lockVersion));
-        return appliedRedirect(projectId, redirectAttributes);
+        return appliedRedirect(projectId, draftId, redirectAttributes, session);
     }
 
     @PostMapping("/projects/{projectId}/draft/confirm-empty")
@@ -57,23 +67,42 @@ public class DraftApplicationController {
                                @RequestParam UUID draftId,
                                @RequestParam long lockVersion,
                                @AuthenticationPrincipal AuthenticatedUser currentUser,
-                               RedirectAttributes redirectAttributes) {
+                               RedirectAttributes redirectAttributes, HttpSession session) {
         executeApplication(() -> draftApplicationService.confirmEmpty(
                 projectId, draftId, currentUser.userId(), lockVersion));
-        return appliedRedirect(projectId, redirectAttributes);
+        return appliedRedirect(projectId, draftId, redirectAttributes, session);
     }
 
     @PostMapping("/projects/{projectId}/draft/regenerate")
     public String regenerate(@PathVariable UUID projectId,
                              @RequestParam UUID draftId,
                              @RequestParam long lockVersion,
-                             @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                             @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         UUID workflowId = generationWorkflowService.regenerateDraft(
                 projectId, draftId, currentUser.userId(), lockVersion);
+        studyTrackingService.trackIfActive(session, StudyEventType.PLAN_REGENERATED);
         return "redirect:/projects/new/ai/status/" + workflowId;
     }
 
-    private String appliedRedirect(UUID projectId, RedirectAttributes redirectAttributes) {
+    @PostMapping("/projects/{projectId}/draft/discard")
+    public String discard(@PathVariable UUID projectId,
+                          @RequestParam UUID draftId,
+                          @RequestParam long lockVersion,
+                          @AuthenticationPrincipal AuthenticatedUser currentUser,
+                          HttpSession session) {
+        UUID discardedDraftId = draftApplicationService.discard(
+                projectId, draftId, currentUser.userId(), lockVersion);
+        session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
+                new AiFeedbackOpportunity(AiFeedbackContext.DRAFT_DELETED, discardedDraftId, "/projects"));
+        return "redirect:/projects";
+    }
+
+    private String appliedRedirect(UUID projectId, UUID draftId, RedirectAttributes redirectAttributes,
+                                   HttpSession session) {
+        studyTrackingService.trackIfActive(session, StudyEventType.PLAN_ADOPTED);
+        session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
+                new AiFeedbackOpportunity(AiFeedbackContext.PLAN_ADOPTED, draftId,
+                        "/projects/" + projectId + "/plan"));
         redirectAttributes.addFlashAttribute("successMessage",
                 "Der KI-Entwurf wurde übernommen.");
         return "redirect:/projects/" + projectId + "/plan";

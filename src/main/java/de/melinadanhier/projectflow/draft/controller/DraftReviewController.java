@@ -5,6 +5,9 @@ import de.melinadanhier.projectflow.draft.service.DraftReviewService;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.study.domain.StudyEventType;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -22,6 +25,7 @@ public class DraftReviewController {
 
     private final DraftReviewService draftReviewService;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
+    private final StudyTrackingService studyTrackingService;
 
     @GetMapping({"/projects/{projectId}/draft", "/projects/{projectId}/draft/review"})
     public String review(@PathVariable UUID projectId,
@@ -40,24 +44,27 @@ public class DraftReviewController {
     @PostMapping("/projects/{projectId}/draft/elements/{elementId}/accept")
     public String acceptElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
                                 @RequestParam long lockVersion,
-                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                                @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         draftReviewService.acceptElement(projectId, elementId, currentUser.userId(), lockVersion);
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_ACCEPTED);
         return reviewRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/accept")
     public String acceptSection(@PathVariable UUID projectId, @PathVariable UUID sectionId,
                                 @RequestParam long lockVersion,
-                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                                @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         draftReviewService.acceptSection(projectId, sectionId, currentUser.userId(), lockVersion);
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_ACCEPTED);
         return reviewRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/draft/elements/{elementId}/reject")
     public String rejectElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
                                 @RequestParam long lockVersion,
-                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                                @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         draftReviewService.rejectElement(projectId, elementId, currentUser.userId(), lockVersion);
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_REJECTED);
         return reviewRedirect(projectId);
     }
 
@@ -72,8 +79,9 @@ public class DraftReviewController {
     @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/reject")
     public String rejectSection(@PathVariable UUID projectId, @PathVariable UUID sectionId,
                                 @RequestParam long lockVersion,
-                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                                @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         draftReviewService.rejectSection(projectId, sectionId, currentUser.userId(), lockVersion);
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_REJECTED);
         return reviewRedirect(projectId);
     }
 

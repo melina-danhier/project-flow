@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{fragments/layout :: head('Feedback zum KI-Ergebnis')}" /></head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+<main class="pf-page-narrow">
+    <section class="pf-card">
+        <p class="pf-eyebrow">Freiwilliges Feedback</p>
+        <h1>Wie zufrieden bist du insgesamt mit dem KI-Ergebnis?</h1>
+        <form th:action="@{/ai-feedback}" method="post" th:object="${aiFeedbackForm}">
+            <fieldset>
+                <legend>Bewertung</legend>
+                <label><input type="radio" th:field="*{rating}" value="1"> Sehr unzufrieden</label>
+                <label><input type="radio" th:field="*{rating}" value="2"> Unzufrieden</label>
+                <label><input type="radio" th:field="*{rating}" value="3"> Neutral</label>
+                <label><input type="radio" th:field="*{rating}" value="4"> Zufrieden</label>
+                <label><input type="radio" th:field="*{rating}" value="5"> Sehr zufrieden</label>
+                <p class="pf-field-error" th:if="${#fields.hasErrors('rating')}" th:errors="*{rating}"></p>
+            </fieldset>
+            <label for="feedback-comment">Möchtest du kurz angeben, warum?</label>
+            <textarea id="feedback-comment" th:field="*{comment}" maxlength="2000" rows="4"></textarea>
+            <p class="pf-field-error" th:if="${#fields.hasErrors('comment')}" th:errors="*{comment}"></p>
+            <button class="pf-btn pf-btn--primary" type="submit">Feedback senden</button>
+        </form>
+        <form th:action="@{/ai-feedback/skip}" method="post">
+            <button class="pf-btn pf-btn--ghost" type="submit">Überspringen</button>
+        </form>
+    </section>
+</main>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body></html>

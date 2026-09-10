@@ -99,6 +99,29 @@ public class DraftApplicationService {
     }
 
     @Transactional
+    public UUID discard(UUID projectId, UUID draftId, UUID userId, long lockVersion) {
+        projectRepository.findForUpdate(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        authorizationService.requireOwner(projectId, userId);
+        DraftPlan draft = draftRepository.findForUpdateByProjectId(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Für dieses Projekt ist kein Planentwurf vorhanden."));
+        if (!draftId.equals(draft.getId())) {
+            throw new ResourceNotFoundException("Der angegebene Planentwurf wurde nicht gefunden.");
+        }
+        if (draft.getLockVersion() != lockVersion) {
+            throw new DraftVersionConflictException(
+                    "Der Entwurf wurde zwischenzeitlich geändert. Bitte prüfe ihn erneut.");
+        }
+        if (!editable(draft.getStatus())) {
+            throw new ConflictException("Der Planentwurf kann in diesem Zustand nicht verworfen werden.");
+        }
+        Project project = draft.getProject();
+        requireEmptyDraftProject(project);
+        project.setLocation(ProjectLocation.TRASH);
+        return draft.getId();
+    }
+
+    @Transactional
     public UUID confirmAndApply(UUID projectId, UUID draftId, UUID userId,
                                 long confirmedVersion, boolean allowEmpty) {
         projectRepository.findForUpdate(projectId)

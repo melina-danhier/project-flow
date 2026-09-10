@@ -8,6 +8,9 @@ import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionMoveForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftTaskForm;
 import de.melinadanhier.projectflow.draft.service.DraftReviewService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.study.domain.StudyEventType;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +30,7 @@ import java.util.UUID;
 public class DraftEditingController {
 
     private final DraftReviewService draftReviewService;
+    private final StudyTrackingService studyTrackingService;
 
     @PostMapping("/projects/{projectId}/draft/sections/{sectionId}")
     public String updateSection(@PathVariable UUID projectId,
@@ -35,7 +39,7 @@ public class DraftEditingController {
                                 BindingResult bindingResult,
                                 @AuthenticationPrincipal AuthenticatedUser currentUser,
                                 Model model,
-                                RedirectAttributes redirectAttributes) {
+                                RedirectAttributes redirectAttributes, HttpSession session) {
         if (bindingResult.hasErrors()) {
             return renderInvalidSection(projectId, sectionId, currentUser.userId(), model);
         }
@@ -46,6 +50,7 @@ public class DraftEditingController {
             return renderInvalidSection(projectId, sectionId, currentUser.userId(), model);
         }
         redirectAttributes.addFlashAttribute("successMessage", "Der Bereich wurde aktualisiert.");
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_EDITED);
         return reviewRedirect(projectId);
     }
 
@@ -54,7 +59,7 @@ public class DraftEditingController {
                              @Valid @ModelAttribute DraftTaskForm taskForm,
                              BindingResult bindingResult,
                              @AuthenticationPrincipal AuthenticatedUser currentUser,
-                             Model model) {
+                             Model model, HttpSession session) {
         if (bindingResult.hasErrors()) {
             return renderInvalidTask(projectId, taskId, currentUser.userId(), model);
         }
@@ -64,6 +69,7 @@ public class DraftEditingController {
             bindingResult.reject("draftTask", exception.getMessage());
             return renderInvalidTask(projectId, taskId, currentUser.userId(), model);
         }
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_EDITED);
         return reviewRedirect(projectId);
     }
 
@@ -72,7 +78,7 @@ public class DraftEditingController {
                                   @Valid @ModelAttribute DraftMilestoneForm milestoneForm,
                                   BindingResult bindingResult,
                                   @AuthenticationPrincipal AuthenticatedUser currentUser,
-                                  Model model) {
+                                  Model model, HttpSession session) {
         if (bindingResult.hasErrors()) {
             return renderInvalidMilestone(projectId, milestoneId, currentUser.userId(), model);
         }
@@ -82,6 +88,7 @@ public class DraftEditingController {
             bindingResult.reject("draftMilestone", exception.getMessage());
             return renderInvalidMilestone(projectId, milestoneId, currentUser.userId(), model);
         }
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_EDITED);
         return reviewRedirect(projectId);
     }
 
@@ -89,11 +96,12 @@ public class DraftEditingController {
     public String moveElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
                               @Valid @ModelAttribute DraftElementMoveForm moveForm,
                               BindingResult bindingResult,
-                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                              @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         if (bindingResult.hasErrors()) {
             throw new DomainValidationException("Die Zielposition ist ungültig.");
         }
         draftReviewService.moveElement(projectId, elementId, currentUser.userId(), moveForm);
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_EDITED);
         return reviewRedirect(projectId);
     }
 
@@ -101,19 +109,21 @@ public class DraftEditingController {
     public String moveSection(@PathVariable UUID projectId, @PathVariable UUID sectionId,
                               @Valid @ModelAttribute DraftSectionMoveForm moveForm,
                               BindingResult bindingResult,
-                              @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                              @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         if (bindingResult.hasErrors()) {
             throw new DomainValidationException("Die Zielposition ist ungültig.");
         }
         draftReviewService.moveSection(projectId, sectionId, currentUser.userId(), moveForm);
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_EDITED);
         return reviewRedirect(projectId);
     }
 
     @PostMapping("/projects/{projectId}/draft/tasks/{taskId}/delete")
     public String deleteTask(@PathVariable UUID projectId, @PathVariable UUID taskId,
                              @RequestParam long lockVersion,
-                             @AuthenticationPrincipal AuthenticatedUser currentUser) {
+                             @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         draftReviewService.deleteTask(projectId, taskId, currentUser.userId(), lockVersion);
+        studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_EDITED);
         return reviewRedirect(projectId);
     }
 

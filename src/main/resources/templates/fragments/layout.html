@@ -99,6 +99,17 @@
 
 <!-- Footer with links + copyright -->
 <footer th:fragment="site-footer" class="site-footer">
+    <aside th:if="${session != null and session.aiFeedbackOpportunity != null}"
+           class="pf-card" style="max-width: 720px; margin: 1rem auto;" aria-label="Freiwilliges KI-Feedback">
+        <strong>Wie zufrieden bist du insgesamt mit dem KI-Ergebnis?</strong>
+        <p>Dein Feedback ist freiwillig und hilft uns, die KI-Unterstützung zu verbessern.</p>
+        <div class="pf-cluster">
+            <a class="pf-btn pf-btn--primary" th:href="@{/ai-feedback}">Feedback geben</a>
+            <form th:action="@{/ai-feedback/skip}" method="post" style="margin: 0;">
+                <button class="pf-btn pf-btn--ghost" type="submit">Überspringen</button>
+            </form>
+        </div>
+    </aside>
     <div class="site-footer__inner">
         <div class="site-footer__grid">
             <!-- Brand & Mission Column -->
