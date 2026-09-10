@@ -16,6 +16,7 @@ import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepo
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
+import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.planelement.dto.DeleteSectionForm;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementType;
@@ -54,6 +55,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -290,7 +292,7 @@ class ProjectCrudIntegrationTest {
         taskCreate.setStatus(TaskStatus.IN_PROGRESS);
         taskCreate.setStartDate(LocalDate.of(2026, 8, 15));
         taskCreate.setDueDate(LocalDate.of(2026, 8, 17));
-        taskCreate.setAssigneeId(membership.getId());
+        taskCreate.setAssigneeIds(Set.of(membership.getId()));
         TaskDetailsDto task = taskService.createTask(project.getId(), taskCreate, owner.getId());
 
         TaskForm taskUpdate = taskFormFrom(task);
@@ -301,7 +303,7 @@ class ProjectCrudIntegrationTest {
         assertThat(updatedTask.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
         assertThat(updatedTask.getStartDate()).isEqualTo(LocalDate.of(2026, 8, 15));
         assertThat(updatedTask.getDueDate()).isEqualTo(LocalDate.of(2026, 8, 17));
-        assertThat(updatedTask.getAssigneeId()).isEqualTo(membership.getId());
+        assertThat(updatedTask.getAssigneeIds()).containsExactly(membership.getId());
 
         entityManager.flush();
         TaskDetailsDto currentTask = taskService.getTaskDetail(project.getId(), task.getId(), owner.getId());
@@ -379,11 +381,11 @@ class ProjectCrudIntegrationTest {
                 .isInstanceOf(ResourceNotFoundException.class);
 
         TaskForm inactiveAssigneeForm = taskForm("Inaktiv", null);
-        inactiveAssigneeForm.setAssigneeId(inactiveMember.getId());
+        inactiveAssigneeForm.setAssigneeIds(Set.of(inactiveMember.getId()));
         assertThatThrownBy(() -> taskService.createTask(project.getId(), inactiveAssigneeForm, owner.getId()))
                 .isInstanceOf(DomainValidationException.class);
         TaskForm foreignAssigneeForm = taskForm("Projektfremd", null);
-        foreignAssigneeForm.setAssigneeId(foreignMember.getId());
+        foreignAssigneeForm.setAssigneeIds(Set.of(foreignMember.getId()));
         assertThatThrownBy(() -> taskService.createTask(project.getId(), foreignAssigneeForm, owner.getId()))
                 .isInstanceOf(DomainValidationException.class);
     }
@@ -489,6 +491,68 @@ class ProjectCrudIntegrationTest {
     }
 
     @Test
+    void supportsZeroOneAndMultipleAssigneesAndRemovingIndividualAssignments() {
+        User owner = saveUser("multi-owner@example.org");
+        User firstUser = saveUser("multi-first@example.org");
+        firstUser.setDisplayName("Anna");
+        User secondUser = saveUser("multi-second@example.org");
+        secondUser.setDisplayName("Ben");
+        Project project = saveProject("Mehrfachzuweisung", owner);
+        ProjectMember first = addMembership(project, firstUser, true);
+        ProjectMember second = addMembership(project, secondUser, true);
+
+        TaskDetailsDto unassigned = taskService.createTask(
+                project.getId(), taskForm("Ohne Zuweisung", null), owner.getId());
+        assertThat(unassigned.getAssigneeIds()).isEmpty();
+
+        TaskForm oneForm = taskForm("Eine Zuweisung", null);
+        oneForm.setAssigneeIds(Set.of(first.getId()));
+        TaskDetailsDto one = taskService.createTask(project.getId(), oneForm, owner.getId());
+        assertThat(one.getAssigneeIds()).containsExactly(first.getId());
+
+        TaskForm multipleForm = taskForm("Mehrere Zuweisungen", null);
+        multipleForm.setAssigneeIds(Set.of(first.getId(), second.getId()));
+        TaskDetailsDto multiple = taskService.createTask(project.getId(), multipleForm, owner.getId());
+        assertThat(multiple.getAssigneeIds()).containsExactlyInAnyOrder(first.getId(), second.getId());
+        assertThat(multiple.getAssignees()).extracting(member -> member.getDisplayName())
+                .containsExactlyInAnyOrder("Anna", "Ben");
+
+        entityManager.flush();
+        TaskDetailsDto current = taskService.getTaskDetail(project.getId(), multiple.getId(), owner.getId());
+        TaskForm removeFirst = taskFormFrom(current);
+        removeFirst.setAssigneeIds(Set.of(second.getId()));
+        TaskDetailsDto updated = taskService.updateTask(project.getId(), multiple.getId(), removeFirst, owner.getId());
+        assertThat(updated.getAssigneeIds()).containsExactly(second.getId());
+
+        ProjectPlanViewDto plan = projectService.getProjectPlan(project.getId(), owner.getId());
+        assertThat(plan.getUnsectionedElements()).filteredOn(element -> element.getId().equals(multiple.getId()))
+                .singleElement().satisfies(element ->
+                        assertThat(element.getAssigneeDisplayNames()).containsExactly("Ben"));
+    }
+
+    @Test
+    void individualProjectsExposeNoAssigneesAndRejectAssignments() {
+        User owner = saveUser("individual-assignment-owner@example.org");
+        Project project = saveProject("Einzelprojekt", owner);
+        ProjectMember ownerMembership = projectMemberRepository
+                .findByProjectIdAndUserIdAndActiveTrue(project.getId(), owner.getId()).orElseThrow();
+        project.setCollaborationMode(CollaborationMode.INDIVIDUAL);
+        projectRepository.saveAndFlush(project);
+
+        TaskDetailsDto created = taskService.createTask(
+                project.getId(), taskForm("Ohne Zuweisung", null), owner.getId());
+        assertThat(created.getAssigneeIds()).isEmpty();
+        assertThat(taskService.getTaskForEditing(project.getId(), created.getId(), owner.getId())
+                .getAvailableAssignees()).isEmpty();
+
+        TaskForm invalid = taskForm("Unzulässige Zuweisung", null);
+        invalid.setAssigneeIds(Set.of(ownerMembership.getId()));
+        assertThatThrownBy(() -> taskService.createTask(project.getId(), invalid, owner.getId()))
+                .isInstanceOf(DomainValidationException.class)
+                .hasMessageContaining("nur bei Gruppenprojekten");
+    }
+
+    @Test
     void activeMemberCanCreateUpdateMoveAssignAndDeleteTheCompleteProjectPlan() {
         User owner = saveUser("plan-rights-owner@example.org");
         User member = saveUser("plan-rights-member@example.org");
@@ -502,7 +566,7 @@ class ProjectCrudIntegrationTest {
 
         TaskForm taskForm = taskForm("Aufgabe", firstSection.getId());
         taskForm.setStatus(TaskStatus.OPEN);
-        taskForm.setAssigneeId(membership.getId());
+        taskForm.setAssigneeIds(Set.of(membership.getId()));
         TaskDetailsDto task = taskService.createTask(project.getId(), taskForm, member.getId());
         TaskForm taskUpdate = updateForm(task);
         taskUpdate.setTitle("Aufgabe in Arbeit");
@@ -510,7 +574,7 @@ class ProjectCrudIntegrationTest {
         TaskDetailsDto updatedTask = taskService.updateTask(
                 project.getId(), task.getId(), taskUpdate, member.getId());
         assertThat(updatedTask.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
-        assertThat(updatedTask.getAssigneeId()).isEqualTo(membership.getId());
+        assertThat(updatedTask.getAssigneeIds()).containsExactly(membership.getId());
 
         var milestone = milestoneService.createMilestone(
                 project.getId(), milestoneForm("Freigabe", firstSection.getId()), member.getId());
@@ -598,7 +662,7 @@ class ProjectCrudIntegrationTest {
         form.setStatus(task.getStatus());
         form.setStartDate(task.getStartDate());
         form.setDueDate(task.getDueDate());
-        form.setAssigneeId(task.getAssigneeId());
+        form.setAssigneeIds(task.getAssigneeIds());
         form.setLockVersion(task.getLockVersion());
         return form;
     }
@@ -624,7 +688,7 @@ class ProjectCrudIntegrationTest {
         form.setPriority(task.getPriority());
         form.setStartDate(task.getStartDate());
         form.setDueDate(task.getDueDate());
-        form.setAssigneeId(task.getAssigneeId());
+        form.setAssigneeIds(task.getAssigneeIds());
         form.setLockVersion(task.getLockVersion());
         return form;
     }

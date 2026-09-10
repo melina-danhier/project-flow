@@ -52,7 +52,7 @@ public class TaskForm {
     @Max(10_000)
     private Integer estimatedHours;
 
-    private UUID assigneeId;
+    private Set<UUID> assigneeIds = new LinkedHashSet<>();
 
     @PositiveOrZero
     @NotNull(groups = UpdateValidation.class)

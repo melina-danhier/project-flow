@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -48,7 +49,7 @@ public class TaskService {
         Project project = authorizationService.requireEditableMemberForUpdate(projectId, userId).getProject();
         validateDates(form.getStartDate(), form.getDueDate());
         PlanSection section = resolveSection(projectId, form.getPlanSectionId());
-        ProjectMember assignee = resolveAssignee(project, form.getAssigneeId());
+        Set<ProjectMember> assignees = resolveAssignees(project, form.getAssigneeIds());
 
         Task task = new Task();
         task.setPlanContainer(project);
@@ -56,7 +57,7 @@ public class TaskService {
         task.setOrigin(ElementOrigin.USER);
         task.setRelativeStartDay(null);
         task.setRelativeDueDay(null);
-        apply(task, form, assignee);
+        apply(task, form, assignees);
         insertAtRequestedPosition(task, projectId, section, form.getSortOrder());
         TaskDetailsDto dto = planElementMapper.toDetailsDto(taskRepository.save(task));
         dto.setGroupProject(project.isGroupProject());
@@ -145,8 +146,8 @@ public class TaskService {
         requireCurrentVersion(task.getLockVersion(), form.getLockVersion());
         PlanSection oldSection = task.getPlanSection();
         PlanSection newSection = resolveSection(projectId, form.getPlanSectionId());
-        ProjectMember assignee = resolveAssignee(project, form.getAssigneeId());
-        apply(task, form, assignee);
+        Set<ProjectMember> assignees = resolveAssignees(project, form.getAssigneeIds());
+        apply(task, form, assignees);
         moveToRequestedPosition(task, projectId, oldSection, newSection, form.getSortOrder());
         TaskDetailsDto dto = planElementMapper.toDetailsDto(task);
         dto.setGroupProject(project.isGroupProject());
@@ -166,7 +167,7 @@ public class TaskService {
         taskRepository.flush();
     }
 
-    private void apply(Task task, TaskForm form, ProjectMember assignee) {
+    private void apply(Task task, TaskForm form, Set<ProjectMember> assignees) {
         String title = form.getTitle().trim();
         String description = form.getDescription() == null || form.getDescription().isBlank()
                 ? null : form.getDescription().trim();
@@ -176,7 +177,7 @@ public class TaskService {
                 || !java.util.Objects.equals(task.getEstimatedHours(), form.getEstimatedHours())
                 || !java.util.Objects.equals(task.getStartDate(), form.getStartDate())
                 || !java.util.Objects.equals(task.getDueDate(), form.getDueDate())
-                || !java.util.Objects.equals(task.getAssignee(), assignee)) {
+                || !java.util.Objects.equals(task.getAssignees(), assignees)) {
             task.setOrigin(task.getOrigin().modifiedByUser());
         }
         task.setTitle(title);
@@ -187,7 +188,7 @@ public class TaskService {
         task.setDueDate(form.getDueDate());
         task.setRelativeStartDay(null);
         task.setRelativeDueDay(null);
-        task.setAssignee(assignee);
+        task.replaceAssignees(assignees);
         task.setStatus(form.getStatus() == null
                 ? task.getId() == null ? TaskStatus.OPEN : task.getStatus()
                 : form.getStatus());
@@ -201,17 +202,24 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Projektbereich wurde nicht gefunden."));
     }
 
-    private ProjectMember resolveAssignee(Project project, UUID membershipId) {
-        if (membershipId == null) {
-            return null;
-        }
+    private Set<ProjectMember> resolveAssignees(Project project, Set<UUID> membershipIds) {
+        Set<UUID> requested = membershipIds == null ? Set.of() : new LinkedHashSet<>(membershipIds);
         if (!project.isGroupProject()) {
-            throw new DomainValidationException("Aufgabenzuständigkeiten sind nur bei Gruppenprojekten möglich.");
+            if (!requested.isEmpty()) {
+                throw new DomainValidationException("Aufgabenzuweisungen sind nur bei Gruppenprojekten möglich.");
+            }
+            return Set.of();
         }
-        return projectMemberRepository.findByIdAndProjectIdAndActiveTrue(membershipId, project.getId())
-                .orElseThrow(() -> new DomainValidationException(
-                        "Die Aufgabe kann nur einem aktiven Mitglied dieses Projekts zugewiesen werden."
-                ));
+        LinkedHashSet<ProjectMember> result = new LinkedHashSet<>();
+        for (UUID membershipId : requested) {
+            if (membershipId == null) {
+                throw new DomainValidationException("Die Aufgabenzuweisung ist ungültig.");
+            }
+            result.add(projectMemberRepository.findByIdAndProjectIdAndActiveTrue(membershipId, project.getId())
+                    .orElseThrow(() -> new DomainValidationException(
+                            "Die Aufgabe kann nur aktiven Mitgliedern dieses Projekts zugewiesen werden.")));
+        }
+        return result;
     }
 
     private void insertAtRequestedPosition(Task task, UUID projectId, PlanSection section, Integer requested) {

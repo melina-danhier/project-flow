@@ -9,7 +9,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -63,9 +62,18 @@ public class Task extends PlanElement {
     @Column(name = "relative_due_day")
     private Integer relativeDueDay;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignee_id")
-    private ProjectMember assignee;
+    @Setter(AccessLevel.NONE)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "task_assignees",
+            joinColumns = @JoinColumn(name = "task_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "project_member_id", nullable = false),
+            uniqueConstraints = @UniqueConstraint(
+                    name = "uk_task_assignees_pair",
+                    columnNames = {"task_id", "project_member_id"}
+            )
+    )
+    private Set<ProjectMember> assignees = new LinkedHashSet<>();
 
     @Setter(AccessLevel.NONE)
     @ManyToMany(fetch = FetchType.LAZY)
@@ -103,5 +111,10 @@ public class Task extends PlanElement {
 
     public void removePrerequisite(Task prerequisite) {
         prerequisites.remove(prerequisite);
+    }
+
+    public void replaceAssignees(Set<ProjectMember> values) {
+        assignees.clear();
+        assignees.addAll(values);
     }
 }

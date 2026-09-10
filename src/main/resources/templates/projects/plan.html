@@ -175,6 +175,9 @@
                                    th:href="@{/projects/{projectId}/milestones/{elementId}/edit(projectId=${plan.project.id},elementId=${element.id})}"
                                    th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
                                 <small th:if="${element.description}" th:text="${element.description}" style="color: var(--pf-text-muted);"></small>
+                                <small th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}"
+                                       th:text="${'Zugewiesen an: ' + #strings.listJoin(element.assigneeDisplayNames, ', ')}"
+                                       style="display:block;color:var(--pf-text-muted);"></small>
                             </div>
                         </div>
                         <div class="pf-cluster">
@@ -312,6 +315,9 @@
                            th:href="@{/projects/{projectId}/milestones/{elementId}/edit(projectId=${plan.project.id},elementId=${element.id})}"
                            th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
                         <small th:if="${element.description}" th:text="${element.description}" style="color: var(--pf-text-muted);"></small>
+                        <small th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}"
+                               th:text="${'Zugewiesen an: ' + #strings.listJoin(element.assigneeDisplayNames, ', ')}"
+                               style="display:block;color:var(--pf-text-muted);"></small>
                     </div>
                 </div>
                 <div class="pf-cluster">

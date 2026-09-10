@@ -37,7 +37,7 @@ public class PlanElementService {
         ProjectMember assignee = projectMemberRepository
                 .findByProjectIdAndUserIdAndActiveTrue(projectId, assigneeUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aktives Projektmitglied wurde nicht gefunden."));
-        task.setAssignee(assignee);
+        task.getAssignees().add(assignee);
     }
 
     @Transactional
@@ -49,7 +49,7 @@ public class PlanElementService {
         }
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
-        task.setAssignee(null);
+        task.getAssignees().clear();
     }
 
 }

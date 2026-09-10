@@ -22,9 +22,8 @@ public interface PlanElementMapper {
 
     @Mapping(target = "planContainerId", source = "planContainer.id")
     @Mapping(target = "planSectionId", source = "planSection.id")
-    @Mapping(target = "assigneeId", source = "assignee.id")
-    @Mapping(target = "assigneeUserId", source = "assignee.user.id")
-    @Mapping(target = "assigneeDisplayName", source = "assignee.user.displayName")
+    @Mapping(target = "assigneeIds", source = "assignees")
+    @Mapping(target = "assignees", source = "assignees")
     @Mapping(target = "prerequisiteIds", source = "prerequisites")
     @Mapping(target = "predecessors", ignore = true)
     @Mapping(target = "successors", ignore = true)
@@ -53,5 +52,21 @@ public interface PlanElementMapper {
 
     default UUID taskId(Task task) {
         return task == null ? null : task.getId();
+    }
+
+    default UUID memberId(de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember member) {
+        return member == null ? null : member.getId();
+    }
+
+    default de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectMemberDto memberDto(
+            de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember member) {
+        if (member == null) return null;
+        var dto = new de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectMemberDto();
+        dto.setId(member.getId());
+        dto.setUserId(member.getUser().getId());
+        dto.setDisplayName(member.getUser().getDisplayName());
+        dto.setRole(member.getRole());
+        dto.setActive(member.isActive());
+        return dto;
     }
 }

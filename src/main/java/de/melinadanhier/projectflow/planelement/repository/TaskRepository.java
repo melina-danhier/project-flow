@@ -25,7 +25,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("""
             select distinct task from Task task
             left join fetch task.planSection
-            left join fetch task.assignee assignee
+            left join fetch task.assignees assignee
             left join fetch assignee.user
             left join fetch task.prerequisites
             where task.planContainer.id = :projectId
@@ -63,6 +63,6 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     int deleteDependencyLinksForProject(@Param("projectId") UUID projectId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update Task task set task.assignee = null where task.assignee.id = :membershipId")
-    int clearAssignee(@Param("membershipId") UUID membershipId);
+    @Query(value = "delete from task_assignees where project_member_id = :membershipId", nativeQuery = true)
+    int clearAssignments(@Param("membershipId") UUID membershipId);
 }

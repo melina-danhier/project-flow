@@ -357,7 +357,7 @@ public class ProjectService {
                 form.getOtherProjectTypeDescription());
         validateDateRange(form.getStartDate(), form.getEndDate());
         if (convertToIndividual) {
-            taskRepository.findPlanTasks(projectId).forEach(task -> task.setAssignee(null));
+            taskRepository.findPlanTasks(projectId).forEach(task -> task.getAssignees().clear());
             taskRepository.flush();
             var otherMemberships = projectMemberRepository.findAllByProjectId(projectId).stream()
                     .filter(membership -> membership.getRole() != ProjectMemberRole.OWNER).toList();
@@ -539,6 +539,8 @@ public class ProjectService {
         dto.setTaskStatus(task.getStatus());
         dto.setTaskPriority(task.getPriority());
         dto.setBlocked(TaskDependencyPolicy.isBlocked(task));
+        dto.setAssigneeDisplayNames(task.getAssignees().stream()
+                .map(member -> member.getUser().getDisplayName()).sorted().toList());
         return dto;
     }
 

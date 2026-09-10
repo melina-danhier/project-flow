@@ -90,12 +90,12 @@
             </div>
 
             <div th:if="${groupProject}" class="pf-form-group">
-                <label for="assignee" class="pf-label">Zuständigkeit</label>
-                <select id="assignee" th:field="*{assigneeId}" class="pf-select">
-                    <option value="">Nicht zugewiesen</option>
+                <label for="assignees" class="pf-label">Zugewiesen an</label>
+                <select id="assignees" th:field="*{assigneeIds}" class="pf-select" multiple size="5">
                     <option th:each="member : ${assignees}" th:value="${member.id}" th:text="${member.displayName}"></option>
                 </select>
-                <div th:if="${#fields.hasErrors('assigneeId')}" th:errors="*{assigneeId}" class="pf-alert pf-alert--error" role="alert"></div>
+                <small class="pf-text-muted">Mehrere Personen können mit Strg bzw. Cmd ausgewählt werden.</small>
+                <div th:if="${#fields.hasErrors('assigneeIds')}" th:errors="*{assigneeIds}" class="pf-alert pf-alert--error" role="alert"></div>
             </div>
 
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
