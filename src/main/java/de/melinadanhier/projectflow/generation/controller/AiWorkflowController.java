@@ -7,6 +7,8 @@ import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWork
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowQueryService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -31,11 +33,13 @@ public class AiWorkflowController {
     private final AiPreCheckReviewService preCheckReviewService;
     private final AiGenerationWorkflowService generationWorkflowService;
     private final AiWorkflowControlService workflowControlService;
+    private final StudyTrackingService studyTrackingService;
 
     @GetMapping("/status/{workflowId}")
     public String status(
             @PathVariable UUID workflowId,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
+            HttpSession session,
             Model model
     ) {
         AiWorkflowStatusDto workflow = workflowQueryService.getStatus(
@@ -46,6 +50,7 @@ public class AiWorkflowController {
                 return preCheckReviewRedirect(workflowId);
             }
             case GENERATION_COMPLETED -> {
+                studyTrackingService.trackGeneratedPlanIfActive(session, workflowId);
                 return "redirect:/projects/" + workflow.projectId() + "/draft/review";
             }
             default -> { }

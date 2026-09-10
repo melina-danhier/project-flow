@@ -9,10 +9,13 @@ import de.melinadanhier.projectflow.planelement.dto.planchange.PlanChangeForm;
 import de.melinadanhier.projectflow.planelement.dto.planchange.PlanChangeProposal;
 import de.melinadanhier.projectflow.planelement.service.AiPlanChangeService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.feedback.domain.AiFeedbackContext;
+import de.melinadanhier.projectflow.feedback.service.AiFeedbackOpportunity;
+import de.melinadanhier.projectflow.study.domain.StudyEventType;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -22,12 +25,23 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.*;
 
-@Controller @RequiredArgsConstructor @Slf4j
+@Controller @Slf4j
 public class AiPlanChangeController {
     static final String SESSION_PROPOSALS = "aiPlanChangeProposals";
     static final String SESSION_LAST_REQUESTS = "aiPlanChangeLastRequests";
     private static final int MAX_SESSION_PROPOSALS = 5;
     private final AiPlanChangeService service;
+    private final StudyTrackingService studyTrackingService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AiPlanChangeController(AiPlanChangeService service, StudyTrackingService studyTrackingService) {
+        this.service = service;
+        this.studyTrackingService = studyTrackingService;
+    }
+
+    public AiPlanChangeController(AiPlanChangeService service) {
+        this(service, null);
+    }
 
     @GetMapping("/projects/{projectId}/plan/ai-change")
     public String form(@PathVariable UUID projectId, @AuthenticationPrincipal AuthenticatedUser user, Model model) {
@@ -42,6 +56,7 @@ public class AiPlanChangeController {
         if (binding.hasErrors()) { service.requireAccess(projectId, user.userId()); model.addAttribute("projectId", projectId); return "projects/plan-change/form"; }
         try {
             PlanChangeProposal proposal = service.propose(projectId, planChangeForm, user.userId()); store(session, proposal);
+            track(session, StudyEventType.AI_EDIT_STARTED);
             return "redirect:/projects/" + projectId + "/plan/ai-change/" + proposal.proposalId();
         } catch (de.melinadanhier.projectflow.planelement.service.PlanChangeNotApplicableException exception) {
             model.addAttribute("projectId", projectId);
@@ -67,6 +82,8 @@ public class AiPlanChangeController {
     public String discard(@PathVariable UUID projectId, @PathVariable UUID proposalId,
                           @AuthenticationPrincipal AuthenticatedUser user, HttpSession session, RedirectAttributes redirect) {
         service.requireAccess(projectId, user.userId()); require(session, projectId, proposalId); proposals(session).remove(proposalId);
+        track(session, StudyEventType.AI_EDIT_REJECTED);
+        offerFeedback(session, AiFeedbackContext.AI_EDIT_REJECTED, proposalId, projectId);
         redirect.addFlashAttribute("successMessage", "Der KI-Änderungsvorschlag wurde verworfen."); return "redirect:/projects/" + projectId + "/plan";
     }
     @PostMapping("/projects/{projectId}/plan/ai-change/{proposalId}/confirm")
@@ -84,6 +101,8 @@ public class AiPlanChangeController {
             return conflict(projectId, exception.getMessage(), session, model, response);
         }
         proposals(session).remove(proposalId);
+        track(session, StudyEventType.AI_EDIT_ADOPTED);
+        offerFeedback(session, AiFeedbackContext.AI_EDIT_ADOPTED, proposalId, projectId);
         redirect.addFlashAttribute("successMessage", "Die KI-Änderungen wurden übernommen.");
         return "redirect:/projects/" + projectId + "/plan";
     }
@@ -160,5 +179,14 @@ public class AiPlanChangeController {
                     projectId, exception.getErrorCode(), exception.getMessage());
         }
         log.debug("Technische Details zur fehlgeschlagenen KI-Planänderung projectId={}", projectId, exception);
+    }
+
+    private void offerFeedback(HttpSession session, AiFeedbackContext context, UUID actionId, UUID projectId) {
+        session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
+                new AiFeedbackOpportunity(context, actionId, "/projects/" + projectId + "/plan"));
+    }
+
+    private void track(HttpSession session, StudyEventType type) {
+        if (studyTrackingService != null) studyTrackingService.trackIfActive(session, type);
     }
 }

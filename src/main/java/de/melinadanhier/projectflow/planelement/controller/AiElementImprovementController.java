@@ -10,9 +10,12 @@ import de.melinadanhier.projectflow.planelement.dto.improvement.AiImprovementPro
 import de.melinadanhier.projectflow.planelement.dto.improvement.AiImprovementReview;
 import de.melinadanhier.projectflow.planelement.service.AiElementImprovementService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.feedback.domain.AiFeedbackContext;
+import de.melinadanhier.projectflow.feedback.service.AiFeedbackOpportunity;
+import de.melinadanhier.projectflow.study.domain.StudyEventType;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -30,13 +33,24 @@ import java.util.UUID;
 import java.util.Arrays;
 
 @Controller
-@RequiredArgsConstructor
 @Slf4j
 public class AiElementImprovementController {
 
     private static final String SESSION_PROPOSALS = "aiElementImprovementProposals";
     private static final int MAX_SESSION_PROPOSALS = 5;
     private final AiElementImprovementService improvementService;
+    private final StudyTrackingService studyTrackingService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AiElementImprovementController(AiElementImprovementService improvementService,
+                                          StudyTrackingService studyTrackingService) {
+        this.improvementService = improvementService;
+        this.studyTrackingService = studyTrackingService;
+    }
+
+    public AiElementImprovementController(AiElementImprovementService improvementService) {
+        this(improvementService, null);
+    }
 
     @GetMapping("/projects/{projectId}/plan-elements/{elementType}/{elementId}/improve")
     public String form(
@@ -72,6 +86,7 @@ public class AiElementImprovementController {
             AiImprovementProposal proposal = improvementService.propose(
                     projectId, elementType, elementId, form, currentUser.userId());
             storeProposal(session, proposal);
+            track(session, StudyEventType.AI_EDIT_STARTED);
             return reviewRedirect(proposal);
         } catch (AiTechnicalException exception) {
             if (exception instanceof AiOutputValidationException validationException) {
@@ -119,6 +134,8 @@ public class AiElementImprovementController {
         AiImprovementProposal proposal = requireProposal(session, projectId, proposalId);
         improvementService.confirm(proposal, currentUser.userId());
         proposals(session).remove(proposalId);
+        track(session, StudyEventType.AI_EDIT_ADOPTED);
+        offerFeedback(session, AiFeedbackContext.AI_EDIT_ADOPTED, proposalId, proposal);
         redirectAttributes.addFlashAttribute("successMessage", "Der KI-Vorschlag wurde übernommen.");
         return redirect(proposal);
     }
@@ -134,6 +151,8 @@ public class AiElementImprovementController {
         AiImprovementProposal proposal = requireProposal(session, projectId, proposalId);
         improvementService.requireImprovementAccess(projectId, currentUser.userId());
         proposals(session).remove(proposalId);
+        track(session, StudyEventType.AI_EDIT_REJECTED);
+        offerFeedback(session, AiFeedbackContext.AI_EDIT_REJECTED, proposalId, proposal);
         redirectAttributes.addFlashAttribute("successMessage", "Der KI-Vorschlag wurde verworfen.");
         return redirect(proposal);
     }
@@ -184,5 +203,18 @@ public class AiElementImprovementController {
     private String reviewRedirect(AiImprovementProposal proposal) {
         return "redirect:/projects/" + proposal.projectId()
                 + "/ai-improvements/" + proposal.proposalId();
+    }
+
+    private void offerFeedback(HttpSession session, AiFeedbackContext context, UUID actionId,
+                               AiImprovementProposal proposal) {
+        String returnUrl = proposal.elementType() == AiImprovementElementType.TASK
+                ? "/projects/" + proposal.projectId() + "/tasks/" + proposal.elementId()
+                : "/projects/" + proposal.projectId() + "/plan";
+        session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
+                new AiFeedbackOpportunity(context, actionId, returnUrl));
+    }
+
+    private void track(HttpSession session, StudyEventType type) {
+        if (studyTrackingService != null) studyTrackingService.trackIfActive(session, type);
     }
 }

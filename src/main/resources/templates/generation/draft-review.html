@@ -148,6 +148,12 @@
     <form class="apply-draft" th:if="${draft.owner and draft.status.name() != 'APPLIED'}" th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
         <button type="submit">Entwurf ausdrücklich übernehmen</button>
     </form>
+    <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}"
+          th:action="@{/projects/{projectId}/draft/discard(projectId=${draft.projectId})}" method="post">
+        <input type="hidden" name="draftId" th:value="${draft.id}">
+        <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+        <button class="pf-btn pf-btn--ghost" type="submit">Entwurf verwerfen</button>
+    </form>
 </main>
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body></html>

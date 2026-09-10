@@ -12,6 +12,7 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompleti
 import de.melinadanhier.projectflow.generation.service.precheck.AiPreCheckReviewService;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import de.melinadanhier.projectflow.wizard.dto.AiProcessingConsentForm;
 import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
@@ -45,6 +46,7 @@ public class ProjectWizardController {
     private final AiWizardCompletionService aiWizardCompletionService;
     private final AiPreCheckReviewService aiPreCheckReviewService;
     private final AiWorkflowControlService aiWorkflowControlService;
+    private final StudyTrackingService studyTrackingService;
 
     @GetMapping("/projects/new")
     public String basics(
@@ -254,6 +256,7 @@ public class ProjectWizardController {
     ) {
         ProjectDetailsDto project = projectService.createProjectFromTemplate(
                 state.getSelectedTemplateId(), wizardService.projectData(userId, session), userId, dateHandling);
+        studyTrackingService.assignProjectIfActive(session, project.getId());
         wizardService.clearOwned(userId, session);
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde aus der Vorlage angelegt.");
         return "redirect:/projects/" + project.getId() + "/plan";
@@ -356,6 +359,7 @@ public class ProjectWizardController {
                 () -> wizardService.confirmedSnapshot(
                         form.getCompletionToken(), currentUser.userId(), session)
         );
+        studyTrackingService.assignProjectIfActive(session, completion.projectId());
         wizardService.clearOwned(currentUser.userId(), session);
         return "redirect:/projects/new/ai/status/" + completion.workflowId();
     }
@@ -413,6 +417,7 @@ public class ProjectWizardController {
             RedirectAttributes redirectAttributes
     ) {
         ProjectDetailsDto project = projectService.createProject(wizardService.projectData(userId, session), userId);
+        studyTrackingService.assignProjectIfActive(session, project.getId());
         wizardService.clearOwned(userId, session);
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde angelegt.");
         return "redirect:/projects/" + project.getId() + "/plan";
