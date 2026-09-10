@@ -113,6 +113,8 @@
                         <span class="pf-badge pf-badge--blue" th:text="${section.taskCount + ' Aufgaben'}">0 Aufgaben</span>
                         <span class="pf-badge pf-badge--purple" th:text="${section.milestoneCount + ' Meilensteine'}">0 Meilensteine</span>
                         <span class="pf-badge pf-badge--outline" th:if="${section.originLabel}" th:text="${section.originLabel}"></span>
+                        <a th:if="${plan.editable}" class="pf-btn pf-btn--sm pf-btn--outline"
+                           th:href="@{/projects/{projectId}/plan-elements/SECTION/{elementId}/improve(projectId=${plan.project.id},elementId=${section.id})}">Mit KI verbessern</a>
                     </div>
                 </summary>
 
@@ -173,6 +175,8 @@
                             </div>
                         </div>
                         <div class="pf-cluster">
+                            <a th:if="${plan.editable}" class="pf-btn pf-btn--sm pf-btn--ghost"
+                               th:href="@{/projects/{projectId}/plan-elements/{elementType}/{elementId}/improve(projectId=${plan.project.id},elementType=${element.type},elementId=${element.id})}">Mit KI verbessern</a>
                             <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
                             <span class="pf-badge pf-badge--gray" th:if="${element.stateLabel}" th:text="${element.stateLabel}"></span>
                             <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
@@ -308,6 +312,8 @@
                     </div>
                 </div>
                 <div class="pf-cluster">
+                    <a th:if="${plan.editable}" class="pf-btn pf-btn--sm pf-btn--ghost"
+                       th:href="@{/projects/{projectId}/plan-elements/{elementType}/{elementId}/improve(projectId=${plan.project.id},elementType=${element.type},elementId=${element.id})}">Mit KI verbessern</a>
                     <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
                     <span class="pf-badge pf-badge--gray" th:if="${element.stateLabel}" th:text="${element.stateLabel}"></span>
                     <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>

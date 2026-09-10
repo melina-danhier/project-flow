@@ -28,6 +28,9 @@
         </div>
 
         <div class="pf-page-header__actions" th:if="${task.editable}">
+            <a class="pf-btn pf-btn--outline" th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
+                Mit KI verbessern
+            </a>
             <a class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}">
                 Aufgabe bearbeiten
             </a>

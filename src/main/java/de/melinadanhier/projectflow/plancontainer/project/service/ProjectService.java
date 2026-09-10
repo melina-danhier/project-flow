@@ -40,7 +40,7 @@ import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
-import de.melinadanhier.projectflow.planelement.service.PlanOrdering;
+import de.melinadanhier.projectflow.planelement.service.PlanElementCollection;
 import de.melinadanhier.projectflow.planelement.service.TaskDependencyPolicy;
 import de.melinadanhier.projectflow.user.model.User;
 import de.melinadanhier.projectflow.user.repository.UserRepository;
@@ -291,12 +291,10 @@ public class ProjectService {
             throw new DraftProjectPlanAccessException(projectId);
         }
         requireRegularProject(project);
-        List<PlanElement> planElements = planElementRepository.findPlanElements(projectId);
-        List<Task> tasks = taskRepository.findPlanTasks(projectId);
-        List<Milestone> milestones = planElements.stream()
-                .filter(Milestone.class::isInstance)
-                .map(Milestone.class::cast)
-                .toList();
+        PlanElementCollection elements = PlanElementCollection.copyOf(
+                planElementRepository.findPlanElements(projectId));
+        List<Task> tasks = elements.tasks();
+        List<Milestone> milestones = elements.milestones();
 
         ProjectPlanViewDto view = new ProjectPlanViewDto();
         view.setProject(projectMapper.toDetailsDto(project));
@@ -316,37 +314,24 @@ public class ProjectService {
                         )))
                 .toList());
 
-        List<PlanElementViewDto> manualElements = planElements.stream()
-                .map(this::toViewElement)
-                .sorted(PlanOrdering.manual(PlanElementViewDto::getSortOrder, PlanElementViewDto::getId))
-                .toList();
-
-        Map<UUID, Long> taskCounts = tasks.stream()
-                .filter(task -> task.getPlanSection() != null)
-                .collect(java.util.stream.Collectors.groupingBy(
-                        task -> task.getPlanSection().getId(), java.util.stream.Collectors.counting()));
-        Map<UUID, Long> milestoneCounts = milestones.stream()
-                .filter(milestone -> milestone.getPlanSection() != null)
-                .collect(java.util.stream.Collectors.groupingBy(
-                        milestone -> milestone.getPlanSection().getId(), java.util.stream.Collectors.counting()));
         List<SectionDto> sections = planSectionRepository
                 .findAllByPlanContainerIdOrderBySortOrderAsc(projectId).stream()
                 .map(section -> {
                     SectionDto dto = planElementMapper.toDto(section);
-                    dto.setTaskCount(taskCounts.getOrDefault(section.getId(), 0L).intValue());
-                    dto.setMilestoneCount(milestoneCounts.getOrDefault(section.getId(), 0L).intValue());
-                    List<PlanElementViewDto> sectionElements = manualElements.stream()
-                            .filter(element -> section.getId().equals(element.getPlanSectionId()))
+                    dto.setTaskCount(elements.taskCount(section.getId()));
+                    dto.setMilestoneCount(elements.milestoneCount(section.getId()));
+                    List<PlanElementViewDto> sectionElements = elements
+                            .displayInSection(section.getId(), project.getSortMode()).stream()
+                            .map(this::toViewElement)
                             .toList();
-                    dto.setElements(PlanOrdering.display(
-                            sectionElements, project.getSortMode(), PlanElementViewDto::getRelevantDate));
+                    dto.setElements(sectionElements);
                     return dto;
                 })
                 .toList();
         view.setSections(sections);
-        view.setUnsectionedElements(PlanOrdering.display(
-                manualElements.stream().filter(element -> element.getPlanSectionId() == null).toList(),
-                project.getSortMode(), PlanElementViewDto::getRelevantDate));
+        view.setUnsectionedElements(elements.displayInSection(null, project.getSortMode()).stream()
+                .map(this::toViewElement)
+                .toList());
         return view;
     }
 

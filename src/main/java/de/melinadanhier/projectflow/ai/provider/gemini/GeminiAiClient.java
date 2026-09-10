@@ -3,6 +3,7 @@ package de.melinadanhier.projectflow.ai.provider.gemini;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.ImprovementPromptBuilder;
 import de.melinadanhier.projectflow.ai.provider.AbstractProviderAiClient;
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
 
@@ -14,6 +15,17 @@ public class GeminiAiClient extends AbstractProviderAiClient<GeneratedPlanRespon
             PreCheckPromptBuilder preCheckPromptBuilder,
             GenerationPromptBuilder generationPromptBuilder
     ) {
+        this(gateway, properties, preCheckPromptBuilder, generationPromptBuilder,
+                new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper()));
+    }
+
+    public GeminiAiClient(
+            AiResponsesGateway gateway,
+            GeminiProperties properties,
+            PreCheckPromptBuilder preCheckPromptBuilder,
+            GenerationPromptBuilder generationPromptBuilder,
+            ImprovementPromptBuilder improvementPromptBuilder
+    ) {
         super(
                 "gemini",
                 gateway,
@@ -21,7 +33,8 @@ public class GeminiAiClient extends AbstractProviderAiClient<GeneratedPlanRespon
                 properties::getGenerationModel,
                 GeneratedPlanResponse.class,
                 preCheckPromptBuilder,
-                generationPromptBuilder
+                generationPromptBuilder,
+                improvementPromptBuilder
         );
     }
 

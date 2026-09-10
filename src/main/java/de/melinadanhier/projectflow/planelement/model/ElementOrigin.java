@@ -16,4 +16,8 @@ public enum ElementOrigin {
             case USER -> USER;
         };
     }
+
+    public ElementOrigin modifiedByAi() {
+        return AI_MODIFIED;
+    }
 }

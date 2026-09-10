@@ -2,9 +2,8 @@ package de.melinadanhier.projectflow.plancontainer.template;
 
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
-import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
+import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
-import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import de.melinadanhier.projectflow.plancontainer.template.dto.TemplateSummaryDto;
 import de.melinadanhier.projectflow.plancontainer.template.mapper.TemplateMapper;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
@@ -30,8 +29,7 @@ class TemplateRecommendationTest {
                 repository,
                 mapper,
                 mock(PlanSectionRepository.class),
-                mock(TaskRepository.class),
-                mock(MilestoneRepository.class),
+                mock(PlanElementRepository.class),
                 mock(PlanElementMapper.class)
         );
         Template broadMatch = new Template();
@@ -112,7 +110,7 @@ class TemplateRecommendationTest {
 
     private TemplateService service(TemplateRepository repository, TemplateMapper mapper) {
         return new TemplateService(repository, mapper, mock(PlanSectionRepository.class),
-                mock(TaskRepository.class), mock(MilestoneRepository.class), mock(PlanElementMapper.class));
+                mock(PlanElementRepository.class), mock(PlanElementMapper.class));
     }
 
     private TemplateSummaryDto summary(ProjectCategory category, ProjectSubCategory subcategory) {

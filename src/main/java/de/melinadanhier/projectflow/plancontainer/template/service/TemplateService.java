@@ -8,16 +8,14 @@ import de.melinadanhier.projectflow.plancontainer.template.dto.TemplateDetailsDt
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.planelement.dto.TaskDependencyDto;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
-import de.melinadanhier.projectflow.planelement.model.PlanElement;
-import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
+import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
-import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
+import de.melinadanhier.projectflow.planelement.service.PlanElementCollection;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -30,8 +28,7 @@ public class TemplateService {
     private final TemplateRepository templateRepository;
     private final TemplateMapper templateMapper;
     private final PlanSectionRepository planSectionRepository;
-    private final TaskRepository taskRepository;
-    private final MilestoneRepository milestoneRepository;
+    private final PlanElementRepository planElementRepository;
     private final PlanElementMapper planElementMapper;
 
     @Transactional(readOnly = true)
@@ -102,15 +99,10 @@ public class TemplateService {
     public TemplateDetailsDto getTemplate(UUID templateId) {
         var template = templateRepository.findByIdAndActiveTrue(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vorlage wurde nicht gefunden."));
-        var planOrder = Comparator
-                .comparingInt((PlanElement element) -> element.getPlanSection() == null
-                        ? Integer.MAX_VALUE : element.getPlanSection().getSortOrder())
-                .thenComparingInt(PlanElement::getSortOrder)
-                .thenComparing(PlanElement::getId);
-        var tasks = taskRepository.findPlanTasks(templateId).stream().sorted(planOrder).toList();
-        var milestones = milestoneRepository.findAllByPlanContainerIdOrderBySortOrderAsc(templateId).stream()
-                .sorted(planOrder)
-                .toList();
+        PlanElementCollection elements = PlanElementCollection.copyOf(
+                planElementRepository.findPlanElements(templateId));
+        var tasks = elements.tasks();
+        var milestones = elements.milestones();
         TemplateDetailsDto dto = templateMapper.toDetailsDto(template);
         dto.setSections(planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(templateId).stream()
                 .map(planElementMapper::toDto)

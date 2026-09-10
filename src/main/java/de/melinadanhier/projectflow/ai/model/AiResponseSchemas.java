@@ -5,6 +5,10 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
+import de.melinadanhier.projectflow.ai.model.improvement.AiTextImprovementResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiTaskReplanResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiMilestoneReplanResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiTaskEffortResponse;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 
 import java.util.Arrays;
@@ -26,7 +30,44 @@ public final class AiResponseSchemas {
         if (type == GeneratedPlanResponse.class) {
             return generatedPlanSchema();
         }
+        if (type == AiTextImprovementResponse.class) {
+            return textImprovementSchema();
+        }
+        if (type == AiTaskReplanResponse.class) {
+            return object(Map.ofEntries(
+                    entry("startDate", nullable(date())),
+                    entry("dueDate", nullable(date())),
+                    entry("placement", replanPlacementSchema()),
+                    entry("explanation", boundedString(500))));
+        }
+        if (type == AiMilestoneReplanResponse.class) {
+            return object(Map.ofEntries(
+                    entry("dueDate", nullable(date())),
+                    entry("placement", replanPlacementSchema()),
+                    entry("explanation", boundedString(500))));
+        }
+        if (type == AiTaskEffortResponse.class) {
+            return object(Map.ofEntries(
+                    entry("estimatedHours", positiveInteger(MAX_ESTIMATED_HOURS)),
+                    entry("explanation", boundedString(500))));
+        }
         throw new IllegalArgumentException("Kein KI-Ausgabeschema für " + type.getName());
+    }
+
+    private static Map<String, Object> textImprovementSchema() {
+        return object(Map.ofEntries(
+                entry("title", string()),
+                entry("description", nullable(string()))
+        ));
+    }
+
+    private static Map<String, Object> replanPlacementSchema() {
+        return object(Map.ofEntries(
+                entry("changePlacement", Map.of("type", "boolean")),
+                entry("targetSectionId", nullable(string())),
+                entry("beforeElementId", nullable(string())),
+                entry("afterElementId", nullable(string()))
+        ));
     }
 
     private static Map<String, Object> preCheckSchema() {
@@ -108,6 +149,10 @@ public final class AiResponseSchemas {
 
     private static Map<String, Object> string() {
         return Map.of("type", "string");
+    }
+
+    private static Map<String, Object> boundedString(int maxLength) {
+        return Map.of("type", "string", "minLength", 1, "maxLength", maxLength);
     }
 
     private static Map<String, Object> date() {

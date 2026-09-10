@@ -1,5 +1,8 @@
 package de.melinadanhier.projectflow.planelement;
 
+import de.melinadanhier.projectflow.ai.model.improvement.AiFeedbackType;
+import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementContent;
+import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementElementType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
@@ -13,6 +16,8 @@ import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.SectionDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionForm;
 import de.melinadanhier.projectflow.planelement.dto.TaskForm;
+import de.melinadanhier.projectflow.planelement.dto.improvement.AiImprovementProposal;
+import de.melinadanhier.projectflow.planelement.dto.improvement.AiReplanPlacementProposal;
 import de.melinadanhier.projectflow.planelement.model.Milestone;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import de.melinadanhier.projectflow.planelement.model.Task;
@@ -38,6 +43,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.LinkedHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -90,6 +96,163 @@ class SeparatedPlanUiIntegrationTest {
 
     @Autowired
     private MilestoneService milestoneService;
+
+    @Test
+    void replanReviewShowsSectionDatesAndExplanationWithoutPositionDiff() throws Exception {
+        User owner = saveUser("replan-review-owner@example.org");
+        Project project = saveProject("REPLAN-Review", owner);
+        SectionDto originalSection = createSection(project, owner, "Vorbereitung & Packen");
+        SectionDto targetSection = createSection(project, owner, "Transport & Umzugstag");
+        Task selected = createTask(project, owner, originalSection.getId(), "Kartons packen");
+        Task reference = createTask(project, owner, targetSection.getId(), "Transporter buchen");
+        UUID proposalId = UUID.randomUUID();
+        AiImprovementContent original = new AiImprovementContent(AiImprovementElementType.TASK,
+                selected.getTitle(), selected.getDescription(), selected.getPriority(), selected.getEstimatedHours(),
+                LocalDate.of(2026, 10, 27), LocalDate.of(2026, 10, 30));
+        AiImprovementContent proposed = new AiImprovementContent(AiImprovementElementType.TASK,
+                selected.getTitle(), selected.getDescription(), selected.getPriority(), selected.getEstimatedHours(),
+                LocalDate.of(2026, 10, 26), LocalDate.of(2026, 10, 29));
+        AiReplanPlacementProposal placement = new AiReplanPlacementProposal(true,
+                originalSection.getId(), originalSection.getTitle(), "an den Anfang der Section",
+                targetSection.getId(), targetSection.getTitle(), "nach \"Transporter buchen\"",
+                null, reference.getId(), SortMode.DATE);
+        AiImprovementProposal proposal = new AiImprovementProposal(proposalId, project.getId(), selected.getId(),
+                AiImprovementElementType.TASK, selected.getLockVersion(), AiFeedbackType.REPLAN, null,
+                "Die Aufgabe muss vor dem Umzugstag abgeschlossen sein.", placement, original, proposed);
+        MockHttpSession session = login(owner.getEmail());
+        var proposals = new LinkedHashMap<UUID, AiImprovementProposal>();
+        proposals.put(proposalId, proposal);
+        session.setAttribute("aiElementImprovementProposals", proposals);
+
+        mockMvc.perform(get("/projects/{projectId}/ai-improvements/{proposalId}", project.getId(), proposalId)
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Änderungen der Planung")))
+                .andExpect(content().string(containsString("Vorbereitung &amp; Packen")))
+                .andExpect(content().string(containsString("Transport &amp; Umzugstag")))
+                .andExpect(content().string(containsString("data-diff-field=\"section\"")))
+                .andExpect(content().string(not(containsString("data-diff-field=\"position\""))))
+                .andExpect(content().string(containsString("data-diff-field=\"ordering\"")))
+                .andExpect(content().string(containsString("an den Anfang der Section")))
+                .andExpect(content().string(containsString("nach &quot;Transporter buchen&quot;")))
+                .andExpect(content().string(containsString("Transporter buchen")))
+                .andExpect(content().string(containsString("data-diff-field=\"start-date\"")))
+                .andExpect(content().string(containsString("data-diff-field=\"due-date\"")))
+                .andExpect(content().string(containsString("27.10.2026")))
+                .andExpect(content().string(containsString("26.10.2026")))
+                .andExpect(content().string(containsString("30.10.2026")))
+                .andExpect(content().string(containsString("29.10.2026")))
+                .andExpect(content().string(containsString(
+                        "Die Aufgabe muss vor dem Umzugstag abgeschlossen sein.")));
+    }
+
+    @Test
+    void replanReviewShowsTaskMovingFromAfterToBeforeMilestone() throws Exception {
+        User owner = saveUser("replan-position-review@example.org");
+        Project project = saveProject("REPLAN-Position", owner);
+        SectionDto section = createSection(project, owner, "Wohnungsübergabe");
+        Milestone milestone = createMilestone(project, owner, section.getId(),
+                "Wohnung ist leer und übergabefähig (sauber)");
+        Task selected = createTask(project, owner, section.getId(),
+                "Wohnung für Übergabe reinigen und räumen");
+        UUID proposalId = UUID.randomUUID();
+        AiImprovementContent content = new AiImprovementContent(AiImprovementElementType.TASK,
+                selected.getTitle(), selected.getDescription(), selected.getPriority(), selected.getEstimatedHours(),
+                selected.getStartDate(), selected.getDueDate());
+        AiReplanPlacementProposal placement = new AiReplanPlacementProposal(true,
+                section.getId(), section.getTitle(), "nach \"" + milestone.getTitle() + "\"",
+                section.getId(), section.getTitle(), "vor \"" + milestone.getTitle() + "\"",
+                milestone.getId(), null, SortMode.DATE);
+        AiImprovementProposal proposal = new AiImprovementProposal(proposalId, project.getId(), selected.getId(),
+                AiImprovementElementType.TASK, selected.getLockVersion(), AiFeedbackType.REPLAN, null,
+                "Die Aufgabe stellt den Zustand des Meilensteins her.", placement, content, content);
+        MockHttpSession session = login(owner.getEmail());
+        var proposals = new LinkedHashMap<UUID, AiImprovementProposal>();
+        proposals.put(proposalId, proposal);
+        session.setAttribute("aiElementImprovementProposals", proposals);
+
+        mockMvc.perform(get("/projects/{projectId}/ai-improvements/{proposalId}", project.getId(), proposalId)
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "Die Aufgabe stellt den Zustand des Meilensteins her.")))
+                .andExpect(content().string(containsString("Wohnung für Übergabe reinigen und räumen")))
+                .andExpect(content().string(containsString("Übernehmen")))
+                .andExpect(content().string(containsString("Verwerfen")))
+                .andExpect(content().string(not(containsString("data-diff-field=\"position\""))))
+                .andExpect(content().string(containsString("data-diff-field=\"ordering\"")))
+                .andExpect(content().string(containsString(
+                        "nach &quot;Wohnung ist leer und übergabefähig (sauber)&quot;")))
+                .andExpect(content().string(containsString(
+                        "vor &quot;Wohnung ist leer und übergabefähig (sauber)&quot;")))
+                .andExpect(content().string(containsString("Wohnung ist leer und übergabefähig (sauber)")))
+                .andExpect(content().string(not(containsString(milestone.getId().toString()))))
+                .andExpect(content().string(not(containsString("sortOrder"))))
+                .andExpect(content().string(not(containsString("beforeElementId"))))
+                .andExpect(content().string(not(containsString("afterElementId"))))
+                .andExpect(content().string(not(containsString("data-diff-field=\"section\""))))
+                .andExpect(content().string(not(containsString("data-diff-field=\"start-date\""))))
+                .andExpect(content().string(not(containsString("data-diff-field=\"due-date\""))))
+                .andExpect(content().string(not(containsString("Die KI schlägt keine Änderung vor."))));
+    }
+
+    @Test
+    void improvementReviewRendersOnlyChangedTextFields() throws Exception {
+        User owner = saveUser("text-diff-review@example.org");
+        Project project = saveProject("Text-Diff", owner);
+        Task selected = createTask(project, owner, null, "Unveränderter Titel");
+        UUID proposalId = UUID.randomUUID();
+        AiImprovementContent original = new AiImprovementContent(AiImprovementElementType.TASK,
+                selected.getTitle(), "Kurze Beschreibung", selected.getPriority(), 3,
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 2));
+        AiImprovementContent proposed = new AiImprovementContent(AiImprovementElementType.TASK,
+                selected.getTitle(), "Ausführlichere Beschreibung", TaskPriority.HIGH, 8,
+                LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 2));
+        AiImprovementProposal proposal = new AiImprovementProposal(proposalId, project.getId(), selected.getId(),
+                AiImprovementElementType.TASK, selected.getLockVersion(), AiFeedbackType.IMPROVE, null,
+                original, proposed);
+        MockHttpSession session = login(owner.getEmail());
+        var proposals = new LinkedHashMap<UUID, AiImprovementProposal>();
+        proposals.put(proposalId, proposal);
+        session.setAttribute("aiElementImprovementProposals", proposals);
+
+        mockMvc.perform(get("/projects/{projectId}/ai-improvements/{proposalId}", project.getId(), proposalId)
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-diff-field=\"description\"")))
+                .andExpect(content().string(containsString("Betroffenes Element:")))
+                .andExpect(content().string(containsString("Unveränderter Titel")))
+                .andExpect(content().string(not(containsString("KI-Vorschlag · ungeprüft"))))
+                .andExpect(content().string(not(containsString("data-diff-field=\"title\""))))
+                .andExpect(content().string(not(containsString("data-diff-field=\"estimated-hours\""))))
+                .andExpect(content().string(not(containsString("data-diff-field=\"start-date\""))))
+                .andExpect(content().string(not(containsString("data-diff-field=\"due-date\""))))
+                .andExpect(content().string(not(containsString("Priorität"))));
+    }
+
+    @Test
+    void reviewExplainsWhenAiProposesNoChange() throws Exception {
+        User owner = saveUser("no-diff-review@example.org");
+        Project project = saveProject("Kein Diff", owner);
+        Task selected = createTask(project, owner, null, "Bleibt gleich");
+        UUID proposalId = UUID.randomUUID();
+        AiImprovementContent content = new AiImprovementContent(AiImprovementElementType.TASK,
+                selected.getTitle(), selected.getDescription(), selected.getPriority(), selected.getEstimatedHours(),
+                selected.getStartDate(), selected.getDueDate());
+        AiImprovementProposal proposal = new AiImprovementProposal(proposalId, project.getId(), selected.getId(),
+                AiImprovementElementType.TASK, selected.getLockVersion(), AiFeedbackType.IMPROVE, null,
+                content, content);
+        MockHttpSession session = login(owner.getEmail());
+        var proposals = new LinkedHashMap<UUID, AiImprovementProposal>();
+        proposals.put(proposalId, proposal);
+        session.setAttribute("aiElementImprovementProposals", proposals);
+
+        mockMvc.perform(get("/projects/{projectId}/ai-improvements/{proposalId}", project.getId(), proposalId)
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Die KI schlägt keine Änderung vor.")))
+                .andExpect(content().string(not(containsString("data-diff-field="))));
+    }
 
     @Test
     void taskAndMilestoneFormsHaveDedicatedPagesPrefillAllFieldsAndRedirectAfterPosts() throws Exception {
