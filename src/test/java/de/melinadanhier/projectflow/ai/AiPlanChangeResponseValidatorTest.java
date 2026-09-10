@@ -86,6 +86,29 @@ class AiPlanChangeResponseValidatorTest {
         assertThat(result.placement()).isEqualTo(new AiRelativePlacement(null, null));
     }
     @Test void acceptsModifiedTask() { assertValid(response(List.of(), List.of(modifiedTask("Neuer Titel", S1)), List.of())); }
+    @Test void acceptsRelativePlacementWithBeforeOnly() {
+        assertValid(response(List.of(), List.of(new AiTaskChange(AiPlanChangeOperation.MODIFIED, T1, S1,
+                List.of("position"), null, null, null, null, null, null,
+                new AiRelativePlacement(M1, null), null)), List.of()));
+    }
+    @Test void acceptsRelativePlacementWithAfterOnly() {
+        assertValid(response(List.of(), List.of(new AiTaskChange(AiPlanChangeOperation.MODIFIED, T1, S1,
+                List.of("position"), null, null, null, null, null, null,
+                new AiRelativePlacement(null, M1), null)), List.of()));
+    }
+    @Test void acceptsNoPlacementChangeWithBothReferencesNull() {
+        assertValid(response(List.of(), List.of(new AiTaskChange(AiPlanChangeOperation.MODIFIED, T1, null,
+                List.of("description"), null, "Neue Beschreibung", null, null, null, null,
+                new AiRelativePlacement(null, null), null)), List.of()));
+    }
+    @Test void continuesToRejectBothPlacementReferencesAtOnce() {
+        assertInvalid(response(List.of(), List.of(new AiTaskChange(AiPlanChangeOperation.MODIFIED, T1, S1,
+                List.of("position"), null, null, null, null, null, null,
+                new AiRelativePlacement(M1, T2), null)), List.of()));
+    }
+    @Test void acceptsTwoNewTasksAcrossTwoExistingSectionsTogether() {
+        assertValid(response(List.of(), List.of(newTask(S1), newTask(S2)), List.of()));
+    }
     @Test void acceptsNewAndModifiedMilestones() {
         assertValid(response(List.of(), List.of(), List.of(
                 new AiMilestoneChange(AiPlanChangeOperation.NEW, null, S1, List.of("title"), "Neu", null, null, place(), null),
@@ -95,6 +118,17 @@ class AiPlanChangeResponseValidatorTest {
     @Test void acceptsNewSectionWithNewElement() {
         var section = new AiSectionChange(AiPlanChangeOperation.NEW, null, "new-1", List.of("title"), "Neu", null, null, null, null);
         assertValid(response(List.of(section), List.of(newTask("new-1")), List.of()));
+    }
+    @Test void acceptsCombinedAddModifyMoveAndReplanOperations() {
+        var addedMilestone = new AiMilestoneChange(AiPlanChangeOperation.NEW, null, S1,
+                List.of("title", "dueDate", "section"), "Zwischenziel", null,
+                LocalDate.of(2026, 2, 20), place(), null);
+        var modifiedAndMovedTask = new AiTaskChange(AiPlanChangeOperation.MODIFIED, T1, S2,
+                List.of("description", "startDate", "dueDate", "section", "position"), null,
+                "Neu geplant", null, null, LocalDate.of(2026, 2, 10), LocalDate.of(2026, 2, 12),
+                new AiRelativePlacement(T2, null), null);
+
+        assertValid(response(List.of(), List.of(modifiedAndMovedTask), List.of(addedMilestone)));
     }
     @Test void acceptsChangedSectionAndSeveralAffectedSections() {
         var section = new AiSectionChange(AiPlanChangeOperation.MODIFIED, S1, null, List.of("description"), null, "Neu", null, null, null);
@@ -129,6 +163,25 @@ class AiPlanChangeResponseValidatorTest {
     @Test void rejectsEmptyApplicableResponseWithoutBusinessRejection() {
         assertInvalid(new AiPlanChangeResponse(AiPlanChangeApplicability.APPLICABLE, null,
                 "Keine Änderung", List.of(), List.of(), List.of()));
+    }
+    @Test void rejectsApplicableResponseWithRejectionReason() {
+        assertInvalid(new AiPlanChangeResponse(AiPlanChangeApplicability.APPLICABLE, "Falsche Ablehnung",
+                "Beschreibung ändern", List.of(), List.of(new AiTaskChange(AiPlanChangeOperation.MODIFIED, T1, null,
+                List.of("description"), null, "Neue Beschreibung", null, null, null, null, place(), null)), List.of()));
+    }
+    @Test void rejectsNotApplicableWithoutRejectionReason() {
+        assertInvalid(new AiPlanChangeResponse(AiPlanChangeApplicability.NOT_APPLICABLE, null,
+                "Keine Änderung", List.of(), List.of(), List.of()));
+    }
+    @Test void acceptsApplicableDescriptionChangeWithoutRejectionReason() {
+        var value = new AiPlanChangeResponse(AiPlanChangeApplicability.APPLICABLE, null, "Beschreibung präzisieren",
+                List.of(), List.of(new AiTaskChange(AiPlanChangeOperation.MODIFIED, T1, null,
+                List.of("description"), null, "Neue Beschreibung", null, null, null, null, place(),
+                "Die Beschreibung wird konkreter.")), List.of());
+        AiPlanChangeResponse result = validator.validate(value, plan(), LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
+        assertThat(result.rejectionReason()).isNull();
+        assertThat(result.summary()).isEqualTo("Beschreibung präzisieren");
+        assertThat(result.tasks().getFirst().explanation()).isEqualTo("Die Beschreibung wird konkreter.");
     }
     @Test void rejectsNotApplicableResponseThatAlsoContainsChanges() {
         assertInvalid(new AiPlanChangeResponse(AiPlanChangeApplicability.NOT_APPLICABLE, "Passt nicht", "Abgelehnt",

@@ -59,13 +59,33 @@ public final class AiResponseSchemas {
     }
 
     private static Map<String, Object> planChangeSchema() {
-        return object(Map.ofEntries(
+        Map<String, Object> properties = Map.ofEntries(
                 entry("applicability", enumeration(AiPlanChangeApplicability.class)),
                 entry("rejectionReason", nullable(boundedString(500))),
                 entry("summary", boundedString(500)),
                 entry("sections", array(sectionChangeSchema(), 0, 20)),
                 entry("tasks", array(taskChangeSchema(), 0, 100)),
-                entry("milestones", array(milestoneChangeSchema(), 0, 50))));
+                entry("milestones", array(milestoneChangeSchema(), 0, 50)));
+        Map<String, Object> schema = new java.util.LinkedHashMap<>(object(properties));
+        schema.put("anyOf", List.of(
+                applicableWithChanges("sections", sectionChangeSchema(), 20),
+                applicableWithChanges("tasks", taskChangeSchema(), 100),
+                applicableWithChanges("milestones", milestoneChangeSchema(), 50),
+                Map.of("properties", Map.of(
+                        "applicability", stringEnumeration("NOT_APPLICABLE"),
+                        "rejectionReason", boundedString(500),
+                        "sections", array(sectionChangeSchema(), 0, 0),
+                        "tasks", array(taskChangeSchema(), 0, 0),
+                        "milestones", array(milestoneChangeSchema(), 0, 0)))));
+        return Map.copyOf(schema);
+    }
+
+    private static Map<String, Object> applicableWithChanges(String changedCollection,
+                                                              Map<String, Object> itemSchema, int max) {
+        return Map.of("properties", Map.of(
+                "applicability", stringEnumeration("APPLICABLE"),
+                "rejectionReason", Map.of("type", "null"),
+                changedCollection, array(itemSchema, 1, max)));
     }
 
     private static Map<String, Object> sectionChangeSchema() {
@@ -104,8 +124,14 @@ public final class AiResponseSchemas {
     }
 
     private static Map<String, Object> relativePlacementSchema() {
-        return object(Map.ofEntries(entry("beforeElementId", nullable(string())),
-                entry("afterElementId", nullable(string()))));
+        Map<String, Object> properties = Map.ofEntries(
+                entry("beforeElementId", nullable(string())), entry("afterElementId", nullable(string())));
+        Map<String, Object> schema = new java.util.LinkedHashMap<>(object(properties));
+        schema.put("anyOf", List.of(
+                Map.of("properties", Map.of("beforeElementId", string(), "afterElementId", Map.of("type", "null"))),
+                Map.of("properties", Map.of("beforeElementId", Map.of("type", "null"), "afterElementId", string())),
+                Map.of("properties", Map.of("beforeElementId", Map.of("type", "null"), "afterElementId", Map.of("type", "null")))));
+        return Map.copyOf(schema);
     }
 
     private static Map<String, Object> textImprovementSchema() {

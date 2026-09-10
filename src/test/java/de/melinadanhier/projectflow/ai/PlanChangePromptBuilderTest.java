@@ -39,4 +39,44 @@ class PlanChangePromptBuilderTest {
                 .contains("estimatedHours", "changedFields", "enum")
                 .doesNotContain("changedFields={type=string}");
     }
+
+    @Test
+    void instructsModelAboutExclusivePlacementMultipleSectionsAndApplicabilityCases() {
+        var prompt = new PlanChangePromptBuilder(new ObjectMapper()).build(new AiPlanChangeRequest(
+                "Ergänze je eine Aufgabe in beiden Bereichen.",
+                new AiImprovementProjectContext("Umzug", null, null, null),
+                new AiImprovementPlanContext(List.of())));
+
+        assertThat(prompt.systemInstructions())
+                .contains("exakt eine dieser beiden Referenzen")
+                .contains("start, end, first, last")
+                .contains("placement auf")
+                .contains("Mehrere Änderungen, mehrere neue Elemente")
+                .contains("Änderungen über mehrere Sections")
+                .contains("mindestens sections, tasks oder milestones")
+                .contains("summary oder explanation niemals als rejectionReason")
+                .contains("NOT_APPLICABLE: sections, tasks und milestones sind leer");
+    }
+
+    @Test
+    void limitsFreeTextRequestsToSupportedOperationsWithoutReducingMultiElementChanges() {
+        var prompt = new PlanChangePromptBuilder(new ObjectMapper()).build(new AiPlanChangeRequest(
+                "Verschiebe eine Aufgabe und plane ihre Termine neu.",
+                new AiImprovementProjectContext("Umzug", null, null, null),
+                new AiImprovementPlanContext(List.of())));
+
+        assertThat(prompt.systemInstructions())
+                .contains("ausschließlich als Kombination der unterstützten Operationen")
+                .contains("ADD, MODIFY, MOVE und REPLAN")
+                .contains("Erfinde keine weiteren Operationen")
+                .contains("bestehende Elemente löschen")
+                .contains("Dependencies oder Assignees automatisch ändern")
+                .contains("Completion-State ändern")
+                .contains("Deute solche Wünsche nicht kreativ")
+                .contains("Lösche alle bisherigen Aufgaben")
+                .contains("Ersetze den gesamten Plan")
+                .contains("Ändere automatisch alle Abhängigkeiten")
+                .contains("mehrere neue Elemente")
+                .contains("mehrere Sections");
+    }
 }

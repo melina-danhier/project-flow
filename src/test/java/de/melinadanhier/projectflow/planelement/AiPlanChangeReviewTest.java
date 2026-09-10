@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.ai.model.planchange.*;
 import de.melinadanhier.projectflow.ai.validation.planchange.AiPlanChangeResponseValidator;
 import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.planelement.dto.planchange.PlanChangeProposal;
+import de.melinadanhier.projectflow.planelement.dto.planchange.PlanChangeReview;
 import de.melinadanhier.projectflow.planelement.model.*;
 import de.melinadanhier.projectflow.planelement.service.AiPlanChangeService;
 import org.junit.jupiter.api.Test;
@@ -41,9 +42,30 @@ class AiPlanChangeReviewTest {
         assertThat(review.sections().get(0).elements().getFirst().operation()).isEqualTo(AiPlanChangeOperation.NEW);
         assertThat(review.sections().get(1).elements().getFirst().operation()).isEqualTo(AiPlanChangeOperation.MODIFIED);
     }
+    @Test void movedElementShowsPreviousAndProposedRelativeLocationWithoutTechnicalOrdering() {
+        String first = UUID.randomUUID().toString(), second = UUID.randomUUID().toString();
+        String movedId = UUID.randomUUID().toString(), siblingId = UUID.randomUUID().toString();
+        var plan = new AiImprovementPlanContext(SortMode.MANUAL, null, List.of(
+                new AiImprovementPlanContext.Section(first, "Vorbereitung", null, 1,
+                        List.of(element(movedId, "Packen"), element(siblingId, "Transport"))),
+                new AiImprovementPlanContext.Section(second, "Abschluss", null, 2, List.of())));
+        var moved = new AiTaskChange(AiPlanChangeOperation.MODIFIED, movedId, second,
+                List.of("section", "position"), null, null, null, null, null, null,
+                new AiRelativePlacement(null, null), null);
+
+        var review = service().review(proposal(plan,
+                new AiPlanChangeResponse("Kurz", List.of(), List.of(moved), List.of())));
+
+        assertThat(review.sections().getFirst().elements().getFirst().fields())
+                .extracting(PlanChangeReview.FieldChange::label,
+                        PlanChangeReview.FieldChange::before, PlanChangeReview.FieldChange::after)
+                .containsExactly(
+                        tuple("Bereich", "Vorbereitung", "Abschluss"),
+                        tuple("Reihenfolge", "Vor „Transport“", "Am Ende"));
+    }
     private AiPlanChangeService service() { return new AiPlanChangeService(mock(), mock(), mock(), mock(), new AiPlanChangeResponseValidator()); }
     private PlanChangeProposal proposal(AiImprovementPlanContext plan, AiPlanChangeResponse response) { return new PlanChangeProposal(
-            UUID.randomUUID(), UUID.randomUUID(), "Projekt", "Wunsch", Instant.now(), plan, response); }
+            UUID.randomUUID(), UUID.randomUUID(), "Projekt", "Wunsch", Instant.now(), plan, response, 0, Map.of(), Map.of()); }
     private AiImprovementPlanContext.Element element(String id, String title) { return new AiImprovementPlanContext.Element(
             AiImprovementElementType.TASK, id, title, "Alt", 1, TaskPriority.MEDIUM, null, TaskStatus.OPEN,
             null, null, null, List.of()); }
