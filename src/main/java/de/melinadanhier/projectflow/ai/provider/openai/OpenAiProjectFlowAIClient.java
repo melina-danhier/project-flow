@@ -5,8 +5,13 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedMilestone;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedSection;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedTask;
+import de.melinadanhier.projectflow.ai.model.improvement.AiMilestoneReplanResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiReplanPlacementResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiTaskReplanResponse;
+import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.ImprovementPromptBuilder;
 import de.melinadanhier.projectflow.ai.provider.AbstractProviderAiClient;
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
@@ -22,6 +27,17 @@ public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGe
             PreCheckPromptBuilder preCheckPromptBuilder,
             GenerationPromptBuilder generationPromptBuilder
     ) {
+        this(gateway, properties, preCheckPromptBuilder, generationPromptBuilder,
+                new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper()));
+    }
+
+    public OpenAiProjectFlowAIClient(
+            AiResponsesGateway gateway,
+            OpenAiProperties properties,
+            PreCheckPromptBuilder preCheckPromptBuilder,
+            GenerationPromptBuilder generationPromptBuilder,
+            ImprovementPromptBuilder improvementPromptBuilder
+    ) {
         super(
                 "openai",
                 gateway,
@@ -29,13 +45,42 @@ public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGe
                 properties::getGenerationModel,
                 OpenAiGenerationOutput.class,
                 preCheckPromptBuilder,
-                generationPromptBuilder
+                generationPromptBuilder,
+                improvementPromptBuilder
         );
     }
 
     @Override
     protected GeneratedPlanResponse mapPlan(OpenAiGenerationOutput output) {
         return new GeneratedPlanResponse(mapList(output.sections(), this::map));
+    }
+
+    @Override
+    protected AiTaskReplanResponse requestTaskReplan(String model, AiPrompt prompt) {
+        OpenAiReplanOutput.Task output = executeStructured(model, prompt, OpenAiReplanOutput.Task.class);
+        return new AiTaskReplanResponse(
+                output.startDate().orElse(null),
+                output.dueDate().orElse(null),
+                map(output.placement()),
+                output.explanation());
+    }
+
+    @Override
+    protected AiMilestoneReplanResponse requestMilestoneReplan(String model, AiPrompt prompt) {
+        OpenAiReplanOutput.Milestone output = executeStructured(
+                model, prompt, OpenAiReplanOutput.Milestone.class);
+        return new AiMilestoneReplanResponse(
+                output.dueDate().orElse(null),
+                map(output.placement()),
+                output.explanation());
+    }
+
+    private AiReplanPlacementResponse map(OpenAiReplanOutput.Placement placement) {
+        return new AiReplanPlacementResponse(
+                placement.changePlacement(),
+                placement.targetSectionId().orElse(null),
+                placement.beforeElementId().orElse(null),
+                placement.afterElementId().orElse(null));
     }
 
     private GeneratedSection map(OpenAiGenerationOutput.Section section) {

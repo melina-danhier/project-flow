@@ -7,6 +7,8 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
+import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementRequest;
+import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementResponse;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -42,6 +44,35 @@ public class StubAiClient implements AiClient {
         return new GeneratedPlanResponse(List.of(
                 preparationSection(scheduleStart, projectEnd),
                 implementationSection(scheduleStart, projectEnd)));
+    }
+
+    @Override
+    public AiImprovementResponse improveElement(AiImprovementRequest request) {
+        var element = request.element();
+        String description = switch (request.feedbackType()) {
+            case IMPROVE -> element.description() == null ? null : element.description().trim().replaceAll("\\s+", " ");
+            case EXPAND -> append(element.description(), "Ergänzende Details unterstützen die Umsetzung.");
+            case SIMPLIFY -> element.description() == null ? null
+                    : element.description().substring(0, Math.min(80, element.description().length()));
+            case REPLAN, ESTIMATE_EFFORT -> element.description();
+        };
+        return new AiImprovementResponse(element.elementType(), element.title(), description,
+                element.priority(),
+                request.feedbackType() == de.melinadanhier.projectflow.ai.model.improvement.AiFeedbackType.ESTIMATE_EFFORT
+                        && element.estimatedHours() == null ? 2 : element.estimatedHours(),
+                element.startDate(), element.dueDate(),
+                request.feedbackType() == de.melinadanhier.projectflow.ai.model.improvement.AiFeedbackType.REPLAN
+                        ? de.melinadanhier.projectflow.ai.model.improvement.AiReplanPlacementResponse.unchanged()
+                        : null,
+                switch (request.feedbackType()) {
+                    case REPLAN -> "Die Termine passen zur Reihenfolge und zum Zeitraum des aktuellen Projektplans.";
+                    case ESTIMATE_EFFORT -> "Der Aufwand berücksichtigt Inhalt und Umfang der Aufgabe.";
+                    case IMPROVE, EXPAND, SIMPLIFY -> null;
+                });
+    }
+
+    private String append(String current, String addition) {
+        return current == null || current.isBlank() ? addition : current + " " + addition;
     }
 
     private GeneratedSection preparationSection(LocalDate projectStart, LocalDate projectEnd) {

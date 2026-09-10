@@ -8,9 +8,17 @@ import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckRequest;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
+import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementRequest;
+import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiReplanPlacementResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiTextImprovementResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiTaskReplanResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiMilestoneReplanResponse;
+import de.melinadanhier.projectflow.ai.model.improvement.AiTaskEffortResponse;
 import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.ImprovementPromptBuilder;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +37,7 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
     private final Class<T> generationResponseType;
     private final PreCheckPromptBuilder preCheckPromptBuilder;
     private final GenerationPromptBuilder generationPromptBuilder;
+    private final ImprovementPromptBuilder improvementPromptBuilder;
 
     @Override
     public final AiPreCheckResult preCheck(AiPreCheckRequest request) {
@@ -46,6 +55,68 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
                 () -> mapPlan(requireOutput(gateway.execute(model, prompt, generationResponseType))));
     }
 
+    @Override
+    public final AiImprovementResponse improveElement(AiImprovementRequest request) {
+        AiPrompt prompt = improvementPromptBuilder.build(request);
+        String model = generationModel.get();
+        return invoke("ELEMENT_IMPROVEMENT", AiSchemaVersions.ELEMENT_IMPROVEMENT, model, prompt,
+                () -> executeImprovement(request, model, prompt));
+    }
+
+    private AiImprovementResponse executeImprovement(AiImprovementRequest request, String model, AiPrompt prompt) {
+        var original = request.element();
+        return switch (request.feedbackType()) {
+            case IMPROVE, EXPAND, SIMPLIFY -> {
+                AiTextImprovementResponse output = requireOutput(
+                        gateway.execute(model, prompt, AiTextImprovementResponse.class));
+                yield new AiImprovementResponse(original.elementType(), output.title(), output.description(),
+                        original.priority(), original.estimatedHours(), original.startDate(), original.dueDate(), null);
+            }
+            case REPLAN -> switch (original.elementType()) {
+                case TASK -> {
+                    AiTaskReplanResponse output = requestTaskReplan(model, prompt);
+                    yield new AiImprovementResponse(original.elementType(), original.title(), original.description(),
+                            original.priority(), original.estimatedHours(), output.startDate(), output.dueDate(),
+                            normalizePlacement(output.placement()), output.explanation());
+                }
+                case MILESTONE -> {
+                    AiMilestoneReplanResponse output = requestMilestoneReplan(model, prompt);
+                    yield new AiImprovementResponse(original.elementType(), original.title(), original.description(),
+                            null, null, null, output.dueDate(), normalizePlacement(output.placement()),
+                            output.explanation());
+                }
+                case SECTION -> throw new IllegalArgumentException("REPLAN ist für Sections nicht verfügbar.");
+            };
+            case ESTIMATE_EFFORT -> {
+                if (original.elementType() != de.melinadanhier.projectflow.ai.model.improvement.AiImprovementElementType.TASK) {
+                    throw new IllegalArgumentException("ESTIMATE_EFFORT ist nur für Tasks verfügbar.");
+                }
+                AiTaskEffortResponse output = requireOutput(
+                        gateway.execute(model, prompt, AiTaskEffortResponse.class));
+                yield new AiImprovementResponse(original.elementType(), original.title(), original.description(),
+                        original.priority(), output.estimatedHours(), original.startDate(), original.dueDate(),
+                        output.explanation());
+            }
+        };
+    }
+
+    protected AiTaskReplanResponse requestTaskReplan(String model, AiPrompt prompt) {
+        return executeStructured(model, prompt, AiTaskReplanResponse.class);
+    }
+
+    protected AiMilestoneReplanResponse requestMilestoneReplan(String model, AiPrompt prompt) {
+        return executeStructured(model, prompt, AiMilestoneReplanResponse.class);
+    }
+
+    protected final <R> R executeStructured(String model, AiPrompt prompt, Class<R> responseType) {
+        return requireOutput(gateway.execute(model, prompt, responseType));
+    }
+
+    private AiReplanPlacementResponse normalizePlacement(AiReplanPlacementResponse placement) {
+        requireOutput(placement);
+        return placement.changePlacement() ? placement : AiReplanPlacementResponse.unchanged();
+    }
+
     protected abstract GeneratedPlanResponse mapPlan(T output);
 
     protected final <R> R requireOutput(R output) {
@@ -55,7 +126,11 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
     }
 
     private <R> R invoke(AiOperation operation, String model, AiPrompt prompt, Supplier<R> invocation) {
-        String schemaVersion = schemaVersion(operation);
+        return invoke(operation.name(), schemaVersion(operation), model, prompt, invocation);
+    }
+
+    private <R> R invoke(
+            String operation, String schemaVersion, String model, AiPrompt prompt, Supplier<R> invocation) {
         long startedAt = System.nanoTime();
         try {
             R result = requireOutput(invocation.get());

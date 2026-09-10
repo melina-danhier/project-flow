@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{fragments/layout :: head('KI-Vorschlag prüfen')}" /></head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+<main>
+    <div class="pf-page-header"><div class="pf-page-header__left">
+        <h1>KI-Vorschlag prüfen</h1>
+        <p>Die aktiven Plandaten sind noch unverändert. Prüfe die vorgeschlagenen Änderungen vor dem Übernehmen.</p>
+        <p style="margin-top: 0.5rem;">
+            <span style="color: var(--pf-text-muted);">Betroffenes Element:</span>
+            <strong th:text="${proposal.original.title}">Planelement</strong>
+        </p>
+    </div></div>
+
+    <section class="pf-card">
+        <h2 th:text="${proposal.feedbackType.name() == 'REPLAN' ? 'Änderungen der Planung' : 'Vorgeschlagene Änderungen'}">Vorgeschlagene Änderungen</h2>
+
+        <dl th:if="${!#lists.isEmpty(review.changes)}" style="margin-top: 1.25rem;">
+            <th:block th:each="change : ${review.changes}">
+                <div class="pf-card pf-card--tint" th:attr="data-diff-field=${change.key}" style="margin-top: 0.75rem;">
+                    <dt><strong th:text="${change.label}">Feld</strong></dt>
+                    <dd class="pf-cluster" style="margin: 0.5rem 0 0; align-items: flex-start;">
+                        <span>
+                            <span class="pf-badge pf-badge--gray">Bisher</span>
+                            <span th:text="${change.originalValue}" style="white-space: pre-line;"></span>
+                        </span>
+                        <span aria-hidden="true">→</span>
+                        <span>
+                            <span class="pf-badge pf-badge--blue">Vorschlag</span>
+                            <span th:text="${change.proposedValue}" style="white-space: pre-line;"></span>
+                        </span>
+                    </dd>
+                </div>
+            </th:block>
+        </dl>
+        <p th:unless="${review.hasChanges()}" class="pf-text-muted" data-review-no-changes>
+            Die KI schlägt keine Änderung vor.
+        </p>
+    </section>
+
+    <section class="pf-card pf-card--tint"
+             th:if="${proposal.explanation != null and (proposal.feedbackType.name() == 'REPLAN' or proposal.feedbackType.name() == 'ESTIMATE_EFFORT')}"
+             style="margin-top: 1.5rem;">
+        <span class="pf-badge pf-badge--blue">Begründung der KI</span>
+        <p th:text="${proposal.explanation}" style="margin: 0.75rem 0 0; white-space: pre-line;"></p>
+    </section>
+
+    <div class="pf-cluster" style="margin-top: 1.5rem;">
+        <form th:action="@{/projects/{projectId}/ai-improvements/{proposalId}/confirm(projectId=${proposal.projectId},proposalId=${proposal.proposalId})}" method="post" style="margin:0;">
+            <button class="pf-btn pf-btn--primary" type="submit">Übernehmen</button>
+        </form>
+        <form th:action="@{/projects/{projectId}/ai-improvements/{proposalId}/discard(projectId=${proposal.projectId},proposalId=${proposal.proposalId})}" method="post" style="margin:0;">
+            <button class="pf-btn pf-btn--secondary" type="submit">Verwerfen</button>
+        </form>
+    </div>
+</main>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body></html>

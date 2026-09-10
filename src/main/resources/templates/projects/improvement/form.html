@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head><th:block th:replace="~{fragments/layout :: head('Planelement mit KI verbessern')}" /></head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+<main style="max-width: 760px;">
+    <div class="pf-page-header"><div class="pf-page-header__left">
+        <a th:href="@{/projects/{projectId}/plan(projectId=${projectId})}" class="pf-page-header__back">Zum Projektplan</a>
+        <h1>Mit KI verbessern</h1>
+        <p th:text="${elementType.label + ' gezielt überarbeiten, bevor Änderungen übernommen werden.'}"></p>
+    </div></div>
+    <div class="pf-alert pf-alert--error" th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></div>
+    <form class="pf-card pf-stack"
+          th:action="@{/projects/{projectId}/plan-elements/{elementType}/{elementId}/improve(projectId=${projectId},elementType=${elementType},elementId=${elementId})}"
+          th:object="${improvementForm}" method="post">
+        <div class="pf-form-group">
+            <label for="feedbackType" class="pf-label">Wie soll die KI den Inhalt verbessern?</label>
+            <select id="feedbackType" th:field="*{feedbackType}" class="pf-select" required>
+                <option value="">Bitte wählen...</option>
+                <option th:each="type : ${feedbackTypes}" th:value="${type}" th:text="${type.label}"></option>
+            </select>
+            <div th:if="${#fields.hasErrors('feedbackType')}" th:errors="*{feedbackType}" class="pf-alert pf-alert--error"></div>
+        </div>
+        <div class="pf-form-group">
+            <label for="comment" class="pf-label">Ergänzender Kommentar (optional)</label>
+            <textarea id="comment" th:field="*{comment}" maxlength="500" class="pf-textarea"
+                      placeholder="z. B. Fachbegriffe vermeiden oder das erwartete Ergebnis klarer nennen"></textarea>
+            <small>Maximal 500 Zeichen. Der Kommentar wird getrennt vom Feedback-Typ übermittelt.</small>
+            <div th:if="${#fields.hasErrors('comment')}" th:errors="*{comment}" class="pf-alert pf-alert--error"></div>
+        </div>
+        <div class="pf-cluster">
+            <button type="submit" class="pf-btn pf-btn--primary">Vorschlag erstellen</button>
+            <a th:href="@{/projects/{projectId}/plan(projectId=${projectId})}" class="pf-btn pf-btn--secondary">Abbrechen</a>
+        </div>
+    </form>
+</main>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body></html>
