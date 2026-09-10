@@ -30,5 +30,7 @@ public class ProjectSummaryDto implements ProjectClassification {
     private CollaborationMode collaborationMode;
     private CreationType creationType;
     private ProjectLocation location;
+    private boolean pinned;
+    private boolean owner;
     private Integer progress;
 }

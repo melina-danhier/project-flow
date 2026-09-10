@@ -307,6 +307,33 @@ class ProjectSecurityIntegrationTest {
     }
 
     @Test
+    void eachMemberCanPinActiveProjectsIndependentlyAndArchivingClearsPins() {
+        User owner = saveUser("pin-owner@example.org");
+        User member = saveUser("pin-member@example.org");
+        Project pinned = saveProject("Angepinnt", owner);
+        Project regular = saveProject("Regulär", owner);
+        addMembership(pinned, member, ProjectMemberRole.MEMBER, true);
+
+        projectService.setPinned(pinned.getId(), owner.getId(), true);
+        projectRepository.flush();
+        assertThat(projectService.findAccessibleProjects(owner.getId()))
+                .extracting("id")
+                .containsExactly(pinned.getId(), regular.getId());
+        assertThat(projectService.findAccessibleProjects(owner.getId()).getFirst().isPinned()).isTrue();
+        assertThat(projectService.findAccessibleProjects(owner.getId()).getFirst().isOwner()).isTrue();
+        assertThat(projectService.findAccessibleProjects(member.getId()).getFirst().isPinned()).isFalse();
+
+        projectService.setPinned(pinned.getId(), member.getId(), true);
+        assertThat(projectService.findAccessibleProjects(member.getId()).getFirst().isPinned()).isTrue();
+
+        projectService.archiveProject(pinned.getId(), owner.getId());
+        assertThat(projectMemberRepository.findAllByProjectId(pinned.getId()))
+                .allMatch(membership -> !membership.isPinned());
+        assertThatThrownBy(() -> projectService.setPinned(pinned.getId(), owner.getId(), true))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
     void categoryDisplayUsesConcreteSubtypeOtherwiseTopLevelCategory() {
         Project concrete = new Project();
         concrete.setCategory(ProjectCategory.EDUCATION);

@@ -35,7 +35,7 @@
     <!-- Navigation Tabs for Filter Sections -->
     <nav class="pf-tabs" aria-label="Projektbereiche">
         <a th:href="@{/projects}"
-           th:classappend="${selectedLocation != null and selectedLocation.name() == 'ACTIVE' ? 'active' : ''}">
+           th:classappend="${selectedLocation != null and selectedLocation.name() == 'OVERVIEW' ? 'active' : ''}">
            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
                <polyline points="2 17 12 22 22 17"></polyline>
@@ -100,6 +100,7 @@
                     <span class="pf-badge pf-badge--gray" th:if="${project.projectTypeLabel}" th:text="${project.projectTypeLabel}">Kategorie</span>
                     <span class="pf-badge pf-badge--purple" th:if="${project.creationType != null and project.creationType.name() == 'AI'}">KI-Generiert</span>
                     <span class="pf-badge pf-badge--blue" th:if="${project.collaborationMode != null and project.collaborationMode.name() == 'GROUP'}">Team</span>
+                    <span class="pf-badge pf-badge--yellow" th:if="${project.pinned}">Angepinnt</span>
                 </div>
                 <h3 class="pf-project-card__title">
                     <a th:if="${selectedLocation.name() != 'DRAFT'}" th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}">Projekttitel</a>
@@ -123,6 +124,25 @@
                    class="pf-btn pf-btn--sm pf-btn--primary" style="width: 100%;">
                    Entwurf prüfen →
                 </a>
+                <div class="pf-project-card__actions"
+                     th:if="${selectedLocation.name() == 'OVERVIEW'}">
+                    <form th:if="${!project.pinned}" th:action="@{/projects/{id}/pin(id=${project.id})}" method="post">
+                        <button class="pf-btn pf-btn--sm pf-btn--ghost" type="submit">Anpinnen</button>
+                    </form>
+                    <form th:if="${project.pinned}" th:action="@{/projects/{id}/unpin(id=${project.id})}" method="post">
+                        <button class="pf-btn pf-btn--sm pf-btn--ghost" type="submit">Nicht mehr anpinnen</button>
+                    </form>
+                    <form th:if="${project.owner}" th:action="@{/projects/{id}/archive(id=${project.id})}" method="post"
+                          onsubmit="return confirm('Möchtest du dieses Projekt archivieren?');">
+                        <button class="pf-btn pf-btn--sm pf-btn--outline" type="submit">Archivieren</button>
+                    </form>
+                </div>
+                <div class="pf-project-card__actions"
+                     th:if="${selectedLocation.name() == 'ARCHIVE' and project.owner}">
+                    <form th:action="@{/projects/{id}/reactivate(id=${project.id})}" method="post">
+                        <button class="pf-btn pf-btn--sm pf-btn--outline" type="submit">Reaktivieren</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

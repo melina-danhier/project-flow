@@ -1935,6 +1935,21 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     align-items: start;
 }
 
+.pf-project-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+}
+
+.pf-project-card__actions form {
+    flex: 1 1 auto;
+}
+
+.pf-project-card__actions .pf-btn {
+    width: 100%;
+}
+
 @media (max-width: 720px) {
     .pf-template-catalog-layout {
         grid-template-columns: 1fr;
