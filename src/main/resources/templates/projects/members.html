@@ -39,7 +39,7 @@
                                   th:text="${member.role.name() == 'OWNER' ? 'Projektleitung' : 'Mitglied'}">Rolle</span>
                         </div>
                     </div>
-                    <form th:if="${member.role.name() == 'MEMBER'}"
+                    <form th:if="${canRemoveMembers and member.role.name() == 'MEMBER'}"
                           th:action="@{/projects/{projectId}/members/{memberId}/remove(projectId=${project.id},memberId=${member.id})}"
                           method="post" style="margin: 0;">
                         <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary" style="color: var(--pf-danger);">Entfernen</button>

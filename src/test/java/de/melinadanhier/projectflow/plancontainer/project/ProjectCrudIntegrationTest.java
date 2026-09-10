@@ -20,6 +20,7 @@ import de.melinadanhier.projectflow.planelement.dto.DeleteSectionForm;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementType;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementMoveForm;
+import de.melinadanhier.projectflow.planelement.dto.PlanSectionMoveForm;
 import de.melinadanhier.projectflow.planelement.dto.PlanSortModeForm;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementViewDto;
 import de.melinadanhier.projectflow.planelement.dto.SectionDeletionMode;
@@ -32,6 +33,7 @@ import de.melinadanhier.projectflow.planelement.dto.TaskReferenceDto;
 import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapperImpl;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.TaskStatus;
+import de.melinadanhier.projectflow.planelement.model.PlanSection;
 import de.melinadanhier.projectflow.planelement.repository.MilestoneRepository;
 import de.melinadanhier.projectflow.planelement.repository.PlanSectionRepository;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
@@ -484,6 +486,81 @@ class ProjectCrudIntegrationTest {
         assertThatThrownBy(() -> orderingService.moveElement(
                 project.getId(), firstTask.getId(), owner.getId(), crossDate))
                 .isInstanceOf(DomainValidationException.class);
+    }
+
+    @Test
+    void activeMemberCanCreateUpdateMoveAssignAndDeleteTheCompleteProjectPlan() {
+        User owner = saveUser("plan-rights-owner@example.org");
+        User member = saveUser("plan-rights-member@example.org");
+        Project project = saveProject("Gemeinsamer Plan", owner);
+        ProjectMember membership = addMembership(project, member, true);
+
+        SectionDto firstSection = sectionService.createSection(
+                project.getId(), sectionForm("Planung"), member.getId());
+        SectionDto secondSection = sectionService.createSection(
+                project.getId(), sectionForm("Umsetzung"), member.getId());
+
+        TaskForm taskForm = taskForm("Aufgabe", firstSection.getId());
+        taskForm.setStatus(TaskStatus.OPEN);
+        taskForm.setAssigneeId(membership.getId());
+        TaskDetailsDto task = taskService.createTask(project.getId(), taskForm, member.getId());
+        TaskForm taskUpdate = updateForm(task);
+        taskUpdate.setTitle("Aufgabe in Arbeit");
+        taskUpdate.setStatus(TaskStatus.IN_PROGRESS);
+        TaskDetailsDto updatedTask = taskService.updateTask(
+                project.getId(), task.getId(), taskUpdate, member.getId());
+        assertThat(updatedTask.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(updatedTask.getAssigneeId()).isEqualTo(membership.getId());
+
+        var milestone = milestoneService.createMilestone(
+                project.getId(), milestoneForm("Freigabe", firstSection.getId()), member.getId());
+        MilestoneForm milestoneUpdate = milestoneFormFrom(milestone);
+        milestoneUpdate.setCompleted(true);
+        var updatedMilestone = milestoneService.updateMilestone(
+                project.getId(), milestone.getId(), milestoneUpdate, member.getId());
+        assertThat(updatedMilestone.isCompleted()).isTrue();
+
+        SectionForm sectionUpdate = sectionFormFrom(firstSection);
+        sectionUpdate.setTitle("Planung aktualisiert");
+        assertThat(sectionService.updateSection(
+                project.getId(), firstSection.getId(), sectionUpdate, member.getId()).getTitle())
+                .isEqualTo("Planung aktualisiert");
+
+        PlanSortModeForm manual = new PlanSortModeForm();
+        manual.setProjectLockVersion(projectRepository.findById(project.getId()).orElseThrow().getLockVersion());
+        manual.setSortMode(SortMode.MANUAL);
+        orderingService.updateSortMode(project.getId(), member.getId(), manual);
+        entityManager.flush();
+
+        PlanSectionMoveForm sectionMove = new PlanSectionMoveForm();
+        sectionMove.setProjectLockVersion(projectRepository.findById(project.getId()).orElseThrow().getLockVersion());
+        sectionMove.setTargetPosition(0);
+        orderingService.moveSection(project.getId(), secondSection.getId(), member.getId(), sectionMove);
+        entityManager.flush();
+        assertThat(sectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(project.getId()))
+                .extracting(PlanSection::getId)
+                .containsExactly(secondSection.getId(), firstSection.getId());
+
+        PlanElementMoveForm elementMove = new PlanElementMoveForm();
+        elementMove.setProjectLockVersion(projectRepository.findById(project.getId()).orElseThrow().getLockVersion());
+        elementMove.setTargetSectionId(firstSection.getId());
+        elementMove.setTargetDate("");
+        elementMove.setTargetPosition(0);
+        orderingService.moveElement(project.getId(), milestone.getId(), member.getId(), elementMove);
+        entityManager.flush();
+        assertThat(projectService.getProjectPlan(project.getId(), member.getId()).getSections())
+                .filteredOn(section -> section.getId().equals(firstSection.getId()))
+                .singleElement()
+                .extracting(section -> section.getElements().stream().map(PlanElementViewDto::getId).toList())
+                .isEqualTo(java.util.List.of(milestone.getId(), task.getId()));
+
+        milestoneService.deleteMilestone(project.getId(), milestone.getId(), member.getId());
+        taskService.deleteTask(project.getId(), task.getId(), member.getId());
+        sectionService.deleteSection(project.getId(), firstSection.getId(),
+                deleteSectionForm(SectionDeletionMode.DELETE_CONTENT, null), member.getId());
+        assertThat(milestoneRepository.findById(milestone.getId())).isEmpty();
+        assertThat(taskRepository.findById(task.getId())).isEmpty();
+        assertThat(sectionRepository.findById(firstSection.getId())).isEmpty();
     }
 
     private void createDependency(Project project, User owner, UUID prerequisiteId, UUID successorId) {

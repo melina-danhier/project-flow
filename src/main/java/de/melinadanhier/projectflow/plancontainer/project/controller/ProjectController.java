@@ -218,6 +218,7 @@ public class ProjectController {
 
     private void populateMembers(Model model, UUID projectId, UUID userId) {
         model.addAttribute("members", membershipService.getMembersForManagement(projectId, userId));
+        model.addAttribute("canRemoveMembers", membershipService.canRemoveMembers(projectId, userId));
         model.addAttribute("project", projectService.getProject(projectId, userId));
     }
 

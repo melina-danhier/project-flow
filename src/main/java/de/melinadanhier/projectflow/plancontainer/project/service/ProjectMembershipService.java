@@ -34,11 +34,18 @@ public class ProjectMembershipService {
     private final ProjectMapper projectMapper;
 
     @Transactional(readOnly = true)
-    public List<ProjectMemberDto> getMembersForManagement(UUID projectId, UUID actingOwnerId) {
-        requireGroupProject(authorizationService.requireEditableOwner(projectId, actingOwnerId).getProject());
+    public List<ProjectMemberDto> getMembersForManagement(UUID projectId, UUID actingUserId) {
+        requireGroupProject(authorizationService.requireEditableMember(projectId, actingUserId).getProject());
         return projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
                 .map(projectMapper::toMemberDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canRemoveMembers(UUID projectId, UUID actingUserId) {
+        ProjectMember membership = authorizationService.requireEditableMember(projectId, actingUserId);
+        requireGroupProject(membership.getProject());
+        return membership.getRole() == ProjectMemberRole.OWNER;
     }
 
     @Transactional
@@ -48,7 +55,7 @@ public class ProjectMembershipService {
 
     @Transactional
     public ProjectMember addMember(UUID projectId, String email, UUID actingUserId) {
-        Project project = authorizationService.requireEditableOwnerForUpdate(projectId, actingUserId).getProject();
+        Project project = authorizationService.requireEditableMemberForUpdate(projectId, actingUserId).getProject();
         requireGroupProject(project);
         User user = userRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
                 .orElseThrow(() -> new ResourceNotFoundException("Unter dieser E-Mail-Adresse wurde kein Konto gefunden."));

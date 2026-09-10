@@ -393,6 +393,7 @@ class ProjectSecurityIntegrationTest {
         User member = saveUser("auth-member@example.org");
         User inactive = saveUser("auth-inactive@example.org");
         User outsider = saveUser("auth-outsider@example.org");
+        User additionalMember = saveUser("auth-additional@example.org");
         Project project = saveProject("Autorisierung", owner);
         addMembership(project, member, ProjectMemberRole.MEMBER, true);
         addMembership(project, inactive, ProjectMemberRole.MEMBER, false);
@@ -411,9 +412,14 @@ class ProjectSecurityIntegrationTest {
         update.setTitle("Verbotene Änderung");
         assertThatThrownBy(() -> projectService.updateProject(project.getId(), update, member.getId()))
                 .isInstanceOf(ForbiddenOperationException.class);
+        assertThat(membershipService.addMember(
+                project.getId(), additionalMember.getEmail(), member.getId()).getUser().getId())
+                .isEqualTo(additionalMember.getId());
+        assertThat(membershipService.getMembersForManagement(project.getId(), member.getId()))
+                .extracting("userId").contains(additionalMember.getId());
         assertThatThrownBy(() -> membershipService.addMember(
-                project.getId(), outsider.getEmail(), member.getId()))
-                .isInstanceOf(ForbiddenOperationException.class);
+                project.getId(), outsider.getEmail(), outsider.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
