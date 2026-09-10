@@ -239,6 +239,7 @@ public class TaskController {
         form.setStatus(task.getStatus());
         form.setStartDate(task.getStartDate());
         form.setDueDate(task.getDueDate());
+        form.setEstimatedHours(task.getEstimatedHours());
         form.setAssigneeId(task.getAssigneeId());
         form.setLockVersion(task.getLockVersion());
         return form;

@@ -81,6 +81,14 @@
             </div>
             <div th:if="${#fields.hasErrors('dateRangeValid')}" th:errors="*{dateRangeValid}" class="pf-alert pf-alert--error" role="alert"></div>
 
+            <div class="pf-form-group">
+                <label for="estimatedHours" class="pf-label">Aufwand in Stunden</label>
+                <input id="estimatedHours" type="number" min="1" max="10000" step="1" th:field="*{estimatedHours}"
+                       class="pf-input" placeholder="Optional">
+                <div th:if="${#fields.hasErrors('estimatedHours')}" th:errors="*{estimatedHours}"
+                     class="pf-alert pf-alert--error" role="alert"></div>
+            </div>
+
             <div th:if="${groupProject}" class="pf-form-group">
                 <label for="assignee" class="pf-label">Zuständigkeit</label>
                 <select id="assignee" th:field="*{assigneeId}" class="pf-select">
