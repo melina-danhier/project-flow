@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.ImprovementPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.PlanChangePromptBuilder;
 import de.melinadanhier.projectflow.ai.provider.AbstractProviderAiClient;
 import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
 
@@ -16,7 +17,8 @@ public class GeminiAiClient extends AbstractProviderAiClient<GeneratedPlanRespon
             GenerationPromptBuilder generationPromptBuilder
     ) {
         this(gateway, properties, preCheckPromptBuilder, generationPromptBuilder,
-                new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper()));
+                new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper()),
+                new PlanChangePromptBuilder(new tools.jackson.databind.ObjectMapper()));
     }
 
     public GeminiAiClient(
@@ -26,6 +28,18 @@ public class GeminiAiClient extends AbstractProviderAiClient<GeneratedPlanRespon
             GenerationPromptBuilder generationPromptBuilder,
             ImprovementPromptBuilder improvementPromptBuilder
     ) {
+        this(gateway, properties, preCheckPromptBuilder, generationPromptBuilder, improvementPromptBuilder,
+                new PlanChangePromptBuilder(new tools.jackson.databind.ObjectMapper()));
+    }
+
+    public GeminiAiClient(
+            AiResponsesGateway gateway,
+            GeminiProperties properties,
+            PreCheckPromptBuilder preCheckPromptBuilder,
+            GenerationPromptBuilder generationPromptBuilder,
+            ImprovementPromptBuilder improvementPromptBuilder,
+            PlanChangePromptBuilder planChangePromptBuilder
+    ) {
         super(
                 "gemini",
                 gateway,
@@ -34,7 +48,8 @@ public class GeminiAiClient extends AbstractProviderAiClient<GeneratedPlanRespon
                 GeneratedPlanResponse.class,
                 preCheckPromptBuilder,
                 generationPromptBuilder,
-                improvementPromptBuilder
+                improvementPromptBuilder,
+                planChangePromptBuilder
         );
     }
 

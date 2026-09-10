@@ -19,6 +19,9 @@ import de.melinadanhier.projectflow.ai.prompt.AiPrompt;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.ImprovementPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.PlanChangePromptBuilder;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeRequest;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,7 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
     private final PreCheckPromptBuilder preCheckPromptBuilder;
     private final GenerationPromptBuilder generationPromptBuilder;
     private final ImprovementPromptBuilder improvementPromptBuilder;
+    private final PlanChangePromptBuilder planChangePromptBuilder;
 
     @Override
     public final AiPreCheckResult preCheck(AiPreCheckRequest request) {
@@ -61,6 +65,14 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
         String model = generationModel.get();
         return invoke("ELEMENT_IMPROVEMENT", AiSchemaVersions.ELEMENT_IMPROVEMENT, model, prompt,
                 () -> executeImprovement(request, model, prompt));
+    }
+
+    @Override
+    public final AiPlanChangeResponse proposePlanChanges(AiPlanChangeRequest request) {
+        AiPrompt prompt = planChangePromptBuilder.build(request);
+        String model = generationModel.get();
+        return invoke("PLAN_CHANGE", AiSchemaVersions.PLAN_CHANGE, model, prompt,
+                () -> executeStructured(model, prompt, AiPlanChangeResponse.class));
     }
 
     private AiImprovementResponse executeImprovement(AiImprovementRequest request, String model, AiPrompt prompt) {

@@ -15,6 +15,9 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.prompt.GenerationPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.ai.prompt.ImprovementPromptBuilder;
+import de.melinadanhier.projectflow.ai.prompt.PlanChangePromptBuilder;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeRequest;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeResponse;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementRequest;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementResponse;
 import de.melinadanhier.projectflow.ai.provider.openai.OpenAiProjectFlowAIClient;
@@ -54,7 +57,8 @@ public class AiClientConfiguration {
             ObjectProvider<AiResponseParser> parser,
             ObjectProvider<PreCheckPromptBuilder> preCheckPromptBuilder,
             ObjectProvider<GenerationPromptBuilder> generationPromptBuilder,
-            ObjectProvider<ImprovementPromptBuilder> improvementPromptBuilder
+            ObjectProvider<ImprovementPromptBuilder> improvementPromptBuilder,
+            ObjectProvider<PlanChangePromptBuilder> planChangePromptBuilder
     ) {
         String provider = configuredProvider.trim().toLowerCase(java.util.Locale.ROOT);
         if (provider.equals("stub")) {
@@ -65,7 +69,9 @@ public class AiClientConfiguration {
                     new SdkOpenAiResponsesGateway(openAiSdk.getObject(), openAiProperties.getMaxOutputTokens()),
                     openAiProperties, preCheckPromptBuilder.getObject(), generationPromptBuilder.getObject(),
                     improvementPromptBuilder.getIfAvailable(
-                            () -> new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper())));
+                            () -> new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper())),
+                    planChangePromptBuilder.getIfAvailable(
+                            () -> new PlanChangePromptBuilder(new tools.jackson.databind.ObjectMapper())));
         }
         else if (provider.equals("gemini")) {
             return new GeminiAiClient(
@@ -73,7 +79,9 @@ public class AiClientConfiguration {
                             geminiProperties.getMaxOutputTokens(), executionProperties.getGenerationTemperature()),
                     geminiProperties, preCheckPromptBuilder.getObject(), generationPromptBuilder.getObject(),
                     improvementPromptBuilder.getIfAvailable(
-                            () -> new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper())));
+                            () -> new ImprovementPromptBuilder(new tools.jackson.databind.ObjectMapper())),
+                    planChangePromptBuilder.getIfAvailable(
+                            () -> new PlanChangePromptBuilder(new tools.jackson.databind.ObjectMapper())));
         }
         else if (!provider.isEmpty()) {
             throw new IllegalStateException(
@@ -103,6 +111,12 @@ public class AiClientConfiguration {
                         AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
                         "Es ist noch kein AI-Provider konfiguriert."
                 );
+            }
+
+            @Override
+            public AiPlanChangeResponse proposePlanChanges(AiPlanChangeRequest request) {
+                throw new AiTechnicalException(AiTechnicalErrorCode.CLIENT_CONFIGURATION_ERROR,
+                        "Es ist noch kein AI-Provider konfiguriert.");
             }
         };
     }

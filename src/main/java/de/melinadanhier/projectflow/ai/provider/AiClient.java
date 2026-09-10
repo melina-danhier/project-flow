@@ -6,6 +6,8 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementRequest;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementResponse;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeRequest;
+import de.melinadanhier.projectflow.ai.model.planchange.AiPlanChangeResponse;
 
 /** Anbieterneutraler Vertrag für Pre-Check und Plangenerierung. */
 public interface AiClient {
@@ -15,5 +17,7 @@ public interface AiClient {
     GeneratedPlanResponse generatePlan(AiGenerationRequest request);
 
     AiImprovementResponse improveElement(AiImprovementRequest request);
+
+    AiPlanChangeResponse proposePlanChanges(AiPlanChangeRequest request);
 
 }
