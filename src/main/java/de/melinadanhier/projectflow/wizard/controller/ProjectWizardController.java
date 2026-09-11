@@ -370,6 +370,12 @@ public class ProjectWizardController {
             HttpSession session,
             RedirectAttributes redirectAttributes
     ) {
+        wizardService.findOwned(currentUser.userId(), session)
+                .map(ProjectWizardState::getActiveWorkflowId)
+                .ifPresent(workflowId -> {
+                    var cancellation = aiWorkflowControlService.cancel(workflowId, currentUser.userId());
+                    projectService.deleteDraftProjectPermanently(cancellation.projectId(), currentUser.userId());
+                });
         wizardService.clearOwned(currentUser.userId(), session);
         redirectAttributes.addFlashAttribute("successMessage", "Projekterstellung wurde abgebrochen.");
         return "redirect:/projects";
@@ -384,7 +390,8 @@ public class ProjectWizardController {
         var snapshot = aiPreCheckReviewService.returnToWizard(workflowId, currentUser.userId());
         // Geänderte Wizard-Daten erhalten bei der nächsten Bestätigung einen neuen,
         // unveränderlichen Workflow statt den vorhandenen Snapshot umzuschreiben.
-        wizardService.restoreFromSnapshot(snapshot, currentUser.userId(), session);
+        ProjectWizardState restored = wizardService.restoreFromSnapshot(snapshot, currentUser.userId(), session);
+        restored.setActiveWorkflowId(workflowId);
         return "redirect:/projects/new/ai/summary";
     }
 
@@ -394,21 +401,11 @@ public class ProjectWizardController {
                               HttpSession session,
                               RedirectAttributes redirectAttributes) {
         var cancellation = aiWorkflowControlService.cancel(workflowId, currentUser.userId());
-        if (cancellation.operation() == de.melinadanhier.projectflow.ai.model.AiOperation.PRE_CHECK) {
-            if (cancellation.snapshot() != null) {
-                wizardService.restoreFromSnapshot(cancellation.snapshot(), currentUser.userId(), session);
-            }
-            redirectAttributes.addFlashAttribute("successMessage",
-                    cancellation.changed() ? "Die KI-Vorprüfung wurde abgebrochen."
-                            : "Die KI-Vorprüfung war bereits beendet.");
-            return cancellation.snapshot() != null
-                    ? "redirect:/projects/new/ai/summary"
-                    : "redirect:/projects/new/ai/status/" + workflowId;
-        }
+        projectService.deleteDraftProjectPermanently(cancellation.projectId(), currentUser.userId());
+        wizardService.clearOwned(currentUser.userId(), session);
         redirectAttributes.addFlashAttribute("successMessage",
-                cancellation.changed() ? "Die Plangenerierung wurde abgebrochen. Das Ergebnis der Vorprüfung bleibt gültig."
-                        : "Die Plangenerierung war bereits beendet.");
-        return "redirect:/projects/new/ai/problems/" + workflowId;
+                "Die KI-Projekterstellung wurde abgebrochen und der Projektentwurf gelöscht.");
+        return "redirect:/projects";
     }
 
     private String createManualProject(

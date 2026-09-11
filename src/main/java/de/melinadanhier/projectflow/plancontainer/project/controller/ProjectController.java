@@ -26,6 +26,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -189,6 +190,45 @@ public class ProjectController {
         projectService.deleteProjectPermanently(projectId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde endgültig gelöscht.");
         return "redirect:/projects?location=TRASH";
+    }
+
+    @PostMapping("/projects/bulk/archive")
+    public String archiveSelected(@RequestParam List<UUID> projectIds,
+                                  @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                  RedirectAttributes redirectAttributes) {
+        int count = projectService.archiveProjects(projectIds, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", count + " Projekte wurden archiviert.");
+        return "redirect:/projects";
+    }
+
+    @PostMapping("/projects/bulk/trash")
+    public String trashSelected(@RequestParam List<UUID> projectIds,
+                                @RequestParam ProjectLocation sourceLocation,
+                                @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                RedirectAttributes redirectAttributes) {
+        int count = projectService.moveProjectsToTrash(projectIds, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", count + " Projekte wurden in den Papierkorb verschoben.");
+        return sourceLocation == ProjectLocation.ARCHIVE
+                ? "redirect:/projects?location=ARCHIVE"
+                : "redirect:/projects";
+    }
+
+    @PostMapping("/projects/bulk/delete")
+    public String deleteSelectedPermanently(@RequestParam List<UUID> projectIds,
+                                            @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                            RedirectAttributes redirectAttributes) {
+        int count = projectService.deleteProjectsPermanently(projectIds, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", count + " Projekte wurden endgültig gelöscht.");
+        return "redirect:/projects?location=TRASH";
+    }
+
+    @PostMapping("/projects/bulk/delete-drafts")
+    public String deleteSelectedDrafts(@RequestParam List<UUID> projectIds,
+                                       @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                       RedirectAttributes redirectAttributes) {
+        int count = projectService.deleteDraftProjectsPermanently(projectIds, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", count + " Projektentwürfe wurden endgültig gelöscht.");
+        return "redirect:/projects/drafts";
     }
 
     @GetMapping("/projects/{projectId}/members")

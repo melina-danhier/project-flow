@@ -59,7 +59,8 @@ public class AiPreCheckProcessor {
                 log.warn("Technischer KI-Pre-Check-Fehler workflowId={} attempt={} schemaVersion={} errorCode={} message={}.",
                         workflowId, attemptNumber,
                         AiSchemaVersions.PRE_CHECK, error.errorCode(), exception.getMessage());
-                if (!error.isRetryable()
+                boolean retryableOutputProblem = exception instanceof de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
+                if ((!error.isRetryable() && !retryableOutputProblem)
                         || attemptNumber >= executionProperties.getMaxAttempts()) {
                     finishWithTechnicalFailure(workflowId, runId, error);
                     return;
@@ -69,6 +70,10 @@ public class AiPreCheckProcessor {
                     return;
                 }
                 completedRetries = recordedRetry.getAsInt();
+                if (retryableOutputProblem) {
+                    var validationException = (de.melinadanhier.projectflow.ai.exception.AiOutputValidationException) exception;
+                    request = new AiPreCheckRequest(snapshot, validationException.getValidationIssues());
+                }
                 try {
                     backoff.waitBeforeRetry(completedRetries);
                 } catch (InterruptedException interruptedException) {

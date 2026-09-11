@@ -65,6 +65,13 @@ public class DraftReviewService {
         review.setOwner(membership.getRole() == ProjectMemberRole.OWNER);
         review.setActiveReviewStatus(reviewStatus);
         review.setTotalElementCount(draft.getSections().size() + draft.getElements().size());
+        review.setTotalEstimatedHours(draft.getElements().stream()
+                .filter(de.melinadanhier.projectflow.draft.model.DraftTask.class::isInstance)
+                .map(de.melinadanhier.projectflow.draft.model.DraftTask.class::cast)
+                .map(de.melinadanhier.projectflow.draft.model.DraftTask::getEstimatedHours)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum());
         review.setReviewedElementCount((int) java.util.stream.Stream.concat(
                         draft.getSections().stream().map(DraftSection::getReviewStatus),
                         draft.getElements().stream().map(DraftPlanElement::getReviewStatus))

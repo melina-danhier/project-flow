@@ -37,6 +37,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
@@ -297,7 +298,7 @@ class AuthenticationIntegrationTest {
     }
 
     @Test
-    void aiWizardTreatsOtherAsDefaultAndRequiresItsDescription() throws Exception {
+    void aiWizardTreatsOtherAsDefaultAndKeepsItsDescriptionOptional() throws Exception {
         User user = saveUser("wizard-other@example.org", "richtiges-passwort", true);
         MockHttpSession session = login(user.getEmail(), "richtiges-passwort");
 
@@ -307,8 +308,9 @@ class AuthenticationIntegrationTest {
                         "(?s).*<option\\b(?=[^>]*\\bvalue=\"OTHER\")(?=[^>]*\\bselected(?:\\s|=|>))[^>]*>.*")))
                 .andExpect(content().string(matchesPattern(
                         "(?s).*<select\\b(?=[^>]*\\bid=\"subcategory\")(?=[^>]*\\bdisabled(?:\\s|=|>))[^>]*>.*")))
-                .andExpect(content().string(matchesPattern(
-                        "(?s).*<textarea\\b(?=[^>]*\\bname=\"description\")(?=[^>]*\\brequired(?:\\s|=|>))[^>]*>.*")));
+                .andExpect(content().string(containsString("<span class=\"pf-hint\">(optional)</span>")))
+                .andExpect(content().string(not(matchesPattern(
+                        "(?s).*<textarea\\b(?=[^>]*\\bname=\"description\")(?=[^>]*\\brequired(?:\\s|=|>))[^>]*>.*"))));
 
         long projectsBefore = projectRepository.count();
         mockMvc.perform(post("/projects/new")
@@ -317,10 +319,12 @@ class AuthenticationIntegrationTest {
                         .param("title", "Anderes Projekt")
                         .param("category", "OTHER")
                         .param("collaborationMode", "INDIVIDUAL"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("wizard/basics"))
-                .andExpect(model().attributeHasFieldErrors(
-                        "projectBasicsForm", "description"));
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/new/method"));
+
+        assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
+                .isInstanceOfSatisfying(ProjectWizardState.class,
+                        saved -> assertThat(saved.getDescription()).isNull());
 
         mockMvc.perform(post("/projects/new")
                         .session(session)

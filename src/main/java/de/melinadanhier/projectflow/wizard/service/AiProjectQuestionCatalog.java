@@ -17,8 +17,7 @@ public final class AiProjectQuestionCatalog {
     private static final int TEXT_LIMIT = 1000;
     private static final Map<ProjectSubCategory, List<AiProjectQuestion>> BY_SUBCATEGORY = buildCatalog();
     private static final List<AiProjectQuestion> GENERIC = questions(
-            q("desiredOutcome", "Konkretes Ziel oder gewünschtes Ergebnis"),
-            q("relevantConditions", "Relevante Rahmenbedingungen oder Einschränkungen")
+            q("desiredOutcome", "Konkretes Ziel oder gewünschtes Ergebnis")
     );
 
     private AiProjectQuestionCatalog() { }
@@ -63,35 +62,32 @@ public final class AiProjectQuestionCatalog {
 
         put(map, ProjectSubCategory.PRESENTATION_OR_REPORT,
                 "topicOrOutcome", "Thema oder gewünschtes Ergebnis", "targetAudience", "Zielgruppe",
-                "contentRequirements", "Bekannte inhaltliche Vorgaben", "desiredDeliverables", "Gewünschte Bestandteile",
-                "specialRequirements", "Besondere Anforderungen");
+                "contentRequirements", "Bekannte inhaltliche Vorgaben", "desiredDeliverables", "Gewünschte Bestandteile");
         put(map, List.of(ProjectSubCategory.EXAM_PREPARATION, ProjectSubCategory.LEARNING_PLAN),
                 "learningGoal", "Lernziel oder Prüfung", "topics", "Themen oder Stoffumfang",
-                "currentKnowledge", "Aktueller Kenntnisstand", "availableStudyTime", "Verfügbare Lernzeit oder Einschränkungen",
-                "focusAreas", "Besondere Schwerpunkte");
+                "currentKnowledge", "Aktueller Kenntnisstand", "focusAreas", "Besondere Schwerpunkte");
         put(map, ProjectSubCategory.TERM_PAPER,
                 "topicOrQuestion", "Thema oder Fragestellung", "scopeRequirements", "Umfang oder bekannte Vorgaben",
-                "currentProgress", "Aktueller Stand", "specialRequirements", "Besondere Anforderungen");
+                "currentProgress", "Aktueller Stand");
         put(map, ProjectSubCategory.THESIS,
                 "researchQuestion", "Thema oder Forschungsfrage", "currentProgress", "Aktueller Stand",
-                "methodology", "Methodik oder praktische Bestandteile", "formalRequirements", "Formale oder inhaltliche Vorgaben",
-                "specialConstraints", "Besondere Einschränkungen");
+                "methodology", "Methodik oder praktische Bestandteile", "formalRequirements", "Formale oder inhaltliche Vorgaben");
         put(map, ProjectSubCategory.STUDY_EVENT,
                 "eventGoalFormat", "Ziel und Format", "audienceSize", "Zielgruppe oder erwartete Besucherzahl",
-                "venueTechnology", "Vorhandener Ort oder Technik", "specialRequirements", "Besondere Anforderungen");
+                "venueTechnology", "Vorhandener Ort oder Technik");
 
         put(map, ProjectSubCategory.SOFTWARE_PROJECT,
                 "goalAndScope", "Ziel und Funktionsumfang", "requirements", "Vorhandene Anforderungen",
                 "technologies", "Festgelegte Technologien", "currentState", "Aktueller Ausgangsstand",
-                "technicalExperience", "Technischer Kenntnisstand", "technicalConstraints", "Technische Einschränkungen");
+                "technicalExperience", "Technischer Kenntnisstand");
         put(map, ProjectSubCategory.WEB_OR_MOBILE_APP,
                 "usageScenario", "Zielgruppe oder Nutzungsszenario", "coreFeatures", "Zentrale Funktionen",
-                "technicalRequirements", "Technische Vorgaben", "applicationArchitecture", "Frontend, Backend und Datenhaltung",
-                "externalInterfaces", "Externe Schnittstellen", "technicalExperience", "Technischer Kenntnisstand");
+                "technicalRequirements", "Technische Vorgaben, Architektur und Schnittstellen",
+                "technicalExperience", "Technischer Kenntnisstand");
         put(map, ProjectSubCategory.EXTEND_EXISTING_APPLICATION,
                 "currentState", "Ausgangszustand", "desiredExtension", "Gewünschte Erweiterung",
                 "affectedComponents", "Betroffene Komponenten", "technicalDependencies", "Technische Abhängigkeiten",
-                "technicalExperience", "Technischer Kenntnisstand", "technicalConstraints", "Besondere Einschränkungen");
+                "technicalExperience", "Technischer Kenntnisstand");
         put(map, ProjectSubCategory.WEBSITE,
                 "goalAndAudience", "Ziel und Zielgruppe", "pagesAndContent", "Gewünschte Inhalte oder Seiten",
                 "currentState", "Vorhandener Ausgangszustand", "designAndTechnicalRequirements", "Technische oder gestalterische Vorgaben",
@@ -102,57 +98,47 @@ public final class AiProjectQuestionCatalog {
                 "technicalExperience", "Technischer Kenntnisstand");
         put(map, ProjectSubCategory.HARDWARE_OR_RASPBERRY_PI_PROJECT,
                 "useCase", "Ziel oder Anwendungsfall", "requiredComponents", "Vorhandene oder benötigte Komponenten",
-                "availableHardware", "Vorhandene Hardware", "technicalExperience", "Technischer Kenntnisstand",
-                "technicalConstraints", "Technische Einschränkungen");
+                "technicalExperience", "Technischer Kenntnisstand");
         put(map, ProjectSubCategory.OTHER_SOFTWARE_AND_TECHNOLOGY,
-                "desiredOutcome", "Konkretes Ziel oder gewünschtes Ergebnis",
-                "currentSituation", "Aktueller Ausgangsstand",
-                "technicalExperience", "Technischer Kenntnisstand",
-                "relevantConditions", "Relevante Rahmenbedingungen",
-                "specialConstraints", "Besondere Einschränkungen");
+                "desiredOutcome", "Konkretes Ziel oder gewünschtes Ergebnis");
 
         put(map, ProjectSubCategory.PRIVATE_CELEBRATION,
                 "occasionOutcome", "Anlass oder gewünschtes Ergebnis", "guestCount", "Gästezahl",
-                "venue", "Ort oder ob ein Ort feststeht", "budget", "Budget, falls vorhanden",
-                "specialRequirements", "Besondere Anforderungen");
+                "venue", "Ort oder ob ein Ort feststeht", "budget", "Budget, falls vorhanden");
         put(map, ProjectSubCategory.WORKSHOP_TRAINING_OR_INFORMATION_EVENT,
                 "targetAudience", "Zielgruppe", "learningGoal", "Lern- oder Informationsziel", "topics", "Themen oder Inhalte",
-                "visitorCount", "Erwartete Besucherzahl", "venueTechnology", "Raum oder Technik",
-                "specialRequirements", "Besondere Anforderungen");
+                "visitorCount", "Erwartete Besucherzahl", "venueTechnology", "Raum oder Technik");
         put(map, ProjectSubCategory.CLUB_OR_COMMUNITY_EVENT,
                 "eventGoal", "Veranstaltungsziel", "participants", "Erwartete Besucher oder Beteiligte", "venue", "Ort",
-                "permits", "Organisatorische Vorgaben oder Genehmigungen", "specialRequirements", "Besondere Anforderungen");
+                "permits", "Organisatorische Vorgaben oder Genehmigungen");
         put(map, ProjectSubCategory.CONCERT_OR_PERFORMANCE,
                 "program", "Art oder Programm", "contributors", "Beteiligte Mitwirkende", "currentProgress", "Vorbereitungsstand",
-                "venueTechnology", "Raum oder Technik", "specialRequirements", "Besondere Anforderungen");
+                "venueTechnology", "Raum oder Technik");
         put(map, ProjectSubCategory.FLEA_MARKET_OR_SALES_EVENT,
-                "typeAndScope", "Art und Umfang", "goods", "Waren oder Angebot", "venue", "Stand oder Ort",
-                "requirements", "Besondere Vorgaben");
+                "typeAndScope", "Art und Umfang", "goods", "Waren oder Angebot", "venue", "Stand oder Ort");
         put(map, ProjectSubCategory.FUNDRAISING_EVENT,
                 "fundraisingGoal", "Spendenziel", "targetAudience", "Zielgruppe", "campaignFormat", "Aktionsform",
-                "specialRequirements", "Besondere Anforderungen");
+                "organizationalRequirements", "Organisatorische Vorgaben");
         put(map, ProjectSubCategory.TOURNAMENT_OR_COMPETITION,
                 "competitionType", "Art des Wettbewerbs", "competitionParticipantCount", "Teilnehmerzahl des Wettbewerbs",
-                "rules", "Regeln", "venueEquipment", "Ort oder Ausstattung", "specialRequirements", "Besondere Anforderungen");
+                "rules", "Regeln", "venueEquipment", "Ort oder Ausstattung");
 
         put(map, ProjectSubCategory.MOVING,
                 "movingSituation", "Ausgangs- und Zielsituation", "householdScope", "Umfang des Haushalts",
-                "externalHelp", "Umzugsunternehmen oder externe Hilfe", "transportOptions", "Transportmöglichkeiten",
-                "specialConditions", "Besondere Rahmenbedingungen");
+                "externalHelp", "Umzugsunternehmen oder externe Hilfe", "transportOptions", "Transportmöglichkeiten");
         put(map, ProjectSubCategory.RENOVATION_OR_HOME_PROJECT,
                 "affectedRooms", "Betroffene Räume oder Fläche", "plannedWork", "Konkret geplante Arbeiten",
-                "desiredOutcome", "Gewünschtes Ergebnis", "executionMode", "Eigenleistung oder Handwerksbetriebe",
-                "budgetMaterials", "Budget oder Materialien", "specialConstraints", "Besondere Einschränkungen");
+                "executionMode", "Eigenleistung oder Handwerksbetriebe", "budgetMaterials", "Budget oder Materialien");
         put(map, ProjectSubCategory.DECLUTTERING_OR_HOUSEHOLD_ORGANIZATION,
                 "affectedAreas", "Betroffene Bereiche", "scope", "Umfang", "disposalOptions", "Entsorgung, Verkauf oder Spenden",
-                "specialConstraints", "Besondere Einschränkungen");
+                "sortingCriteria", "Zu erhaltende oder auszusortierende Dinge");
         put(map, ProjectSubCategory.GARDEN_PROJECT,
                 "goalArea", "Ziel oder Bereich", "scope", "Umfang", "materialsPlants", "Vorhandene Materialien oder Pflanzen",
                 "seasonalConstraints", "Saisonale Einschränkungen");
 
         put(map, ProjectSubCategory.WRITING_PROJECT,
                 "typeGenre", "Art oder Genre", "desiredOutcome", "Gewünschtes Ergebnis", "scope", "Ungefährer Umfang",
-                "targetAudience", "Zielgruppe", "currentProgress", "Aktueller Stand", "requirements", "Besondere Vorgaben");
+                "targetAudience", "Zielgruppe", "currentProgress", "Aktueller Stand");
         put(map, ProjectSubCategory.PODCAST,
                 "topicAudience", "Thema oder Zielgruppe", "format", "Einzelprojekt oder Serie", "scope", "Umfang",
                 "availableTechnology", "Vorhandene Technik", "currentProgress", "Aktueller Stand");
@@ -167,17 +153,17 @@ public final class AiProjectQuestionCatalog {
                 "currentProgress", "Aktueller Stand", "availableTechnology", "Vorhandene Technik");
         put(map, ProjectSubCategory.EXHIBITION,
                 "goalAudience", "Ziel und Zielgruppe", "exhibits", "Inhalte oder Exponate", "venue", "Ort oder Fläche",
-                "currentProgress", "Aktueller Stand", "specialRequirements", "Besondere Anforderungen");
+                "currentProgress", "Aktueller Stand");
         put(map, ProjectSubCategory.BLOG_OR_SOCIAL_MEDIA_CAMPAIGN,
                 "goalAudience", "Ziel und Zielgruppe", "channels", "Geplante Kanäle", "contentScope", "Inhalte und Umfang",
-                "currentProgress", "Aktueller Stand", "specialRequirements", "Besondere Vorgaben");
+                "currentProgress", "Aktueller Stand");
         put(map, ProjectSubCategory.BOARD_GAME_OR_CREATIVE_PROTOTYPE,
                 "ideaGoal", "Idee oder Ziel", "targetAudience", "Zielgruppe", "prototypeScope", "Umfang des Prototyps",
                 "currentProgress", "Aktueller Stand", "availableMaterials", "Vorhandene Materialien");
 
         put(map, ProjectSubCategory.JOB_SEARCH_AND_APPLICATION,
                 "targetRoles", "Zielrollen", "industryFocus", "Branche oder Schwerpunkte", "availableDocuments", "Vorhandene Unterlagen",
-                "applicationGoal", "Gewünschter Umfang oder Bewerbungsziel", "constraints", "Relevante Einschränkungen");
+                "applicationGoal", "Gewünschter Umfang oder Bewerbungsziel");
         put(map, ProjectSubCategory.CREATE_PORTFOLIO,
                 "goalAudience", "Ziel oder Zielgruppe", "availableContent", "Vorhandene Inhalte",
                 "desiredComponents", "Gewünschte Bestandteile", "requirements", "Technische oder gestalterische Vorgaben");
@@ -185,54 +171,47 @@ public final class AiProjectQuestionCatalog {
                 "qualificationGoal", "Lern- oder Qualifikationsziel", "currentKnowledge", "Vorhandene Kenntnisse",
                 "contentScope", "Inhalte oder Umfang", "examDeadline", "Prüfung oder Deadline");
         put(map, ProjectSubCategory.PROCESS_IMPROVEMENT,
-                "currentProcess", "Aktueller Prozess", "problem", "Problem", "targetState", "Gewünschter Zielzustand",
-                "conditions", "Bekannte Rahmenbedingungen");
+                "currentProcess", "Aktueller Prozess", "problem", "Problem", "targetState", "Gewünschter Zielzustand");
         put(map, ProjectSubCategory.PRODUCT_OR_BUSINESS_IDEA,
                 "idea", "Idee", "targetAudience", "Zielgruppe", "projectOutcome", "Gewünschtes Ergebnis dieses Projekts",
-                "currentProgress", "Aktueller Stand", "conditions", "Relevante Rahmenbedingungen");
+                "currentProgress", "Aktueller Stand");
         put(map, ProjectSubCategory.ONBOARDING_PLAN,
                 "onboardingGoal", "Einarbeitungsziel", "roleAndTopics", "Rolle und relevante Themen",
-                "currentSituation", "Aktueller Ausgangsstand", "availableResources", "Vorhandene Ansprechpersonen oder Unterlagen",
-                "conditions", "Relevante Rahmenbedingungen");
+                "currentSituation", "Aktueller Ausgangsstand", "availableResources", "Vorhandene Ansprechpersonen oder Unterlagen");
         put(map, ProjectSubCategory.PROFESSIONAL_PRESENTATION,
                 "topicOutcome", "Thema oder gewünschtes Ergebnis", "targetAudience", "Zielgruppe",
-                "contentRequirements", "Inhaltliche Vorgaben", "desiredDeliverables", "Gewünschte Bestandteile",
-                "specialRequirements", "Besondere Anforderungen");
+                "contentRequirements", "Inhaltliche Vorgaben", "desiredDeliverables", "Gewünschte Bestandteile");
 
         put(map, ProjectSubCategory.FITNESS_OR_RUNNING_GOAL,
-                "goal", "Ziel", "currentLevel", "Aktueller Ausgangsstand", "availableTime", "Verfügbare Zeit",
-                "userStatedConstraints", "Von dir genannte relevante Einschränkungen");
+                "goal", "Konkretes Fitness- oder Laufziel", "currentLevel", "Aktueller Ausgangsstand");
         put(map, ProjectSubCategory.HABIT_OR_PERSONAL_CHALLENGE,
                 "desiredChange", "Gewünschte Veränderung", "currentSituation", "Aktueller Stand",
                 "dailyConditions", "Relevante Alltagsbedingungen");
         put(map, ProjectSubCategory.COMPETITION_PREPARATION,
                 "competitionGoal", "Wettkampf oder Ziel", "currentLevel", "Aktueller Ausgangsstand",
-                "availableTime", "Verfügbare Zeit", "userStatedConstraints", "Von dir genannte relevante Einschränkungen");
+                "trainingResources", "Verfügbare Trainingsmittel oder Trainingsorte");
         put(map, ProjectSubCategory.NUTRITION_PROJECT,
                 "desiredChange", "Gewünschte planungsbezogene Veränderung", "currentSituation", "Aktueller Stand",
-                "dailyConditions", "Relevante Alltagsbedingungen", "userStatedConstraints", "Von dir genannte Einschränkungen");
+                "dailyConditions", "Relevante Alltagsbedingungen");
         put(map, ProjectSubCategory.DIGITAL_DETOX_OR_DAILY_LIFE_CHANGE,
                 "desiredChange", "Gewünschte Veränderung", "currentSituation", "Aktueller Stand",
                 "affectedAreas", "Betroffene Alltagsbereiche", "dailyConditions", "Relevante Alltagsbedingungen");
 
         put(map, ProjectSubCategory.TRIP_OR_VACATION,
                 "destination", "Reiseziel", "budget", "Budget", "transport", "Transport oder Anreise",
-                "accommodation", "Unterkunft", "activities", "Gewünschte Aktivitäten oder Schwerpunkte",
-                "specialRequirements", "Besondere Anforderungen");
+                "accommodation", "Unterkunft", "activities", "Gewünschte Aktivitäten oder Schwerpunkte");
         put(map, ProjectSubCategory.ROAD_TRIP,
                 "routeDestinations", "Route oder Reiseziele", "budget", "Budget", "transport", "Fahrzeug oder Transport",
-                "accommodation", "Unterkünfte", "activities", "Gewünschte Stopps oder Aktivitäten",
-                "specialRequirements", "Besondere Anforderungen");
+                "accommodation", "Unterkünfte", "activities", "Gewünschte Stopps oder Aktivitäten");
         put(map, ProjectSubCategory.CAMPING_TRIP,
                 "destination", "Reiseziel", "budget", "Budget", "transport", "Anreise",
-                "campingEquipment", "Vorhandene Campingausrüstung", "activities", "Aktivitäten",
-                "specialRequirements", "Besondere Anforderungen");
+                "campingEquipment", "Vorhandene Campingausrüstung", "activities", "Aktivitäten");
         put(map, ProjectSubCategory.FESTIVAL_OR_CONCERT_TRIP,
                 "eventDestination", "Festival, Konzert oder Reiseziel", "budget", "Budget", "transport", "Anreise",
-                "accommodation", "Unterkunft", "tickets", "Ticket- oder Buchungsstand", "specialRequirements", "Besondere Anforderungen");
+                "accommodation", "Unterkunft", "tickets", "Ticket- oder Buchungsstand");
         put(map, ProjectSubCategory.BICYCLE_TOUR,
                 "routeDestinations", "Route oder Reiseziele", "scope", "Strecke oder Umfang", "availableEquipment", "Vorhandene Ausrüstung",
-                "accommodation", "Unterkunft, falls vorgesehen", "specialRequirements", "Besondere Anforderungen");
+                "accommodation", "Unterkunft, falls vorgesehen");
         return Map.copyOf(map);
     }
 

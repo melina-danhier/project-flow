@@ -33,7 +33,7 @@ class AiProjectSpecificDetailsTest {
                 "affectedRooms", "80-m²-Wohnung",
                 "plannedWork", "Vollständig streichen, Boden erneuern und Küche austauschen",
                 "executionMode", "Eigenleistung",
-                "specialConstraints", "Nur Samstag 08:00 bis Sonntag 20:00"));
+                "budgetMaterials", "Bis 15.000 Euro, Farben sind vorhanden"));
         details.setAdditionalInformation("  Nachhaltige Materialien bevorzugen  ");
 
         service.saveAiDetails(details, context.userId(), context.session());
@@ -45,7 +45,7 @@ class AiProjectSpecificDetailsTest {
 
         assertThat(summary.groupProject()).isFalse();
         assertThat(summary.projectSpecificAnswers()).extracting("key")
-                .contains("affectedRooms", "plannedWork", "executionMode", "specialConstraints");
+                .containsExactly("affectedRooms", "plannedWork", "executionMode", "budgetMaterials");
         assertThat(snapshot.projectSpecificAnswers()).containsEntry("affectedRooms", "80-m²-Wohnung");
         assertThat(snapshot.additionalInformation()).isEqualTo("Nachhaltige Materialien bevorzugen");
         assertThat(preCheckPayload).contains("80-m²-Wohnung", "Boden erneuern", "Eigenleistung")
@@ -73,7 +73,8 @@ class AiProjectSpecificDetailsTest {
                 ProjectCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT);
 
         assertThat(questions).extracting("key")
-                .contains("goalAndScope", "technologies", "technicalExperience", "technicalConstraints")
+                .contains("goalAndScope", "technologies", "technicalExperience")
+                .doesNotContain("technicalConstraints")
                 .doesNotContain("affectedRooms", "plannedWork");
         assertThat(AiProjectQuestionCatalog.containsUnknownKey(
                 ProjectCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT,
@@ -85,9 +86,10 @@ class AiProjectSpecificDetailsTest {
     }
 
     @Test
-    void allSoftwareAndTechnologyVariantsOfferOptionalTechnicalExperience() {
+    void concreteSoftwareAndTechnologyVariantsOfferOptionalTechnicalExperience() {
         for (var subcategory : ProjectSubCategory.values()) {
-            if (subcategory.getCategory() != ProjectCategory.SOFTWARE_TECHNOLOGY) {
+            if (subcategory.getCategory() != ProjectCategory.SOFTWARE_TECHNOLOGY
+                    || subcategory == ProjectSubCategory.OTHER_SOFTWARE_AND_TECHNOLOGY) {
                 continue;
             }
             assertThat(AiProjectQuestionCatalog.questionsFor(
@@ -102,10 +104,54 @@ class AiProjectSpecificDetailsTest {
     }
 
     @Test
+    void educationDoesNotOfferASeparateStudyTimeField() {
+        for (var subcategory : java.util.List.of(
+                ProjectSubCategory.EXAM_PREPARATION, ProjectSubCategory.LEARNING_PLAN)) {
+            assertThat(AiProjectQuestionCatalog.questionsFor(ProjectCategory.EDUCATION, subcategory))
+                    .extracting("key")
+                    .doesNotContain("availableStudyTime");
+        }
+    }
+
+    @Test
+    void catalogAvoidsDuplicateCatchAllAndTimeBudgetQuestions() {
+        for (var subcategory : ProjectSubCategory.values()) {
+            var questions = AiProjectQuestionCatalog.questionsFor(
+                    subcategory.getCategory(), subcategory);
+
+            assertThat(questions).hasSizeLessThanOrEqualTo(5);
+            assertThat(questions).allSatisfy(question -> assertThat(question.required()).isFalse());
+            assertThat(questions).extracting("key").doesNotContain(
+                    "availableStudyTime", "availableTime", "specialRequirements",
+                    "specialConstraints", "technicalConstraints", "userStatedConstraints",
+                    "relevantConditions", "conditions");
+        }
+    }
+
+    @Test
+    void consolidatedTechnicalQuestionsKeepRelevantPlanningInformation() {
+        var webQuestions = AiProjectQuestionCatalog.questionsFor(
+                ProjectCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.WEB_OR_MOBILE_APP);
+        assertThat(webQuestions).filteredOn(question -> question.key().equals("technicalRequirements"))
+                .singleElement()
+                .extracting("label")
+                .isEqualTo("Technische Vorgaben, Architektur und Schnittstellen");
+        assertThat(webQuestions).extracting("key")
+                .doesNotContain("applicationArchitecture", "externalInterfaces");
+
+        assertThat(AiProjectQuestionCatalog.questionsFor(
+                ProjectCategory.SOFTWARE_TECHNOLOGY,
+                ProjectSubCategory.HARDWARE_OR_RASPBERRY_PI_PROJECT))
+                .extracting("key")
+                .contains("requiredComponents")
+                .doesNotContain("availableHardware");
+    }
+
+    @Test
     void otherUsesGenericQuestionsWithoutInventingASubcategory() {
         assertThat(AiProjectQuestionCatalog.questionsFor(ProjectCategory.OTHER, null))
                 .extracting("key")
-                .containsExactly("desiredOutcome", "relevantConditions");
+                .containsExactly("desiredOutcome");
     }
 
     @Test

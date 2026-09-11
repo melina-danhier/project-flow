@@ -62,12 +62,16 @@
                 <div class="pf-card__header">
                     <span class="pf-badge"
                           th:classappend="${problem.severity.name() == 'ERROR' ? 'pf-badge--red' : 'pf-badge--yellow'}"
-                          th:text="${problem.severity.name() == 'ERROR' ? 'Fehler' : 'Offener Punkt'}">Hinweis</span>
+                          th:text="${problem.severity.name() == 'ERROR' ? 'Fehler' : (problem.criticalAssumption ? 'Kritische Annahme' : 'Warnung')}">Hinweis</span>
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <p style="font-size: 0.95rem; color: var(--pf-text-main); font-weight: 600; margin-bottom: 0.4rem;" th:text="${problem.message}"></p>
-                    <p th:if="${problem.suggestedUserAction != null and !problem.suggestedUserAction.isBlank()}" style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0 0 0.5rem 0;">
-                        <strong th:text="${problem.severity.name() == 'ERROR' ? 'Vorschlag: ' : 'Lösungsvorschlag: '}">Vorschlag: </strong><span th:text="${problem.suggestedUserAction}"></span>
+                    <p th:if="${problem.criticalAssumption and !problem.adjustmentOptions.isEmpty()}" style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0 0 0.5rem 0;">
+                        <strong>Mögliche Anpassungen: </strong>
+                        <span th:each="option, stat : ${problem.adjustmentOptions}"><span th:text="${option.displayText()}"></span><span th:unless="${stat.last}">, </span><span th:if="${stat.last}">.</span></span>
+                    </p>
+                    <p th:if="${!problem.criticalAssumption and problem.suggestedUserAction != null and !problem.suggestedUserAction.isBlank()}" style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0 0 0.5rem 0;">
+                        <strong th:text="${problem.severity.name() == 'ERROR' ? 'Vorschlag: ' : 'Mögliche Anpassung: '}">Vorschlag: </strong><span th:text="${problem.suggestedUserAction}"></span>
                     </p>
                 </div>
 
@@ -78,62 +82,71 @@
 
                 <!-- Open point actions -->
                 <div th:if="${problem.isOpenPoint()}">
-                    <div th:if="${problem.acceptedInterpretation != null and !problem.acceptedInterpretation.isBlank()}"
+                    <div th:if="${problem.acceptedInterpretation != null and !problem.acceptedInterpretation.isBlank() and (!problem.criticalAssumption or problem.proposedChangeApplicable)}"
                          style="background: var(--pf-surface-2, rgba(0,0,0,0.03)); border-radius: var(--pf-radius-sm, 6px); padding: 0.75rem; margin: 0.75rem 0; font-size: 0.88rem; color: var(--pf-text-secondary);">
-                        <strong>Bedeutung bei direkter Übernahme: </strong><span th:text="${problem.acceptedInterpretation}"></span>
+                        <strong th:text="${problem.criticalAssumption ? 'Empfohlene Änderung: ' : 'So wird weitergeplant: '}">Planungsgrundlage: </strong><span th:text="${problem.acceptedInterpretation}"></span>
+                        <ul th:if="${problem.criticalAssumption}" style="margin: 0.5rem 0 0 1.25rem;">
+                            <li th:each="change : ${problem.proposedInputChanges}">
+                                <strong th:text="|${change.fieldLabel()}: |">Feld: </strong>
+                                <span th:text="${change.displayPreviousValue()}">Bisher</span>
+                                <span aria-hidden="true"> → </span>
+                                <span th:text="${change.displayNewValue()}">Neu</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div th:if="${problem.criticalAssumption and !problem.proposedChangeApplicable}"
+                         class="pf-alert pf-alert--warning" role="status">
+                        Der KI-Vorschlag enthält noch keine konkrete, überprüfbare Änderung und kann daher nicht direkt übernommen werden.
                     </div>
 
                     <!-- Action A: Direct Accept -->
-                    <form th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/accept(workflowId=${review.workflowId},problemIndex=${problem.index})}"
+                    <form th:if="${!problem.criticalAssumption or problem.proposedChangeApplicable}"
+                          th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/accept(workflowId=${review.workflowId},problemIndex=${problem.index})}"
                           method="post" style="margin: 0.5rem 0 0 0;">
                         <button type="submit" class="pf-btn pf-btn--sm pf-btn--outline">
-                            Interpretation direkt übernehmen
+                            <span th:text="${problem.criticalAssumption ? 'Vorgeschlagene Änderung übernehmen' : 'Warnung ignorieren und fortfahren'}">Übernehmen</span>
                         </button>
                     </form>
 
                     <!-- Action B: Confirm Custom Context -->
-                    <form th:if="${problem.reviewQuestion != null and !problem.reviewQuestion.isBlank()}"
-                          th:unless="${editingProblemIndex == problem.index}"
+                    <form th:unless="${editingProblemIndex == problem.index}"
                           th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/confirm(workflowId=${review.workflowId},problemIndex=${problem.index})}"
                           method="post" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--pf-border);">
                         <div class="pf-form-group" style="margin-bottom: 0.5rem;">
                             <label th:for="|planningContext-${problem.index}|" class="pf-label" style="font-size: 0.88rem;">
-                                <span th:text="${problem.reviewQuestion}">Welche Planungsgrundlage soll gelten?</span>
-                                <span class="pf-required-star" aria-hidden="true">*</span>
+                                <span>Änderung oder Ergänzung zur vorgeschlagenen Planung (optional)</span>
                             </label>
                             <textarea th:id="|planningContext-${problem.index}|"
                                       name="planningContext"
                                       class="pf-textarea"
                                       maxlength="1000"
-                                      required
-                                      placeholder="Beschreibe deine Planungsgrundlage..."
+                                      placeholder="Optional: Was soll anders oder zusätzlich berücksichtigt werden?"
                                       style="min-height: 70px; margin-bottom: 0.5rem;"></textarea>
                         </div>
                         <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">
-                            Kontext speichern
+                            Änderung übernehmen
                         </button>
                     </form>
-                    <form th:if="${problem.reviewQuestion != null and !problem.reviewQuestion.isBlank() and editingProblemIndex == problem.index}"
+                    <form th:if="${editingProblemIndex == problem.index}"
                           th:object="${openPointConfirmationForm}"
                           th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/confirm(workflowId=${review.workflowId},problemIndex=${problem.index})}"
                           method="post" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--pf-border);">
                         <div class="pf-form-group" style="margin-bottom: 0.5rem;">
                             <label th:for="|planningContext-${problem.index}|" class="pf-label" style="font-size: 0.88rem;">
-                                <span th:text="${problem.reviewQuestion}">Welche Planungsgrundlage soll gelten?</span>
-                                <span class="pf-required-star" aria-hidden="true">*</span>
+                                <span>Änderung oder Ergänzung zur vorgeschlagenen Planung (optional)</span>
                             </label>
                             <textarea th:id="|planningContext-${problem.index}|"
                                       th:field="*{planningContext}"
                                       class="pf-textarea"
                                       maxlength="1000"
-                                      required
-                                      placeholder="Beschreibe deine Planungsgrundlage..."
+                                      placeholder="Optional: Was soll anders oder zusätzlich berücksichtigt werden?"
                                       style="min-height: 70px; margin-bottom: 0.5rem;"></textarea>
                             <div th:if="${#fields.hasErrors('planningContext')}" th:errors="*{planningContext}"
                                  class="pf-alert pf-alert--error" role="alert"></div>
                         </div>
                         <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">
-                            Kontext speichern
+                            Änderung übernehmen
                         </button>
                     </form>
                 </div>
@@ -152,6 +165,12 @@
 
             <form th:action="@{/projects/new/ai/problems/{workflowId}/edit(workflowId=${review.workflowId})}" method="post" style="margin: 0;">
                 <button type="submit" class="pf-btn pf-btn--secondary">Eingaben ändern</button>
+            </form>
+            <form th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${review.workflowId})}"
+                  method="post"
+                  onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');"
+                  style="margin: 0;">
+                <button type="submit" class="pf-btn pf-btn--ghost">Abbrechen</button>
             </form>
         </div>
     </div>

@@ -357,15 +357,23 @@
             <a th:if="${plan.editable and plan.owner}" th:href="@{/projects/{id}/edit(id=${plan.project.id})}" class="pf-btn pf-btn--sm pf-btn--secondary">
                 Projekt bearbeiten
             </a>
-            <form th:if="${plan.editable and plan.owner}" th:action="@{/projects/{id}/trash(id=${plan.project.id})}" method="post" style="margin:0;">
+            <form th:if="${plan.owner and (plan.project.location.name() == 'OVERVIEW' or plan.project.location.name() == 'ARCHIVE')}"
+                  th:action="@{/projects/{id}/trash(id=${plan.project.id})}" method="post"
+                  onsubmit="return confirm('Möchtest du dieses Projekt in den Papierkorb verschieben?');" style="margin:0;">
                 <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary" style="color: var(--pf-danger);">
                     In den Papierkorb
                 </button>
             </form>
+            <form th:if="${plan.owner and plan.project.location.name() == 'OVERVIEW'}"
+                  th:action="@{/projects/{id}/archive(id=${plan.project.id})}" method="post"
+                  onsubmit="return confirm('Möchtest du dieses Projekt archivieren?');" style="margin:0;">
+                <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary">Archivieren</button>
+            </form>
             <form th:if="${plan.owner and (plan.project.location.name() == 'TRASH' or plan.project.location.name() == 'ARCHIVE')}" th:action="@{/projects/{id}/reactivate(id=${plan.project.id})}" method="post" style="margin:0;">
                 <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Wiederherstellen</button>
             </form>
-            <form th:if="${plan.owner and plan.project.location.name() == 'TRASH'}" th:action="@{/projects/{id}/delete(id=${plan.project.id})}" method="post" style="margin:0;">
+            <form th:if="${plan.owner and plan.project.location.name() == 'TRASH'}" th:action="@{/projects/{id}/delete(id=${plan.project.id})}" method="post"
+                  onsubmit="return confirm('Möchtest du dieses Projekt endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');" style="margin:0;">
                 <button type="submit" class="pf-btn pf-btn--sm pf-btn--danger">Endgültig löschen</button>
             </form>
         </div>

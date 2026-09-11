@@ -32,6 +32,7 @@ public class DraftReviewDto {
     private DraftReviewStatus activeReviewStatus;
     private int reviewedElementCount;
     private int totalElementCount;
+    private int totalEstimatedHours;
     private List<DraftSectionDto> sections = new ArrayList<>();
     private List<DraftPlanElementDto> elements = new ArrayList<>();
     private List<DraftPlanElementDto> unsectionedElements = new ArrayList<>();

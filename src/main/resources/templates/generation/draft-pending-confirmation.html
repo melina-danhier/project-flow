@@ -22,6 +22,13 @@
                 Aus dem geprüften Entwurf wird jetzt der aktive Plan für „<strong th:text="${summary.projectTitle}">Projekt</strong>" initialisiert.
             </p>
         </div>
+        <form th:action="@{/projects/{projectId}/draft/discard(projectId=${summary.projectId})}" method="post"
+              onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');"
+              style="margin-top: 1rem;">
+            <input type="hidden" name="draftId" th:value="${summary.draftId}">
+            <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
+            <button type="submit" class="pf-btn pf-btn--ghost">Abbrechen</button>
+        </form>
     </div>
 
     <div class="pf-card" style="max-width: 760px;">
@@ -44,10 +51,15 @@
                 Alle Bereiche, Aufgaben und Meilensteine wurden verworfen. Du kannst einen neuen KI-Entwurf erzeugen oder das vorhandene Projekt ohne Planelemente aktivieren.
             </p>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <form th:action="@{/projects/{projectId}/draft/regenerate(projectId=${summary.projectId})}" method="post" style="margin: 0;">
+                <form th:action="@{/projects/{projectId}/draft/regenerate(projectId=${summary.projectId})}" method="post"
+                      onsubmit="return confirm('Möchtest du den aktuellen Entwurf vollständig ersetzen und neu generieren?');"
+                      style="margin: 0; width: 100%;">
                     <input type="hidden" name="draftId" th:value="${summary.draftId}">
                     <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
-                    <button type="submit" class="pf-btn pf-btn--primary">Neu generieren</button>
+                    <label for="empty-draft-regeneration-comment" class="pf-label">Was war am bisherigen Entwurf schlecht oder unpassend?</label>
+                    <textarea id="empty-draft-regeneration-comment" name="regenerationComment" class="pf-textarea"
+                              maxlength="1000" required></textarea>
+                    <button type="submit" class="pf-btn pf-btn--primary">Mit diesem Hinweis neu generieren</button>
                 </form>
                 <form th:action="@{/projects/{projectId}/draft/confirm-empty(projectId=${summary.projectId})}" method="post" style="margin: 0;">
                     <input type="hidden" name="draftId" th:value="${summary.draftId}">

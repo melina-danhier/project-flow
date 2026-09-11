@@ -10,6 +10,8 @@ import de.melinadanhier.projectflow.feedback.domain.AiFeedbackContext;
 import de.melinadanhier.projectflow.feedback.service.AiFeedbackOpportunity;
 import de.melinadanhier.projectflow.study.domain.StudyEventType;
 import de.melinadanhier.projectflow.study.service.StudyTrackingService;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
@@ -32,6 +34,8 @@ public class DraftApplicationController {
     private final AiGenerationWorkflowService generationWorkflowService;
     private final StudyTrackingService studyTrackingService;
     private final DraftRepository draftRepository;
+    private final ProjectService projectService;
+    private final ProjectWizardService wizardService;
 
     @PostMapping("/projects/{projectId}/draft/apply")
     public String apply(@PathVariable UUID projectId,
@@ -77,9 +81,10 @@ public class DraftApplicationController {
     public String regenerate(@PathVariable UUID projectId,
                              @RequestParam UUID draftId,
                              @RequestParam long lockVersion,
+                             @RequestParam String regenerationComment,
                              @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         UUID workflowId = generationWorkflowService.regenerateDraft(
-                projectId, draftId, currentUser.userId(), lockVersion);
+                projectId, draftId, currentUser.userId(), lockVersion, regenerationComment);
         studyTrackingService.trackIfActive(session, StudyEventType.PLAN_REGENERATED);
         return "redirect:/projects/new/ai/status/" + workflowId;
     }
@@ -90,10 +95,11 @@ public class DraftApplicationController {
                           @RequestParam long lockVersion,
                           @AuthenticationPrincipal AuthenticatedUser currentUser,
                           HttpSession session) {
-        UUID discardedDraftId = draftApplicationService.discard(
-                projectId, draftId, currentUser.userId(), lockVersion);
+        draftApplicationService.discard(projectId, draftId, currentUser.userId(), lockVersion);
+        projectService.deleteDraftProjectPermanently(projectId, currentUser.userId());
+        wizardService.clearOwned(currentUser.userId(), session);
         session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
-                new AiFeedbackOpportunity(AiFeedbackContext.DRAFT_DELETED, discardedDraftId, "/projects"));
+                new AiFeedbackOpportunity(AiFeedbackContext.DRAFT_DELETED, draftId, "/projects"));
         return "redirect:/projects";
     }
 

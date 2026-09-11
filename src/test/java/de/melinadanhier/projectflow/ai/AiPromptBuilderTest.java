@@ -53,9 +53,34 @@ class AiPromptBuilderTest {
                 .contains("zeitlich", "begrenzte Aussagen", "nicht zu dauerhaften Einschränkungen")
                 .contains("normale Klärungs- oder Auswahlaufgabe")
                 .contains("Personen, Rollen, Anbieter, Ressourcen")
-                .contains("reviewQuestion als eine kurze, neutrale Frage")
+                .contains("Erzeuge keine Rückfrage")
+                .doesNotContain("reviewQuestion")
+                .contains("mindestens zwei grundsätzlich mögliche Stellschrauben")
+                .contains("genau einen bevorzugten Änderungsvorschlag")
+                .contains("previousValue und newValue")
+                .contains("Menschen ohne Projektmanagement- oder Technikkenntnisse")
+                .contains("Dafür reicht die eingeplante Zeit nicht aus")
+                .contains("TT.MM.JJJJ")
+                .contains("Warnung ignoriert und mit den bestehenden")
+                .contains("CRITICAL_ASSUMPTION")
+                .contains("mindestens eine bestätigte Nutzervorgabe geändert werden muss")
+                .contains("niemals nur als RISK oder ASSUMPTION")
+                .contains("Zeitraum", "verfügbare Zeit", "Erfahrung", "Anforderungen", "gewünschte Übungen oder Ergebnisse")
+                .contains("proposedInputChanges")
+                .contains("erst nach", "ausdrücklicher Zustimmung")
                 .contains("formuliere nicht stärker")
                 .contains("unterstelle keine nicht genannten");
+    }
+
+    @Test
+    void generationPromptAlignsEffortAndSchedulingWithDailyCapacity() {
+        String instructions = generationPromptBuilder.build(snapshot()).systemInstructions();
+
+        assertThat(instructions)
+                .contains("Aufwand für jede Aufgabe")
+                .contains("Gesamtaufwand des Plans")
+                .contains("Tageskapazität")
+                .contains("mehr geschätzte Aufgabenstunden", "als verfügbar");
     }
 
     @Test
@@ -101,7 +126,7 @@ class AiPromptBuilderTest {
                 .contains("Bündele zusammenhängende Ursachen und Folgen")
                 .contains("nur eine", "prägnante Warnung")
                 .contains("nicht als sicher unmöglich")
-                .contains("abstrakte, sichere Anpassungsoption")
+                .contains("adjustmentOptions", "EXTEND_TIMEFRAME", "INCREASE_AVAILABLE_TIME", "REDUCE_SCOPE")
                 .contains("Halte beide Felder kurz")
                 .contains("verzichte auf", "Empfehlungen ohne unmittelbaren Bezug")
                 .contains("direkt festgestellten Problem")

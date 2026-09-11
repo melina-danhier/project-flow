@@ -28,9 +28,9 @@
             <div class="pf-form-group">
                 <label for="description" class="pf-label">
                     <span>Beschreibung</span>
-                    <span class="pf-hint">(bei „Sonstiges“ erforderlich)</span>
+                    <span class="pf-hint">(optional)</span>
                 </label>
-                <textarea id="description" class="pf-textarea" th:field="*{description}" maxlength="2000" th:required="*{otherCategory}" placeholder="Zielsetzung, Notizen oder Hintergrundinformationen..."></textarea>
+                <textarea id="description" class="pf-textarea" th:field="*{description}" maxlength="2000" placeholder="Zielsetzung, Notizen oder Hintergrundinformationen..."></textarea>
                 <div th:if="${#fields.hasErrors('description')}" class="pf-alert pf-alert--error" th:errors="*{description}" role="alert"></div>
             </div>
 
@@ -81,20 +81,11 @@
             </div>
         </form>
 
-        <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post" style="display: none;"></form>
+        <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
+              onsubmit="return confirm('Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
+              style="display: none;"></form>
     </div>
 
-    <script>
-        (() => {
-            const category = document.getElementById('category');
-            const description = document.getElementById('description');
-            if (category && description) {
-                const updateDescriptionRequirement = () => description.required = category.value === 'OTHER';
-                category.addEventListener('change', updateDescriptionRequirement);
-                updateDescriptionRequirement();
-            }
-        })();
-    </script>
 </main>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />

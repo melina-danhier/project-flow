@@ -27,7 +27,7 @@
 
             <div class="pf-form-group">
                 <label for="availableWorkingTime" class="pf-label">
-                   <span>Wie viel Zeit kannst du ungefähr für das Projekt einplanen?</span>
+                   <span>Wie viel Arbeitszeit kannst du ungefähr für das Projekt aufbringen?</span>
                    <span class="pf-hint">(optional)</span>
                 </label>
                 <input id="availableWorkingTime"
@@ -85,7 +85,9 @@
             </div>
         </form>
 
-        <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post" style="display: none;"></form>
+        <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
+              onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
+              style="display: none;"></form>
     </div>
 </main>
 

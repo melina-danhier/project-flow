@@ -8,6 +8,7 @@ import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectPlanViewDto;
 import de.melinadanhier.projectflow.plancontainer.project.mapper.ProjectMapperImpl;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
@@ -56,6 +57,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.LocalDate;
 import java.util.UUID;
 import java.util.Set;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -133,6 +135,38 @@ class ProjectCrudIntegrationTest {
 
         projectService.deleteProjectPermanently(project.getId(), owner.getId());
         assertThat(projectRepository.findById(project.getId())).isEmpty();
+    }
+
+    @Test
+    void cancellingCreationPermanentlyDeletesDraftProject() {
+        User owner = saveUser("cancel-draft-owner@example.org");
+        Project project = saveProject("Abgebrochener Entwurf", owner);
+        project.setLocation(ProjectLocation.DRAFT);
+        projectRepository.saveAndFlush(project);
+
+        projectService.deleteDraftProjectPermanently(project.getId(), owner.getId());
+
+        assertThat(projectRepository.findById(project.getId())).isEmpty();
+        assertThat(projectMemberRepository.findAllByProjectId(project.getId())).isEmpty();
+    }
+
+    @Test
+    void bulkActionsMoveMultipleProjectsThroughTheirLifecycle() {
+        User owner = saveUser("bulk-project-owner@example.org");
+        Project first = saveProject("Erstes Sammelprojekt", owner);
+        Project second = saveProject("Zweites Sammelprojekt", owner);
+        List<UUID> projectIds = List.of(first.getId(), second.getId());
+
+        assertThat(projectService.archiveProjects(projectIds, owner.getId())).isEqualTo(2);
+        assertThat(projectRepository.findAllById(projectIds))
+                .allSatisfy(project -> assertThat(project.getLocation()).isEqualTo(ProjectLocation.ARCHIVE));
+
+        assertThat(projectService.moveProjectsToTrash(projectIds, owner.getId())).isEqualTo(2);
+        assertThat(projectRepository.findAllById(projectIds))
+                .allSatisfy(project -> assertThat(project.getLocation()).isEqualTo(ProjectLocation.TRASH));
+
+        assertThat(projectService.deleteProjectsPermanently(projectIds, owner.getId())).isEqualTo(2);
+        assertThat(projectRepository.findAllById(projectIds)).isEmpty();
     }
 
     @Test

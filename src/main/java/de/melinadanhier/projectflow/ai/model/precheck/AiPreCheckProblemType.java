@@ -4,5 +4,6 @@ package de.melinadanhier.projectflow.ai.model.precheck;
 public enum AiPreCheckProblemType {
     RISK,
     ASSUMPTION,
+    CRITICAL_ASSUMPTION,
     CONFLICT
 }

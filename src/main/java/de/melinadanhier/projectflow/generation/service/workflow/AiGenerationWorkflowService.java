@@ -11,7 +11,6 @@ import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
-import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import de.melinadanhier.projectflow.draft.service.DraftVersionConflictException;
@@ -22,6 +21,7 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import lombok.RequiredArgsConstructor;
@@ -92,7 +92,8 @@ public class AiGenerationWorkflowService {
         }
         return new AiPreCheckProblem(
                 problem.severity(), problem.type(), problem.message(), problem.suggestedUserAction(),
-                problem.reviewQuestion(), customInterpretation);
+                customInterpretation, problem.proposedInputChanges(),
+                problem.adjustmentOptions());
     }
 
     @Transactional
@@ -162,7 +163,47 @@ public class AiGenerationWorkflowService {
     }
 
     @Transactional
-    public UUID regenerateDraft(UUID projectId, UUID draftId, UUID userId, long lockVersion) {
+    public UUID continueAsEmptyProject(UUID workflowId, UUID userId) {
+        UUID projectId = workflowRepository.findOwnedById(workflowId, userId)
+                .map(candidate -> candidate.getProject().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        projectRepository.findForUpdate(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        authorizationService.requireOwner(projectId, userId);
+        var workflow = workflowRepository.findByIdForUpdate(workflowId)
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        if ((workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_FAILED
+                && workflow.getStatus() != AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
+                || workflow.getLastAiOperation() != AiOperation.PLAN_GENERATION) {
+            throw new ConflictException("In diesem Zustand kann nicht zu einem leeren Projekt gewechselt werden.");
+        }
+        var project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        if (project.getLocation() != ProjectLocation.DRAFT
+                || !project.getSections().isEmpty() || !project.getElements().isEmpty()) {
+            throw new ConflictException("Das Projekt wurde bereits aktiviert oder enthält bereits Planelemente.");
+        }
+        draftRepository.findForUpdateByProjectId(projectId).ifPresent(draft -> {
+            if (!draft.getSections().isEmpty() || !draft.getElements().isEmpty()) {
+                throw new ConflictException("Der vorhandene Entwurf enthält bereits Planelemente.");
+            }
+            project.attachDraft(null);
+            draftRepository.delete(draft);
+        });
+        project.setCreationType(CreationType.EMPTY);
+        project.setLocation(ProjectLocation.OVERVIEW);
+        projectRepository.saveAndFlush(project);
+        return projectId;
+    }
+
+    @Transactional
+    public UUID regenerateDraft(UUID projectId, UUID draftId, UUID userId, long lockVersion,
+                                String regenerationComment) {
+        if (regenerationComment == null || regenerationComment.isBlank()
+                || regenerationComment.trim().length() > 1000) {
+            throw new de.melinadanhier.projectflow.common.exception.DomainValidationException(
+                    "Bitte beschreibe in 1 bis 1000 Zeichen, was am bisherigen Entwurf verbessert werden soll.");
+        }
         projectRepository.findForUpdate(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
         authorizationService.requireOwner(projectId, userId);
@@ -176,13 +217,6 @@ public class AiGenerationWorkflowService {
                 && draft.getStatus() != DraftPlanStatus.IN_REVIEW) {
             throw new ConflictException("Der Entwurf kann in diesem Zustand nicht neu generiert werden.");
         }
-        boolean hasIncludedContent = java.util.stream.Stream.concat(
-                        draft.getSections().stream().map(section -> section.getReviewStatus()),
-                        draft.getElements().stream().map(element -> element.getReviewStatus()))
-                .anyMatch(status -> status != DraftReviewStatus.REJECTED);
-        if (hasIncludedContent) {
-            throw new ConflictException("Nur ein vollständig verworfener Entwurf kann neu generiert werden.");
-        }
         var project = draft.getProject();
         if (project.getLocation() != ProjectLocation.DRAFT
                 || !project.getSections().isEmpty() || !project.getElements().isEmpty()) {
@@ -193,6 +227,15 @@ public class AiGenerationWorkflowService {
                                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."))
                                 .getId())
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        var snapshot = payloadCodec.readSnapshot(workflow.getConfirmedSnapshot());
+        var answers = new java.util.LinkedHashMap<>(snapshot.projectSpecificAnswers());
+        answers.put("draftRegenerationFeedback", regenerationComment.trim());
+        var updatedSnapshot = new de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot(
+                snapshot.title(), snapshot.description(), snapshot.startDate(), snapshot.endDate(),
+                snapshot.collaborationMode(), snapshot.category(), snapshot.subcategory(),
+                snapshot.otherProjectTypeDescription(), snapshot.projectGoal(), snapshot.constraints(),
+                snapshot.additionalInformation(), snapshot.durationDays(), snapshot.availableWorkingTime(), answers);
+        workflow.updateConfirmedSnapshotForRegeneration(payloadCodec.writeSnapshot(updatedSnapshot));
         project.attachDraft(null);
         draftRepository.delete(draft);
         UUID runId = UUID.randomUUID();

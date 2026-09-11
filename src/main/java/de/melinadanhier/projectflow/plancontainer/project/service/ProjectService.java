@@ -49,6 +49,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -391,6 +393,13 @@ public class ProjectService {
     }
 
     @Transactional
+    public int moveProjectsToTrash(Collection<UUID> projectIds, UUID userId) {
+        List<UUID> ids = validateBulkSelection(projectIds);
+        ids.forEach(projectId -> moveToTrash(projectId, userId));
+        return ids.size();
+    }
+
+    @Transactional
     public void archiveProject(UUID projectId, UUID userId) {
         Project project = authorizationService.requireOwner(projectId, userId).getProject();
         if (project.getLocation() != ProjectLocation.OVERVIEW) {
@@ -398,6 +407,13 @@ public class ProjectService {
         }
         project.setLocation(ProjectLocation.ARCHIVE);
         project.getMemberships().forEach(membership -> membership.setPinned(false));
+    }
+
+    @Transactional
+    public int archiveProjects(Collection<UUID> projectIds, UUID userId) {
+        List<UUID> ids = validateBulkSelection(projectIds);
+        ids.forEach(projectId -> archiveProject(projectId, userId));
+        return ids.size();
     }
 
     @Transactional
@@ -428,6 +444,35 @@ public class ProjectService {
         if (project.getLocation() != ProjectLocation.TRASH) {
             throw new ConflictException("Ein Projekt kann nur aus dem Papierkorb endgültig gelöscht werden.");
         }
+        deleteProject(project);
+    }
+
+    @Transactional
+    public int deleteProjectsPermanently(Collection<UUID> projectIds, UUID userId) {
+        List<UUID> ids = validateBulkSelection(projectIds);
+        ids.forEach(projectId -> deleteProjectPermanently(projectId, userId));
+        return ids.size();
+    }
+
+    @Transactional
+    public int deleteDraftProjectsPermanently(Collection<UUID> projectIds, UUID userId) {
+        List<UUID> ids = validateBulkSelection(projectIds);
+        ids.forEach(projectId -> deleteDraftProjectPermanently(projectId, userId));
+        return ids.size();
+    }
+
+    @Transactional
+    public void deleteDraftProjectPermanently(UUID projectId, UUID userId) {
+        ProjectMember owner = authorizationService.requireOwner(projectId, userId);
+        Project project = owner.getProject();
+        if (project.getLocation() != ProjectLocation.DRAFT) {
+            throw new ConflictException("Nur ein Projektentwurf kann über die Projekterstellung abgebrochen werden.");
+        }
+        deleteProject(project);
+    }
+
+    private void deleteProject(Project project) {
+        UUID projectId = project.getId();
         List<Task> tasks = taskRepository.findPlanTasks(projectId);
         tasks.forEach(task -> task.getPrerequisites().clear());
         taskRepository.flush();
@@ -447,6 +492,17 @@ public class ProjectService {
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt wurde nicht gefunden."));
         projectRepository.delete(projectToDelete);
         projectRepository.flush();
+    }
+
+    private List<UUID> validateBulkSelection(Collection<UUID> projectIds) {
+        if (projectIds == null || projectIds.isEmpty()) {
+            throw new DomainValidationException("Bitte wähle mindestens ein Projekt aus.");
+        }
+        List<UUID> ids = new java.util.ArrayList<>(new LinkedHashSet<>(projectIds));
+        if (ids.size() > 100) {
+            throw new DomainValidationException("Es können höchstens 100 Projekte gleichzeitig bearbeitet werden.");
+        }
+        return ids;
     }
 
     private void validateDateRange(java.time.LocalDate startDate, java.time.LocalDate endDate) {

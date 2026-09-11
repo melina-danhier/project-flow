@@ -99,17 +99,46 @@
 
 <!-- Footer with links + copyright -->
 <footer th:fragment="site-footer" class="site-footer">
-    <aside th:if="${session != null and session.aiFeedbackOpportunity != null}"
-           class="pf-card" style="max-width: 720px; margin: 1rem auto;" aria-label="Freiwilliges KI-Feedback">
-        <strong>Wie zufrieden bist du insgesamt mit dem KI-Ergebnis?</strong>
-        <p>Dein Feedback ist freiwillig und hilft uns, die KI-Unterstützung zu verbessern.</p>
-        <div class="pf-cluster">
-            <a class="pf-btn pf-btn--primary" th:href="@{/ai-feedback}">Feedback geben</a>
-            <form th:action="@{/ai-feedback/skip}" method="post" style="margin: 0;">
-                <button class="pf-btn pf-btn--ghost" type="submit">Überspringen</button>
-            </form>
-        </div>
-    </aside>
+    <dialog th:if="${session != null and session.aiFeedbackOpportunity != null}"
+            id="ai-feedback-dialog" class="pf-feedback-dialog"
+            aria-labelledby="ai-feedback-title" aria-describedby="ai-feedback-description">
+        <form th:action="@{/ai-feedback}" method="post" class="pf-feedback-dialog__form">
+            <div class="pf-feedback-dialog__header">
+                <div>
+                    <p class="pf-eyebrow">Freiwilliges Feedback</p>
+                    <h2 id="ai-feedback-title">Wie zufrieden bist du mit dem KI-Vorschlag?</h2>
+                </div>
+                <button class="pf-feedback-dialog__close" type="submit" th:formaction="@{/ai-feedback/skip}"
+                        formnovalidate aria-label="Feedback schließen">×</button>
+            </div>
+            <p id="ai-feedback-description">Deine Rückmeldung hilft uns, die KI-Unterstützung zu verbessern.</p>
+            <fieldset>
+                <legend>Bewertung</legend>
+                <div class="pf-feedback-dialog__ratings">
+                    <label><input type="radio" name="rating" value="1" required> Sehr unzufrieden</label>
+                    <label><input type="radio" name="rating" value="2"> Unzufrieden</label>
+                    <label><input type="radio" name="rating" value="3"> Neutral</label>
+                    <label><input type="radio" name="rating" value="4"> Zufrieden</label>
+                    <label><input type="radio" name="rating" value="5"> Sehr zufrieden</label>
+                </div>
+            </fieldset>
+            <label for="ai-feedback-comment">Möchtest du kurz angeben, warum? <span class="pf-hint">(optional)</span></label>
+            <textarea id="ai-feedback-comment" name="comment" maxlength="2000" rows="4" class="pf-textarea"></textarea>
+            <div class="pf-feedback-dialog__actions">
+                <button class="pf-btn pf-btn--primary" type="submit">Feedback senden</button>
+                <button class="pf-btn pf-btn--ghost" type="submit" th:formaction="@{/ai-feedback/skip}"
+                        formnovalidate>Nicht jetzt</button>
+            </div>
+        </form>
+        <script>
+            (() => {
+                const dialog = document.getElementById('ai-feedback-dialog');
+                if (!dialog) return;
+                dialog.addEventListener('cancel', event => event.preventDefault());
+                if (!dialog.open) dialog.showModal();
+            })();
+        </script>
+    </dialog>
     <div class="site-footer__inner">
         <div class="site-footer__grid">
             <!-- Brand & Mission Column -->

@@ -19,6 +19,7 @@ public interface DraftMapper {
     @Mapping(target = "activeReviewStatus", ignore = true)
     @Mapping(target = "reviewedElementCount", ignore = true)
     @Mapping(target = "totalElementCount", ignore = true)
+    @Mapping(target = "totalEstimatedHours", ignore = true)
     @Mapping(target = "pendingElementCount", ignore = true)
     @Mapping(target = "unsectionedElements", ignore = true)
     DraftReviewDto toReviewDto(DraftPlan draftPlan);

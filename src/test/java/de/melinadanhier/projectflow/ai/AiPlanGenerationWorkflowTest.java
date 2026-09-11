@@ -108,6 +108,26 @@ class AiPlanGenerationWorkflowTest {
         assertThat(fixture.workflow().getCustomOpenPointInterpretations()).isEmpty();
     }
 
+    @Test
+    void restartingPreCheckClearsPreviousReviewAndBlocksGeneration() {
+        var fixture = workflow();
+        ReflectionTestUtils.setField(fixture.workflow(), "status",
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+        ReflectionTestUtils.setField(fixture.workflow(), "preCheckResult", "{\"problems\":[]}");
+        fixture.workflow().acceptOpenPoint(0);
+        UUID rerunId = UUID.randomUUID();
+
+        fixture.workflow().restartPreCheck("{\"corrected\":true}", rerunId, NOW.plusSeconds(600));
+
+        assertThat(fixture.workflow().getStatus()).isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING);
+        assertThat(fixture.workflow().getConfirmedSnapshot()).isEqualTo("{\"corrected\":true}");
+        assertThat(fixture.workflow().getPreCheckResult()).isNull();
+        assertThat(fixture.workflow().getAcceptedOpenPointIndices()).isEmpty();
+        assertThat(fixture.workflow().getActiveRunId()).isEqualTo(rerunId);
+        assertThatIllegalStateException().isThrownBy(() -> fixture.workflow().startGeneration(
+                UUID.randomUUID(), NOW.plusSeconds(900)));
+    }
+
     private Fixture workflow() {
         UUID runId = UUID.randomUUID();
         var workflow = AiPlanGenerationWorkflow.create(new Project(), "{}", "ai-wizard-v3",

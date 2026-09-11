@@ -330,9 +330,10 @@ class DraftReviewIntegrationTest {
         mvc.perform(post(f.url() + "/apply").with(user(member)).with(csrf()))
                 .andExpect(status().isForbidden());
         mvc.perform(post(f.url() + "/regenerate")
-                        .param("draftId", edited.getId().toString())
-                        .param("lockVersion", String.valueOf(edited.getLockVersion()))
-                        .with(user(member)).with(csrf()))
+                .param("draftId", edited.getId().toString())
+                .param("lockVersion", String.valueOf(edited.getLockVersion()))
+                .param("regenerationComment", "Der Entwurf soll anders strukturiert werden.")
+                .with(user(member)).with(csrf()))
                 .andExpect(status().isForbidden());
         assertEmptyPlan(f);
     }
