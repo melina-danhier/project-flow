@@ -89,15 +89,26 @@
 
     <!-- Plan Sections -->
     <div style="margin-top: 1.5rem;">
-        <h2 style="display: flex; align-items: center; gap: 0.5rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--pf-primary);">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            Phasen und Planelemente
-        </h2>
+        <div class="pf-plan-view-heading">
+            <h2 style="display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--pf-primary);">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Phasen und Planelemente
+            </h2>
+
+            <div class="pf-plan-view-switcher" role="group" aria-label="Planansicht auswählen">
+                <button type="button" class="pf-plan-view-button is-active" data-plan-view="list" aria-pressed="true">Liste</button>
+                <button type="button" class="pf-plan-view-button" data-plan-view="cards" aria-pressed="false">Karten</button>
+                <button type="button" class="pf-plan-view-button" data-plan-view="board" aria-pressed="false">Board</button>
+                <button type="button" class="pf-plan-view-button" data-plan-view="calendar" aria-pressed="false">Kalender</button>
+            </div>
+        </div>
+
+        <div id="plan-alternative-view" class="pf-plan-alternative-view" hidden aria-live="polite"></div>
 
         <!-- Sections Container for Drag-and-Drop -->
         <div id="plan-sections">
@@ -382,6 +393,7 @@
 
 <script th:src="@{/js/plan-interactions.js}"></script>
 <script th:src="@{/js/plan-ordering.js}"></script>
+<script th:src="@{/js/plan-views.js}"></script>
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>
 </html>

@@ -2017,3 +2017,261 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
         flex-direction: column;
     }
 }
+
+/* Project plan views */
+.pf-plan-view-heading,
+.pf-plan-view-switcher,
+.pf-calendar__toolbar,
+.pf-plan-pagination {
+    display: flex;
+    align-items: center;
+}
+
+.pf-plan-view-heading {
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.pf-plan-view-switcher {
+    padding: 0.25rem;
+    gap: 0.2rem;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-md);
+    background: var(--pf-surface-subtle);
+}
+
+.pf-plan-view-button {
+    padding: 0.45rem 0.75rem;
+    border: 0;
+    border-radius: calc(var(--pf-radius-md) - 2px);
+    background: transparent;
+    color: var(--pf-text-secondary);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pf-plan-view-button:hover,
+.pf-plan-view-button:focus-visible {
+    color: var(--pf-primary);
+}
+
+.pf-plan-view-button.is-active {
+    color: var(--pf-primary);
+    background: var(--pf-surface);
+    box-shadow: var(--pf-shadow-sm);
+}
+
+.pf-plan-alternative-view {
+    margin-top: 1.5rem;
+}
+
+.pf-phase-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: 25rem;
+    gap: 1rem;
+}
+
+.pf-phase-card,
+.pf-board-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg);
+    background: var(--pf-surface);
+    box-shadow: var(--pf-shadow-sm);
+    overflow: hidden;
+}
+
+.pf-phase-card > header,
+.pf-board-column > header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-phase-card h3,
+.pf-board-column h3 {
+    display: inline;
+    margin: 0 0.5rem 0 0;
+    font-size: 1.05rem;
+}
+
+.pf-phase-card header p,
+.pf-board-column header p {
+    margin: 0.5rem 0 0;
+    color: var(--pf-text-muted);
+    font-size: 0.85rem;
+}
+
+.pf-plan-compact-list {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 0.75rem;
+    list-style: none;
+}
+
+.pf-phase-card .pf-plan-compact-list {
+    overflow-y: auto;
+}
+
+.pf-plan-compact-element {
+    display: flex;
+    gap: 0.65rem;
+    padding: 0.75rem;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-md);
+    background: var(--pf-surface);
+}
+
+.pf-plan-compact-element + .pf-plan-compact-element {
+    margin-top: 0.6rem;
+}
+
+.pf-plan-compact-element__icon {
+    flex: 0 0 auto;
+    color: var(--pf-primary);
+}
+
+.pf-plan-compact-element a {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--pf-text-main);
+    font-weight: 600;
+    text-decoration: none;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.pf-plan-compact-element a:hover {
+    color: var(--pf-primary);
+}
+
+.pf-plan-compact-element small {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--pf-text-muted);
+}
+
+.pf-plan-view-empty {
+    padding: 1rem;
+    color: var(--pf-text-muted);
+    text-align: center;
+}
+
+.pf-plan-pagination {
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.pf-board {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 0.75rem;
+    overflow-x: auto;
+}
+
+.pf-board-column {
+    flex: 0 0 19rem;
+}
+
+.pf-board-column .pf-plan-compact-list {
+    overflow: visible;
+}
+
+.pf-calendar__toolbar {
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pf-calendar__toolbar h3 {
+    margin: 0;
+    text-transform: capitalize;
+}
+
+.pf-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border-top: 1px solid var(--pf-border);
+    border-left: 1px solid var(--pf-border);
+}
+
+.pf-calendar__weekday {
+    padding: 0.55rem;
+    border-right: 1px solid var(--pf-border);
+    border-bottom: 1px solid var(--pf-border);
+    color: var(--pf-text-muted);
+    background: var(--pf-surface-subtle);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.pf-calendar__day {
+    min-height: 7rem;
+    padding: 0.45rem;
+    border-right: 1px solid var(--pf-border);
+    border-bottom: 1px solid var(--pf-border);
+    background: var(--pf-surface);
+    overflow: hidden;
+}
+
+.pf-calendar__day.is-outside {
+    background: var(--pf-surface-subtle);
+}
+
+.pf-calendar__date {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--pf-text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.pf-calendar__task {
+    display: block;
+    margin-bottom: 0.25rem;
+    padding: 0.25rem 0.35rem;
+    overflow: hidden;
+    border-radius: var(--pf-radius-sm);
+    color: var(--pf-primary-active);
+    background: var(--pf-primary-soft);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .pf-phase-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    .pf-plan-view-switcher {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .pf-phase-card-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-calendar {
+        overflow-x: auto;
+    }
+
+    .pf-calendar__toolbar,
+    .pf-calendar__grid {
+        min-width: 42rem;
+    }
+}

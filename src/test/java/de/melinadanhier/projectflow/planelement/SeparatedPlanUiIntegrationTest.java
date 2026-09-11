@@ -837,8 +837,13 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(content().string(not(containsString("Prüfung offen"))))
                 .andExpect(content().string(not(containsString("Geprüft"))))
                 .andExpect(content().string(containsString("plan-sort-mode-form")))
+                .andExpect(content().string(containsString("data-plan-view=\"cards\"")))
+                .andExpect(content().string(containsString("data-plan-view=\"board\"")))
+                .andExpect(content().string(containsString("data-plan-view=\"calendar\"")))
+                .andExpect(content().string(containsString("id=\"plan-alternative-view\"")))
                 .andExpect(content().string(containsString("/js/plan-interactions.js")))
                 .andExpect(content().string(containsString("/js/plan-ordering.js")))
+                .andExpect(content().string(containsString("/js/plan-views.js")))
                 .andReturn().getResponse().getContentAsString();
 
         assertThat(html.indexOf("Freigabe")).isLessThan(html.indexOf("Unterlagen sammeln"));
