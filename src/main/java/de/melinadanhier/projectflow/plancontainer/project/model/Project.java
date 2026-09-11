@@ -72,6 +72,15 @@ public class Project extends PlanContainer implements ProjectClassification, Pro
     @Column(name = "location", nullable = false, length = 20)
     private ProjectLocation location = ProjectLocation.OVERVIEW;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "task_progress_display", nullable = false, length = 20)
+    private TaskProgressDisplay taskProgressDisplay = TaskProgressDisplay.CHECKBOX;
+
+    public TaskProgressDisplay getTaskProgressDisplay() {
+        return taskProgressDisplay == null ? TaskProgressDisplay.CHECKBOX : taskProgressDisplay;
+    }
+
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectMember> memberships = new LinkedHashSet<>();

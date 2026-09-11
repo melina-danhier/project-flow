@@ -2,6 +2,7 @@ const review = document.querySelector('main[data-sort-mode]');
 let dragged = null;
 
 const submitMove = (url, fields) => {
+    window.ProjectFlowScrollState?.capture();
     const form = document.createElement('form');
     form.method = 'post';
     form.action = url;
@@ -21,9 +22,10 @@ const submitMove = (url, fields) => {
 };
 
 document.querySelectorAll('[draggable="true"]').forEach(item => {
+    const requiredHandle = item.classList.contains('draft-section') ? '.section-drag-handle' : '.element-drag-handle';
+    item.querySelector(requiredHandle)?.addEventListener('pointerdown', () => item.dataset.dragArmed = 'true');
     item.addEventListener('dragstart', event => {
-        const requiredHandle = item.classList.contains('draft-section') ? '.section-drag-handle' : '.element-drag-handle';
-        if (!event.target.closest(requiredHandle)) {
+        if (item.dataset.dragArmed !== 'true') {
             event.preventDefault();
             return;
         }
@@ -34,20 +36,20 @@ document.querySelectorAll('[draggable="true"]').forEach(item => {
         event.dataTransfer.setData('text/plain', item.dataset.elementId || item.dataset.sectionId);
     });
     item.addEventListener('dragend', () => {
+        delete item.dataset.dragArmed;
         item.classList.remove('is-dragging');
         document.querySelectorAll('.drop-target').forEach(target => target.classList.remove('drop-target'));
         dragged = null;
     });
 });
 
+document.addEventListener('pointerup', () => {
+    document.querySelectorAll('[data-drag-armed]').forEach(item => delete item.dataset.dragArmed);
+});
+
 document.querySelectorAll('.plan-elements').forEach(list => {
     list.addEventListener('dragover', event => {
         if (!dragged?.classList.contains('plan-element')) return;
-        const targetElement = event.target.closest('.plan-element');
-        const draggedDate = dragged.dataset.date || '';
-        if (targetElement && (targetElement.dataset.date || '') !== draggedDate) {
-            return;
-        }
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
         list.classList.add('drop-target');
@@ -60,21 +62,10 @@ document.querySelectorAll('.plan-elements').forEach(list => {
         list.classList.remove('drop-target');
         if (!dragged?.classList.contains('plan-element')) return;
 
-        const targetElement = event.target.closest('.plan-element');
         const draggedDate = dragged.dataset.date || '';
-
-        // Strikte Prüfung: Verschieben nur innerhalb derselben Datumsgruppe erlaubt
-        if (targetElement && (targetElement.dataset.date || '') !== draggedDate) {
-            dragged.classList.add('pf-shake');
-            setTimeout(() => dragged?.classList.remove('pf-shake'), 500);
-            return;
-        }
-
-        const sameDateSiblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')]
-            .filter(item => (item.dataset.date || '') === draggedDate);
-
-        const before = sameDateSiblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
-        const position = before ? sameDateSiblings.indexOf(before) : sameDateSiblings.length;
+        const siblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')];
+        const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
+        const position = before ? siblings.indexOf(before) : siblings.length;
 
         submitMove(dragged.dataset.moveUrl, {
             targetSectionId: list.dataset.sectionId || '',

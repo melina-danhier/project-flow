@@ -267,6 +267,19 @@ dd {
     margin-top: 2rem;
 }
 
+.draft-view-heading {
+    margin-top: 1.5rem;
+}
+
+.draft-view-heading h2 {
+    margin: 0;
+}
+
+.draft-view-hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.875rem;
+}
+
 @media (max-width: 42rem) {
     .section-heading {
         display: block;

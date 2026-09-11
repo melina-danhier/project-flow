@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
@@ -155,6 +156,15 @@ public class TaskController {
             populateFormModel(model, taskService.getTaskForEditing(projectId, taskId, currentUser.userId()), true);
             return "projects/tasks/form";
         }
+    }
+
+    @PostMapping("/projects/{projectId}/tasks/{taskId}/completion")
+    public String setCompleted(@PathVariable UUID projectId, @PathVariable UUID taskId,
+                               @RequestParam(defaultValue = "false") boolean completed,
+                               @RequestParam long taskLockVersion,
+                               @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        taskService.setCompleted(projectId, taskId, completed, taskLockVersion, currentUser.userId());
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @PostMapping("/projects/{projectId}/tasks/{taskId}/delete")

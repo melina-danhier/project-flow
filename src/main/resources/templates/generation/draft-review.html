@@ -4,10 +4,11 @@
     <th:block th:replace="~{fragments/layout :: head('KI-Entwurf prüfen')}" />
     <link rel="stylesheet" th:href="@{/css/draft-review.css}">
     <script th:src="@{/js/draft-review.js}" defer></script>
+    <script th:src="@{/js/plan-views.js}" defer></script>
 </head>
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
-<main th:attr="data-sort-mode=${draft.sortMode},data-draft-status=${draft.status.name()}">
+<main th:attr="data-sort-mode=${draft.sortMode},data-draft-status=${draft.status.name()},data-project-id=${draft.projectId}">
     <a th:href="@{/projects/drafts}">Zurück zu den Entwürfen</a>
     <header class="review-header">
         <p class="draft-label">Noch nicht übernommener Entwurf</p>
@@ -44,16 +45,28 @@
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
-            <span>Aufgaben und Meilensteine werden nach Datum sortiert angezeigt. Elemente können innerhalb ihrer Datumsgruppe verschoben werden.</span>
+            <span>Aufgaben und Meilensteine werden nach Datum sortiert angezeigt. Nach dem Verschieben werden datierte Elemente automatisch wieder nach Datum einsortiert.</span>
         </div>
         <input type="hidden" id="draft-lock-version" name="lockVersion" th:value="${draft.lockVersion}">
         <input type="hidden" id="draft-csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
     </header>
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
+    <div class="pf-plan-view-heading draft-view-heading">
+        <h2>Phasen und Planelemente</h2>
+        <div class="pf-plan-view-switcher" role="group" aria-label="Entwurfsansicht auswählen">
+            <button type="button" class="pf-plan-view-button is-active" data-plan-view="list" aria-pressed="true">Liste</button>
+            <button type="button" class="pf-plan-view-button" data-plan-view="cards" aria-pressed="false">Karten</button>
+            <button type="button" class="pf-plan-view-button" data-plan-view="board" aria-pressed="false">Board</button>
+            <button type="button" class="pf-plan-view-button" data-plan-view="calendar" aria-pressed="false">Kalender</button>
+        </div>
+    </div>
+    <p class="pf-text-muted draft-view-hint">Zum Prüfen oder Bearbeiten eines Elements öffnest du es aus der kompakten Ansicht in der Liste.</p>
+    <div id="plan-alternative-view" class="pf-plan-alternative-view" hidden aria-live="polite"></div>
+
     <div id="draft-sections">
-        <section class="draft-section" th:each="section : ${draft.sections}"
-                 th:attr="draggable=${draft.status.name() != 'APPLIED'},data-section-id=${section.id},data-move-url=@{/projects/{projectId}/draft/sections/{sectionId}/move(projectId=${draft.projectId},sectionId=${section.id})}">
+        <section class="draft-section plan-phase" th:each="section : ${draft.sections}"
+                 th:attr="draggable=${draft.status.name() != 'APPLIED'},data-section-id=${section.id},data-section-title=${section.title},data-section-description=${section.description},data-move-url=@{/projects/{projectId}/draft/sections/{sectionId}/move(projectId=${draft.projectId},sectionId=${section.id})}">
             <div class="section-heading">
                 <button th:if="${draft.status.name() != 'APPLIED'}" type="button" class="drag-handle section-drag-handle" title="Bereich verschieben" aria-label="Bereich verschieben">↕</button>
                 <div class="section-title">
@@ -99,9 +112,9 @@
                 </details>
             </div>
             <ol class="plan-elements" th:attr="data-section-id=${section.id}">
-                <li class="plan-element" th:each="element : ${section.elements}"
-                    th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-section-id=${section.id},data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null},data-date=${element.dueDate != null ? element.dueDate.toString() : ''},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
-                    <div th:replace="~{fragments/draft-components :: element-heading(${element})}"></div>
+                <li class="plan-element" th:each="element : ${section.elements}" th:id="${'draft-element-' + element.id}"
+                    th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type},data-detail-url=${element.type == 'TASK' ? '/projects/' + draft.projectId + '/draft/tasks/' + element.id : '/projects/' + draft.projectId + '/draft/milestones/' + element.id},data-section-id=${section.id},data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null},data-date=${element.dueDate != null ? element.dueDate.toString() : ''},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
+                    <div th:replace="~{fragments/draft-components :: element-heading(${element}, ${draft.projectId})}"></div>
                     <th:block th:if="${draft.status.name() != 'APPLIED'}">
                         <div th:replace="~{fragments/draft-components :: review-actions('elements', ${element.id}, ${draft.projectId}, ${element.reviewStatus.name()}, ${draft.lockVersion})}"></div>
                     </th:block>
@@ -112,11 +125,6 @@
                         <div th:if="${element.type == 'TASK' and element.startDate != null}"><dt>Startdatum</dt><dd><time th:datetime="${element.startDate}" th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy')}"></time></dd></div>
                         <div th:if="${element.dueDate != null}"><dt th:text="${element.type == 'TASK' ? 'Fällig am' : 'Datum'}"></dt><dd><time th:datetime="${element.dueDate}" th:text="${#temporals.format(element.dueDate, 'dd.MM.yyyy')}"></time></dd></div>
                     </dl>
-                    <details class="element-edit" th:if="${draft.status.name() != 'APPLIED'}"
-                             th:open="${editingDraftTaskId == element.id or editingDraftMilestoneId == element.id}">
-                        <summary>Bearbeiten</summary>
-                        <th:block th:replace="~{fragments/draft-components :: element-edit-forms(${element}, ${draft.projectId}, ${draft.lockVersion}, ${editingDraftTaskId}, ${editingDraftMilestoneId})}" />
-                    </details>
                 </li>
             </ol>
         </section>
@@ -130,17 +138,13 @@
             </div>
         </div>
         <ol class="plan-elements" data-section-id="">
-            <li class="plan-element" th:each="element : ${draft.unsectionedElements}"
-                th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-section-id='',data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null},data-date=${element.dueDate != null ? element.dueDate.toString() : ''},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
-                <div th:replace="~{fragments/draft-components :: element-heading(${element})}"></div>
+            <li class="plan-element" th:each="element : ${draft.unsectionedElements}" th:id="${'draft-element-' + element.id}"
+                th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type},data-detail-url=${element.type == 'TASK' ? '/projects/' + draft.projectId + '/draft/tasks/' + element.id : '/projects/' + draft.projectId + '/draft/milestones/' + element.id},data-section-id='',data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null},data-date=${element.dueDate != null ? element.dueDate.toString() : ''},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
+                <div th:replace="~{fragments/draft-components :: element-heading(${element}, ${draft.projectId})}"></div>
                 <p th:if="${element.description}" th:text="${element.description}"></p>
                 <th:block th:if="${draft.status.name() != 'APPLIED'}">
                     <div th:replace="~{fragments/draft-components :: review-actions('elements', ${element.id}, ${draft.projectId}, ${element.reviewStatus.name()}, ${draft.lockVersion})}"></div>
                 </th:block>
-                <details class="element-edit" th:if="${draft.status.name() != 'APPLIED'}">
-                    <summary>Bearbeiten</summary>
-                    <th:block th:replace="~{fragments/draft-components :: element-edit-forms(${element}, ${draft.projectId}, ${draft.lockVersion})}" />
-                </details>
             </li>
         </ol>
     </section>

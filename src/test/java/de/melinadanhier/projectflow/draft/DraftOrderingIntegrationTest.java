@@ -84,12 +84,12 @@ class DraftOrderingIntegrationTest {
     }
 
     @Test
-    void datedElementCannotMoveInsideChronologicalSectionButCanCrossSections() {
+    void datedElementCanMoveInsideChronologicalSectionAndAcrossSections() {
         Fixture fixture = fixture();
         fixture.task().setDueDate(LocalDate.of(2027, 3, 10));
-        assertThatThrownBy(() -> reviews.moveElement(fixture.project().getId(), fixture.task().getId(),
-                fixture.owner().getId(), move(fixture.draft(), fixture.first(), 1, null)))
-                .isInstanceOf(DomainValidationException.class);
+        reviews.moveElement(fixture.project().getId(), fixture.task().getId(),
+                fixture.owner().getId(), move(fixture.draft(), fixture.first(), 1, null));
+        assertThat(fixture.task().getDraftSection()).isSameAs(fixture.first());
 
         DraftElementMoveForm crossSection = move(fixture.draft(), fixture.second(), 0,
                 LocalDate.of(2027, 3, 10));

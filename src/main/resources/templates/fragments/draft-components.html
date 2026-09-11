@@ -24,12 +24,14 @@
     </form>
 </div>
 
-<div th:fragment="element-heading(element)" class="element-heading">
+<div th:fragment="element-heading(element, projectId)" class="element-heading">
     <button type="button" class="drag-handle element-drag-handle" title="Element verschieben"
             aria-label="Element verschieben">↕</button>
-    <span class="element-icon" aria-hidden="true"
-          th:text="${element.type == 'TASK' ? '☐' : '◆'}"></span>
-    <strong th:text="${element.title}"></strong>
+    <span class="element-icon" aria-hidden="true" th:if="${element.type == 'MILESTONE'}">◆</span>
+    <a th:if="${element.type == 'TASK'}" th:href="@{/projects/{projectId}/draft/tasks/{taskId}(projectId=${projectId},taskId=${element.id})}"
+       th:text="${element.title}" style="font-weight: 700;"></a>
+    <a th:if="${element.type == 'MILESTONE'}" th:href="@{/projects/{projectId}/draft/milestones/{milestoneId}(projectId=${projectId},milestoneId=${element.id})}"
+       th:text="${element.title}" style="font-weight: 700;"></a>
     <span class="element-type"
           th:text="${element.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span>
     <span class="element-origin" th:text="${element.originLabel}"></span>

@@ -13,6 +13,7 @@ import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectPlanVi
 import de.melinadanhier.projectflow.plancontainer.project.mapper.ProjectMapper;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.project.model.TaskProgressDisplay;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
@@ -297,7 +298,9 @@ public class ProjectService {
         List<Milestone> milestones = elements.milestones();
 
         ProjectPlanViewDto view = new ProjectPlanViewDto();
-        view.setProject(projectMapper.toDetailsDto(project));
+        ProjectDetailsDto projectDetails = projectMapper.toDetailsDto(project);
+        projectDetails.setTaskProgressDisplay(project.getTaskProgressDisplay());
+        view.setProject(projectDetails);
         view.setEditable(authorizationService.isEditable(currentMembership));
         view.setOwner(currentMembership.getRole() == ProjectMemberRole.OWNER);
         List<TaskDetailsDto> taskDtos = tasks.stream().map(planElementMapper::toDetailsDto).toList();
@@ -390,6 +393,15 @@ public class ProjectService {
             throw new ConflictException("Nur Projekte aus der Übersicht oder dem Archiv können in den Papierkorb verschoben werden.");
         }
         project.setLocation(ProjectLocation.TRASH);
+    }
+
+    @Transactional
+    public void updateTaskProgressDisplay(UUID projectId, UUID userId,
+                                          TaskProgressDisplay display,
+                                          long lockVersion) {
+        Project project = authorizationService.requireEditableMemberForUpdate(projectId, userId).getProject();
+        requireCurrentVersion(project.getLockVersion(), lockVersion);
+        project.setTaskProgressDisplay(java.util.Objects.requireNonNull(display));
     }
 
     @Transactional
@@ -632,6 +644,7 @@ public class ProjectService {
     private PlanElementViewDto baseViewElement(PlanElement element, PlanElementType type) {
         PlanElementViewDto dto = new PlanElementViewDto();
         dto.setId(element.getId());
+        dto.setLockVersion(element.getLockVersion());
         dto.setType(type);
         dto.setTitle(element.getTitle());
         dto.setDescription(element.getDescription());

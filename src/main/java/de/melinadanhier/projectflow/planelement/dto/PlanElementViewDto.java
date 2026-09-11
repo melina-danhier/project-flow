@@ -23,6 +23,7 @@ public class PlanElementViewDto {
     private String title;
     private String description;
     private UUID planSectionId;
+    private long lockVersion;
     private int sortOrder;
     private LocalDate relevantDate;
     private TaskStatus taskStatus;
@@ -52,6 +53,10 @@ public class PlanElementViewDto {
             case IN_PROGRESS -> "In Bearbeitung";
             case COMPLETED -> "Erledigt";
         };
+    }
+
+    public boolean isTaskCompleted() {
+        return type == PlanElementType.TASK && taskStatus == TaskStatus.COMPLETED;
     }
 
     public String getOriginLabel() {

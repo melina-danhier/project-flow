@@ -84,6 +84,13 @@ class DraftReviewIntegrationTest {
         mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("assumption-toggle"))))
+                .andExpect(content().string(containsString("data-plan-view=\"cards\"")))
+                .andExpect(content().string(containsString("data-plan-view=\"board\"")))
+                .andExpect(content().string(containsString("data-plan-view=\"calendar\"")))
+                .andExpect(content().string(containsString("/js/plan-views.js")))
+                .andExpect(content().string(containsString("data-element-title=\"Aufgabe 1\"")))
+                .andExpect(content().string(not(containsString("type=\"checkbox\""))))
+                .andExpect(content().string(not(containsString("☐"))))
                 .andDo(result -> writePreview("draft-review.html", result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
     }
 
@@ -297,6 +304,50 @@ class DraftReviewIntegrationTest {
         mvc.perform(get(f.url() + "/continue-with-pending").with(user(f.owner())))
                 .andExpect(status().isMethodNotAllowed());
         assertEmptyPlan(f);
+    }
+
+    @Test
+    void draftElementsHaveEditableDetailPagesWithReviewActions() throws Exception {
+        Fixture f = fixture(null, null);
+        DraftReviewDto initial = review(f);
+        var task = initial.getElements().stream()
+                .filter(element -> element.getType().equals("TASK"))
+                .findFirst().orElseThrow();
+
+        mvc.perform(get(f.url() + "/tasks/" + task.getId()).with(user(f.owner())))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/draft-element-detail"))
+                .andExpect(content().string(containsString(task.getTitle())))
+                .andExpect(content().string(containsString("Aufgabe bearbeiten")))
+                .andExpect(content().string(containsString("Vorschlag prüfen")))
+                .andExpect(content().string(not(containsString("Aufgabe hinzufügen"))));
+
+        mvc.perform(get(f.url() + "/tasks/" + task.getId() + "/edit").with(user(f.owner())))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/draft-element-form"))
+                .andExpect(content().string(containsString("Aufgabe speichern")))
+                .andExpect(content().string(not(containsString("Vorschlag prüfen"))));
+
+        mvc.perform(post(f.url() + "/tasks/" + task.getId() + "/detail")
+                        .param("lockVersion", String.valueOf(initial.getLockVersion()))
+                        .param("title", "Überarbeitete Entwurfsaufgabe")
+                        .param("description", "Direkt auf der Detailseite bearbeitet")
+                        .param("priority", "HIGH")
+                        .param("sectionSelectionPresent", "true")
+                        .param("draftSectionId", task.getDraftSectionId().toString())
+                        .with(user(f.owner())).with(csrf()))
+                .andExpect(redirectedUrl(f.url() + "/tasks/" + task.getId()));
+
+        DraftReviewDto updated = review(f);
+        assertThat(updated.getElements()).filteredOn(element -> element.getId().equals(task.getId()))
+                .singleElement().satisfies(element -> assertThat(element.getTitle())
+                        .isEqualTo("Überarbeitete Entwurfsaufgabe"));
+
+        mvc.perform(post(f.url() + "/elements/" + task.getId() + "/accept")
+                        .param("lockVersion", String.valueOf(updated.getLockVersion()))
+                        .param("detail", "true")
+                        .with(user(f.owner())).with(csrf()))
+                .andExpect(redirectedUrl(f.url() + "/tasks/" + task.getId()));
     }
 
     @Test

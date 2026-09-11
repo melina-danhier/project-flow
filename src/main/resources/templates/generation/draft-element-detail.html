@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head(${draftElement.type == 'TASK' ? 'Entwurfsaufgabe' : 'Entwurfsmeilenstein'})}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main th:attr="data-project-id=${draft.projectId},data-draft-status=${draft.status.name()}">
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects/{projectId}/draft/review(projectId=${draft.projectId})}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zum Entwurf
+            </a>
+            <div class="pf-cluster">
+                <h1 th:text="${draftElement.title}" style="margin: 0;">Entwurfselement</h1>
+                <span class="pf-badge" th:classappend="${draftElement.type == 'TASK' ? 'pf-badge--blue' : 'pf-badge--purple'}"
+                      th:text="${draftElement.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span>
+                <span class="pf-badge pf-badge--outline" th:text="${draftElement.originLabel}"></span>
+                <span class="pf-badge"
+                      th:classappend="${draftElement.reviewStatus.name() == 'ACCEPTED' ? 'pf-badge--green' : (draftElement.reviewStatus.name() == 'REJECTED' ? 'pf-badge--red' : 'pf-badge--yellow')}"
+                      th:text="${draftElement.reviewStatus.name() == 'PENDING' ? 'Offen' : (draftElement.reviewStatus.name() == 'ACCEPTED' ? 'Übernommen' : 'Verworfen')}"></span>
+            </div>
+        </div>
+        <div class="pf-page-header__actions" th:if="${draft.status.name() != 'APPLIED'}">
+            <a th:if="${draftElement.type == 'TASK'}" class="pf-btn pf-btn--secondary"
+               th:href="@{/projects/{projectId}/draft/tasks/{taskId}/edit(projectId=${draft.projectId},taskId=${draftElement.id})}">Aufgabe bearbeiten</a>
+            <a th:if="${draftElement.type == 'MILESTONE'}" class="pf-btn pf-btn--secondary"
+               th:href="@{/projects/{projectId}/draft/milestones/{milestoneId}/edit(projectId=${draft.projectId},milestoneId=${draftElement.id})}">Meilenstein bearbeiten</a>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/flash-messages :: all}" />
+
+    <div class="pf-grid pf-grid--2" style="align-items: start;">
+        <section class="pf-card">
+            <h2 style="margin-bottom: 1rem;">Details</h2>
+            <div style="display: grid; gap: 0.85rem;">
+                <div>
+                    <span class="pf-detail-label">Beschreibung</span>
+                    <p style="margin: 0.25rem 0 0; white-space: pre-line;" th:text="${draftElement.description ?: 'Keine Beschreibung vorhanden.'}"></p>
+                </div>
+                <div class="pf-detail-grid">
+                    <div><span class="pf-detail-label">Phase</span><div th:text="${sectionTitle}"></div></div>
+                    <div th:if="${draftElement.type == 'TASK'}"><span class="pf-detail-label">Priorität</span><div th:text="${draftElement.priority != null ? (draftElement.priority.name() == 'LOW' ? 'Niedrig' : (draftElement.priority.name() == 'HIGH' ? 'Hoch' : 'Mittel')) : 'Nicht festgelegt'}"></div></div>
+                </div>
+                <div class="pf-detail-grid">
+                    <div th:if="${draftElement.type == 'TASK'}"><span class="pf-detail-label">Startdatum</span><div th:text="${draftElement.startDate != null ? #temporals.format(draftElement.startDate, 'dd.MM.yyyy') : 'Nicht festgelegt'}"></div></div>
+                    <div><span class="pf-detail-label" th:text="${draftElement.type == 'TASK' ? 'Fälligkeitsdatum' : 'Zieldatum'}"></span><div th:text="${draftElement.dueDate != null ? #temporals.format(draftElement.dueDate, 'dd.MM.yyyy') : 'Nicht festgelegt'}"></div></div>
+                </div>
+                <div th:if="${draftElement.type == 'TASK'}" class="pf-detail-row">
+                    <span class="pf-detail-label">Aufwand</span>
+                    <div th:text="${draftElement.estimatedHours != null ? draftElement.estimatedHours + ' Stunden' : 'Nicht festgelegt'}"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="pf-stack">
+            <section class="pf-card" th:if="${draft.status.name() != 'APPLIED'}">
+                <h2 style="margin-bottom: 0.5rem;">Vorschlag prüfen</h2>
+                <p class="pf-text-muted">Entscheide, ob dieses Element in den Projektplan übernommen werden soll.</p>
+                <div class="review-actions pf-cluster">
+                    <form th:if="${draftElement.reviewStatus.name() != 'ACCEPTED'}" th:action="@{/projects/{projectId}/draft/elements/{elementId}/accept(projectId=${draft.projectId},elementId=${draftElement.id})}" method="post">
+                        <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}"><input type="hidden" name="detail" value="true">
+                        <button type="submit" class="pf-btn pf-btn--primary">Übernehmen</button>
+                    </form>
+                    <form th:if="${draftElement.reviewStatus.name() != 'REJECTED'}" th:action="@{/projects/{projectId}/draft/elements/{elementId}/reject(projectId=${draft.projectId},elementId=${draftElement.id})}" method="post">
+                        <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}"><input type="hidden" name="detail" value="true">
+                        <button type="submit" class="pf-btn pf-btn--danger">Verwerfen</button>
+                    </form>
+                    <form th:if="${draftElement.reviewStatus.name() != 'PENDING'}" th:action="@{/projects/{projectId}/draft/elements/{elementId}/reset(projectId=${draft.projectId},elementId=${draftElement.id})}" method="post">
+                        <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}"><input type="hidden" name="detail" value="true">
+                        <button type="submit" class="pf-btn pf-btn--secondary">Auf offen setzen</button>
+                    </form>
+                </div>
+            </section>
+
+        </div>
+    </div>
+</main>
+
+<script th:src="@{/js/plan-views.js}"></script>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

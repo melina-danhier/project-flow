@@ -7,6 +7,7 @@ import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.model.StructureMode;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.model.TaskProgressDisplay;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import lombok.Getter;
@@ -36,5 +37,10 @@ public class ProjectDetailsDto implements ProjectClassification, ProjectCollabor
 
     private CreationType creationType;
     private ProjectLocation location;
+    private TaskProgressDisplay taskProgressDisplay = TaskProgressDisplay.CHECKBOX;
     private long lockVersion;
+
+    public TaskProgressDisplay getTaskProgressDisplay() {
+        return taskProgressDisplay == null ? TaskProgressDisplay.CHECKBOX : taskProgressDisplay;
+    }
 }

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head(${draftElement.type == 'TASK' ? 'Entwurfsaufgabe bearbeiten' : 'Entwurfsmeilenstein bearbeiten'})}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main th:attr="data-project-id=${draft.projectId},data-draft-status=${draft.status.name()}">
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:if="${draftElement.type == 'TASK'}" th:href="@{/projects/{projectId}/draft/tasks/{taskId}(projectId=${draft.projectId},taskId=${draftElement.id})}" class="pf-page-header__back">← Abbrechen</a>
+            <a th:if="${draftElement.type == 'MILESTONE'}" th:href="@{/projects/{projectId}/draft/milestones/{milestoneId}(projectId=${draft.projectId},milestoneId=${draftElement.id})}" class="pf-page-header__back">← Abbrechen</a>
+            <h1 th:text="${draftElement.type == 'TASK' ? 'Aufgabe bearbeiten' : 'Meilenstein bearbeiten'}" style="margin: 0;"></h1>
+        </div>
+    </div>
+
+    <div class="pf-alert pf-alert--info">
+        Du bearbeitest einen noch nicht übernommenen Entwurf. Die Herkunftskennzeichnung bleibt erhalten.
+    </div>
+
+    <div class="pf-card" style="max-width: 760px;">
+        <form th:if="${draftElement.type == 'TASK'}" th:object="${taskForm}"
+              th:action="@{/projects/{projectId}/draft/tasks/{taskId}/detail(projectId=${draft.projectId},taskId=${draftElement.id})}" method="post">
+            <input type="hidden" th:field="*{lockVersion}">
+            <input type="hidden" th:field="*{sectionSelectionPresent}">
+            <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error">Die Aufgabe konnte wegen eines veralteten Bearbeitungsstands nicht gespeichert werden.</div>
+            <th:block th:replace="~{fragments/form-fields :: title-field('Aufgabentitel')}" />
+            <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung', false)}" />
+            <div class="pf-form-group"><label for="draftTaskSection" class="pf-label">Phase</label><select id="draftTaskSection" th:field="*{draftSectionId}" class="pf-select"><option value="">Ohne Phase</option><option th:each="section : ${draft.sections}" th:value="${section.id}" th:text="${section.title}"></option></select></div>
+            <div class="pf-detail-grid">
+                <div class="pf-form-group"><label for="priority" class="pf-label">Priorität</label><select id="priority" th:field="*{priority}" class="pf-select"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option></select><div th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" class="pf-alert pf-alert--error"></div></div>
+                <div class="pf-form-group"><label for="estimatedHours" class="pf-label">Aufwand in Stunden</label><input id="estimatedHours" type="number" min="1" max="10000" th:field="*{estimatedHours}" class="pf-input"><div th:if="${#fields.hasErrors('estimatedHours')}" th:errors="*{estimatedHours}" class="pf-alert pf-alert--error"></div></div>
+                <div class="pf-form-group"><label for="startDate" class="pf-label">Startdatum</label><input id="startDate" type="date" th:field="*{startDate}" class="pf-input"><div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error"></div></div>
+                <div class="pf-form-group"><label for="dueDate" class="pf-label">Fälligkeitsdatum</label><input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input"><div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error"></div></div>
+            </div>
+            <div th:if="${#fields.hasErrors('dateRangeValid')}" th:errors="*{dateRangeValid}" class="pf-alert pf-alert--error"></div>
+            <div th:each="error : ${#fields.globalErrors()}" th:text="${error}" class="pf-alert pf-alert--error"></div>
+            <div class="pf-form-actions">
+                <a th:href="@{/projects/{projectId}/draft/tasks/{taskId}(projectId=${draft.projectId},taskId=${draftElement.id})}" class="pf-btn pf-btn--secondary">Abbrechen</a>
+                <button type="submit" class="pf-btn pf-btn--primary">Aufgabe speichern</button>
+            </div>
+        </form>
+
+        <form th:if="${draftElement.type == 'MILESTONE'}" th:object="${milestoneForm}"
+              th:action="@{/projects/{projectId}/draft/milestones/{milestoneId}/detail(projectId=${draft.projectId},milestoneId=${draftElement.id})}" method="post">
+            <input type="hidden" th:field="*{lockVersion}">
+            <input type="hidden" th:field="*{sectionSelectionPresent}">
+            <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error">Der Meilenstein konnte wegen eines veralteten Bearbeitungsstands nicht gespeichert werden.</div>
+            <th:block th:replace="~{fragments/form-fields :: title-field('Titel des Meilensteins')}" />
+            <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung des Meilensteins', false)}" />
+            <div class="pf-form-group"><label for="draftMilestoneSection" class="pf-label">Phase</label><select id="draftMilestoneSection" th:field="*{draftSectionId}" class="pf-select"><option value="">Ohne Phase</option><option th:each="section : ${draft.sections}" th:value="${section.id}" th:text="${section.title}"></option></select></div>
+            <div class="pf-form-group"><label for="dueDate" class="pf-label">Zieldatum</label><input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input"><div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error"></div></div>
+            <div th:each="error : ${#fields.globalErrors()}" th:text="${error}" class="pf-alert pf-alert--error"></div>
+            <div class="pf-form-actions">
+                <a th:href="@{/projects/{projectId}/draft/milestones/{milestoneId}(projectId=${draft.projectId},milestoneId=${draftElement.id})}" class="pf-btn pf-btn--secondary">Abbrechen</a>
+                <button type="submit" class="pf-btn pf-btn--primary">Meilenstein speichern</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script th:src="@{/js/plan-views.js}"></script>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>
