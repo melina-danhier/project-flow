@@ -18,6 +18,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class StudyTrackingService {
     public static final String SESSION_ATTRIBUTE = "studySessionId";
+    public static final String PHASE_ATTRIBUTE = "studyPhase";
+    public static final String PHASE_TASK_1 = "TASK_1";
+    public static final String PHASE_TASK_2 = "TASK_2";
     private static final String TRACKED_GENERATIONS_ATTRIBUTE = "studyTrackedGenerationWorkflows";
     private final StudySessionRepository sessionRepository;
     private final StudyEventRepository eventRepository;
@@ -60,6 +63,7 @@ public class StudyTrackingService {
         active.filter(session -> session.getCompletedAt() == null)
                 .ifPresent(session -> session.setCompletedAt(Instant.now(clock)));
         httpSession.removeAttribute(SESSION_ATTRIBUTE);
+        httpSession.removeAttribute(PHASE_ATTRIBUTE);
         httpSession.removeAttribute(TRACKED_GENERATIONS_ATTRIBUTE);
         return active.isPresent();
     }
@@ -67,6 +71,26 @@ public class StudyTrackingService {
     private Optional<StudySession> active(HttpSession session) {
         Object value = session.getAttribute(SESSION_ATTRIBUTE);
         return value instanceof UUID id ? sessionRepository.findById(id) : Optional.empty();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<String> activeParticipantId(HttpSession httpSession) {
+        return active(httpSession)
+                .filter(session -> session.getCompletedAt() == null)
+                .map(StudySession::getParticipantId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<UUID> activeProjectId(HttpSession httpSession) {
+        return active(httpSession)
+                .filter(session -> session.getCompletedAt() == null)
+                .map(StudySession::getProjectId);
+    }
+
+    public boolean isActive(HttpSession httpSession) {
+        return active(httpSession)
+                .filter(session -> session.getCompletedAt() == null)
+                .isPresent();
     }
 
     private void record(StudySession session, StudyEventType type) {

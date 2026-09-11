@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.draft.controller;
 
+import de.melinadanhier.projectflow.common.model.MutableEntity;
 import de.melinadanhier.projectflow.draft.dto.application.DraftApplyResult;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationPersistenceException;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
@@ -43,7 +44,7 @@ public class DraftApplicationController {
                         RedirectAttributes redirectAttributes,
                         Model model, HttpSession session) {
         UUID draftId = draftRepository.findByProjectId(projectId)
-                .map(draft -> draft.getId()).orElse(projectId);
+                .map(MutableEntity::getId).orElse(projectId);
         DraftApplyResult result = executeApplication(
                 () -> draftApplicationService.apply(projectId, currentUser.userId()));
         return switch (result.status()) {

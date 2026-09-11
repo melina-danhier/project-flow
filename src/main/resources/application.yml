@@ -38,3 +38,6 @@ projectflow:
       generation-model: ${GEMINI_GENERATION_MODEL:gemini-2.5-flash}
       timeout: ${GEMINI_TIMEOUT:60s}
       max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:16384}
+
+  study:
+    questionnaire-url: ${PROJECTFLOW_STUDY_QUESTIONNAIRE_URL}
