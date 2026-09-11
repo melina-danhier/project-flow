@@ -44,10 +44,11 @@ public class DraftReviewController {
     @PostMapping("/projects/{projectId}/draft/elements/{elementId}/accept")
     public String acceptElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
                                 @RequestParam long lockVersion,
+                                @RequestParam(defaultValue = "false") boolean detail,
                                 @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         draftReviewService.acceptElement(projectId, elementId, currentUser.userId(), lockVersion);
         studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_ACCEPTED);
-        return reviewRedirect(projectId);
+        return elementRedirect(projectId, elementId, detail, currentUser.userId());
     }
 
     @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/accept")
@@ -62,18 +63,20 @@ public class DraftReviewController {
     @PostMapping("/projects/{projectId}/draft/elements/{elementId}/reject")
     public String rejectElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
                                 @RequestParam long lockVersion,
+                                @RequestParam(defaultValue = "false") boolean detail,
                                 @AuthenticationPrincipal AuthenticatedUser currentUser, HttpSession session) {
         draftReviewService.rejectElement(projectId, elementId, currentUser.userId(), lockVersion);
         studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_REJECTED);
-        return reviewRedirect(projectId);
+        return elementRedirect(projectId, elementId, detail, currentUser.userId());
     }
 
     @PostMapping("/projects/{projectId}/draft/elements/{elementId}/reset")
     public String resetElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
                                @RequestParam long lockVersion,
+                               @RequestParam(defaultValue = "false") boolean detail,
                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
         draftReviewService.resetElement(projectId, elementId, currentUser.userId(), lockVersion);
-        return reviewRedirect(projectId);
+        return elementRedirect(projectId, elementId, detail, currentUser.userId());
     }
 
     @PostMapping("/projects/{projectId}/draft/sections/{sectionId}/reject")
@@ -95,5 +98,15 @@ public class DraftReviewController {
 
     private String reviewRedirect(UUID projectId) {
         return "redirect:/projects/" + projectId + "/draft/review";
+    }
+
+    private String elementRedirect(UUID projectId, UUID elementId, boolean detail, UUID userId) {
+        if (!detail) return reviewRedirect(projectId);
+        var element = draftReviewService.review(projectId, userId)
+                .getElements().stream().filter(candidate -> candidate.getId().equals(elementId)).findFirst()
+                .orElseThrow(() -> new de.melinadanhier.projectflow.common.exception.ResourceNotFoundException(
+                        "Entwurfselement nicht gefunden."));
+        String path = element.getType().equals("TASK") ? "tasks" : "milestones";
+        return "redirect:/projects/" + projectId + "/draft/" + path + "/" + elementId;
     }
 }

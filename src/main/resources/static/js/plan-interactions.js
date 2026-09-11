@@ -124,7 +124,7 @@
     document.addEventListener('submit', event => {
         const form = event.target;
         const main = form.closest('main[data-project-id]');
-        if (!main || form.method.toLowerCase() !== 'post') return;
+        if (!main || form.method.toLowerCase() !== 'post' || form.hasAttribute('data-native-submit')) return;
 
         event.preventDefault();
         const body = event.submitter

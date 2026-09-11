@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_ESTIMATED_HOURS;
 
@@ -14,6 +15,8 @@ public class DraftTaskForm {
     @NotNull @PositiveOrZero private Long lockVersion;
     @NotBlank @Size(max = 100) private String title;
     @Size(max = 2000) private String description;
+    private UUID draftSectionId;
+    private boolean sectionSelectionPresent;
     private LocalDate startDate;
     private LocalDate dueDate;
     @Positive @Max(MAX_ESTIMATED_HOURS)

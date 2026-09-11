@@ -185,6 +185,9 @@ public class DraftReviewService {
                 || !Objects.equals(task.getStartDate(), form.getStartDate())
                 || !Objects.equals(task.getDueDate(), form.getDueDate())
                 || !Objects.equals(task.getEstimatedHours(), form.getEstimatedHours())
+                || (form.isSectionSelectionPresent()
+                        && !Objects.equals(task.getDraftSection() == null ? null : task.getDraftSection().getId(),
+                        form.getDraftSectionId()))
                 || task.getPriority() != form.getPriority();
         task.setTitle(title);
         task.setDescription(description);
@@ -192,6 +195,7 @@ public class DraftReviewService {
         task.setDueDate(form.getDueDate());
         task.setEstimatedHours(form.getEstimatedHours());
         task.setPriority(form.getPriority());
+        if (form.isSectionSelectionPresent()) moveToSection(draft, task, form.getDraftSectionId());
         if (changed) task.markContentModified();
         validationService.validate(draft);
         // The assumption is immutable in the review form, including forged request parameters.
@@ -203,12 +207,32 @@ public class DraftReviewService {
         DraftPlan draft = editable(projectId, userId, form.getLockVersion());
         DraftMilestone milestone = milestone(draft, milestoneId);
         String title = form.getTitle().strip();
+        String description = form.getDescription() == null || form.getDescription().isBlank()
+                ? null : form.getDescription().strip();
         boolean changed = !Objects.equals(milestone.getTitle(), title)
+                || !Objects.equals(milestone.getDescription(), description)
+                || (form.isSectionSelectionPresent()
+                        && !Objects.equals(milestone.getDraftSection() == null ? null : milestone.getDraftSection().getId(),
+                        form.getDraftSectionId()))
                 || !Objects.equals(milestone.getDueDate(), form.getDueDate());
         milestone.setTitle(title);
+        milestone.setDescription(description);
         milestone.setDueDate(form.getDueDate());
+        if (form.isSectionSelectionPresent()) moveToSection(draft, milestone, form.getDraftSectionId());
         if (changed) milestone.markContentModified();
         validationService.validate(draft);
+    }
+
+    private void moveToSection(DraftPlan draft, DraftPlanElement element, UUID targetSectionId) {
+        DraftSection current = element.getDraftSection();
+        DraftSection target = targetSectionId == null ? null : section(draft, targetSectionId);
+        if (Objects.equals(current == null ? null : current.getId(), targetSectionId)) return;
+        if (current != null) current.removeElement(element);
+        if (target != null) target.addElement(element);
+        List<DraftPlanElement> targetOrder = new ArrayList<>(manualOrder(draft, target));
+        targetOrder.remove(element);
+        PlanOrdering.place(targetOrder, element, targetOrder.size(),
+                DraftPlanElement::getSortOrder, DraftPlanElement::setSortOrder);
     }
 
     @Transactional
@@ -216,18 +240,11 @@ public class DraftReviewService {
         requireValid(form, "Die Zielposition ist ungültig.");
         DraftPlan draft = editable(projectId, userId, form.getLockVersion());
         DraftPlanElement element = element(draft, elementId);
-        String actualDate = date(element) == null ? "" : date(element).toString();
-        if (!Objects.equals(actualDate, form.getTargetDate())) {
-            throw new DomainValidationException(
-                    "Bei aktiver Datumssortierung kann nur innerhalb derselben Datumsgruppe verschoben werden.");
-        }
         DraftSection source = element.getDraftSection();
         DraftSection target = form.getTargetSectionId() == null ? null : section(draft, form.getTargetSectionId());
         boolean sameSection = Objects.equals(source == null ? null : source.getId(),
                 target == null ? null : target.getId());
-        List<DraftPlanElement> targetGroup = manualOrder(draft, target).stream()
-                .filter(candidate -> Objects.equals(date(candidate), date(element)))
-                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        List<DraftPlanElement> targetGroup = new ArrayList<>(manualOrder(draft, target));
         targetGroup.remove(element);
         PlanOrdering.place(targetGroup, element, form.getTargetPosition(),
                 DraftPlanElement::getSortOrder, DraftPlanElement::setSortOrder);
@@ -235,6 +252,23 @@ public class DraftReviewService {
             if (source != null) source.removeElement(element);
             if (target != null) target.addElement(element);
         }
+    }
+
+    @Transactional
+    public void updateElementDate(UUID projectId, UUID elementId, UUID userId,
+                                  LocalDate targetDate, long lockVersion) {
+        DraftPlan draft = editable(projectId, userId, lockVersion);
+        DraftPlanElement element = element(draft, elementId);
+        if (element instanceof DraftTask task) {
+            if (task.getStartDate() != null && targetDate.isBefore(task.getStartDate())) {
+                throw new DomainValidationException("Das Fälligkeitsdatum darf nicht vor dem Startdatum liegen.");
+            }
+            task.setDueDate(targetDate);
+        } else if (element instanceof DraftMilestone milestone) {
+            milestone.setDueDate(targetDate);
+        }
+        element.markContentModified();
+        validationService.validate(draft);
     }
 
     @Transactional

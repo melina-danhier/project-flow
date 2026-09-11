@@ -495,7 +495,7 @@ class ProjectCrudIntegrationTest {
     }
 
     @Test
-    void dateModeMovesOnlyWithinSameDateGroupUsingSparseOrder() {
+    void dateModeAcceptsStructuralMovesAndKeepsTheElementDate() {
         User owner = saveUser("date-move-owner@example.org");
         Project project = saveProject("Verschieben", owner);
         LocalDate date = LocalDate.of(2027, 2, 1);
@@ -519,9 +519,8 @@ class ProjectCrudIntegrationTest {
         crossDate.setProjectLockVersion(project.getLockVersion());
         crossDate.setTargetDate("2027-03-01");
         crossDate.setTargetPosition(0);
-        assertThatThrownBy(() -> orderingService.moveElement(
-                project.getId(), firstTask.getId(), owner.getId(), crossDate))
-                .isInstanceOf(DomainValidationException.class);
+        orderingService.moveElement(project.getId(), firstTask.getId(), owner.getId(), crossDate);
+        assertThat(taskRepository.findById(firstTask.getId()).orElseThrow().getDueDate()).isEqualTo(date);
     }
 
     @Test

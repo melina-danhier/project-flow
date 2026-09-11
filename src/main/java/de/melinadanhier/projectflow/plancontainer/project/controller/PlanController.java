@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.plancontainer.project.controller;
 
 import de.melinadanhier.projectflow.common.validation.UpdateValidation;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectService;
+import de.melinadanhier.projectflow.plancontainer.project.model.TaskProgressDisplay;
 import de.melinadanhier.projectflow.plancontainer.project.service.DraftProjectPlanAccessException;
 import de.melinadanhier.projectflow.planelement.dto.DeleteSectionForm;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementMoveForm;
@@ -23,9 +24,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
+import java.time.LocalDate;
 
 @Controller
 @RequiredArgsConstructor
@@ -116,6 +119,16 @@ public class PlanController {
         return planRedirect(projectId);
     }
 
+    @PostMapping("/projects/{projectId}/plan/task-progress-display")
+    public String updateTaskProgressDisplay(
+            @PathVariable UUID projectId,
+            @RequestParam TaskProgressDisplay display,
+            @RequestParam long projectLockVersion,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        projectService.updateTaskProgressDisplay(projectId, currentUser.userId(), display, projectLockVersion);
+        return planRedirect(projectId);
+    }
+
     @PostMapping("/projects/{projectId}/plan/elements/{elementId}/move")
     public String moveElement(@PathVariable UUID projectId, @PathVariable UUID elementId,
                               @Valid @ModelAttribute PlanElementMoveForm form,
@@ -123,6 +136,16 @@ public class PlanController {
                               @AuthenticationPrincipal AuthenticatedUser currentUser) {
         requireValid(bindingResult);
         orderingService.moveElement(projectId, elementId, currentUser.userId(), form);
+        return planRedirect(projectId);
+    }
+
+    @PostMapping("/projects/{projectId}/plan/elements/{elementId}/date")
+    public String updateElementDate(@PathVariable UUID projectId, @PathVariable UUID elementId,
+                                    @RequestParam LocalDate targetDate,
+                                    @RequestParam long projectLockVersion,
+                                    @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        orderingService.updateElementDate(projectId, elementId, currentUser.userId(), targetDate,
+                projectLockVersion);
         return planRedirect(projectId);
     }
 

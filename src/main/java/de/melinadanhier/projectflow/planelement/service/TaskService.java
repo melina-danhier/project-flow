@@ -155,6 +155,15 @@ public class TaskService {
     }
 
     @Transactional
+    public void setCompleted(UUID projectId, UUID taskId, boolean completed, long lockVersion, UUID userId) {
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
+        Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Aufgabe wurde nicht gefunden."));
+        requireCurrentVersion(task.getLockVersion(), lockVersion);
+        task.setStatus(completed ? TaskStatus.COMPLETED : TaskStatus.OPEN);
+    }
+
+    @Transactional
     public void deleteTask(UUID projectId, UUID taskId, UUID userId) {
         authorizationService.requireEditableMemberForUpdate(projectId, userId);
         Task task = taskRepository.findByIdAndPlanContainerId(taskId, projectId)

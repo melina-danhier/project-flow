@@ -3,7 +3,6 @@ package de.melinadanhier.projectflow.planelement.service;
 import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.plancontainer.model.SortMode;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.planelement.dto.PlanElementMoveForm;
@@ -21,10 +20,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -56,30 +54,36 @@ public class ProjectPlanOrderingService {
 
     @Transactional
     public void moveElement(UUID projectId, UUID elementId, UUID userId, PlanElementMoveForm form) {
-        Project project = editableProject(projectId, userId, form.getProjectLockVersion());
+        editableProject(projectId, userId, form.getProjectLockVersion());
         PlanElement moved = elementRepository.findByIdAndPlanContainerId(elementId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Planelement wurde nicht gefunden."));
         PlanSection target = form.getTargetSectionId() == null ? null
                 : sectionRepository.findByIdAndPlanContainerId(form.getTargetSectionId(), projectId)
                         .orElseThrow(() -> new ResourceNotFoundException("Projektbereich wurde nicht gefunden."));
 
-        LocalDate movedDate = date(moved);
-        if (project.getSortMode() == SortMode.DATE) {
-            String actualDate = movedDate == null ? "" : movedDate.toString();
-            if (!Objects.equals(actualDate, form.getTargetDate())) {
-                throw new DomainValidationException(
-                        "Bei aktiver Datumssortierung kann nur innerhalb derselben Datumsgruppe verschoben werden.");
-            }
-        }
-
         List<PlanElement> targetOrder = loadElements(projectId, target);
-        if (project.getSortMode() == SortMode.DATE) {
-            targetOrder.removeIf(candidate -> !Objects.equals(date(candidate), movedDate));
-        }
         targetOrder.remove(moved);
         moved.setPlanSection(target);
         PlanOrdering.place(targetOrder, moved, form.getTargetPosition(),
                 PlanElement::getSortOrder, PlanElement::setSortOrder);
+    }
+
+    @Transactional
+    public void updateElementDate(UUID projectId, UUID elementId, UUID userId,
+                                  LocalDate targetDate, long projectLockVersion) {
+        editableProject(projectId, userId, projectLockVersion);
+        PlanElement element = elementRepository.findByIdAndPlanContainerId(elementId, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Planelement wurde nicht gefunden."));
+        if (element instanceof Task task) {
+            if (task.getStartDate() != null && targetDate.isBefore(task.getStartDate())) {
+                throw new DomainValidationException("Das Fälligkeitsdatum darf nicht vor dem Startdatum liegen.");
+            }
+            task.setDueDate(targetDate);
+            task.setRelativeDueDay(null);
+        } else if (element instanceof Milestone milestone) {
+            milestone.setDueDate(targetDate);
+            milestone.setRelativeDueDay(null);
+        }
     }
 
     private Project editableProject(UUID projectId, UUID userId, Long submittedVersion) {
@@ -98,9 +102,4 @@ public class ProjectPlanOrderingService {
                         projectId, section.getId()));
     }
 
-    private LocalDate date(PlanElement element) {
-        if (element instanceof Task task) return task.getDueDate();
-        if (element instanceof Milestone milestone) return milestone.getDueDate();
-        return null;
-    }
 }

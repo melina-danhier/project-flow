@@ -32,10 +32,11 @@ const initializePlanOrdering = () => {
 
     // 1. Draggable items setup (Sections and Elements)
     document.querySelectorAll('[draggable="true"]').forEach(item => {
+        const isSection = item.classList.contains('plan-section');
+        const handle = item.querySelector(isSection ? '.section-drag-handle' : '.element-drag-handle');
+        handle?.addEventListener('pointerdown', () => item.dataset.dragArmed = 'true');
         item.addEventListener('dragstart', event => {
-            const isSection = item.classList.contains('plan-section');
-            const requiredHandle = isSection ? '.section-drag-handle' : '.element-drag-handle';
-            if (!event.target.closest(requiredHandle)) {
+            if (item.dataset.dragArmed !== 'true') {
                 event.preventDefault();
                 return;
             }
@@ -47,27 +48,21 @@ const initializePlanOrdering = () => {
         });
 
         item.addEventListener('dragend', () => {
+            delete item.dataset.dragArmed;
             item.classList.remove('is-dragging');
             document.querySelectorAll('.drop-target').forEach(target => target.classList.remove('drop-target'));
             dragged = null;
         });
     });
 
+    main.addEventListener('pointerup', () => {
+        main.querySelectorAll('[data-drag-armed]').forEach(item => delete item.dataset.dragArmed);
+    });
+
     // 2. Elements drop zones (.plan-elements)
     document.querySelectorAll('.plan-elements').forEach(list => {
         list.addEventListener('dragover', event => {
             if (!dragged?.classList.contains('plan-element')) return;
-            const sortMode = main.dataset.sortMode;
-            const targetElement = event.target.closest('.plan-element');
-            const draggedDate = dragged.dataset.date || '';
-
-            if (sortMode === 'DATE') {
-                // In DATE mode: elements can only move within the same date group
-                if (targetElement && (targetElement.dataset.date || '') !== draggedDate) {
-                    return;
-                }
-            }
-
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
             list.classList.add('drop-target');
@@ -82,25 +77,8 @@ const initializePlanOrdering = () => {
             list.classList.remove('drop-target');
             if (!dragged?.classList.contains('plan-element')) return;
 
-            const sortMode = main.dataset.sortMode;
-            const targetElement = event.target.closest('.plan-element');
             const draggedDate = dragged.dataset.date || '';
-
-            if (sortMode === 'DATE') {
-                if (targetElement && (targetElement.dataset.date || '') !== draggedDate) {
-                    dragged.classList.add('pf-shake');
-                    setTimeout(() => dragged?.classList.remove('pf-shake'), 500);
-                    return;
-                }
-            }
-
-            let siblings;
-            if (sortMode === 'DATE') {
-                siblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')]
-                    .filter(item => (item.dataset.date || '') === draggedDate);
-            } else {
-                siblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')];
-            }
+            const siblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')];
 
             const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
             const position = before ? siblings.indexOf(before) : siblings.length;
@@ -147,16 +125,8 @@ const initializePlanOrdering = () => {
             const list = elementItem.closest('.plan-elements');
             if (!list) return;
 
-            const sortMode = main.dataset.sortMode;
             const elementDate = elementItem.dataset.date || '';
-
-            let siblings;
-            if (sortMode === 'DATE') {
-                siblings = [...list.querySelectorAll('.plan-element')]
-                    .filter(item => (item.dataset.date || '') === elementDate);
-            } else {
-                siblings = [...list.querySelectorAll('.plan-element')];
-            }
+            const siblings = [...list.querySelectorAll('.plan-element')];
 
             const currentIndex = siblings.indexOf(elementItem);
             if (currentIndex === -1) return;

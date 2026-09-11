@@ -2128,6 +2128,40 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     background: var(--pf-surface);
 }
 
+.pf-compact-drag-handle,
+.pf-compact-phase-drag-handle {
+    border: 0;
+    background: transparent;
+    color: var(--pf-text-muted);
+    cursor: grab;
+    padding: 0.2rem 0.35rem;
+    flex: 0 0 auto;
+}
+
+.pf-compact-drag-handle:active,
+.pf-compact-phase-drag-handle:active {
+    cursor: grabbing;
+}
+
+.pf-plan-compact-element.is-dragging,
+.pf-phase-card.is-dragging,
+.pf-board-column.is-dragging,
+.pf-calendar__task.is-dragging {
+    opacity: 0.45;
+}
+
+.pf-plan-compact-list.drop-target,
+.pf-phase-card-grid.drop-target,
+.pf-board.drop-target,
+.pf-calendar__day.drop-target {
+    outline: 2px dashed var(--pf-primary);
+    outline-offset: -2px;
+}
+
+.pf-calendar__task[draggable="true"] {
+    cursor: grab;
+}
+
 .pf-plan-compact-element + .pf-plan-compact-element {
     margin-top: 0.6rem;
 }
@@ -2135,6 +2169,19 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
 .pf-plan-compact-element__icon {
     flex: 0 0 auto;
     color: var(--pf-primary);
+}
+
+.pf-task-completion-form {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.pf-task-completion-form input[type="checkbox"],
+.pf-plan-compact-element > input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0.1rem 0 0;
+    cursor: pointer;
 }
 
 .pf-plan-compact-element a {
@@ -2155,6 +2202,54 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     display: block;
     margin-top: 0.25rem;
     color: var(--pf-text-muted);
+}
+
+.pf-plan-target-highlight {
+    outline: 3px solid var(--pf-primary-border);
+    outline-offset: 3px;
+    transition: outline-color 0.3s ease;
+}
+
+.pf-detail-label {
+    display: block;
+    color: var(--pf-text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.pf-detail-label + div {
+    margin-top: 0.2rem;
+    font-weight: 600;
+}
+
+.pf-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--pf-border);
+}
+
+.pf-detail-row {
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--pf-border);
+}
+
+.pf-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--pf-border);
+}
+
+@media (max-width: 620px) {
+    .pf-detail-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .pf-plan-view-empty {
@@ -2248,6 +2343,29 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     text-overflow: ellipsis;
     text-decoration: none;
     white-space: nowrap;
+}
+
+.pf-calendar__undated {
+    margin-top: 1.25rem;
+    padding: 1rem;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg);
+    background: var(--pf-surface-subtle);
+}
+
+.pf-calendar__undated h4 {
+    margin: 0 0 0.5rem;
+}
+
+.pf-calendar__undated .pf-plan-compact-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0.6rem;
+    padding: 0;
+}
+
+.pf-calendar__undated .pf-plan-compact-element + .pf-plan-compact-element {
+    margin-top: 0;
 }
 
 @media (max-width: 900px) {

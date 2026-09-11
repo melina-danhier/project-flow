@@ -811,6 +811,9 @@ class SeparatedPlanUiIntegrationTest {
     void planOverviewShowsCollapsiblePhasesCombinedElementsAndUnderstandableMetadata() throws Exception {
         User owner = saveUser("plan-overview-owner@example.org");
         Project project = saveProject("Vollständige Planansicht", owner);
+        project.setTaskProgressDisplay(
+                de.melinadanhier.projectflow.plancontainer.project.model.TaskProgressDisplay.STATUS);
+        projectRepository.saveAndFlush(project);
         SectionDto phase = createSection(project, owner, "Vorbereitung");
         Task task = createTask(project, owner, phase.getId(), "Unterlagen sammeln");
         task.setDueDate(LocalDate.of(2027, 1, 12));
@@ -841,6 +844,8 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(content().string(containsString("data-plan-view=\"board\"")))
                 .andExpect(content().string(containsString("data-plan-view=\"calendar\"")))
                 .andExpect(content().string(containsString("id=\"plan-alternative-view\"")))
+                .andExpect(content().string(containsString("data-section-title=\"Vorbereitung\"")))
+                .andExpect(content().string(containsString("data-element-title=\"Unterlagen sammeln\"")))
                 .andExpect(content().string(containsString("/js/plan-interactions.js")))
                 .andExpect(content().string(containsString("/js/plan-ordering.js")))
                 .andExpect(content().string(containsString("/js/plan-views.js")))
@@ -848,6 +853,39 @@ class SeparatedPlanUiIntegrationTest {
 
         assertThat(html.indexOf("Freigabe")).isLessThan(html.indexOf("Unterlagen sammeln"));
         assertThat(html).doesNotContain("class=\"pf-plan-section plan-phase plan-section\" open");
+    }
+
+    @Test
+    void taskProgressCanBeDisplayedAsWorkingCheckboxesOrStatusValuesPerProject() throws Exception {
+        User owner = saveUser("progress-display-owner@example.org");
+        Project project = saveProject("Fortschrittsanzeige", owner);
+        Task task = createTask(project, owner, null, "Abhakbare Aufgabe");
+        MockHttpSession session = login(owner.getEmail());
+
+        mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-progress-display=\"CHECKBOX\"")))
+                .andExpect(content().string(containsString("pf-task-completion-form")));
+
+        mockMvc.perform(post("/projects/{projectId}/tasks/{taskId}/completion", project.getId(), task.getId())
+                        .session(session).with(csrf())
+                        .param("completed", "true")
+                        .param("taskLockVersion", String.valueOf(task.getLockVersion())))
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/plan"));
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getStatus()).isEqualTo(TaskStatus.COMPLETED);
+
+        project = projectRepository.findById(project.getId()).orElseThrow();
+        mockMvc.perform(post("/projects/{projectId}/plan/task-progress-display", project.getId())
+                        .session(session).with(csrf())
+                        .param("display", "STATUS")
+                        .param("projectLockVersion", String.valueOf(project.getLockVersion())))
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/plan"));
+
+        mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-progress-display=\"STATUS\"")))
+                .andExpect(content().string(not(containsString("pf-task-completion-form"))))
+                .andExpect(content().string(containsString("Erledigt")));
     }
 
     @Test
