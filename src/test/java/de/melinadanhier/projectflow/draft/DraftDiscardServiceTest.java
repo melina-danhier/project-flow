@@ -42,7 +42,7 @@ class DraftDiscardServiceTest {
         when(drafts.findForUpdateByProjectId(projectId)).thenReturn(Optional.of(draft));
 
         assertThat(service.discard(projectId, draftId, userId, draft.getLockVersion())).isEqualTo(draftId);
-        assertThat(project.getLocation()).isEqualTo(ProjectLocation.TRASH);
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.DRAFT);
         verify(authorization).requireOwner(projectId, userId);
     }
 }

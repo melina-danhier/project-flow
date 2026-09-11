@@ -65,8 +65,8 @@ class AiOutputParserTest {
     void errorsSuppressSimultaneousNonBlockingProblems() {
         var result = parsePreCheck("""
                 {"problems":[
-                  {"severity":"WARNING","type":"RISK","message":"Knapp.","suggestedUserAction":"Mehr Zeit einplanen.","reviewQuestion":"Welche Priorisierung soll gelten?","acceptedInterpretation":"Im Zeitraum priorisieren."},
-                  {"severity":"ERROR","type":"CONFLICT","message":"Ziel widerspricht der Frist.","suggestedUserAction":"Ziel reduzieren.","reviewQuestion":"","acceptedInterpretation":""}
+                  {"severity":"WARNING","type":"RISK","message":"Knapp.","suggestedUserAction":"Mehr Zeit einplanen.","acceptedInterpretation":"Im Zeitraum priorisieren."},
+                  {"severity":"ERROR","type":"CONFLICT","message":"Ziel widerspricht der Frist.","suggestedUserAction":"Ziel reduzieren.","acceptedInterpretation":""}
                 ]}
                 """);
 
@@ -101,7 +101,7 @@ class AiOutputParserTest {
     @Test
     void preCheckBeanValidationIsSeparateFromParsing() {
         var incomplete = parsePreCheck("""
-                {"problems":[{"severity":"ERROR","type":"CONFLICT","message":"Fehler","suggestedUserAction":"","reviewQuestion":"","acceptedInterpretation":""}]}
+                {"problems":[{"severity":"ERROR","type":"CONFLICT","message":"Fehler","suggestedUserAction":"","acceptedInterpretation":""}]}
                 """);
 
         assertThatThrownBy(() -> preCheckValidator.validate(incomplete))
@@ -270,7 +270,7 @@ class AiOutputParserTest {
     private String problemJson(String severity, String message) {
         return """
                 {"problems":[{
-                  "severity":"%s","type":"RISK","message":"%s","suggestedUserAction":"Plane mehr Zeit ein.","reviewQuestion":"Welche Priorisierung soll gelten?","acceptedInterpretation":"Im Zeitraum priorisieren."
+                  "severity":"%s","type":"RISK","message":"%s","suggestedUserAction":"Plane mehr Zeit ein.","acceptedInterpretation":"Im Zeitraum priorisieren."
                 }]}
                 """.formatted(severity, message);
     }

@@ -167,7 +167,22 @@ class AiGenerationWorkflowServiceTest {
         when(workflowRepository.findByProjectId(projectId)).thenReturn(Optional.of(workflow));
         when(workflowRepository.findByIdForUpdate(workflowId)).thenReturn(Optional.of(workflow));
 
-        service().regenerateDraft(projectId, draftId, userId, draft.getLockVersion());
+        var snapshot = new de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot(
+                "Projekt", null, null, null,
+                de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.INDIVIDUAL,
+                de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory.OTHER,
+                null, null, null, null, null, null, null, java.util.Map.of());
+        when(payloadCodec.readSnapshot("{}")).thenReturn(snapshot);
+        when(payloadCodec.writeSnapshot(any())).thenReturn("{\"updated\":true}");
+
+        service().regenerateDraft(projectId, draftId, userId, draft.getLockVersion(),
+                "Der bisherige Plan war zu detailliert.");
+
+        var snapshotCaptor = org.mockito.ArgumentCaptor.forClass(
+                de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot.class);
+        verify(payloadCodec).writeSnapshot(snapshotCaptor.capture());
+        assertThat(snapshotCaptor.getValue().projectSpecificAnswers())
+                .containsEntry("draftRegenerationFeedback", "Der bisherige Plan war zu detailliert.");
 
         var order = inOrder(projectRepository, draftRepository, workflowRepository);
         order.verify(projectRepository).findForUpdate(projectId);

@@ -54,9 +54,14 @@
                 <button id="assumption-submit" type="submit" class="pf-btn pf-btn--primary pf-btn--lg" disabled>
                     Entwurf anzeigen →
                 </button>
-                <a th:href="@{/projects/drafts}" class="pf-btn pf-btn--secondary">Abbrechen und zu den Entwürfen</a>
+                <button type="submit" form="cancel-ai-creation" class="pf-btn pf-btn--secondary">Abbrechen</button>
             </div>
         </form>
+        <form id="cancel-ai-creation"
+              th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${review.workflowId})}"
+              method="post"
+              onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');"
+              style="display: none;"></form>
     </div>
 
     <script th:src="@{/js/assumption-review.js}" defer></script>

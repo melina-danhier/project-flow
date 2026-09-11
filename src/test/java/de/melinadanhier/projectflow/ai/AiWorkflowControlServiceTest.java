@@ -9,6 +9,7 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.generation.service.workflow.AiWorkflowControlService;
+import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,12 +34,13 @@ class AiWorkflowControlServiceTest {
     @Mock AiWorkflowPayloadCodec codec;
     @Mock ApplicationEventPublisher events;
     @Mock AiPlanGenerationWorkflow workflow;
+    @Mock Project project;
     @Mock AiWizardSnapshot snapshot;
 
     @Test
     void cancelsRunningPreCheckAndReturnsSnapshot() {
         UUID workflowId = UUID.randomUUID(), userId = UUID.randomUUID(), runId = UUID.randomUUID();
-        owned(workflowId, userId);
+        ownedWithProject(workflowId, userId);
         when(workflow.getActiveRunId()).thenReturn(runId);
         when(workflow.cancelPreCheckRun(runId)).thenReturn(true);
         when(workflow.getConfirmedSnapshot()).thenReturn("{}");
@@ -53,9 +55,9 @@ class AiWorkflowControlServiceTest {
     }
 
     @Test
-    void cancelsRunningGenerationWithoutInvalidatingPreCheck() {
+    void cancelsRunningGenerationAndReturnsItsProject() {
         UUID workflowId = UUID.randomUUID(), userId = UUID.randomUUID(), runId = UUID.randomUUID();
-        owned(workflowId, userId);
+        ownedWithProject(workflowId, userId);
         when(workflow.getActiveRunId()).thenReturn(runId);
         when(workflow.cancelGenerationRun(runId)).thenReturn(true);
 
@@ -63,13 +65,14 @@ class AiWorkflowControlServiceTest {
 
         assertThat(result.changed()).isTrue();
         assertThat(result.operation()).isEqualTo(AiOperation.PLAN_GENERATION);
+        assertThat(result.projectId()).isEqualTo(workflowId);
         verifyNoInteractions(codec);
     }
 
     @Test
     void repeatedCancellationIsIdempotent() {
         UUID workflowId = UUID.randomUUID(), userId = UUID.randomUUID();
-        owned(workflowId, userId);
+        ownedWithProject(workflowId, userId);
         when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED);
 
         assertThat(service().cancel(workflowId, userId).changed()).isFalse();
@@ -78,7 +81,7 @@ class AiWorkflowControlServiceTest {
     @Test
     void repeatedPreCheckCancellationStillReturnsSnapshotForSafeNavigation() {
         UUID workflowId = UUID.randomUUID(), userId = UUID.randomUUID();
-        owned(workflowId, userId);
+        ownedWithProject(workflowId, userId);
         when(workflow.getStatus()).thenReturn(AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED);
         when(workflow.getConfirmedSnapshot()).thenReturn("{}");
         when(codec.readSnapshot("{}")).thenReturn(snapshot);
@@ -117,6 +120,12 @@ class AiWorkflowControlServiceTest {
 
     private void owned(UUID workflowId, UUID userId) {
         when(repository.findOwnedByIdForUpdate(workflowId, userId)).thenReturn(Optional.of(workflow));
+    }
+
+    private void ownedWithProject(UUID workflowId, UUID userId) {
+        owned(workflowId, userId);
+        when(workflow.getProject()).thenReturn(project);
+        when(project.getId()).thenReturn(workflowId);
     }
 
     private AiWorkflowControlService service() {

@@ -4,6 +4,8 @@ import de.melinadanhier.projectflow.plancontainer.project.model.classification.P
 import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
+import de.melinadanhier.projectflow.feedback.domain.AiFeedbackContext;
+import de.melinadanhier.projectflow.feedback.service.AiFeedbackOpportunity;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
@@ -118,18 +120,18 @@ class AiWizardSummaryIntegrationTest {
     void editingAiDetailsKeepsAllOtherWizardDataAndPrefillsSavedValues() throws Exception {
         WizardRequest request = wizardRequest(true);
         request.state().getProjectSpecificAnswers().put("movingSituation", "Von Berlin nach Hamburg");
-        request.state().getProjectSpecificAnswers().put("specialConditions", "Budget 2.000 Euro");
+        request.state().getProjectSpecificAnswers().put("transportOptions", "Transporter ist reserviert");
 
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Von Berlin nach Hamburg")))
-                .andExpect(content().string(containsString("Budget 2.000 Euro")));
+                .andExpect(content().string(containsString("Transporter ist reserviert")));
 
         mockMvc.perform(post("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())).with(csrf())
                         .param("answers[movingSituation]", "  Neuer Ausgangs- und Zielort  ")
-                        .param("answers[specialConditions]", "Helfer sind verfügbar")
+                        .param("answers[transportOptions]", "Transporter und drei Helfer sind verfügbar")
                         .param("additionalInformation", "  Priorität hat ein stressarmer Ablauf  "))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/ai/summary"));
@@ -139,7 +141,7 @@ class AiWizardSummaryIntegrationTest {
             assertThat(state.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 21));
             assertThat(state.getProjectSpecificAnswers())
                     .containsEntry("movingSituation", "Neuer Ausgangs- und Zielort")
-                    .containsEntry("specialConditions", "Helfer sind verfügbar");
+                    .containsEntry("transportOptions", "Transporter und drei Helfer sind verfügbar");
             assertThat(state.getAdditionalInformation()).isEqualTo("Priorität hat ein stressarmer Ablauf");
         });
         mockMvc.perform(get("/projects/new/ai/summary")
@@ -156,7 +158,7 @@ class AiWizardSummaryIntegrationTest {
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Wie viel Zeit kannst du ungefähr für das Projekt einplanen?")))
+                .andExpect(content().string(containsString("Wie viel Arbeitszeit kannst du ungefähr für das Projekt aufbringen?")))
                 .andExpect(content().string(containsString("Betroffene Räume oder Fläche")))
                 .andExpect(content().string(containsString("Konkret geplante Arbeiten")))
                 .andExpect(content().string(not(containsString("Festgelegte Technologien"))));
@@ -166,10 +168,33 @@ class AiWizardSummaryIntegrationTest {
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Wie viel Zeit kannst du ungefähr für das Projekt einplanen?")))
+                .andExpect(content().string(containsString("Wie viel Arbeitszeit kannst du ungefähr für das Projekt aufbringen?")))
                 .andExpect(content().string(containsString("Ziel und Funktionsumfang")))
                 .andExpect(content().string(containsString("Festgelegte Technologien")))
                 .andExpect(content().string(not(containsString("Betroffene Räume oder Fläche"))));
+    }
+
+    @Test
+    void feedbackIsRenderedAsPopupOnlyForACompletedAiAction() throws Exception {
+        WizardRequest request = wizardRequest(false);
+
+        mockMvc.perform(get("/projects/new/ai/summary")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("id=\"ai-feedback-dialog\""))));
+
+        request.session().setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
+                new AiFeedbackOpportunity(AiFeedbackContext.AI_EDIT_ADOPTED,
+                        UUID.randomUUID(), "/projects"));
+
+        mockMvc.perform(get("/projects/new/ai/summary")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<dialog id=\"ai-feedback-dialog\"")))
+                .andExpect(content().string(containsString("dialog.showModal()")))
+                .andExpect(content().string(containsString("name=\"rating\"")))
+                .andExpect(content().string(containsString("formaction=\"/ai-feedback/skip\"")))
+                .andExpect(content().string(not(containsString("Feedback geben"))));
     }
 
     @Test

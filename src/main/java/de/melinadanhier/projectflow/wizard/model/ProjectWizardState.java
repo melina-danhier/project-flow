@@ -25,7 +25,7 @@ import java.util.Map;
 public class ProjectWizardState implements Serializable, ProjectClassification {
 
     @Serial
-    private static final long serialVersionUID = 4L;
+    private static final long serialVersionUID = 5L;
 
     private UUID userId;
     private String title;
@@ -48,6 +48,7 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
     private boolean aiDetailsCompleted;
     private Map<String, String> projectSpecificAnswers = new LinkedHashMap<>();
     private UUID completionToken;
+    private UUID activeWorkflowId;
     private UUID selectedTemplateId;
 
     public Map<String, String> getProjectSpecificAnswers() {

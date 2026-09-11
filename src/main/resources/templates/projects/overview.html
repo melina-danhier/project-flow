@@ -92,11 +92,39 @@
         </a>
     </div>
 
+    <form id="bulk-project-form" th:unless="${#lists.isEmpty(projects)}" method="post"
+          th:action="@{/projects/bulk/trash}"
+          onsubmit="if (!document.querySelector('input[name=&quot;projectIds&quot;]:checked')) { alert('Bitte wähle mindestens ein Projekt aus.'); return false; }"
+          style="margin: 1rem 0; padding: 0.85rem 1rem; border: 1px solid var(--pf-border); border-radius: var(--pf-radius-md); display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <input type="hidden" name="sourceLocation" th:value="${selectedLocation}">
+        <strong style="margin-right: auto;">Mehrfachauswahl</strong>
+        <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input id="select-all-projects" type="checkbox">
+            <span>Alle auswählen</span>
+        </label>
+        <button th:if="${selectedLocation.name() == 'OVERVIEW'}" type="submit" class="pf-btn pf-btn--sm pf-btn--outline"
+                th:formaction="@{/projects/bulk/archive}"
+                onclick="return confirm('Möchtest du die ausgewählten Projekte archivieren?');">Archivieren</button>
+        <button th:if="${selectedLocation.name() == 'OVERVIEW' or selectedLocation.name() == 'ARCHIVE'}"
+                type="submit" class="pf-btn pf-btn--sm pf-btn--danger"
+                onclick="return confirm('Möchtest du die ausgewählten Projekte in den Papierkorb verschieben?');">Löschen</button>
+        <button th:if="${selectedLocation.name() == 'TRASH'}" type="submit" class="pf-btn pf-btn--sm pf-btn--danger"
+                th:formaction="@{/projects/bulk/delete}"
+                onclick="return confirm('Möchtest du die ausgewählten Projekte endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');">Endgültig löschen</button>
+        <button th:if="${selectedLocation.name() == 'DRAFT'}" type="submit" class="pf-btn pf-btn--sm pf-btn--danger"
+                th:formaction="@{/projects/bulk/delete-drafts}"
+                onclick="return confirm('Möchtest du die ausgewählten Projektentwürfe endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');">Entwürfe löschen</button>
+    </form>
+
     <!-- Modern Project Card Grid -->
     <div class="pf-project-grid" th:unless="${#lists.isEmpty(projects)}">
         <div class="pf-project-card" th:each="project : ${projects}">
             <div>
                 <div class="pf-project-card__top">
+                    <label th:if="${project.owner}" style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                        <input type="checkbox" name="projectIds" th:value="${project.id}" form="bulk-project-form">
+                        <span>Auswählen</span>
+                    </label>
                     <span class="pf-badge pf-badge--gray" th:if="${project.projectTypeLabel}" th:text="${project.projectTypeLabel}">Kategorie</span>
                     <span class="pf-badge pf-badge--purple" th:if="${project.creationType != null and project.creationType.name() == 'AI'}">KI-Generiert</span>
                     <span class="pf-badge pf-badge--blue" th:if="${project.collaborationMode != null and project.collaborationMode.name() == 'GROUP'}">Team</span>
@@ -136,11 +164,29 @@
                           onsubmit="return confirm('Möchtest du dieses Projekt archivieren?');">
                         <button class="pf-btn pf-btn--sm pf-btn--outline" type="submit">Archivieren</button>
                     </form>
+                    <form th:if="${project.owner}" th:action="@{/projects/{id}/trash(id=${project.id})}" method="post"
+                          onsubmit="return confirm('Möchtest du dieses Projekt in den Papierkorb verschieben?');">
+                        <button class="pf-btn pf-btn--sm pf-btn--danger" type="submit">Löschen</button>
+                    </form>
                 </div>
                 <div class="pf-project-card__actions"
                      th:if="${selectedLocation.name() == 'ARCHIVE' and project.owner}">
                     <form th:action="@{/projects/{id}/reactivate(id=${project.id})}" method="post">
                         <button class="pf-btn pf-btn--sm pf-btn--outline" type="submit">Reaktivieren</button>
+                    </form>
+                    <form th:action="@{/projects/{id}/trash(id=${project.id})}" method="post"
+                          onsubmit="return confirm('Möchtest du dieses archivierte Projekt in den Papierkorb verschieben?');">
+                        <button class="pf-btn pf-btn--sm pf-btn--danger" type="submit">Löschen</button>
+                    </form>
+                </div>
+                <div class="pf-project-card__actions"
+                     th:if="${selectedLocation.name() == 'TRASH' and project.owner}">
+                    <form th:action="@{/projects/{id}/reactivate(id=${project.id})}" method="post">
+                        <button class="pf-btn pf-btn--sm pf-btn--outline" type="submit">Wiederherstellen</button>
+                    </form>
+                    <form th:action="@{/projects/{id}/delete(id=${project.id})}" method="post"
+                          onsubmit="return confirm('Möchtest du dieses Projekt endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');">
+                        <button class="pf-btn pf-btn--sm pf-btn--danger" type="submit">Endgültig löschen</button>
                     </form>
                 </div>
             </div>
@@ -148,6 +194,20 @@
     </div>
 
 </main>
+
+<script>
+    (() => {
+        const selectAll = document.getElementById('select-all-projects');
+        if (!selectAll) return;
+        const projectCheckboxes = () => Array.from(document.querySelectorAll('input[name="projectIds"]'));
+        selectAll.addEventListener('change', () => projectCheckboxes().forEach(checkbox => checkbox.checked = selectAll.checked));
+        projectCheckboxes().forEach(checkbox => checkbox.addEventListener('change', () => {
+            const choices = projectCheckboxes();
+            selectAll.checked = choices.length > 0 && choices.every(choice => choice.checked);
+            selectAll.indeterminate = choices.some(choice => choice.checked) && !selectAll.checked;
+        }));
+    })();
+</script>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>

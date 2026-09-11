@@ -58,10 +58,10 @@ public class AiWorkflowControlService {
         UUID runId = workflow.getActiveRunId();
         if (workflow.cancelPreCheckRun(runId)) {
             return new Cancellation(true, AiOperation.PRE_CHECK,
-                    payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()));
+                    payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()), workflow.getProject().getId());
         }
         if (workflow.cancelGenerationRun(runId)) {
-            return new Cancellation(true, AiOperation.PLAN_GENERATION, null);
+            return new Cancellation(true, AiOperation.PLAN_GENERATION, null, workflow.getProject().getId());
         }
         AiOperation operation = switch (workflow.getStatus()) {
             case PRE_CHECK_PENDING, PRE_CHECK_RUNNING, PRE_CHECK_RETRY_PENDING,
@@ -71,7 +71,7 @@ public class AiWorkflowControlService {
         AiWizardSnapshot snapshot = workflow.getStatus() == AiPlanGenerationWorkflowStatus.PRE_CHECK_CANCELLED
                 ? payloadCodec.readSnapshot(workflow.getConfirmedSnapshot())
                 : null;
-        return new Cancellation(false, operation, snapshot);
+        return new Cancellation(false, operation, snapshot, workflow.getProject().getId());
     }
 
     @Transactional
@@ -96,5 +96,5 @@ public class AiWorkflowControlService {
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
     }
 
-    public record Cancellation(boolean changed, AiOperation operation, AiWizardSnapshot snapshot) { }
+    public record Cancellation(boolean changed, AiOperation operation, AiWizardSnapshot snapshot, UUID projectId) { }
 }

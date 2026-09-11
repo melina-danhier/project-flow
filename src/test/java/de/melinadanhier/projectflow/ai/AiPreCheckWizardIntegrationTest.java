@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckInputChange;
 import de.melinadanhier.projectflow.ai.provider.AiClient;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
@@ -119,8 +120,10 @@ class AiPreCheckWizardIntegrationTest {
         long activeSectionsBefore = planSectionRepository.count();
         long activeTasksBefore = taskRepository.count();
         long activeMilestonesBefore = milestoneRepository.count();
-        when(aiClient.preCheck(any())).thenReturn(result(
-                warning("Warnung eins"), assumption("Annahme zwei")));
+        when(aiClient.preCheck(any())).thenReturn(
+                result(warning("Warnung eins"), criticalAssumption("Annahme zwei", "projectGoal",
+                        "Umzug vollständig abschließen")),
+                AiPreCheckResult.withoutIssues());
         UUID workflowId = start(owner);
         awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
         MockHttpSession session = new MockHttpSession();
@@ -137,7 +140,11 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(content().string(containsString("action=\"" + acceptUrl(workflowId, 0) + "\"")))
                 .andExpect(content().string(containsString("action=\"" + acceptUrl(workflowId, 1) + "\"")))
                 .andExpect(content().string(containsString("action=\"" + confirmUrl(workflowId, 1) + "\"")))
-                .andExpect(content().string(containsString("Welche Planungsgrundlage soll für Annahme zwei gelten?")));
+                .andExpect(content().string(containsString(
+                        "Änderung oder Ergänzung zur vorgeschlagenen Planung (optional)")));
+        mockMvc.perform(get(problemsUrl(workflowId)).session(session).with(user(principal)))
+                .andExpect(content().string(containsString("Warnung ignorieren und fortfahren")))
+                .andExpect(content().string(containsString("Vorgeschlagene Änderung übernehmen")));
         mockMvc.perform(post(acceptUrl(workflowId, 0)).session(session).with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(problemsUrl(workflowId)));
@@ -164,7 +171,7 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(content().string(containsString(
                         org.springframework.web.util.HtmlUtils.htmlEscape(invalidContext))))
                 .andExpect(content().string(containsString(
-                        "Die Planungsgrundlage darf höchstens 1000 Zeichen lang sein.")));
+                        "Die Änderung oder Ergänzung darf höchstens 1000 Zeichen lang sein.")));
         assertThat(workflowRepository.findById(workflowId).orElseThrow()
                 .getAcceptedOpenPointIndices()).containsExactly(0);
         assertThat(workflowRepository.findById(workflowId).orElseThrow()
@@ -185,8 +192,16 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(statusUrl(workflowId)));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)).isLessThan(1000);
-        assertThat(workflowRepository.findById(workflowId).orElseThrow().getStatus())
-                .isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
+        assertThat(workflowRepository.findById(workflowId).orElseThrow()).satisfies(workflow -> {
+            assertThat(workflow.getAcceptedOpenPointIndices()).isEmpty();
+            assertThat(workflow.getCustomOpenPointInterpretations()).isEmpty();
+            assertThat(workflow.getConfirmedSnapshot())
+                    .contains("userPreCheckCorrection1")
+                    .contains("Die Umsetzung erfolgt ohne die vermutete Voraussetzung.");
+        });
+        verify(aiClient, times(2)).preCheck(any());
+        verify(aiClient, never()).generatePlan(any());
         mockMvc.perform(post(statusUrl(workflowId) + "/generate")
                         .session(session).with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection());
@@ -196,15 +211,13 @@ class AiPreCheckWizardIntegrationTest {
         ArgumentCaptor<de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest> requestCaptor =
                 ArgumentCaptor.forClass(de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest.class);
         verify(aiClient).generatePlan(requestCaptor.capture());
-        assertThat(requestCaptor.getValue().acceptedOpenPoints())
-                .extracting(AiPreCheckProblem::acceptedInterpretation)
-                .containsExactly("Verbindliche Auslegung: Warnung eins",
+        assertThat(requestCaptor.getValue().acceptedOpenPoints()).isEmpty();
+        assertThat(requestCaptor.getValue().confirmedWizardData().projectSpecificAnswers())
+                .containsEntry("userPreCheckCorrection1",
                         "Die Umsetzung erfolgt ohne die vermutete Voraussetzung.");
         assertThat(workflowRepository.findById(workflowId).orElseThrow()).satisfies(workflow -> {
-            assertThat(workflow.getAcceptedOpenPointIndices()).containsExactlyInAnyOrder(0, 1);
-            assertThat(workflow.getCustomOpenPointInterpretations())
-                    .containsEntry(1, "Die Umsetzung erfolgt ohne die vermutete Voraussetzung.")
-                    .doesNotContainKey(0);
+            assertThat(workflow.getAcceptedOpenPointIndices()).isEmpty();
+            assertThat(workflow.getCustomOpenPointInterpretations()).isEmpty();
             assertThat(workflow.getGenerationRoundAttemptCount()).isEqualTo(1);
             assertThat(workflow.getGenerationTotalAttemptCount()).isEqualTo(1);
         });
@@ -279,10 +292,47 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     @Test
+    void acceptedCriticalAssumptionChangesWizardDataOnlyAfterConsentAndRunsPreCheckAgain() throws Exception {
+        User owner = saveUser("critical-assumption@example.org");
+        when(aiClient.preCheck(any())).thenReturn(
+                result(criticalAssumption("Der Umfang ist für den Zeitraum unrealistisch.",
+                        "projectGoal", "Nur den eigentlichen Umzug abschließen")),
+                AiPreCheckResult.withoutIssues());
+        when(aiClient.generatePlan(any())).thenReturn(generatedPlan());
+        UUID workflowId = start(owner);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+
+        assertThat(workflowRepository.findById(workflowId).orElseThrow().getConfirmedSnapshot())
+                .contains("Rechtzeitig umziehen")
+                .doesNotContain("Nur den eigentlichen Umzug abschließen");
+
+        mockMvc.perform(post(acceptUrl(workflowId, 0)).with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(statusUrl(workflowId)));
+
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
+        assertThat(workflowRepository.findById(workflowId).orElseThrow().getConfirmedSnapshot())
+                .contains("Nur den eigentlichen Umzug abschließen");
+        verify(aiClient, times(2)).preCheck(any());
+        verify(aiClient, never()).generatePlan(any());
+
+        mockMvc.perform(post(statusUrl(workflowId) + "/generate")
+                        .with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        ArgumentCaptor<de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest> requestCaptor =
+                ArgumentCaptor.forClass(de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest.class);
+        verify(aiClient).generatePlan(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().confirmedWizardData().projectGoal())
+                .isEqualTo("Nur den eigentlichen Umzug abschließen");
+    }
+
+    @Test
     void editingReturnsToSummaryAndASecondConfirmationRunsANewPreCheck() throws Exception {
         User owner = saveUser("precheck-edit@example.org");
         when(aiClient.preCheck(any()))
-                .thenReturn(result(warning("Bitte Eingaben prüfen")))
+                .thenReturn(result(criticalAssumption("Bitte Eingaben prüfen", "projectGoal",
+                        "Umzug organisatorisch abschließen")))
                 .thenReturn(AiPreCheckResult.withoutIssues());
         UUID oldWorkflowId = start(owner);
         awaitStatus(oldWorkflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
@@ -368,6 +418,38 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     @Test
+    void failedGenerationCanContinueAsEmptyManualProject() throws Exception {
+        User owner = saveUser("manual-after-ai-failure@example.org");
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+        when(aiClient.generatePlan(any())).thenReturn(new GeneratedPlanResponse(List.of()));
+
+        UUID workflowId = start(owner);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
+        mockMvc.perform(post(statusUrl(workflowId) + "/generate")
+                        .with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_FAILED);
+        UUID projectId = workflowRepository.findById(workflowId).orElseThrow().getProject().getId();
+
+        mockMvc.perform(get(statusUrl(workflowId)).with(user(principal(owner))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Als leeres Projekt fortfahren")));
+        mockMvc.perform(post(statusUrl(workflowId) + "/continue-manually")
+                        .with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + projectId + "/plan"));
+
+        var project = projectRepository.findById(projectId).orElseThrow();
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        assertThat(project.getCreationType())
+                .isEqualTo(de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType.EMPTY);
+        assertThat(planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId)).isEmpty();
+        assertThat(taskRepository.findPlanTasks(projectId)).isEmpty();
+        assertThat(milestoneRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId)).isEmpty();
+        assertThat(draftRepository.findByProjectId(projectId)).isEmpty();
+    }
+
+    @Test
     void foreignWorkflowCannotBeViewedOrChanged() throws Exception {
         User owner = saveUser("precheck-owner@example.org");
         User outsider = saveUser("precheck-outsider@example.org");
@@ -383,6 +465,9 @@ class AiPreCheckWizardIntegrationTest {
         mockMvc.perform(post(problemsUrl(workflowId) + "/edit").with(user(outsiderPrincipal)).with(csrf()))
                 .andExpect(status().isNotFound());
         mockMvc.perform(post(statusUrl(workflowId) + "/retry")
+                        .with(user(outsiderPrincipal)).with(csrf()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post(statusUrl(workflowId) + "/continue-manually")
                         .with(user(outsiderPrincipal)).with(csrf()))
                 .andExpect(status().isNotFound());
     }
@@ -412,15 +497,23 @@ class AiPreCheckWizardIntegrationTest {
     private AiPreCheckProblem warning(String message) {
         return new AiPreCheckProblem(AiPreCheckSeverity.WARNING, AiPreCheckProblemType.RISK,
                 message, "Passe die Planung bei Bedarf an.",
-                "Welche Planungsgrundlage soll für " + message + " gelten?",
                 "Verbindliche Auslegung: " + message);
     }
 
     private AiPreCheckProblem assumption(String message) {
         return new AiPreCheckProblem(AiPreCheckSeverity.WARNING, AiPreCheckProblemType.ASSUMPTION,
                 message, "Ergänze die Angabe bei Bedarf.",
-                "Welche Planungsgrundlage soll für " + message + " gelten?",
                 "Verbindliche Auslegung: " + message);
+    }
+
+    private AiPreCheckProblem criticalAssumption(String message, String field, String value) {
+        return new AiPreCheckProblem(AiPreCheckSeverity.WARNING,
+                AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                message, "Zeitraum verlängern oder verfügbare Arbeitszeit erhöhen.",
+                field + " wird von „Rechtzeitig umziehen“ auf „" + value + "“ geändert; alle übrigen Angaben bleiben erhalten.",
+                List.of(new AiPreCheckInputChange(field, "Rechtzeitig umziehen", value)),
+                List.of(de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckAdjustmentOption.EXTEND_TIMEFRAME,
+                        de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckAdjustmentOption.INCREASE_AVAILABLE_TIME));
     }
 
     private AiPreCheckProblem error(String message) {

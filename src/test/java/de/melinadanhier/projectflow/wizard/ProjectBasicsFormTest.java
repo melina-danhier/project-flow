@@ -45,15 +45,28 @@ class ProjectBasicsFormTest {
     }
 
     @Test
-    void otherRequiresAProjectTypeDescription() {
+    void otherAllowsAnOptionalProjectTypeDescription() {
         ProjectBasicsForm form = validForm();
         form.setCategory(ProjectCategory.OTHER);
 
         form.setOtherProjectTypeDescription("   ");
-        assertThat(violatedProperties(form)).contains("otherProjectTypeDescription");
+        assertThat(validator.validate(form)).isEmpty();
 
         form.setOtherProjectTypeDescription("Organisation eines privaten Flohmarkts");
         assertThat(validator.validate(form)).isEmpty();
+    }
+
+    @Test
+    void descriptionIsOptionalForEveryCategory() {
+        ProjectBasicsForm regular = validForm();
+        regular.setDescription(null);
+        assertThat(validator.validate(regular)).isEmpty();
+
+        ProjectBasicsForm other = validForm();
+        other.setCategory(ProjectCategory.OTHER);
+        other.setOtherProjectTypeDescription("Privates Organisationsprojekt");
+        other.setDescription("   ");
+        assertThat(validator.validate(other)).isEmpty();
     }
 
     @Test

@@ -131,26 +131,38 @@ class AiPreCheckProcessorTest {
     }
 
     @Test
-    void invalidAiOutputIsNotRetriedAndIsNeverStoredAsBusinessError() throws Exception {
+    void invalidAiOutputIsRetriedWithValidatorFeedback() throws Exception {
         UUID workflowId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
         AiWizardSnapshot snapshot = snapshot();
         AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
+        AiPreCheckResult validResult = AiPreCheckResult.withoutIssues();
+        var validationException = new AiOutputValidationException("Ungültiger Output",
+                List.of("GENERAL_ADJUSTMENT_OPTIONS_MISSING | problems[0].adjustmentOptions"));
+        when(executionProperties.getMaxAttempts()).thenReturn(2);
+        when(workflowService.recordRetry(
+                org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.eq(runId),
+                error(AiTechnicalErrorCode.INVALID_AI_RESPONSE)))
+                .thenReturn(java.util.OptionalInt.of(1));
+        when(workflowService.claimAndReadSnapshot(workflowId, runId)).thenReturn(Optional.of(snapshot));
+        when(workflowService.isActive(workflowId, runId)).thenReturn(true);
         when(aiClient.preCheck(org.mockito.ArgumentMatchers.any(AiPreCheckRequest.class)))
-                .thenThrow(new AiOutputValidationException("Ungültiger Output"));
+                .thenThrow(validationException)
+                .thenReturn(validResult);
         processor.processClaimed(workflowId, runId, snapshot);
 
         var requestCaptor = org.mockito.ArgumentCaptor.forClass(AiPreCheckRequest.class);
-        verify(aiClient).preCheck(requestCaptor.capture());
-        org.assertj.core.api.Assertions.assertThat(requestCaptor.getValue().previousValidationIssues()).isEmpty();
-        verify(workflowService, never()).recordRetry(
-                org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.eq(runId),
-                org.mockito.ArgumentMatchers.any());
-        verify(workflowService).recordFailure(
+        verify(aiClient, times(2)).preCheck(requestCaptor.capture());
+        org.assertj.core.api.Assertions.assertThat(requestCaptor.getAllValues().get(0).previousValidationIssues())
+                .isEmpty();
+        org.assertj.core.api.Assertions.assertThat(requestCaptor.getAllValues().get(1).previousValidationIssues())
+                .containsExactlyElementsOf(validationException.getValidationIssues());
+        verify(workflowService).recordRetry(
                 org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.eq(runId),
                 error(AiTechnicalErrorCode.INVALID_AI_RESPONSE));
-        verifyNoInteractions(backoff);
-        verify(workflowService, never()).recordResult(
+        verify(backoff).waitBeforeRetry(1);
+        verify(workflowService).recordResult(workflowId, runId, validResult);
+        verify(workflowService, never()).recordFailure(
                 org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.eq(runId),
                 org.mockito.ArgumentMatchers.any());
     }

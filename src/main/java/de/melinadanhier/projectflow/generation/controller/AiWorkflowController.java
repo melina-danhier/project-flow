@@ -103,6 +103,12 @@ public class AiWorkflowController {
             model.addAttribute("editingProblemIndex", problemIndex);
             return "generation/ai-problems";
         }
+        if (form.getPlanningContext() == null || form.getPlanningContext().isBlank()) {
+            if (preCheckReviewService.acceptOpenPoint(workflowId, currentUser.userId(), problemIndex)) {
+                return "redirect:/projects/new/ai/status/" + workflowId;
+            }
+            return preCheckReviewRedirect(workflowId);
+        }
         if (preCheckReviewService.confirmOpenPointContext(
                 workflowId, currentUser.userId(), problemIndex, form.getPlanningContext())) {
             return "redirect:/projects/new/ai/status/" + workflowId;
@@ -117,6 +123,15 @@ public class AiWorkflowController {
     ) {
         generationWorkflowService.retry(workflowId, currentUser.userId());
         return "redirect:/projects/new/ai/status/" + workflowId;
+    }
+
+    @PostMapping("/status/{workflowId}/continue-manually")
+    public String continueManually(
+            @PathVariable UUID workflowId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser
+    ) {
+        UUID projectId = generationWorkflowService.continueAsEmptyProject(workflowId, currentUser.userId());
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     private String preCheckReviewRedirect(UUID workflowId) {

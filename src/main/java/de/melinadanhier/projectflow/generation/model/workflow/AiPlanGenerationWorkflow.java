@@ -321,6 +321,29 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         return acceptedOpenPointIndices.add(problemIndex);
     }
 
+    public void restartPreCheck(String updatedConfirmedSnapshot, UUID runId, Instant expiresAt) {
+        requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+        if (updatedConfirmedSnapshot == null || updatedConfirmedSnapshot.isBlank()) {
+            throw new IllegalArgumentException("Die aktualisierten Projektdaten dürfen nicht leer sein.");
+        }
+        confirmedSnapshot = updatedConfirmedSnapshot;
+        preCheckResult = null;
+        acceptedOpenPointIndices.clear();
+        customOpenPointInterpretations.clear();
+        preCheckRetryCount = 0;
+        clearError();
+        setActiveRun(runId, expiresAt);
+        status = AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING;
+    }
+
+    public void updateConfirmedSnapshotForRegeneration(String updatedConfirmedSnapshot) {
+        requireStatus(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        if (updatedConfirmedSnapshot == null || updatedConfirmedSnapshot.isBlank()) {
+            throw new IllegalArgumentException("Die aktualisierten Projektdaten dürfen nicht leer sein.");
+        }
+        confirmedSnapshot = updatedConfirmedSnapshot;
+    }
+
     public void recordPreCheckAttempt(String promptVersion, String schemaVersion) {
         requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
         preCheckPromptVersion = requireVersion(promptVersion, "Pre-Check-Prompt-Version");

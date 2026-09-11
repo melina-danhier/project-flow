@@ -154,7 +154,8 @@ class DraftApplicationIntegrationTest {
                         .with(user(principal)).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/draft-pending-confirmation"))
-                .andExpect(content().string(containsString("Neu generieren")))
+                .andExpect(content().string(containsString("neu generieren")))
+                .andExpect(content().string(containsString("name=\"regenerationComment\"")))
                 .andExpect(content().string(containsString("Leeres Projekt erstellen")))
                 .andExpect(content().string(containsString("/draft/confirm-empty")));
     }
@@ -173,7 +174,7 @@ class DraftApplicationIntegrationTest {
         long version = applications.summarize(fixture.projectId(), fixture.ownerId()).lockVersion();
 
         assertThat(generations.regenerateDraft(fixture.projectId(), fixture.draftId(),
-                fixture.ownerId(), version)).isEqualTo(workflowId);
+                fixture.ownerId(), version, "Der Plan war zu allgemein.")).isEqualTo(workflowId);
 
         assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
         assertThat(drafts.findById(fixture.draftId())).isEmpty();

@@ -1,7 +1,9 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <body>
-<form th:fragment="cancel(buttonText)" th:action="@{/projects/new/cancel}" method="post" style="display: inline-block; margin: 0;">
+<form th:fragment="cancel(buttonText)" th:action="@{/projects/new/cancel}" method="post"
+      onsubmit="return confirm('Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
+      style="display: inline-block; margin: 0;">
     <button type="submit" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);" th:text="${buttonText}">Abbrechen</button>
 </form>
 </body>

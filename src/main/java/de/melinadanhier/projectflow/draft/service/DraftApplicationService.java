@@ -115,9 +115,7 @@ public class DraftApplicationService {
         if (!editable(draft.getStatus())) {
             throw new ConflictException("Der Planentwurf kann in diesem Zustand nicht verworfen werden.");
         }
-        Project project = draft.getProject();
-        requireEmptyDraftProject(project);
-        project.setLocation(ProjectLocation.TRASH);
+        requireEmptyDraftProject(draft.getProject());
         return draft.getId();
     }
 

@@ -6,6 +6,8 @@ import de.melinadanhier.projectflow.planelement.controller.AiPlanChangeControlle
 import de.melinadanhier.projectflow.planelement.dto.planchange.*;
 import de.melinadanhier.projectflow.planelement.service.AiPlanChangeService;
 import de.melinadanhier.projectflow.planelement.service.PlanChangeNotApplicableException;
+import de.melinadanhier.projectflow.feedback.domain.AiFeedbackContext;
+import de.melinadanhier.projectflow.feedback.service.AiFeedbackOpportunity;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
@@ -45,6 +47,10 @@ class AiPlanChangeControllerTest {
         assertThat(controller.discard(project, proposal.proposalId(), user(userId), session, new RedirectAttributesModelMap()))
                 .isEqualTo("redirect:/projects/" + project + "/plan");
         assertThat(values).isEmpty(); verify(service).requireAccess(project, userId); verifyNoMoreInteractions(service);
+        assertThat(session.getAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE))
+                .isEqualTo(new AiFeedbackOpportunity(
+                        AiFeedbackContext.AI_EDIT_REJECTED, proposal.proposalId(),
+                        "/projects/" + project + "/plan"));
     }
     @Test void confirmAppliesStoredProposalOnceAndRemovesItFromSession() {
         AiPlanChangeService service = mock(AiPlanChangeService.class); var controller = new AiPlanChangeController(service);
@@ -60,6 +66,10 @@ class AiPlanChangeControllerTest {
         verify(service).confirm(project, proposal, userId);
         assertThat(values).isEmpty();
         assertThat(redirect.getFlashAttributes().get("successMessage")).isEqualTo("Die KI-Änderungen wurden übernommen.");
+        assertThat(session.getAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE))
+                .isEqualTo(new AiFeedbackOpportunity(
+                        AiFeedbackContext.AI_EDIT_ADOPTED, proposal.proposalId(),
+                        "/projects/" + project + "/plan"));
         ExtendedModelMap conflictModel = new ExtendedModelMap();
         MockHttpServletResponse conflictResponse = new MockHttpServletResponse();
         assertThat(controller.confirm(project, proposal.proposalId(), user(userId), session,

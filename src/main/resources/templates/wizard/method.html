@@ -90,7 +90,9 @@
             </div>
         </form>
 
-        <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post" style="display: none;"></form>
+        <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
+              onsubmit="return confirm('Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
+              style="display: none;"></form>
     </div>
 
     <script>

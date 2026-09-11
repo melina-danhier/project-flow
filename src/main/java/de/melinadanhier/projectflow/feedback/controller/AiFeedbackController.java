@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -20,26 +19,22 @@ public class AiFeedbackController {
     private final AiFeedbackService feedbackService;
 
     @GetMapping
-    public String form(HttpSession session, Model model) {
+    public String form(HttpSession session) {
         AiFeedbackOpportunity opportunity = opportunity(session);
         if (opportunity == null) return "redirect:/projects";
-        if (!model.containsAttribute("aiFeedbackForm")) model.addAttribute("aiFeedbackForm", new AiFeedbackForm());
-        model.addAttribute("feedbackContext", opportunity.context());
-        model.addAttribute("returnUrl", opportunity.returnUrl());
-        return "feedback/form";
+        return "redirect:" + opportunity.returnUrl();
     }
 
     @PostMapping
     public String submit(@Valid @ModelAttribute AiFeedbackForm aiFeedbackForm,
                          BindingResult bindingResult,
                          @AuthenticationPrincipal AuthenticatedUser currentUser,
-                         HttpSession session, Model model, RedirectAttributes redirect) {
+                         HttpSession session, RedirectAttributes redirect) {
         AiFeedbackOpportunity opportunity = opportunity(session);
         if (opportunity == null) return "redirect:/projects";
         if (bindingResult.hasErrors()) {
-            model.addAttribute("feedbackContext", opportunity.context());
-            model.addAttribute("returnUrl", opportunity.returnUrl());
-            return "feedback/form";
+            redirect.addFlashAttribute("errorMessage", "Bitte wähle eine Bewertung aus.");
+            return "redirect:" + opportunity.returnUrl();
         }
         feedbackService.saveIfAbsent(currentUser.userId(), opportunity, aiFeedbackForm);
         session.removeAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE);

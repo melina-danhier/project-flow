@@ -37,6 +37,12 @@ public record AiWorkflowStatusDto(
         return !isProcessing() && status != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED;
     }
 
+    public boolean canContinueManually() {
+        return (status == AiPlanGenerationWorkflowStatus.GENERATION_FAILED
+                || status == AiPlanGenerationWorkflowStatus.TECHNICAL_FAILURE)
+                && errorOperation == AiOperation.PLAN_GENERATION;
+    }
+
     public boolean canCancel() {
         return isProcessing();
     }

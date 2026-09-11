@@ -51,6 +51,12 @@ public class GenerationPromptBuilder {
               Umfang oder Ausgangslage für eine belastbare Schätzung fehlen. Wenn eine Schätzung
               hinreichend begründet ist, verwende eine konservative, grobe ganze Stundenzahl ohne
               scheinbare Präzision. Überschätze kleine organisatorische Tätigkeiten nicht.
+              Schätze den Aufwand für jede Aufgabe, sobald Ziel, Umfang und Ausgangslage dafür eine
+              sinnvolle grobe Schätzung erlauben. Betrachte die Summe aller Aufgaben als geschätzten
+              Gesamtaufwand des Plans und prüfe sie gegen die bestätigte Gesamtdauer und Arbeitszeit.
+              Richte die Terminierung an einer angegebenen Tageskapazität aus. Plane an keinem Tag
+              offensichtlich mehr geschätzte Aufgabenstunden ein als verfügbar sind und verdichte
+              Aufgaben nicht künstlich, nur um einen unrealistischen Zeitraum einzuhalten.
             - origin ist genau USER_INPUT, wenn der Inhalt unmittelbar aus einer Nutzereingabe folgt,
               andernfalls AI_INFERRED.
             - Gib keinen Prüfstatus wie checked, verified oder reviewed zurück. Neue Inhalte sind

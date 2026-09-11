@@ -22,6 +22,7 @@
                 <span th:if="${draft.projectStartDate != null and draft.projectEndDate != null}"> – </span>
                 <th:block th:if="${draft.projectEndDate != null}"><time th:datetime="${draft.projectEndDate}" th:text="${#temporals.format(draft.projectEndDate, 'dd.MM.yyyy')}"></time></th:block>
             </dd></div>
+            <div th:if="${draft.totalEstimatedHours > 0}"><dt>Geschätzter Gesamtaufwand</dt><dd th:text="${draft.totalEstimatedHours + ' Std.'}">0 Std.</dd></div>
         </dl>
         <p>Prüfe die vorgeschlagene Struktur. Erst mit der ausdrücklichen Übernahme wird daraus ein verwaltbares Projekt.</p>
         <p class="review-progress" role="status">
@@ -148,11 +149,26 @@
     <form class="apply-draft" th:if="${draft.owner and draft.status.name() != 'APPLIED'}" th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
         <button type="submit">Entwurf ausdrücklich übernehmen</button>
     </form>
+    <details th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-card" style="margin-top: 1rem;">
+        <summary><strong>Plan vollständig neu generieren</strong></summary>
+        <p>Der aktuelle Entwurf wird ersetzt. Beschreibe kurz, was daran nicht gut funktioniert hat.</p>
+        <form th:action="@{/projects/{projectId}/draft/regenerate(projectId=${draft.projectId})}" method="post"
+              onsubmit="return confirm('Möchtest du den aktuellen Entwurf vollständig ersetzen und neu generieren?');">
+            <input type="hidden" name="draftId" th:value="${draft.id}">
+            <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+            <label for="regeneration-comment" class="pf-label">Was war am bisherigen Entwurf schlecht oder unpassend?</label>
+            <textarea id="regeneration-comment" name="regenerationComment" class="pf-textarea"
+                      maxlength="1000" required
+                      placeholder="z. B. Der Plan war zu detailliert und hat meinen vorhandenen Arbeitsstand nicht berücksichtigt."></textarea>
+            <button class="pf-btn pf-btn--secondary" type="submit">Mit diesem Hinweis neu generieren</button>
+        </form>
+    </details>
     <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}"
-          th:action="@{/projects/{projectId}/draft/discard(projectId=${draft.projectId})}" method="post">
+          th:action="@{/projects/{projectId}/draft/discard(projectId=${draft.projectId})}" method="post"
+          onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');">
         <input type="hidden" name="draftId" th:value="${draft.id}">
         <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
-        <button class="pf-btn pf-btn--ghost" type="submit">Entwurf verwerfen</button>
+        <button class="pf-btn pf-btn--ghost" type="submit">Abbrechen</button>
     </form>
 </main>
 <th:block th:replace="~{fragments/layout :: site-footer}" />
