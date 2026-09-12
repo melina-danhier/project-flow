@@ -1,0 +1,305 @@
+/* Loading Screen Styles (Modular CSS) */
+
+.pf-loading-container {
+    max-width: 620px;
+    margin: 2.5rem auto;
+    padding: 0 1rem;
+}
+
+.pf-loading-card {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg, 16px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    padding: 2.5rem 2rem;
+    overflow: hidden;
+}
+
+/* Indeterminate Shimmer Progress Bar at Top of Card */
+.pf-loading-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--pf-surface-subtle, #f1f5f9);
+    overflow: hidden;
+}
+
+.pf-loading-bar__indeterminate {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%);
+    background-size: 200% 100%;
+    animation: pf-bar-sweep 2s infinite ease-in-out;
+}
+
+@keyframes pf-bar-sweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Hero Section */
+.pf-loading-hero {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.pf-loading-icon-wrap {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.25rem;
+    border-radius: 50%;
+    background: #eef2ff;
+    color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.1);
+    animation: pf-hero-pulse 3s infinite ease-in-out;
+}
+
+@keyframes pf-hero-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.08);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 14px rgba(99, 102, 241, 0.15);
+        transform: scale(1.03);
+    }
+}
+
+.pf-loading-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--pf-text-main);
+}
+
+.pf-loading-subtitle {
+    margin: 0 auto;
+    max-width: 460px;
+    font-size: 0.92rem;
+    color: var(--pf-text-secondary);
+    line-height: 1.5;
+}
+
+/* Progress Stepper */
+.pf-stepper {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 2rem 0;
+    text-align: left;
+    position: relative;
+}
+
+.pf-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.pf-step:last-child {
+    padding-bottom: 0;
+}
+
+/* Vertical connector line */
+.pf-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 36px;
+    bottom: 0;
+    width: 2px;
+    background: var(--pf-border-subtle, #e2e8f0);
+}
+
+.pf-step.is-completed:not(:last-child)::after {
+    background: #10b981;
+}
+
+.pf-step.is-active:not(:last-child)::after {
+    background: linear-gradient(to bottom, #6366f1, #e2e8f0);
+}
+
+/* Step Node / Badge */
+.pf-step-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    z-index: 1;
+    background: #ffffff;
+    border: 2px solid var(--pf-border-subtle, #cbd5e1);
+    color: var(--pf-text-muted);
+    transition: all 0.2s ease;
+}
+
+/* Completed Step */
+.pf-step.is-completed .pf-step-badge {
+    background: #10b981;
+    border-color: #10b981;
+    color: #ffffff;
+}
+
+/* Active Step */
+.pf-step.is-active .pf-step-badge {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.2);
+    animation: pf-active-pulse 2s infinite ease-in-out;
+}
+
+@keyframes pf-active-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.3);
+    }
+}
+
+/* Failed Step */
+.pf-step.is-failed .pf-step-badge {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
+/* Step Content */
+.pf-step-content {
+    flex: 1;
+    min-width: 0;
+    padding-top: 0.35rem;
+}
+
+.pf-step-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.pf-step-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--pf-text-main);
+    margin: 0;
+}
+
+.pf-step.is-upcoming .pf-step-name {
+    color: var(--pf-text-muted);
+    font-weight: 500;
+}
+
+.pf-step.is-active .pf-step-name {
+    color: #4f46e5;
+    font-weight: 700;
+}
+
+.pf-step.is-failed .pf-step-name {
+    color: #ef4444;
+}
+
+.pf-step-status-tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--pf-radius-full, 9999px);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.pf-step-status-tag--active {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.pf-step-status-tag--completed {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.pf-step-status-tag--failed {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.pf-step-desc {
+    margin: 0.2rem 0 0;
+    font-size: 0.82rem;
+    color: var(--pf-text-muted);
+    line-height: 1.4;
+}
+
+.pf-step.is-active .pf-step-desc {
+    color: var(--pf-text-secondary);
+}
+
+/* Spinner Icon */
+.pf-spinner-svg {
+    animation: pf-spin 1s linear infinite;
+}
+
+@keyframes pf-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Subtle Heartbeat Indicator for Auto-refresh */
+.pf-loading-heartbeat {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--pf-text-muted);
+    margin-top: 1rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--pf-surface-subtle, #f8fafc);
+    border: 1px solid var(--pf-border-subtle, #e2e8f0);
+    border-radius: var(--pf-radius-full, 9999px);
+}
+
+.pf-heartbeat-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: pf-pulse-green 2s infinite;
+}
+
+@keyframes pf-pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* Actions wrap */
+.pf-loading-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--pf-border-subtle, #f1f5f9);
+}
