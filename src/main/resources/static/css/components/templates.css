@@ -1,0 +1,272 @@
+/* Template Catalog & Detail Styles (Modular CSS) */
+
+/* Template Catalog Layout */
+.pf-template-catalog-layout {
+    display: grid;
+    grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 768px) {
+    .pf-template-catalog-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sidebar Navigation */
+.pf-template-sidebar {
+    padding: 1.25rem;
+    background: #ffffff;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg);
+    box-shadow: var(--pf-shadow-xs);
+}
+
+.pf-template-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.pf-template-nav__item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--pf-text-secondary);
+    border-radius: var(--pf-radius-md);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.pf-template-nav__item:hover {
+    color: var(--pf-primary);
+    background: var(--pf-surface-subtle);
+}
+
+.pf-template-nav__item.is-active,
+.pf-template-nav__item.pf-btn--primary {
+    background: var(--pf-primary);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: var(--pf-shadow-xs);
+}
+
+.pf-template-nav__search {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.pf-template-nav__divider {
+    height: 1px;
+    background: var(--pf-border-subtle, #f1f5f9);
+    margin: 0.5rem 0;
+}
+
+.pf-template-nav__section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--pf-text-muted);
+    padding: 0 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+/* Search page dedicated search bar */
+.pf-template-search-form {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    background: #ffffff;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg);
+    box-shadow: var(--pf-shadow-xs);
+    align-items: center;
+}
+
+.pf-search-input-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.pf-search-input-wrap .pf-search-icon {
+    position: absolute;
+    left: 0.85rem;
+    color: var(--pf-text-muted);
+    pointer-events: none;
+}
+
+.pf-search-input-wrap .pf-input {
+    padding-left: 2.5rem;
+    width: 100%;
+}
+
+/* Template Detail / Preview Header Summary Meta */
+.pf-template-summary-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+}
+
+.pf-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--pf-text-secondary);
+    background: var(--pf-surface-subtle);
+    border: 1px solid var(--pf-border-subtle, #e2e8f0);
+    border-radius: var(--pf-radius-full, 9999px);
+}
+
+.pf-meta-chip strong {
+    font-weight: 700;
+    color: var(--pf-text-main);
+}
+
+/* Template Detail Phases */
+.pf-template-phase {
+    background: #ffffff;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg);
+    margin-bottom: 1rem;
+    box-shadow: var(--pf-shadow-xs);
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+}
+
+.pf-template-phase summary.pf-plan-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    background: var(--pf-surface-subtle);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.pf-template-phase summary::-webkit-details-marker {
+    display: none;
+}
+
+.pf-template-phase .pf-phase-header__left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.pf-template-phase .pf-phase-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--pf-text-secondary);
+    cursor: pointer;
+    border-radius: var(--pf-radius-sm);
+    transition: background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.pf-template-phase .pf-phase-toggle-btn:hover {
+    background: #e2e8f0;
+    color: var(--pf-primary);
+}
+
+.pf-template-phase .pf-phase-caret {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+details.pf-template-phase:not([open]) .pf-phase-caret {
+    transform: rotate(-90deg);
+}
+
+details.pf-template-phase[open] .pf-phase-caret {
+    transform: rotate(0deg);
+}
+
+.pf-template-phase .pf-phase-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--pf-text-main);
+}
+
+.pf-template-phase .pf-phase-desc {
+    font-size: 0.82rem;
+    color: var(--pf-text-muted);
+    display: block;
+    margin-top: 0.15rem;
+}
+
+/* Template Elements list inside phase */
+.pf-template-phase .pf-element-list {
+    list-style: none;
+    padding: 0.75rem 1.25rem 1.25rem;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.pf-template-phase .pf-element-item {
+    background: #ffffff;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-md);
+    padding: 0.75rem 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: border-color 0.15s ease;
+}
+
+.pf-template-phase .pf-element-item:hover {
+    border-color: var(--pf-border-strong);
+}
+
+.pf-template-phase .pf-element-item--milestone {
+    border-left: 3px solid #8b5cf6;
+}
+
+.pf-element-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+}
+
+.pf-element-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--pf-text-main);
+}
+
+.pf-element-desc {
+    margin: 0.25rem 0 0.5rem;
+    font-size: 0.85rem;
+    color: var(--pf-text-secondary);
+    line-height: 1.45;
+}
+
+.pf-element-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.35rem;
+}

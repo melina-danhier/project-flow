@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head><th:block th:replace="~{fragments/layout :: head('Projektvorlagen')}" /></head>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Projektvorlagen')}" />
+    <link rel="stylesheet" th:href="@{/css/components/templates.css}">
+</head>
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
 <main>
@@ -13,24 +16,47 @@
     </div></div>
 
     <div class="pf-template-catalog-layout">
-        <aside class="pf-card" aria-label="Vorlagenkategorien" style="padding:1rem">
-            <strong style="display:block;margin-bottom:.75rem">Kategorien</strong>
-            <nav style="display:grid;gap:.35rem">
+        <aside class="pf-card pf-template-sidebar" aria-label="Vorlagenkategorien">
+            <nav class="pf-template-nav">
+                <!-- 1. Search Entry at top of sidebar -->
+                <a th:href="${wizardContext} ? @{/projects/new/template(q='')} : @{/templates/search}"
+                   class="pf-btn pf-btn--sm pf-template-nav__item pf-template-nav__search"
+                   th:classappend="${searchPage ? ' pf-btn--primary' : ' pf-btn--ghost'}">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <span>Suche</span>
+                </a>
+
+                <div class="pf-template-nav__divider"></div>
+
+                <!-- 2. Template Categories -->
+                <div class="pf-template-nav__section-title">Kategorien</div>
+                <a th:href="${wizardContext} ? @{/projects/new/template} : @{/templates}"
+                   class="pf-btn pf-btn--sm pf-template-nav__item"
+                   th:classappend="${!searchPage and selectedCategory == null ? ' pf-btn--primary' : ' pf-btn--ghost'}">
+                    <span>Alle Vorlagen</span>
+                </a>
                 <a th:each="category : ${categories}"
                    th:href="${wizardContext} ? @{/projects/new/template(category=${category})} : @{/templates(category=${category})}"
-                   class="pf-btn pf-btn--sm"
-                   th:classappend="${selectedCategory == category ? ' pf-btn--primary' : ' pf-btn--ghost'}"
+                   class="pf-btn pf-btn--sm pf-template-nav__item"
+                   th:classappend="${!searchPage and selectedCategory == category ? ' pf-btn--primary' : ' pf-btn--ghost'}"
                    th:text="${category.label}">Kategorie</a>
-                <a th:href="${wizardContext} ? @{/projects/new/template(q='')} : @{/templates/search}"
-                   class="pf-btn pf-btn--sm"
-                   th:classappend="${searchPage ? ' pf-btn--primary' : ' pf-btn--ghost'}">Suche</a>
             </nav>
         </aside>
 
         <div>
-            <form th:action="${wizardContext} ? @{/projects/new/template} : @{/templates/search}" method="get" class="pf-card" style="display:flex;gap:.75rem;padding:1rem;margin-bottom:1.25rem">
+            <!-- Search bar only displayed on dedicated search page -->
+            <form th:if="${searchPage}" th:action="${wizardContext} ? @{/projects/new/template} : @{/templates/search}" method="get" class="pf-card pf-template-search-form">
                 <label for="template-search" style="position:absolute;left:-10000px">Vorlagen durchsuchen</label>
-                <input id="template-search" class="pf-input" name="q" th:value="${query}" placeholder="Titel oder Beschreibung durchsuchen">
+                <div class="pf-search-input-wrap">
+                    <svg class="pf-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input id="template-search" class="pf-input" name="q" th:value="${query}" placeholder="Titel oder Beschreibung durchsuchen" autofocus>
+                </div>
                 <button class="pf-btn pf-btn--primary" type="submit">Suchen</button>
             </form>
 
