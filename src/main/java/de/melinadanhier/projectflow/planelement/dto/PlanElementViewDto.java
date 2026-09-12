@@ -26,6 +26,8 @@ public class PlanElementViewDto {
     private long lockVersion;
     private int sortOrder;
     private LocalDate relevantDate;
+    private LocalDate startDate;
+    private LocalDate dueDate;
     private TaskStatus taskStatus;
     private TaskPriority taskPriority;
     private boolean milestoneCompleted;

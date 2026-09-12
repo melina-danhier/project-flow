@@ -1040,6 +1040,23 @@ input[type="checkbox"] {
     color: var(--pf-warning-text);
 }
 
+.pf-alert__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    margin-left: auto;
+    padding: 0 0.25rem;
+    color: inherit;
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
+}
+
+.pf-alert__close:hover {
+    opacity: 1;
+}
+
 /* ==========================================================================
    Navigation Pills & Filter Bars
    ========================================================================== */

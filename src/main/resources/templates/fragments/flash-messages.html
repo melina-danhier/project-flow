@@ -2,12 +2,13 @@
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="all">
-    <div th:if="${successMessage}" class="pf-alert pf-alert--success" role="status">
+    <div th:if="${successMessage}" class="pf-alert pf-alert--success pf-alert--dismissible" role="status">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top: 1px;">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
             <polyline points="22 4 12 14.01 9 11.01"></polyline>
         </svg>
         <span th:text="${successMessage}">Aktion erfolgreich ausgeführt.</span>
+        <button type="button" class="pf-alert__close" aria-label="Schließen" onclick="this.closest('.pf-alert').remove()">&times;</button>
     </div>
     <div th:if="${errorMessage}" class="pf-alert pf-alert--error" role="alert">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top: 1px;">

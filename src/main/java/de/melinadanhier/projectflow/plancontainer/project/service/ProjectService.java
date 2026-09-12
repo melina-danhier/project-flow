@@ -636,6 +636,8 @@ public class ProjectService {
     private PlanElementViewDto toViewElement(Task task) {
         PlanElementViewDto dto = baseViewElement(task, PlanElementType.TASK);
         dto.setRelevantDate(task.getDueDate());
+        dto.setStartDate(task.getStartDate());
+        dto.setDueDate(task.getDueDate());
         dto.setTaskStatus(task.getStatus());
         dto.setTaskPriority(task.getPriority());
         dto.setBlocked(TaskDependencyPolicy.isBlocked(task));
@@ -647,6 +649,7 @@ public class ProjectService {
     private PlanElementViewDto toViewElement(Milestone milestone) {
         PlanElementViewDto dto = baseViewElement(milestone, PlanElementType.MILESTONE);
         dto.setRelevantDate(milestone.getDueDate());
+        dto.setDueDate(milestone.getDueDate());
         dto.setMilestoneCompleted(milestone.isCompleted());
         return dto;
     }

@@ -1,91 +1,268 @@
-const review = document.querySelector('main[data-sort-mode]');
-let dragged = null;
+(function () {
+    'use strict';
 
-const submitMove = (url, fields) => {
-    window.ProjectFlowScrollState?.capture();
-    const form = document.createElement('form');
-    form.method = 'post';
-    form.action = url;
-    const version = document.querySelector('input[name="lockVersion"]')?.value;
-    const csrf = document.querySelector('input[name="_csrf"]');
-    const values = {...fields, lockVersion: version};
-    if (csrf) values[csrf.name] = csrf.value;
-    Object.entries(values).forEach(([name, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.append(input);
-    });
-    document.body.append(form);
-    form.submit();
-};
+    const review = document.querySelector('main[data-sort-mode]');
+    let dragged = null;
+    let dropIndicator = null;
 
-document.querySelectorAll('[draggable="true"]').forEach(item => {
-    const requiredHandle = item.classList.contains('draft-section') ? '.section-drag-handle' : '.element-drag-handle';
-    item.querySelector(requiredHandle)?.addEventListener('pointerdown', () => item.dataset.dragArmed = 'true');
-    item.addEventListener('dragstart', event => {
-        if (item.dataset.dragArmed !== 'true') {
-            event.preventDefault();
-            return;
+    function getDropIndicator() {
+        if (!dropIndicator) {
+            dropIndicator = document.createElement('div');
+            dropIndicator.className = 'pf-drop-indicator';
         }
-        event.stopPropagation();
-        dragged = item;
-        item.classList.add('is-dragging');
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', item.dataset.elementId || item.dataset.sectionId);
-    });
-    item.addEventListener('dragend', () => {
-        delete item.dataset.dragArmed;
-        item.classList.remove('is-dragging');
-        document.querySelectorAll('.drop-target').forEach(target => target.classList.remove('drop-target'));
-        dragged = null;
-    });
-});
+        return dropIndicator;
+    }
 
-document.addEventListener('pointerup', () => {
-    document.querySelectorAll('[data-drag-armed]').forEach(item => delete item.dataset.dragArmed);
-});
+    function removeDropIndicator() {
+        if (dropIndicator && dropIndicator.parentNode) {
+            dropIndicator.parentNode.removeChild(dropIndicator);
+        }
+    }
 
-document.querySelectorAll('.plan-elements').forEach(list => {
-    list.addEventListener('dragover', event => {
-        if (!dragged?.classList.contains('plan-element')) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-        list.classList.add('drop-target');
-    });
-    list.addEventListener('dragleave', event => {
-        if (!list.contains(event.relatedTarget)) list.classList.remove('drop-target');
-    });
-    list.addEventListener('drop', event => {
-        event.preventDefault();
-        list.classList.remove('drop-target');
-        if (!dragged?.classList.contains('plan-element')) return;
+    const submitMove = (url, fields) => {
+        window.ProjectFlowScrollState?.capture();
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = url;
+        const version = document.querySelector('input[name="lockVersion"]')?.value;
+        const csrf = document.querySelector('input[name="_csrf"]');
+        const values = { ...fields, lockVersion: version };
+        if (csrf) values[csrf.name] = csrf.value;
+        Object.entries(values).forEach(([name, value]) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            form.append(input);
+        });
+        document.body.append(form);
+        form.submit();
+    };
 
-        const draggedDate = dragged.dataset.date || '';
-        const siblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')];
-        const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
-        const position = before ? siblings.indexOf(before) : siblings.length;
-
-        submitMove(dragged.dataset.moveUrl, {
-            targetSectionId: list.dataset.sectionId || '',
-            targetDate: draggedDate,
-            targetPosition: position
+    // 1. Draggable items setup
+    document.querySelectorAll('[draggable="true"]').forEach(item => {
+        const requiredHandle = item.classList.contains('draft-section') ? '.section-drag-handle' : '.element-drag-handle';
+        item.querySelector(requiredHandle)?.addEventListener('pointerdown', () => item.dataset.dragArmed = 'true');
+        item.addEventListener('dragstart', event => {
+            if (item.dataset.dragArmed !== 'true') {
+                event.preventDefault();
+                return;
+            }
+            event.stopPropagation();
+            dragged = item;
+            item.classList.add('is-dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', item.dataset.elementId || item.dataset.sectionId);
+        });
+        item.addEventListener('dragend', () => {
+            delete item.dataset.dragArmed;
+            item.classList.remove('is-dragging');
+            document.querySelectorAll('.drop-target').forEach(target => target.classList.remove('drop-target'));
+            removeDropIndicator();
+            dragged = null;
         });
     });
-});
 
-const sections = document.querySelector('#draft-sections');
-sections?.addEventListener('dragover', event => {
-    if (!dragged?.classList.contains('draft-section')) return;
-    event.preventDefault();
-    sections.classList.add('drop-target');
-});
-sections?.addEventListener('drop', event => {
-    event.preventDefault();
-    sections.classList.remove('drop-target');
-    if (!dragged?.classList.contains('draft-section')) return;
-    const siblings = [...sections.querySelectorAll(':scope > .draft-section:not(.is-dragging)')];
-    const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
-    submitMove(dragged.dataset.moveUrl, {targetPosition: before ? siblings.indexOf(before) : siblings.length});
-});
+    document.addEventListener('pointerup', () => {
+        document.querySelectorAll('[data-drag-armed]').forEach(item => delete item.dataset.dragArmed);
+    });
+
+    // 2. Elements drop zones (.plan-elements) with insertion line
+    document.querySelectorAll('.plan-elements').forEach(list => {
+        list.addEventListener('dragover', event => {
+            if (!dragged?.classList.contains('plan-element')) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            list.classList.add('drop-target');
+
+            const indicator = getDropIndicator();
+            const siblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')];
+            const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
+            if (before) {
+                list.insertBefore(indicator, before);
+            } else {
+                list.appendChild(indicator);
+            }
+        });
+
+        list.addEventListener('dragleave', event => {
+            if (!list.contains(event.relatedTarget)) {
+                list.classList.remove('drop-target');
+                removeDropIndicator();
+            }
+        });
+
+        list.addEventListener('drop', event => {
+            event.preventDefault();
+            list.classList.remove('drop-target');
+            removeDropIndicator();
+            if (!dragged?.classList.contains('plan-element')) return;
+
+            const draggedDate = dragged.dataset.date || '';
+            const siblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')];
+            const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
+            const position = before ? siblings.indexOf(before) : siblings.length;
+
+            submitMove(dragged.dataset.moveUrl, {
+                targetSectionId: list.dataset.sectionId || '',
+                targetDate: draggedDate,
+                targetPosition: position
+            });
+        });
+    });
+
+    // 3. Sections drop zone (#draft-sections)
+    const sections = document.querySelector('#draft-sections');
+    sections?.addEventListener('dragover', event => {
+        if (!dragged?.classList.contains('draft-section')) return;
+        event.preventDefault();
+        sections.classList.add('drop-target');
+
+        const indicator = getDropIndicator();
+        const siblings = [...sections.querySelectorAll(':scope > .draft-section:not(.is-dragging)')];
+        const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
+        if (before) {
+            sections.insertBefore(indicator, before);
+        } else {
+            sections.appendChild(indicator);
+        }
+    });
+
+    sections?.addEventListener('dragleave', event => {
+        if (!sections.contains(event.relatedTarget)) {
+            sections.classList.remove('drop-target');
+            removeDropIndicator();
+        }
+    });
+
+    sections?.addEventListener('drop', event => {
+        event.preventDefault();
+        sections.classList.remove('drop-target');
+        removeDropIndicator();
+        if (!dragged?.classList.contains('draft-section')) return;
+        const siblings = [...sections.querySelectorAll(':scope > .draft-section:not(.is-dragging)')];
+        const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
+        submitMove(dragged.dataset.moveUrl, { targetPosition: before ? siblings.indexOf(before) : siblings.length });
+    });
+
+    // 4. Phase collapse behavior: Only toggle when clicking caret (.pf-phase-toggle-btn)
+    document.addEventListener('click', event => {
+        const toggleBtn = event.target.closest('.pf-phase-toggle-btn');
+        if (toggleBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const details = toggleBtn.closest('details.draft-section');
+            if (details) {
+                details.open = !details.open;
+            }
+            return;
+        }
+
+        // Prevent header click from toggling <details>
+        const header = event.target.closest('summary.pf-plan-section__header');
+        if (header) {
+            // If the user clicked interactive buttons or forms inside summary, don't interfere
+            if (event.target.closest('button, input, textarea, a, form, .pf-phase-inline-edit')) {
+                return;
+            }
+            event.preventDefault();
+        }
+    });
+
+    // 5. Inline Phase Editing (Reveal / Cancel)
+    document.addEventListener('click', event => {
+        const editBtn = event.target.closest('.pf-phase-edit-btn');
+        if (editBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const section = editBtn.closest('.draft-section');
+            if (section) {
+                const displayWrap = section.querySelector('.pf-phase-display-wrap');
+                const editForm = section.querySelector('.pf-phase-inline-edit');
+                if (displayWrap) displayWrap.hidden = true;
+                if (editForm) {
+                    editForm.hidden = false;
+                    const input = editForm.querySelector('.pf-phase-edit-title');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                }
+            }
+            return;
+        }
+
+        const cancelBtn = event.target.closest('.pf-phase-cancel-btn');
+        if (cancelBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const section = cancelBtn.closest('.draft-section');
+            if (section) {
+                const displayWrap = section.querySelector('.pf-phase-display-wrap');
+                const editForm = section.querySelector('.pf-phase-inline-edit');
+                if (editForm) editForm.hidden = true;
+                if (displayWrap) displayWrap.hidden = false;
+            }
+        }
+    });
+
+    // 6. Make entire task/milestone card clickable to open detail page
+    document.addEventListener('click', event => {
+        const card = event.target.closest('.plan-element[data-detail-url]');
+        if (!card) return;
+
+        // Do not navigate if clicking an interactive control
+        if (event.target.closest('button, input, textarea, select, a, label, form, .drag-handle, .review-actions, summary')) {
+            return;
+        }
+
+        const url = card.dataset.detailUrl;
+        if (url) {
+            window.location.href = url;
+        }
+    });
+
+    // 7. Regenerate Plan Modal Dialog wiring
+    const regenBtn = document.getElementById('open-regenerate-modal-btn');
+    const regenDialog = document.getElementById('regenerate-plan-dialog');
+    const closeRegenBtn = document.getElementById('close-regenerate-modal-btn');
+    const cancelRegenBtn = document.getElementById('cancel-regenerate-modal-btn');
+
+    if (regenBtn && regenDialog) {
+        regenBtn.addEventListener('click', () => {
+            if (typeof regenDialog.showModal === 'function') {
+                regenDialog.showModal();
+            } else {
+                regenDialog.setAttribute('open', '');
+            }
+        });
+
+        const closeDialog = () => {
+            if (typeof regenDialog.close === 'function') {
+                regenDialog.close();
+            } else {
+                regenDialog.removeAttribute('open');
+            }
+        };
+
+        closeRegenBtn?.addEventListener('click', closeDialog);
+        cancelRegenBtn?.addEventListener('click', closeDialog);
+
+        regenDialog.addEventListener('click', event => {
+            if (event.target === regenDialog) closeDialog();
+        });
+    }
+
+    // 8. Auto-dismiss success/info alerts on next relevant interaction
+    document.addEventListener('click', event => {
+        if (event.target.closest('.pf-alert__close')) return;
+        if (event.target.closest('button, a, input, select, textarea, .plan-element, .pf-dropdown__item')) {
+            document.querySelectorAll('.pf-alert--success, .pf-alert--info').forEach(alert => {
+                alert.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 200);
+            });
+        }
+    }, { capture: true });
+
+})();

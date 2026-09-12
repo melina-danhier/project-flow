@@ -42,4 +42,17 @@ public class DraftPlanElementDto {
             case USER -> "Nutzereingabe";
         };
     }
+
+    public String getVisibleOriginLabel() {
+        if (origin == ElementOrigin.AI_MODIFIED || origin == ElementOrigin.TEMPLATE_MODIFIED) {
+            return "Bearbeitet";
+        }
+        if (origin == ElementOrigin.TEMPLATE) {
+            return "Vorlage";
+        }
+        if (origin == ElementOrigin.USER) {
+            return "Nutzereingabe";
+        }
+        return null;
+    }
 }

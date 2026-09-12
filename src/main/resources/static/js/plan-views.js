@@ -12,6 +12,11 @@ function initializePlanViews() {
 
     var monthCursor;
     var cardPage = 0;
+    var calendarDateMode = 'due';
+    try {
+        var savedMode = window.localStorage.getItem('projectflow.calendarDateMode');
+        if (['due', 'start', 'both'].includes(savedMode)) calendarDateMode = savedMode;
+    } catch (ignored) { }
     var main = document.querySelector('main[data-project-id]');
     var projectId = main.dataset.projectId;
     var isDraft = Boolean(main.dataset.draftStatus);
@@ -49,6 +54,8 @@ function initializePlanViews() {
                             + (type === 'task' ? 'tasks/' : 'milestones/') + element.dataset.elementId),
                         type: type,
                         date: element.dataset.date || '',
+                        startDate: element.dataset.startDate || '',
+                        dueDate: element.dataset.dueDate || element.dataset.date || '',
                         dateLabel: text(element, '.pf-badge--outline') || text(element, '.element-facts time'),
                         state: text(element, '.pf-badge--gray') || text(element, '.review-status'),
                         completed: element.dataset.taskCompleted === 'true',
@@ -215,22 +222,54 @@ function initializePlanViews() {
         return board;
     }
 
-    function calendarTasks(phases) {
-        return phases.flatMap(function (phase) {
-            return phase.elements.filter(function (item) { return item.date; });
-        });
+    function isTaskDatedInMode(task, mode) {
+        if (mode === 'due') return Boolean(task.dueDate || task.date);
+        if (mode === 'start') return Boolean(task.startDate);
+        if (mode === 'both') return Boolean(task.startDate || task.dueDate || task.date);
+        return Boolean(task.dueDate || task.date);
+    }
+
+    function isTaskOnDate(task, isoDate, mode) {
+        if (mode === 'due') {
+            return (task.dueDate || task.date) === isoDate;
+        }
+        if (mode === 'start') {
+            return task.startDate === isoDate;
+        }
+        if (mode === 'both') {
+            if (task.startDate && (task.dueDate || task.date)) {
+                var start = task.startDate;
+                var due = task.dueDate || task.date;
+                if (start > due) { var tmp = start; start = due; due = tmp; }
+                return start <= isoDate && isoDate <= due;
+            }
+            if (task.startDate) return task.startDate === isoDate;
+            return (task.dueDate || task.date) === isoDate;
+        }
+        return (task.dueDate || task.date) === isoDate;
     }
 
     function renderCalendar(phases) {
-        var tasks = calendarTasks(phases);
+        var allElements = phases.flatMap(function (phase) { return phase.elements; });
+        var tasks = allElements.filter(function (item) { return isTaskDatedInMode(item, calendarDateMode); });
+        var undatedTasks = allElements.filter(function (item) { return !isTaskDatedInMode(item, calendarDateMode); });
+
         if (!monthCursor) {
-            var initial = tasks.length ? new Date(tasks[0].date + 'T12:00:00') : new Date();
+            var firstDated = tasks.find(function (t) { return t.dueDate || t.startDate || t.date; });
+            var dateStr = firstDated ? (firstDated.dueDate || firstDated.startDate || firstDated.date) : '';
+            var initial = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
             monthCursor = new Date(initial.getFullYear(), initial.getMonth(), 1);
         }
         var wrapper = document.createElement('section');
         wrapper.className = 'pf-calendar';
         var toolbar = document.createElement('div');
         toolbar.className = 'pf-calendar__toolbar';
+
+        var navGroup = document.createElement('div');
+        navGroup.className = 'pf-cluster';
+        navGroup.style.alignItems = 'center';
+        navGroup.style.gap = '0.5rem';
+
         var previous = document.createElement('button');
         previous.type = 'button'; previous.className = 'pf-btn pf-btn--sm pf-btn--outline'; previous.textContent = '‹ Vorheriger Monat';
         previous.addEventListener('click', function () { monthCursor.setMonth(monthCursor.getMonth() - 1); showView('calendar'); });
@@ -239,7 +278,34 @@ function initializePlanViews() {
         var next = document.createElement('button');
         next.type = 'button'; next.className = 'pf-btn pf-btn--sm pf-btn--outline'; next.textContent = 'Nächster Monat ›';
         next.addEventListener('click', function () { monthCursor.setMonth(monthCursor.getMonth() + 1); showView('calendar'); });
-        toolbar.append(previous, heading, next);
+        navGroup.append(previous, heading, next);
+
+        var modeSelector = document.createElement('div');
+        modeSelector.className = 'pf-calendar__mode-selector';
+        var modeLabel = document.createElement('label');
+        modeLabel.textContent = 'Datumsanzeige: ';
+        modeLabel.className = 'pf-calendar__mode-label';
+        var modeSelect = document.createElement('select');
+        modeSelect.className = 'pf-select pf-select--sm';
+        [
+            { value: 'due', label: 'Nur Fälligkeitsdatum' },
+            { value: 'start', label: 'Nur Startdatum' },
+            { value: 'both', label: 'Start- & Fälligkeitsdatum' }
+        ].forEach(function (opt) {
+            var option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label;
+            if (opt.value === calendarDateMode) option.selected = true;
+            modeSelect.appendChild(option);
+        });
+        modeSelect.addEventListener('change', function () {
+            calendarDateMode = modeSelect.value;
+            try { window.localStorage.setItem('projectflow.calendarDateMode', calendarDateMode); } catch (ignored) { }
+            showView('calendar');
+        });
+        modeSelector.append(modeLabel, modeSelect);
+        toolbar.append(navGroup, modeSelector);
+
         var grid = document.createElement('div');
         grid.className = 'pf-calendar__grid';
         ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].forEach(function (weekday) {
@@ -257,19 +323,22 @@ function initializePlanViews() {
             var number = document.createElement('span'); number.className = 'pf-calendar__date'; number.textContent = day; cell.appendChild(number);
             var iso = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
             cell.dataset.date = iso;
-            tasks.filter(function (task) { return task.date === iso; }).forEach(function (task) {
+            tasks.filter(function (task) { return isTaskOnDate(task, iso, calendarDateMode); }).forEach(function (task) {
                 var link = document.createElement('a'); link.className = 'pf-calendar__task'; link.href = task.href;
                 link.textContent = task.title; link.title = task.title;
-                link.dataset.elementId = task.elementId; link.dataset.date = task.date;
+                link.dataset.elementId = task.elementId; link.dataset.date = iso;
+                if (calendarDateMode === 'both' && task.startDate && (task.dueDate || task.date) && task.startDate !== (task.dueDate || task.date)) {
+                    link.classList.add('pf-calendar__task--range');
+                    if (iso === task.startDate) link.classList.add('pf-calendar__task--range-start');
+                    if (iso === (task.dueDate || task.date)) link.classList.add('pf-calendar__task--range-end');
+                }
                 if (editable) link.draggable = true;
                 cell.appendChild(link);
             });
             grid.appendChild(cell);
         }
         wrapper.append(toolbar, grid);
-        var undatedTasks = phases.flatMap(function (phase) {
-            return phase.elements.filter(function (item) { return !item.date; });
-        });
+
         if (undatedTasks.length) {
             var undated = document.createElement('section');
             undated.className = 'pf-calendar__undated';
