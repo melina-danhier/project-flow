@@ -99,10 +99,8 @@ public class StubAiClient implements AiClient {
         LocalDate endDate = date(projectStart, projectEnd, 2);
 
         List<GeneratedTask> tasks = List.of(
-                task("task-1", "Anforderungen festhalten", GeneratedElementOrigin.USER_INPUT,
-                        100, startDate, requirementsDueDate),
-                task("task-2", "Ressourcen organisieren", GeneratedElementOrigin.AI_INFERRED,
-                        200, requirementsDueDate, endDate));
+                task("task-1", "Anforderungen festhalten", 100, startDate, requirementsDueDate),
+                task("task-2", "Ressourcen organisieren", 200, requirementsDueDate, endDate));
         GeneratedMilestone milestone = new GeneratedMilestone(
                 "milestone-1", "Vorbereitung abgeschlossen", endDate, 300);
 
@@ -117,10 +115,8 @@ public class StubAiClient implements AiClient {
         LocalDate endDate = date(projectStart, projectEnd, 6);
 
         List<GeneratedTask> tasks = List.of(
-                task("task-3", "Kernaufgabe durchführen", GeneratedElementOrigin.AI_INFERRED,
-                        100, startDate, executionDueDate),
-                task("task-4", "Ergebnis kontrollieren", GeneratedElementOrigin.AI_INFERRED,
-                        200, endDate, endDate));
+                task("task-3", "Kernaufgabe durchführen", 100, startDate, executionDueDate),
+                task("task-4", "Ergebnis kontrollieren", 200, endDate, endDate));
         GeneratedMilestone milestone = new GeneratedMilestone(
                 "milestone-2", "Projektziel erreicht", endDate, 300);
 
@@ -156,14 +152,13 @@ public class StubAiClient implements AiClient {
     private GeneratedTask task(
             String tempId,
             String title,
-            GeneratedElementOrigin origin,
             int order,
             LocalDate startDate,
             LocalDate dueDate
     ) {
         return new GeneratedTask(
                 tempId, title, "Plausibler Beispielschritt für Workflow- und UI-Tests.",
-                2, startDate, dueDate, origin, order);
+                2, startDate, dueDate, order);
     }
 
     private LocalDate date(LocalDate projectStart, LocalDate projectEnd, int offsetDays) {

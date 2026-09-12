@@ -676,7 +676,7 @@ class DraftReviewIntegrationTest {
             projects.saveAndFlush(project);
             List<GeneratedTask> tasks = IntStream.rangeClosed(1, 4).mapToObj(index -> new GeneratedTask(
                     "task-" + index, "Aufgabe " + index, null, null, null, null,
-                    GeneratedElementOrigin.AI_INFERRED, index)).toList();
+                    index)).toList();
             var contents = generatedPlanMapper.map(new GeneratedPlanResponse(List.of(new GeneratedSection(
                     "section", "Section", null, 1, tasks, List.of()))));
             DraftPlan draft = new DraftPlan();

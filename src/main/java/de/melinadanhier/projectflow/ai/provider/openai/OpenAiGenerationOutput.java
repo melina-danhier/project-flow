@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.ai.provider.openai;
 
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -38,7 +37,6 @@ public record OpenAiGenerationOutput(
             Optional<Integer> estimatedHours,
             Optional<LocalDate> startDate,
             Optional<LocalDate> dueDate,
-            GeneratedElementOrigin origin,
             int order,
             List<String> prerequisiteTaskTempIds,
             Optional<String> priority
@@ -53,10 +51,9 @@ public record OpenAiGenerationOutput(
 
         public Task(String tempId, String title, Optional<String> description,
                     Optional<Integer> estimatedHours, Optional<LocalDate> startDate,
-                    Optional<LocalDate> dueDate,
-                    GeneratedElementOrigin origin, int order) {
+                    Optional<LocalDate> dueDate, int order) {
             this(tempId, title, description, estimatedHours, startDate, dueDate,
-                    origin, order, List.of(), Optional.empty());
+                    order, List.of(), Optional.empty());
         }
     }
 

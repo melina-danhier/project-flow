@@ -56,7 +56,19 @@ class AiPromptBuilderTest {
                 .contains("Erzeuge keine Rückfrage")
                 .doesNotContain("reviewQuestion")
                 .contains("mindestens zwei grundsätzlich mögliche Stellschrauben")
-                .contains("genau einen bevorzugten Änderungsvorschlag")
+                .contains("immer genau einen bevorzugten, konkreten")
+                .contains("zusätzliche Personen", "Aufteilung der Arbeiten in mehrere Abschnitte")
+                .contains("am wenigsten unnötig in die Angaben eingreift")
+                .contains("Eine bloß etwas", "größere Zahl genügt nicht")
+                .contains("mindestens zwei realistische Alternativen")
+                .contains("nicht immer dieselbe Standardliste")
+                .contains("warum diese Anpassung gegenüber den genannten Alternativen")
+                .contains("immer genau einen bevorzugten, konkreten und direkt")
+                .contains("darf nicht ohne einen solchen Vorschlag")
+                .contains("nur ein Vorschlag ist")
+                .contains("eine eigene Anpassung")
+                .contains("grobe Planungsannahme")
+                .contains("niemals automatisch eine Verlängerung")
                 .contains("previousValue und newValue")
                 .contains("Menschen ohne Projektmanagement- oder Technikkenntnisse")
                 .contains("Dafür reicht die eingeplante Zeit nicht aus")
@@ -81,6 +93,7 @@ class AiPromptBuilderTest {
                 .contains("Gesamtaufwand des Plans")
                 .contains("Tageskapazität")
                 .contains("mehr geschätzte Aufgabenstunden", "als verfügbar");
+        assertThat(instructions).doesNotContain("USER_INPUT", "AI_INFERRED", "origin ist");
     }
 
     @Test
@@ -236,6 +249,25 @@ class AiPromptBuilderTest {
         assertThat(prompt.confirmedUserData())
                 .contains("availableWorkingTime", "Etwa 2 Stunden täglich")
                 .contains("additionalInformation", "Zuerst ein nutzbares MVP");
+    }
+
+    @Test
+    void preCheckPromptDistinguishesFutureContextFromTemporalGoalConflicts() {
+        String instructions = preCheckPromptBuilder.build(snapshot()).systemInstructions();
+
+        assertThat(instructions)
+                .contains("zeitliche Kohärenz")
+                .contains("Ziel, Rahmenbedingungen, zusätzlichen Informationen")
+                .contains("Ist es nur Kontext für eine aktuelle Recherche")
+                .contains("Ein Ereignis nach dem Projektende ist allein niemals ein Problem")
+                .contains("klar", "abgegrenzte aktuelle Planungsphase")
+                .contains("WARNING vom type ASSUMPTION")
+                .contains("Stelle keine harte Behauptung auf")
+                .contains("klar einen Schritt oder ein Ergebnis umfasst")
+                .contains("ungewöhnliche, aber mögliche", "frühe Planung")
+                .contains("das Ziel auf die aktuelle Planungsphase zu begrenzen")
+                .contains("Folgeprojekt vorzusehen")
+                .contains("Nutzeralternativen offen");
     }
 
     private AiWizardSnapshot snapshot() {

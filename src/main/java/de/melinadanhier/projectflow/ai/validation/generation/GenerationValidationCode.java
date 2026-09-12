@@ -29,7 +29,6 @@ public enum GenerationValidationCode {
     TASK_DESCRIPTION_BLANK("Eine vorhandene Aufgabenbeschreibung darf nicht leer sein."),
     TASK_ORDER_INVALID("Eine Aufgabenreihenfolge ist nicht positiv."),
     TASK_ORDER_DUPLICATE("Eine Aufgabenreihenfolge wird innerhalb eines Bereichs mehrfach verwendet."),
-    TASK_ORIGIN_MISSING("Bei einer Aufgabe fehlt die Herkunft."),
     TASK_EFFORT_INVALID("Ein Aufgabenaufwand muss zwischen 1 und " + MAX_ESTIMATED_HOURS + " Stunden liegen."),
     TASK_COUNT_TOO_LOW("Der Plan muss mindestens " + MIN_TASKS + " Aufgaben enthalten."),
     TASK_LIMIT_EXCEEDED("Der Plan enthält mehr als " + MAX_TASKS + " Aufgaben."),

@@ -1,7 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.parser.AiResponseParser;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
@@ -110,15 +109,13 @@ class AiOutputParserTest {
     }
 
     @Test
-    void parsesGenerationWithTemporaryIdsAndBothOrigins() {
+    void parsesGenerationWithTemporaryIdsWithoutModelControlledOrigins() {
         var result = parseGeneration(validGenerationJson());
 
         assertThat(result.sections()).singleElement().satisfies(section -> {
             assertThat(section.tempId()).isEqualTo("section-1");
             assertThat(section.tasks()).extracting("tempId")
                     .containsExactly("task-1", "task-2");
-            assertThat(section.tasks()).extracting("origin")
-                    .containsExactly(GeneratedElementOrigin.USER_INPUT, GeneratedElementOrigin.AI_INFERRED);
             assertThat(section.milestones()).singleElement()
                     .extracting("tempId").isEqualTo("milestone-1");
         });
@@ -167,21 +164,19 @@ class AiOutputParserTest {
         assertThat(parseGeneration(validGenerationJson().replace(
                 "\"title\":\"Umzugskartons packen\",", ""))).isNotNull();
         assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
-                "\"origin\":\"USER_INPUT\"", "\"origin\":\"TEMPLATE\"")))
+                "\"estimatedHours\":4,", "\"estimatedHours\":4,\"origin\":\"USER_INPUT\",")))
                 .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
     void parsesValidPriorityAndRejectsUnknownPriority() {
         var parsed = parseGeneration(validGenerationJson().replace(
-                "\"origin\":\"USER_INPUT\"",
-                "\"priority\":\"HIGH\",\"origin\":\"USER_INPUT\""));
+                "\"estimatedHours\":4,", "\"estimatedHours\":4,\"priority\":\"HIGH\","));
         assertThat(parsed.sections().getFirst().tasks().getFirst().priority())
                 .isEqualTo(TaskPriority.HIGH);
 
         assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
-                "\"origin\":\"USER_INPUT\"",
-                "\"priority\":\"URGENT\",\"origin\":\"USER_INPUT\"")))
+                "\"estimatedHours\":4,", "\"estimatedHours\":4,\"priority\":\"URGENT\",")))
                 .isInstanceOf(AiOutputValidationException.class);
     }
 
@@ -214,8 +209,8 @@ class AiOutputParserTest {
                 "\"sections\":",
                 "\"projectTitle\":\"Nicht übernehmen\",\"sections\":"))).isInstanceOf(AiOutputValidationException.class);
         assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
-                "\"origin\":\"USER_INPUT\",",
-                "\"origin\":\"USER_INPUT\",\"reviewed\":true,"))).isInstanceOf(AiOutputValidationException.class);
+                "\"estimatedHours\":4,",
+                "\"estimatedHours\":4,\"reviewed\":true,"))).isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
@@ -284,10 +279,10 @@ class AiOutputParserTest {
                     "tasks":[
                       {"tempId":"task-1","title":"Umzugskartons packen","description":"Zimmerweise packen",
                        "estimatedHours":4,"startDate":"2026-08-25","dueDate":"2026-08-26",
-                       "origin":"USER_INPUT","order":1},
+                       "order":1},
                       {"tempId":"task-2","title":"Transport organisieren","description":"Fahrzeug reservieren",
                        "estimatedHours":2,"startDate":"2026-08-25","dueDate":"2026-08-26",
-                       "origin":"AI_INFERRED","order":2}
+                       "order":2}
                     ],
                     "milestones":[{"tempId":"milestone-1","title":"Vorbereitung abgeschlossen",
                                    "date":"2026-08-27","order":1}]

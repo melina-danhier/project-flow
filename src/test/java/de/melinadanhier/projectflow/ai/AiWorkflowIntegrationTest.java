@@ -164,7 +164,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getPreCheckPromptVersion()).isEqualTo(AiPromptVersions.PRE_CHECK_PROMPT);
         assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo(AiSchemaVersions.PRE_CHECK);
         assertThat(workflow.getGenerationPromptVersion()).isEqualTo(AiPromptVersions.GENERATION_PROMPT);
-        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("generation-schema-v2");
+        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("generation-schema-v3");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
         assertThat(workflow.getPreCheckRetryCount()).isZero();
         assertThat(snapshotCodec.readGeneratedPlan(workflow.getGeneratedPlan())).isEqualTo(generatedPlan());
@@ -475,7 +475,7 @@ class AiWorkflowIntegrationTest {
     private GeneratedTask generatedTask(String id, String title, int order) {
         return new GeneratedTask(id, title, null, 1,
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20),
-                GeneratedElementOrigin.AI_INFERRED, order);
+                order);
     }
 
     private User saveUser(String email) {

@@ -91,9 +91,6 @@ final class GenerationStructureValidator {
         optionalText(TASK_DESCRIPTION_BLANK, path + ".description", task.description());
         positiveOrder(TASK_ORDER_INVALID, TASK_ORDER_DUPLICATE, task.order(), elementOrders);
         dependencies.register(task, path);
-        if (task.origin() == null) {
-            addIssue(TASK_ORIGIN_MISSING);
-        }
         if (task.estimatedHours() != null &&
                 (task.estimatedHours() <= 0 || task.estimatedHours() > MAX_ESTIMATED_HOURS)) {
             addIssue(TASK_EFFORT_INVALID, path + ".estimatedHours");

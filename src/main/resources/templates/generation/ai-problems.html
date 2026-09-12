@@ -70,6 +70,9 @@
                         <strong>Mögliche Anpassungen: </strong>
                         <span th:each="option, stat : ${problem.adjustmentOptions}"><span th:text="${option.displayText()}"></span><span th:unless="${stat.last}">, </span><span th:if="${stat.last}">.</span></span>
                     </p>
+                    <p th:if="${problem.criticalAssumption and problem.suggestedUserAction != null and !problem.suggestedUserAction.isBlank()}" style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0 0 0.5rem 0;">
+                        <strong>Alternativen: </strong><span th:text="${problem.suggestedUserAction}"></span>
+                    </p>
                     <p th:if="${!problem.criticalAssumption and problem.suggestedUserAction != null and !problem.suggestedUserAction.isBlank()}" style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0 0 0.5rem 0;">
                         <strong th:text="${problem.severity.name() == 'ERROR' ? 'Vorschlag: ' : 'Mögliche Anpassung: '}">Vorschlag: </strong><span th:text="${problem.suggestedUserAction}"></span>
                     </p>
@@ -165,6 +168,10 @@
 
             <form th:action="@{/projects/new/ai/problems/{workflowId}/edit(workflowId=${review.workflowId})}" method="post" style="margin: 0;">
                 <button type="submit" class="pf-btn pf-btn--secondary">Eingaben ändern</button>
+            </form>
+            <form th:action="@{/projects/new/ai/problems/{workflowId}/regenerate(workflowId=${review.workflowId})}"
+                  method="post" onsubmit="this.querySelector('button').disabled=true" style="margin: 0;">
+                <button type="submit" class="pf-btn pf-btn--secondary">Vorprüfung erneut durchführen</button>
             </form>
             <form th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${review.workflowId})}"
                   method="post"

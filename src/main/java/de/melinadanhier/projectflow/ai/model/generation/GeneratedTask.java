@@ -19,7 +19,6 @@ public record GeneratedTask(
         @Positive @Max(MAX_ESTIMATED_HOURS) Integer estimatedHours,
         LocalDate startDate,
         LocalDate dueDate,
-        @NotNull GeneratedElementOrigin origin,
         @Positive int order,
         @NotNull List<@NotBlank @Size(max = 100) String> prerequisiteTaskTempIds,
         TaskPriority priority
@@ -33,18 +32,16 @@ public record GeneratedTask(
     }
 
     public GeneratedTask(String tempId, String title, String description, Integer estimatedHours,
-                         LocalDate startDate, LocalDate dueDate,
-                         GeneratedElementOrigin origin, int order) {
+                         LocalDate startDate, LocalDate dueDate, int order) {
         this(tempId, title, description, estimatedHours, startDate, dueDate,
-                origin, order, List.of(), null);
+                order, List.of(), null);
     }
 
     public GeneratedTask(String tempId, String title, String description, Integer estimatedHours,
-                         LocalDate startDate, LocalDate dueDate,
-                         GeneratedElementOrigin origin, int order,
+                         LocalDate startDate, LocalDate dueDate, int order,
                          List<String> prerequisiteTaskTempIds) {
         this(tempId, title, description, estimatedHours, startDate, dueDate,
-                origin, order, prerequisiteTaskTempIds, null);
+                order, prerequisiteTaskTempIds, null);
     }
 
     private static String trim(String value) {

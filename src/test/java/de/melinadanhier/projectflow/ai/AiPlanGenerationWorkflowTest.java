@@ -128,6 +128,21 @@ class AiPlanGenerationWorkflowTest {
                 UUID.randomUUID(), NOW.plusSeconds(900)));
     }
 
+    @Test
+    void completedPreCheckCanBeRegeneratedWithTheSameSnapshot() {
+        var fixture = workflow();
+        ReflectionTestUtils.setField(fixture.workflow(), "status",
+                AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
+        ReflectionTestUtils.setField(fixture.workflow(), "preCheckResult", "{\"problems\":[]}");
+        UUID rerunId = UUID.randomUUID();
+
+        fixture.workflow().restartPreCheck("{\"same\":true}", rerunId, NOW.plusSeconds(600));
+
+        assertThat(fixture.workflow().getStatus()).isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING);
+        assertThat(fixture.workflow().getConfirmedSnapshot()).isEqualTo("{\"same\":true}");
+        assertThat(fixture.workflow().getPreCheckResult()).isNull();
+    }
+
     private Fixture workflow() {
         UUID runId = UUID.randomUUID();
         var workflow = AiPlanGenerationWorkflow.create(new Project(), "{}", "ai-wizard-v3",

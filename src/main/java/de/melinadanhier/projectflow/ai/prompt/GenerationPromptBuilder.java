@@ -57,8 +57,6 @@ public class GenerationPromptBuilder {
               Richte die Terminierung an einer angegebenen Tageskapazität aus. Plane an keinem Tag
               offensichtlich mehr geschätzte Aufgabenstunden ein als verfügbar sind und verdichte
               Aufgaben nicht künstlich, nur um einen unrealistischen Zeitraum einzuhalten.
-            - origin ist genau USER_INPUT, wenn der Inhalt unmittelbar aus einer Nutzereingabe folgt,
-              andernfalls AI_INFERRED.
             - Gib keinen Prüfstatus wie checked, verified oder reviewed zurück. Neue Inhalte sind
               anwendungsseitig ungeprüft.
             - Startdatum, Enddatum, Dauer und verfügbare Arbeitszeit sind voneinander unabhängige Angaben.

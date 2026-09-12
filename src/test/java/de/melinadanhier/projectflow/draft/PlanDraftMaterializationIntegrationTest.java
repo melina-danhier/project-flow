@@ -23,6 +23,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.membership.Proje
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
+import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -324,8 +325,8 @@ class PlanDraftMaterializationIntegrationTest {
             assertThat(last.getPrerequisites()).extracting(DraftTask::getId).containsExactly(second.getId());
             assertThat(first.getPriority()).isEqualTo(TaskPriority.MEDIUM);
             assertThat(last.getPriority()).isEqualTo(TaskPriority.HIGH);
-            assertThat(first.getAiOrigin()).isEqualTo(GeneratedElementOrigin.USER_INPUT);
-            assertThat(last.getAiOrigin()).isEqualTo(GeneratedElementOrigin.AI_INFERRED);
+            assertThat(first.getOrigin()).isEqualTo(ElementOrigin.AI);
+            assertThat(last.getOrigin()).isEqualTo(ElementOrigin.AI);
             assertThat(first.getEstimatedHours()).isEqualTo(4);
             assertThat(first.getDescription()).isEqualTo("Beschreibung");
             assertThat(first.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 1));
@@ -376,13 +377,13 @@ class PlanDraftMaterializationIntegrationTest {
                         List.of(task("second", "Zweite Aufgabe", 2, null, List.of("first")),
                                 new GeneratedTask("first", "Erste Aufgabe", "Beschreibung", 4,
                                         LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10),
-                                        GeneratedElementOrigin.USER_INPUT, 1)),
+                                        1)),
                         List.of(new GeneratedMilestone("ready", "Bereit", null, 3)))));
     }
 
     private GeneratedTask task(String key, String title, int order, TaskPriority priority, List<String> prerequisites) {
         return new GeneratedTask(key, title, null, null, null, null,
-                GeneratedElementOrigin.AI_INFERRED, order, prerequisites, priority);
+                order, prerequisites, priority);
     }
 
     private record Fixture(UUID workflowId, UUID projectId) { }
