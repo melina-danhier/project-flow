@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.draft;
 
-import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftElementMoveForm;
 import de.melinadanhier.projectflow.draft.dto.editing.DraftSectionMoveForm;
 import de.melinadanhier.projectflow.draft.model.*;
@@ -111,6 +110,18 @@ class DraftOrderingIntegrationTest {
                 .getSections().getFirst().getElements()).extracting("title")
                 .containsExactly("Meilenstein", "Aufgabe");
         assertThat(fixture.milestone().getSortOrder()).isLessThan(fixture.task().getSortOrder());
+    }
+
+    @Test
+    void calendarDropUpdatesDraftMilestoneDateAndMarksItModified() {
+        Fixture fixture = fixture();
+        LocalDate targetDate = LocalDate.of(2027, 4, 12);
+
+        reviews.updateElementDate(fixture.project().getId(), fixture.milestone().getId(),
+                fixture.owner().getId(), targetDate, fixture.draft().getLockVersion());
+
+        assertThat(fixture.milestone().getDueDate()).isEqualTo(targetDate);
+        assertThat(fixture.milestone().getOrigin()).isEqualTo(ElementOrigin.AI_MODIFIED);
     }
 
     @Test

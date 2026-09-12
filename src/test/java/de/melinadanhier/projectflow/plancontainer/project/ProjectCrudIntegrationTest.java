@@ -524,6 +524,22 @@ class ProjectCrudIntegrationTest {
     }
 
     @Test
+    void calendarDropUpdatesTaskDateAndClearsRelativeDueDay() {
+        User owner = saveUser("calendar-drop-owner@example.org");
+        Project project = saveProject("Kalender", owner);
+        TaskDetailsDto created = taskService.createTask(project.getId(), taskForm("Termin", null), owner.getId());
+        var task = taskRepository.findById(created.getId()).orElseThrow();
+        task.setRelativeDueDay(4);
+        LocalDate targetDate = LocalDate.of(2027, 4, 12);
+
+        orderingService.updateElementDate(project.getId(), created.getId(), owner.getId(), targetDate,
+                project.getLockVersion());
+
+        assertThat(task.getDueDate()).isEqualTo(targetDate);
+        assertThat(task.getRelativeDueDay()).isNull();
+    }
+
+    @Test
     void supportsZeroOneAndMultipleAssigneesAndRemovingIndividualAssignments() {
         User owner = saveUser("multi-owner@example.org");
         User firstUser = saveUser("multi-first@example.org");
