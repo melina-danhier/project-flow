@@ -130,18 +130,20 @@ public class DraftEditingController {
 
     @PostMapping("/projects/{projectId}/draft/tasks/{taskId}")
     public String updateTask(@PathVariable UUID projectId, @PathVariable UUID taskId,
-                             @Valid @ModelAttribute DraftTaskForm taskForm,
+                             @Valid @ModelAttribute("taskForm") DraftTaskForm taskForm,
                              BindingResult bindingResult,
                              @AuthenticationPrincipal AuthenticatedUser currentUser,
                              Model model, HttpSession session) {
         if (bindingResult.hasErrors()) {
-            return renderInvalidTask(projectId, taskId, currentUser.userId(), model);
+            populateElementDetail(projectId, taskId, "TASK", currentUser.userId(), model);
+            return "generation/draft-element-form";
         }
         try {
             draftReviewService.updateTask(projectId, taskId, currentUser.userId(), taskForm);
         } catch (DomainValidationException exception) {
             bindingResult.reject("draftTask", exception.getMessage());
-            return renderInvalidTask(projectId, taskId, currentUser.userId(), model);
+            populateElementDetail(projectId, taskId, "TASK", currentUser.userId(), model);
+            return "generation/draft-element-form";
         }
         studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_EDITED);
         return reviewRedirect(projectId);
@@ -149,18 +151,20 @@ public class DraftEditingController {
 
     @PostMapping("/projects/{projectId}/draft/milestones/{milestoneId}")
     public String updateMilestone(@PathVariable UUID projectId, @PathVariable UUID milestoneId,
-                                  @Valid @ModelAttribute DraftMilestoneForm milestoneForm,
+                                  @Valid @ModelAttribute("milestoneForm") DraftMilestoneForm milestoneForm,
                                   BindingResult bindingResult,
                                   @AuthenticationPrincipal AuthenticatedUser currentUser,
                                   Model model, HttpSession session) {
         if (bindingResult.hasErrors()) {
-            return renderInvalidMilestone(projectId, milestoneId, currentUser.userId(), model);
+            populateElementDetail(projectId, milestoneId, "MILESTONE", currentUser.userId(), model);
+            return "generation/draft-element-form";
         }
         try {
             draftReviewService.updateMilestone(projectId, milestoneId, currentUser.userId(), milestoneForm);
         } catch (DomainValidationException exception) {
             bindingResult.reject("draftMilestone", exception.getMessage());
-            return renderInvalidMilestone(projectId, milestoneId, currentUser.userId(), model);
+            populateElementDetail(projectId, milestoneId, "MILESTONE", currentUser.userId(), model);
+            return "generation/draft-element-form";
         }
         studyTrackingService.trackIfActive(session, StudyEventType.DRAFT_ITEM_EDITED);
         return reviewRedirect(projectId);
