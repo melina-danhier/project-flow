@@ -25,4 +25,8 @@ public class StudyEvent {
 
     @Column(name = "occurred_at", nullable = false)
     private Instant occurredAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "study_phase", nullable = false, length = 20)
+    private StudyPhase studyPhase;
 }

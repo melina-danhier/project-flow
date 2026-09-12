@@ -9,6 +9,7 @@ import de.melinadanhier.projectflow.planelement.service.PlanChangeNotApplicableE
 import de.melinadanhier.projectflow.feedback.domain.AiFeedbackContext;
 import de.melinadanhier.projectflow.feedback.service.AiFeedbackOpportunity;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -80,6 +81,25 @@ class AiPlanChangeControllerTest {
                 "Der KI-Vorschlag wurde bereits übernommen oder ist nicht mehr verfügbar.");
         assertThat(conflictModel.get("canRegenerate")).isEqualTo(true);
         verify(service, times(1)).confirm(project, proposal, userId);
+    }
+    @Test void activeStudyDoesNotOfferRegularFeedbackAfterDiscard() {
+        AiPlanChangeService service = mock(AiPlanChangeService.class);
+        StudyTrackingService studyTrackingService = mock(StudyTrackingService.class);
+        var controller = new AiPlanChangeController(service, studyTrackingService);
+        UUID project = UUID.randomUUID(), userId = UUID.randomUUID();
+        PlanChangeProposal proposal = proposal(project);
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("aiPlanChangeProposals",
+                new LinkedHashMap<>(Map.of(proposal.proposalId(), proposal)));
+        session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
+                new AiFeedbackOpportunity(AiFeedbackContext.AI_EDIT_ADOPTED,
+                        UUID.randomUUID(), "/projects"));
+        when(studyTrackingService.isActive(session)).thenReturn(true);
+
+        controller.discard(project, proposal.proposalId(), user(userId), session,
+                new RedirectAttributesModelMap());
+
+        assertThat(session.getAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE)).isNull();
     }
     @Test void invalidFormNeverCallsAi() {
         AiPlanChangeService service = mock(AiPlanChangeService.class); var controller = new AiPlanChangeController(service);

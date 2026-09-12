@@ -182,6 +182,10 @@ public class AiPlanChangeController {
     }
 
     private void offerFeedback(HttpSession session, AiFeedbackContext context, UUID actionId, UUID projectId) {
+        if (studyTrackingService != null && studyTrackingService.isActive(session)) {
+            session.removeAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE);
+            return;
+        }
         session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
                 new AiFeedbackOpportunity(context, actionId, "/projects/" + projectId + "/plan"));
     }

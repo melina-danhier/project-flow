@@ -26,6 +26,7 @@ class StudyTrackingServiceTest {
         UUID id = UUID.randomUUID();
         StudySession study = new StudySession();
         study.setStartedAt(now.minusSeconds(30));
+        study.setCurrentPhase(StudyPhase.TASK_1);
         MockHttpSession http = new MockHttpSession();
         http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
         when(sessions.findById(id)).thenReturn(Optional.of(study));
@@ -49,6 +50,7 @@ class StudyTrackingServiceTest {
         UUID id = UUID.randomUUID();
         UUID workflowId = UUID.randomUUID();
         StudySession study = new StudySession();
+        study.setCurrentPhase(StudyPhase.TASK_1);
         MockHttpSession http = new MockHttpSession();
         http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
         when(sessions.findById(id)).thenReturn(Optional.of(study));
@@ -70,5 +72,50 @@ class StudyTrackingServiceTest {
         assertThat(service.finish(http)).isTrue();
         assertThat(study.getCompletedAt()).isEqualTo(now);
         assertThat(http.getAttribute(StudyTrackingService.SESSION_ATTRIBUTE)).isNull();
+    }
+
+    @Test
+    void startResumesOpenSessionAndRestoresItsPersistedPhase() {
+        UUID id = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setParticipantId("P-17");
+        study.setStartedAt(now.minusSeconds(60));
+        study.setCurrentPhase(StudyPhase.TASK_2);
+        MockHttpSession http = new MockHttpSession();
+        when(sessions.findFirstByParticipantIdAndCompletedAtIsNullOrderByStartedAtDesc("P-17"))
+                .thenReturn(Optional.of(study));
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        service.startOrResume(http, "P-17");
+        service.beginTaskOne(http);
+
+        assertThat(http.getAttribute(StudyTrackingService.SESSION_ATTRIBUTE)).isEqualTo(id);
+        assertThat(http.getAttribute(StudyTrackingService.PHASE_ATTRIBUTE)).isEqualTo("TASK_2");
+        assertThat(study.getCurrentPhase()).isEqualTo(StudyPhase.TASK_2);
+        verify(sessions, never()).save(any());
+    }
+
+    @Test
+    void taskTwoKeepsSameSessionAndProjectAndEventsCarryThePhase() {
+        UUID id = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setProjectId(projectId);
+        study.setCurrentPhase(StudyPhase.TASK_1);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        service.beginTaskTwo(http);
+        service.trackIfActive(http, StudyEventType.AI_EDIT_STARTED);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(StudyEvent.class);
+        verify(events).save(captor.capture());
+        assertThat(study.getProjectId()).isEqualTo(projectId);
+        assertThat(captor.getValue().getStudySession()).isSameAs(study);
+        assertThat(captor.getValue().getStudyPhase()).isEqualTo(StudyPhase.TASK_2);
+        assertThat(http.getAttribute(StudyTrackingService.PHASE_ATTRIBUTE)).isEqualTo("TASK_2");
     }
 }

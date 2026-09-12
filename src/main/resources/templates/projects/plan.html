@@ -14,32 +14,7 @@
     <!-- Hidden project lock version for JS move operations -->
     <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
 
-    <!-- Study Session Notice -->
-    <div th:if="${session.studySessionId != null and session.studyPhase == 'TASK_1'}"
-         class="pf-card pf-card--tint"
-         style="margin-bottom: 1.5rem;">
-        <strong>Aufgabe 1 der Nutzerstudie</strong>
-        <p>
-            Wenn du mit der Erstellung und Prüfung des Projektplans fertig bist,
-            kehre zur Befragung zurück.
-        </p>
-        <a class="pf-btn pf-btn--primary" th:href="@{/study/return}">
-            Aufgabe 1 abschließen und zur Befragung zurückkehren
-        </a>
-    </div>
-    <div th:if="${session.studySessionId != null and session.studyPhase == 'TASK_2'}"
-         class="pf-card pf-card--tint"
-         style="margin-bottom: 1.5rem;">
-        <strong>Aufgabe 2 der Nutzerstudie</strong>
-        <p>
-            Wenn du die Anpassung des Projektplans abgeschlossen und geprüft hast,
-            kehre zur Befragung zurück.
-        </p>
-
-        <a class="pf-btn pf-btn--primary" th:href="@{/study/finish}">
-            Aufgabe 2 abschließen und zur Befragung zurückkehren
-        </a>
-    </div>
+    <th:block th:replace="~{fragments/layout :: study-return}" />
 
     <!-- Page Header with Breadcrumbs and Actions -->
     <div class="pf-page-header">

@@ -15,6 +15,33 @@
     <title th:text="${pageTitle} + ' – ProjectFlow'">ProjectFlow</title>
 </th:block>
 
+<th:block th:fragment="study-return">
+    <div th:if="${session != null and session.studySessionId != null and session.studyPhase == 'TASK_1'}"
+         class="pf-card pf-card--tint"
+         style="margin-bottom: 1.5rem;">
+        <strong>Aufgabe 1 der Nutzerstudie</strong>
+        <p>
+            Wenn du mit der Erstellung und Prüfung des Projektplans fertig bist,
+            kehre zur Befragung zurück.
+        </p>
+        <a class="pf-btn pf-btn--primary" th:href="@{/study/return}">
+            Aufgabe 1 abschließen und zur Befragung zurückkehren
+        </a>
+    </div>
+    <div th:if="${session != null and session.studySessionId != null and session.studyPhase == 'TASK_2'}"
+         class="pf-card pf-card--tint"
+         style="margin-bottom: 1.5rem;">
+        <strong>Aufgabe 2 der Nutzerstudie</strong>
+        <p>
+            Wenn du die Anpassung des Projektplans abgeschlossen und geprüft hast,
+            kehre zur Befragung zurück.
+        </p>
+        <a class="pf-btn pf-btn--primary" th:href="@{/study/finish}">
+            Aufgabe 2 abschließen und zur Befragung zurückkehren
+        </a>
+    </div>
+</th:block>
+
 <!-- Modern Executive Site Header -->
 <header th:fragment="site-header" class="site-header" id="top">
     <div class="site-header__inner">
@@ -99,7 +126,7 @@
 
 <!-- Footer with links + copyright -->
 <footer th:fragment="site-footer" class="site-footer">
-    <dialog th:if="${session != null and session.aiFeedbackOpportunity != null}"
+    <dialog th:if="${session != null and session.aiFeedbackOpportunity != null and session.studySessionId == null}"
             id="ai-feedback-dialog" class="pf-feedback-dialog"
             aria-labelledby="ai-feedback-title" aria-describedby="ai-feedback-description">
         <form th:action="@{/ai-feedback}" method="post" class="pf-feedback-dialog__form">

@@ -207,7 +207,10 @@ public class AiElementImprovementController {
 
     private void offerFeedback(HttpSession session, AiFeedbackContext context, UUID actionId,
                                AiImprovementProposal proposal) {
-        if (studyTrackingService.isActive(session)) return;
+        if (studyTrackingService.isActive(session)) {
+            session.removeAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE);
+            return;
+        }
         String returnUrl = proposal.elementType() == AiImprovementElementType.TASK
                 ? "/projects/" + proposal.projectId() + "/tasks/" + proposal.elementId()
                 : "/projects/" + proposal.projectId() + "/plan";
