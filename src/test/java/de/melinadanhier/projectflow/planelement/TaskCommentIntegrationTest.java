@@ -122,6 +122,34 @@ class TaskCommentIntegrationTest {
     }
 
     @Test
+    void authorCanEditOwnTaskNoteButOtherMemberCannot() throws Exception {
+        User owner = saveUser("edit-note-owner@example.org", "Eigentümerin");
+        User member = saveUser("edit-note-member@example.org", "Mitglied");
+        Project project = saveProject("Bearbeitbare Notizen", owner, CollaborationMode.GROUP);
+        addMember(project, member);
+        Task task = saveTask(project, owner, "Aufgabe mit Notiz");
+        addComment(project, task, owner, "Alter Inhalt");
+        var comment = taskCommentRepository.findAllForTask(project.getId(), task.getId()).getFirst();
+
+        mockMvc.perform(post("/projects/{projectId}/tasks/{taskId}/comments/{commentId}",
+                        project.getId(), task.getId(), comment.getId())
+                        .session(login(owner.getEmail())).with(csrf())
+                        .param("content", "  Neuer Inhalt  ")
+                        .param("lockVersion", String.valueOf(comment.getLockVersion())))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/tasks/" + task.getId()));
+
+        var updated = taskCommentRepository.findForTask(project.getId(), task.getId(), comment.getId()).orElseThrow();
+        assertThat(updated.getContent()).isEqualTo("Neuer Inhalt");
+        TaskCommentForm form = new TaskCommentForm();
+        form.setContent("Fremde Änderung");
+        form.setLockVersion(updated.getLockVersion());
+        assertThatThrownBy(() -> taskCommentService.updateOwnComment(
+                project.getId(), task.getId(), comment.getId(), form, member.getId()))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
     void deletingOtherMembershipRemovesItsCommentsButKeepsOwnerNotes() {
         User owner = saveUser("conversion-comment-owner@example.org", "Eigentümerin");
         User member = saveUser("conversion-comment-member@example.org", "Mitglied");
