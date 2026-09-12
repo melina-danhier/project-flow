@@ -73,7 +73,7 @@ public class ProjectController {
                 query, selectedLocation, currentUser.userId()));
         model.addAttribute("query", query);
         model.addAttribute("selectedLocation", selectedLocation);
-        return "projects/overview";
+        return "projects/search";
     }
 
 
@@ -178,7 +178,7 @@ public class ProjectController {
     ) {
         projectService.reactivateProject(projectId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Projekt wurde wiederhergestellt.");
-        return "redirect:/projects/" + projectId + "/plan";
+        return "redirect:/projects";
     }
 
     @PostMapping("/projects/{projectId}/delete")

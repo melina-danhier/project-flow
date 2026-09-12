@@ -13,8 +13,13 @@ public record AuthenticatedUser(
         UUID userId,
         String email,
         String passwordHash,
-        boolean enabled
+        boolean enabled,
+        String displayName
 ) implements UserDetails {
+
+    public AuthenticatedUser(UUID userId, String email, String passwordHash, boolean enabled) {
+        this(userId, email, passwordHash, enabled, email);
+    }
 
     @Serial
     private static final long serialVersionUID = 1L;

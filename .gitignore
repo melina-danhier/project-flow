@@ -33,6 +33,10 @@ build/
 
 # Local files
 /AGENTS.md
+/AppUpdates.md
+/AppUpdates_Progress.md
+/TaskDetails.md
 .env
 .env.*
 !.env.example
+

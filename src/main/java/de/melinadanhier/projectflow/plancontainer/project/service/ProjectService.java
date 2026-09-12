@@ -581,9 +581,19 @@ public class ProjectService {
                         progress -> progress));
         summaries.forEach(summary -> {
             TaskRepository.ProjectTaskProgress progress = progressByProject.get(summary.getId());
-            if (progress != null && progress.getTotalTasks() > 0) {
-                summary.setProgress((int) Math.round(
-                        progress.getCompletedTasks() * 100.0 / progress.getTotalTasks()));
+            if (progress != null) {
+                summary.setCompletedTasks(progress.getCompletedTasks());
+                summary.setTotalTasks(progress.getTotalTasks());
+                if (progress.getTotalTasks() > 0) {
+                    summary.setProgress((int) Math.round(
+                            progress.getCompletedTasks() * 100.0 / progress.getTotalTasks()));
+                } else {
+                    summary.setProgress(0);
+                }
+            } else {
+                summary.setCompletedTasks(0L);
+                summary.setTotalTasks(0L);
+                summary.setProgress(0);
             }
         });
         return summaries;

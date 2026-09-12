@@ -22,6 +22,6 @@ public class DatabaseUserDetailsService implements UserDetailsService {
         String normalizedEmail = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("Anmeldung fehlgeschlagen."));
-        return new AuthenticatedUser(user.getId(), user.getEmail(), user.getPasswordHash(), user.isEnabled());
+        return new AuthenticatedUser(user.getId(), user.getEmail(), user.getPasswordHash(), user.isEnabled(), user.getDisplayName());
     }
 }
