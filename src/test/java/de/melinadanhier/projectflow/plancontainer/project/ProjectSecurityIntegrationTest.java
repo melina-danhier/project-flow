@@ -682,10 +682,10 @@ class ProjectSecurityIntegrationTest {
             boolean active
     ) {
         ProjectMember membership = new ProjectMember();
-        membership.setProject(project);
         membership.setUser(user);
         membership.setRole(role);
         membership.setActive(active);
+        project.addMembership(membership);
         return projectMemberRepository.saveAndFlush(membership);
     }
 

@@ -116,6 +116,10 @@ class DraftOrderingIntegrationTest {
     void calendarDropUpdatesDraftMilestoneDateAndMarksItModified() {
         Fixture fixture = fixture();
         LocalDate targetDate = LocalDate.of(2027, 4, 12);
+        DraftTask thirdTask = task("Dritte Aufgabe", 200);
+        fixture.draft().addElement(thirdTask);
+        fixture.second().addElement(thirdTask);
+        drafts.saveAndFlush(fixture.draft());
 
         reviews.updateElementDate(fixture.project().getId(), fixture.milestone().getId(),
                 fixture.owner().getId(), targetDate, fixture.draft().getLockVersion());
@@ -159,7 +163,8 @@ class DraftOrderingIntegrationTest {
         DraftTask task = task("Aufgabe", 100); DraftMilestone milestone = milestone("Meilenstein", 200);
         DraftTask secondTask = task("Zweite Aufgabe", 100);
         draft.addElement(task); first.addElement(task); draft.addElement(milestone); first.addElement(milestone);
-        draft.addElement(secondTask); second.addElement(secondTask); drafts.saveAndFlush(draft);
+        draft.addElement(secondTask); second.addElement(secondTask);
+        drafts.saveAndFlush(draft);
         return new Fixture(owner, project, draft, first, second, task, milestone);
     }
 
