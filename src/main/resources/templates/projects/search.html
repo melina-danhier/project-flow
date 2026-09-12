@@ -167,12 +167,13 @@
                         tabindex="0" role="link" aria-label="Projekt öffnen">
                         <!-- Top Row: Checkbox placeholder (left), Title (center), Hamburger Menu (right) using Grid -->
                         <div class="pf-project-card__header">
+                            <div class="pf-project-card__select" aria-hidden="true" style="width: 32px; height: 32px;"></div>
                             <div class="pf-project-card__title-wrap">
                                 <h3 class="pf-project-card__title">
-                                    <a th:if="${selectedLocation.name() != 'DRAFT'}"
+                                    <a th:if="${selectedLocation == null or selectedLocation.name() != 'DRAFT'}"
                                         th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}"
                                         th:title="${project.title}">Projekttitel</a>
-                                    <a th:if="${selectedLocation.name() == 'DRAFT'}"
+                                    <a th:if="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}"
                                         th:href="@{/projects/{id}/draft(id=${project.id})}" th:text="${project.title}"
                                         th:title="${project.title}">Entwurftitel</a>
                                 </h3>

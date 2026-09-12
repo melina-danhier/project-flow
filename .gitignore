@@ -36,6 +36,7 @@ build/
 /AppUpdates.md
 /AppUpdates_Progress.md
 /TaskDetails.md
+/FixesAndUpdates/
 .env
 .env.*
 !.env.example
