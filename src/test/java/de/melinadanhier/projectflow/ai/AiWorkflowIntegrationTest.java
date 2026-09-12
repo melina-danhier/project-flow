@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.model.AiSchemaVersions;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
@@ -161,7 +162,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getConsentConfirmedAt()).isNotNull();
         assertThat(workflow.getConsentVersion()).isEqualTo(AiWorkflowInitializationService.CONSENT_VERSION);
         assertThat(workflow.getPreCheckPromptVersion()).isEqualTo(AiPromptVersions.PRE_CHECK_PROMPT);
-        assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo("precheck-schema-v2");
+        assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo(AiSchemaVersions.PRE_CHECK);
         assertThat(workflow.getGenerationPromptVersion()).isEqualTo(AiPromptVersions.GENERATION_PROMPT);
         assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("generation-schema-v2");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
