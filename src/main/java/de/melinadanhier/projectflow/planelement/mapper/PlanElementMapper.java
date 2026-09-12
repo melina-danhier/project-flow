@@ -64,9 +64,11 @@ public interface PlanElementMapper {
         var dto = new de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectMemberDto();
         dto.setId(member.getId());
         dto.setUserId(member.getUser().getId());
-        dto.setDisplayName(member.getUser().getDisplayName());
+        dto.setDisplayName(member.getUser().getDisplayName()
+                + (member.isActive() ? "" : " (ehemaliges Mitglied)"));
         dto.setRole(member.getRole());
         dto.setActive(member.isActive());
+        dto.setIncompleteAssignmentCount(0);
         return dto;
     }
 }

@@ -10,6 +10,7 @@ import de.melinadanhier.projectflow.draft.model.DraftPlan;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectCreateForm;
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectUpdateForm;
+import de.melinadanhier.projectflow.plancontainer.project.dto.view.ProjectMemberDto;
 import de.melinadanhier.projectflow.plancontainer.project.mapper.ProjectMapperImpl;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
@@ -525,22 +526,38 @@ class ProjectSecurityIntegrationTest {
     }
 
     @Test
-    void removingMemberClearsAllAssignmentsWithoutChangingTaskState() {
+    void removingMemberClearsIncompleteAssignmentsAndPreservesCompletedTaskHistory() {
         User owner = saveUser("remove-owner@example.org");
         User member = saveUser("remove-member@example.org");
+        User secondMember = saveUser("remove-second-member@example.org");
         Project project = saveProject("Freigabe", owner);
         ProjectMember membership = addMembership(project, member, ProjectMemberRole.MEMBER, true);
+        ProjectMember secondMembership = addMembership(project, secondMember, ProjectMemberRole.MEMBER, true);
         Task openTask = saveTask(project, "Offen", TaskStatus.OPEN, membership);
+        Task sharedOpenTask = saveTask(project, "Gemeinsam offen", TaskStatus.IN_PROGRESS, membership);
+        sharedOpenTask.getAssignees().add(secondMembership);
+        taskRepository.saveAndFlush(sharedOpenTask);
         Task completedTask = saveTask(project, "Erledigt", TaskStatus.COMPLETED, membership);
         Instant completedAt = completedTask.getCompletedAt();
+
+        ProjectMemberDto removable = membershipService.getMembersForManagement(project.getId(), owner.getId()).stream()
+                .filter(candidate -> candidate.getId().equals(membership.getId()))
+                .findFirst().orElseThrow();
+        assertThat(removable.getIncompleteAssignmentCount()).isEqualTo(2);
 
         membershipService.removeMember(project.getId(), member.getId(), owner.getId());
 
         Task reloadedOpen = taskRepository.findById(openTask.getId()).orElseThrow();
+        Task reloadedSharedOpen = taskRepository.findById(sharedOpenTask.getId()).orElseThrow();
         Task reloadedCompleted = taskRepository.findById(completedTask.getId()).orElseThrow();
         assertThat(reloadedOpen.getAssignees()).isEmpty();
         assertThat(reloadedOpen.getStatus()).isEqualTo(TaskStatus.OPEN);
-        assertThat(reloadedCompleted.getAssignees()).isEmpty();
+        assertThat(reloadedSharedOpen.getAssignees())
+                .extracting(ProjectMember::getId).containsExactly(secondMembership.getId());
+        assertThat(reloadedSharedOpen.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(reloadedCompleted.getAssignees())
+                .extracting(ProjectMember::getId).containsExactly(membership.getId());
+        assertThat(reloadedCompleted.getAssignees().iterator().next().isActive()).isFalse();
         assertThat(reloadedCompleted.getStatus()).isEqualTo(TaskStatus.COMPLETED);
         assertThat(reloadedCompleted.getCompletedAt())
                 .isCloseTo(completedAt, within(1, ChronoUnit.MICROS));

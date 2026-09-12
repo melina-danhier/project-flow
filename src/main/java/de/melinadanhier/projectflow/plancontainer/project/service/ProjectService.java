@@ -663,7 +663,9 @@ public class ProjectService {
         dto.setTaskPriority(task.getPriority());
         dto.setBlocked(TaskDependencyPolicy.isBlocked(task));
         dto.setAssigneeDisplayNames(task.getAssignees().stream()
-                .map(member -> member.getUser().getDisplayName()).sorted().toList());
+                .map(member -> member.getUser().getDisplayName()
+                        + (member.isActive() ? "" : " (ehemaliges Mitglied)"))
+                .sorted().toList());
         return dto;
     }
 

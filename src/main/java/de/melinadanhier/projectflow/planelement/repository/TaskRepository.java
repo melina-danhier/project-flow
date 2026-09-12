@@ -62,7 +62,19 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query(value = "delete from task_prerequisites where successor_task_id in (select id from plan_elements where plan_container_id = :projectId) or prerequisite_task_id in (select id from plan_elements where plan_container_id = :projectId)", nativeQuery = true)
     int deleteDependencyLinksForProject(@Param("projectId") UUID projectId);
 
+    @Query("""
+            select count(task) from Task task
+            join task.assignees assignee
+            where assignee.id = :membershipId
+              and task.status <> de.melinadanhier.projectflow.planelement.model.TaskStatus.COMPLETED
+            """)
+    long countIncompleteAssignments(@Param("membershipId") UUID membershipId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(value = "delete from task_assignees where project_member_id = :membershipId", nativeQuery = true)
-    int clearAssignments(@Param("membershipId") UUID membershipId);
+    @Query(value = """
+            delete from task_assignees
+            where project_member_id = :membershipId
+              and task_id in (select id from tasks where status <> 'COMPLETED')
+            """, nativeQuery = true)
+    int clearIncompleteAssignments(@Param("membershipId") UUID membershipId);
 }

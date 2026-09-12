@@ -37,7 +37,11 @@ public class ProjectMembershipService {
     public List<ProjectMemberDto> getMembersForManagement(UUID projectId, UUID actingUserId) {
         requireGroupProject(authorizationService.requireEditableMember(projectId, actingUserId).getProject());
         return projectMemberRepository.findActiveByProjectIdWithUser(projectId).stream()
-                .map(projectMapper::toMemberDto)
+                .map(member -> {
+                    ProjectMemberDto dto = projectMapper.toMemberDto(member);
+                    dto.setIncompleteAssignmentCount(taskRepository.countIncompleteAssignments(member.getId()));
+                    return dto;
+                })
                 .toList();
     }
 
@@ -103,7 +107,7 @@ public class ProjectMembershipService {
             throw new ForbiddenOperationException("Der Projekteigentümer kann nicht entfernt werden oder das Projekt verlassen.");
         }
         membership.setActive(false);
-        taskRepository.clearAssignments(membership.getId());
+        taskRepository.clearIncompleteAssignments(membership.getId());
     }
 
     private ProjectMember requireActiveMembership(UUID projectId, UUID userId) {

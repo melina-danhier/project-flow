@@ -24,5 +24,6 @@ public interface ProjectMapper {
 
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "displayName", source = "user.displayName")
+    @Mapping(target = "incompleteAssignmentCount", ignore = true)
     ProjectMemberDto toMemberDto(ProjectMember projectMember);
 }

@@ -19,4 +19,5 @@ public class ProjectMemberDto {
     private ProjectMemberRole role;
     private Instant joinedAt;
     private boolean active;
+    private long incompleteAssignmentCount;
 }

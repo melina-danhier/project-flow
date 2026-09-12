@@ -600,6 +600,16 @@ class SeparatedPlanUiIntegrationTest {
 
         Task assignedTask = createTask(project, owner, null, "Zugewiesene Aufgabe");
         assignTask(project, owner, assignedTask, membership);
+        Task completedTask = createTask(project, owner, null, "Historisch zugewiesene Aufgabe");
+        assignTask(project, owner, completedTask, membership);
+        UUID completedTaskId = completedTask.getId();
+        Task reloadedCompletedTask = taskRepository.findById(completedTaskId).orElseThrow();
+        reloadedCompletedTask.setStatus(TaskStatus.COMPLETED);
+        taskRepository.saveAndFlush(reloadedCompletedTask);
+        mockMvc.perform(get("/projects/{projectId}/members", project.getId()).session(ownerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "Zuweisung bei 1 offenen oder laufenden Aufgabe wird entfernt.")));
         mockMvc.perform(post("/projects/{projectId}/members/{memberId}/remove",
                                 project.getId(), membership.getId())
                         .session(memberSession).with(csrf()))
@@ -615,6 +625,18 @@ class SeparatedPlanUiIntegrationTest {
         assertThat(taskRepository.findPlanTasks(project.getId()))
                 .filteredOn(candidate -> candidate.getId().equals(assignedTask.getId()))
                 .singleElement().satisfies(candidate -> assertThat(candidate.getAssignees()).isEmpty());
+        assertThat(taskRepository.findPlanTasks(project.getId()))
+                .filteredOn(candidate -> candidate.getId().equals(completedTaskId))
+                .singleElement().satisfies(candidate -> assertThat(candidate.getAssignees())
+                        .extracting(ProjectMember::getId).containsExactly(membership.getId()));
+        mockMvc.perform(get("/projects/{projectId}/tasks/{taskId}", project.getId(), completedTaskId)
+                        .session(ownerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("ehemaliges Mitglied")));
+        mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(ownerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "members-ui-member (ehemaliges Mitglied)")));
 
         project.setLocation(ProjectLocation.ARCHIVE);
         projectRepository.saveAndFlush(project);
