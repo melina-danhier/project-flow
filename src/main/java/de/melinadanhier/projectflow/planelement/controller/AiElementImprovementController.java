@@ -207,7 +207,7 @@ public class AiElementImprovementController {
 
     private void offerFeedback(HttpSession session, AiFeedbackContext context, UUID actionId,
                                AiImprovementProposal proposal) {
-        if (studyTrackingService.isActive(session)) {
+        if (studyTrackingService != null && studyTrackingService.isActive(session)) {
             session.removeAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE);
             return;
         }
