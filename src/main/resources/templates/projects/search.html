@@ -2,25 +2,21 @@
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <th:block th:replace="~{fragments/layout :: head('Projekte')}" />
+    <th:block th:replace="~{fragments/layout :: head('Projektsuche')}" />
 </head>
 
 <body>
     <th:block th:replace="~{fragments/layout :: site-header}" />
 
     <main>
-        <!-- Page Header with Primary Action -->
+        <!-- Page Header -->
         <div class="pf-page-header">
             <div class="pf-page-header__left">
-                <h1 style="margin: 0;"
-                    th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Projektarchiv' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Papierkorb' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Projektentwürfe (KI)' : 'Meine Projekte'))}">
-                    Meine Projekte</h1>
-                <p class="pf-page-header__subtitle"
-                    th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Übersicht deiner archivierten Initiativen und abgeschlossenen Projekte.' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Verwalte gelöschte Projekte oder stelle sie wieder her.' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Prüfe und überarbeite deine durch KI generierten Projektentwürfe.' : 'Verwalte deine aktiven Initiativen, Aufgabenstrukturen und Meilensteine.'))}">
-                    Verwalte deine aktiven Initiativen, Aufgabenstrukturen und Meilensteine.</p>
+                <h1 style="margin: 0;">Projekte durchsuchen</h1>
+                <p class="pf-page-header__subtitle">Finde deine Projekte schnell nach Titel, Beschreibung oder
+                    Kategorie.</p>
             </div>
-            <div class="pf-page-header__actions"
-                th:if="${selectedLocation == null or selectedLocation.name() == 'OVERVIEW' or selectedLocation.name() == 'DRAFT'}">
+            <div class="pf-page-header__actions">
                 <a class="pf-btn pf-btn--primary" th:href="@{/projects/new}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -37,10 +33,10 @@
             <!-- Vertical Left Sidebar -->
             <aside class="pf-projects-sidebar">
                 <nav class="pf-sidebar-nav" aria-label="Projektbereiche">
-                    <!-- Search Button linking to dedicated Search Page -->
-                    <a th:href="@{/projects/search}" class="pf-sidebar-link" aria-label="Projekte durchsuchen">
+                    <!-- Search Button (Active on this page) -->
+                    <a th:href="@{/projects/search}" class="pf-sidebar-link active" aria-label="Projekte durchsuchen">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
@@ -48,8 +44,7 @@
                     </a>
 
                     <!-- Vertical Location Navigation Links -->
-                    <a th:href="@{/projects}" class="pf-sidebar-link"
-                        th:classappend="${selectedLocation != null and selectedLocation.name() == 'OVERVIEW' ? 'active' : ''}">
+                    <a th:href="@{/projects}" class="pf-sidebar-link">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
@@ -58,8 +53,7 @@
                         </svg>
                         <span>Aktiv</span>
                     </a>
-                    <a th:href="@{/projects/drafts}" class="pf-sidebar-link"
-                        th:classappend="${selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'active' : ''}">
+                    <a th:href="@{/projects/drafts}" class="pf-sidebar-link">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path
@@ -68,8 +62,7 @@
                         </svg>
                         <span>Designs (KI)</span>
                     </a>
-                    <a th:href="@{/projects(location=ARCHIVE)}" class="pf-sidebar-link"
-                        th:classappend="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'active' : ''}">
+                    <a th:href="@{/projects(location=ARCHIVE)}" class="pf-sidebar-link">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="21 8 21 21 3 21 3 8"></polyline>
@@ -78,8 +71,7 @@
                         </svg>
                         <span>Archiv</span>
                     </a>
-                    <a th:href="@{/projects(location=TRASH)}" class="pf-sidebar-link"
-                        th:classappend="${selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'active' : ''}">
+                    <a th:href="@{/projects(location=TRASH)}" class="pf-sidebar-link">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="3 6 5 6 21 6"></polyline>
@@ -93,138 +85,78 @@
 
             <!-- Right Main Content Area -->
             <section class="pf-projects-main">
-                <!-- Flash Messages (Alerts) -->
-                <th:block th:replace="~{fragments/flash-messages :: all}" />
+                <!-- Search Form -->
+                <form th:action="@{/projects/search}" method="get" class="pf-card"
+                    style="margin-bottom: 1.5rem; padding: 1.25rem;">
+                    <div class="pf-search-bar" style="margin-bottom: 0;">
+                        <div class="pf-search-input-wrap">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" name="query" th:value="${query}" autofocus
+                                placeholder="Projektname oder Begriff suchen..." class="pf-input"
+                                style="font-size: 0.95rem;">
+                        </div>
 
-                <!-- Multi-Selection Bar (Hidden until 1+ projects selected) -->
-                <form id="bulk-project-form" th:unless="${#lists.isEmpty(projects)}" method="post"
-                    th:action="@{/projects/bulk/trash}"
-                    onsubmit="if (!document.querySelector('input[name=&quot;projectIds&quot;]:checked')) { alert('Bitte wähle mindestens ein Projekt aus.'); return false; }"
-                    class="pf-bulk-bar">
-                    <input type="hidden" name="sourceLocation" th:value="${selectedLocation}">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-right: auto;">
-                        <strong>Mehrfachauswahl</strong>
-                        <span class="pf-badge pf-badge--gray" id="bulk-selected-badge"><span
-                                id="bulk-selected-count">0</span> ausgewählt</span>
+                        <div style="min-width: 160px;">
+                            <select name="location" class="pf-select">
+                                <option value="OVERVIEW"
+                                    th:selected="${selectedLocation == null or selectedLocation.name() == 'OVERVIEW'}">
+                                    Aktiv</option>
+                                <option value="DRAFT"
+                                    th:selected="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}">
+                                    Designs (KI)</option>
+                                <option value="ARCHIVE"
+                                    th:selected="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE'}">
+                                    Archiv</option>
+                                <option value="TRASH"
+                                    th:selected="${selectedLocation != null and selectedLocation.name() == 'TRASH'}">
+                                    Papierkorb</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="pf-btn pf-btn--primary">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            Suchen
+                        </button>
+
+                        <a th:if="${query != null and !query.isBlank()}" th:href="@{/projects/search}"
+                            class="pf-btn pf-btn--ghost">
+                            Zurücksetzen
+                        </a>
                     </div>
-                    <label
-                        style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.88rem;">
-                        <input id="select-all-projects" type="checkbox" class="pf-checkbox-sm">
-                        <span>Alle auswählen</span>
-                    </label>
-                    <button th:if="${selectedLocation.name() == 'OVERVIEW'}" type="submit"
-                        class="pf-btn pf-btn--sm pf-btn--outline" th:formaction="@{/projects/bulk/archive}"
-                        data-confirm="Möchtest du die ausgewählten Projekte archivieren?"
-                        data-confirm-title="Projekte archivieren" data-confirm-btn="Archivieren"
-                        data-confirm-variant="primary">Archivieren</button>
-                    <button th:if="${selectedLocation.name() == 'OVERVIEW' or selectedLocation.name() == 'ARCHIVE'}"
-                        type="submit" class="pf-btn pf-btn--sm pf-btn--danger"
-                        data-confirm="Möchtest du die ausgewählten Projekte in den Papierkorb verschieben?"
-                        data-confirm-title="Projekte in den Papierkorb verschieben" data-confirm-btn="In den Papierkorb"
-                        data-confirm-variant="danger">Löschen</button>
-                    <button th:if="${selectedLocation.name() == 'TRASH'}" type="submit"
-                        class="pf-btn pf-btn--sm pf-btn--danger" th:formaction="@{/projects/bulk/delete}"
-                        data-confirm="Möchtest du die ausgewählten Projekte endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
-                        data-confirm-title="Projekte endgültig löschen" data-confirm-btn="Endgültig löschen"
-                        data-confirm-variant="danger">Endgültig löschen</button>
-                    <button th:if="${selectedLocation.name() == 'DRAFT'}" type="submit"
-                        class="pf-btn pf-btn--sm pf-btn--danger" th:formaction="@{/projects/bulk/delete-drafts}"
-                        data-confirm="Möchtest du die ausgewählten Projektentwürfe endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
-                        data-confirm-title="Entwürfe endgültig löschen" data-confirm-btn="Entwürfe löschen"
-                        data-confirm-variant="danger">Entwürfe löschen</button>
                 </form>
 
-                <!-- Empty State: Archive -->
-                <div th:if="${#lists.isEmpty(projects) and selectedLocation != null and selectedLocation.name() == 'ARCHIVE'}"
-                    class="pf-empty-state">
-                    <div class="pf-empty-state__icon"
-                        style="background: var(--pf-primary-soft); color: var(--pf-primary);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="21 8 21 21 3 21 3 8"></polyline>
-                            <rect x="1" y="3" width="22" height="5"></rect>
-                            <line x1="10" y1="12" x2="14" y2="12"></line>
-                        </svg>
-                    </div>
-                    <div class="pf-empty-state__title">Das Archiv ist leer</div>
-                    <p class="pf-empty-state__text">
-                        Hier ist aktuell nichts abgelegt. Sobald du abgeschlossene Projekte archivierst, findest du sie
-                        übersichtlich hier.
-                    </p>
-                    <a class="pf-btn pf-btn--secondary" th:href="@{/projects}">
-                        Zurück zu aktiven Projekten
-                    </a>
+                <!-- Search Results Summary -->
+                <div th:if="${query != null and !query.isBlank()}"
+                    style="margin-bottom: 1rem; color: var(--pf-text-muted); font-size: 0.9rem;">
+                    Suchergebnisse für „<strong th:text="${query}"
+                        style="color: var(--pf-text-main);">Suchbegriff</strong>“:
+                    <span th:text="${#lists.size(projects)}">0</span> Treffer gefunden
                 </div>
 
-                <!-- Empty State: Trash / Wastebasket -->
-                <div th:if="${#lists.isEmpty(projects) and selectedLocation != null and selectedLocation.name() == 'TRASH'}"
-                    class="pf-empty-state">
-                    <div class="pf-empty-state__icon"
-                        style="background: var(--pf-danger-bg, #fef2f2); color: var(--pf-danger, #ef4444);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                            </path>
-                        </svg>
-                    </div>
-                    <div class="pf-empty-state__title">Der Papierkorb ist leer</div>
-                    <p class="pf-empty-state__text">
-                        Hier ist aktuell nichts vorhanden. In den Papierkorb verschobene Projekte werden vor der
-                        endgültigen Löschung hier aufbewahrt.
-                    </p>
-                    <a class="pf-btn pf-btn--secondary" th:href="@{/projects}">
-                        Zurück zu aktiven Projekten
-                    </a>
-                </div>
-
-                <!-- Empty State: Drafts -->
-                <div th:if="${#lists.isEmpty(projects) and selectedLocation != null and selectedLocation.name() == 'DRAFT'}"
-                    class="pf-empty-state">
-                    <div class="pf-empty-state__icon" style="background: #fdf4ff; color: #a855f7;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                                d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z">
-                            </path>
-                        </svg>
-                    </div>
-                    <div class="pf-empty-state__title">Keine offenen Entwürfe</div>
-                    <p class="pf-empty-state__text">
-                        Aktuell liegen keine KI-generierten Projektentwürfe zur Überprüfung vor.
-                    </p>
-                    <a class="pf-btn pf-btn--primary" th:href="@{/projects/new}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Neuen Entwurf mit KI erstellen
-                    </a>
-                </div>
-
-                <!-- Empty State: Overview (Active) -->
-                <div th:if="${#lists.isEmpty(projects) and (selectedLocation == null or selectedLocation.name() == 'OVERVIEW')}"
-                    class="pf-empty-state">
+                <!-- Empty State -->
+                <div th:if="${#lists.isEmpty(projects)}" class="pf-empty-state">
                     <div class="pf-empty-state__icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
-                            </path>
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
                     </div>
-                    <div class="pf-empty-state__title">Noch keine aktiven Projekte</div>
+                    <div class="pf-empty-state__title">Keine passenden Projekte gefunden</div>
                     <p class="pf-empty-state__text">
-                        Hier sind aktuell keine Einträge hinterlegt. Erstelle dein erstes Projekt manuell, mit einer
-                        Vorlage oder lass die KI deinen Plan erstellen.
+                        Probiere einen anderen Suchbegriff aus oder wechsle den Bereich (Aktiv, Designs, Archiv,
+                        Papierkorb).
                     </p>
-                    <a class="pf-btn pf-btn--primary" th:href="@{/projects/new}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Neues Projekt anlegen
+                    <a class="pf-btn pf-btn--secondary" th:href="@{/projects}">
+                        Zurück zur Projektübersicht
                     </a>
                 </div>
 
@@ -233,13 +165,8 @@
                     <div class="pf-project-card pf-project-card--v2" th:each="project : ${projects}"
                         th:data-card-href="${selectedLocation != null and selectedLocation.name() == 'DRAFT' ? '/projects/' + project.id + '/draft' : '/projects/' + project.id + '/plan'}"
                         tabindex="0" role="link" aria-label="Projekt öffnen">
-                        <!-- Top Row: Checkbox (left), Title (center), Hamburger Menu (right) using Grid -->
+                        <!-- Top Row: Checkbox placeholder (left), Title (center), Hamburger Menu (right) using Grid -->
                         <div class="pf-project-card__header">
-                            <div class="pf-project-card__select">
-                                <input type="checkbox" name="projectIds" th:value="${project.id}"
-                                    form="bulk-project-form" class="pf-checkbox-sm" aria-label="Projekt auswählen">
-                            </div>
-
                             <div class="pf-project-card__title-wrap">
                                 <h3 class="pf-project-card__title">
                                     <a th:if="${selectedLocation.name() != 'DRAFT'}"
@@ -272,16 +199,6 @@
                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                         </svg>
                                         <span>Projekt bearbeiten</span>
-                                    </a>
-                                    <a th:if="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}"
-                                        th:href="@{/projects/{id}/draft(id=${project.id})}" class="pf-dropdown__item">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                        <span>Entwurf prüfen</span>
                                     </a>
 
                                     <!-- Pin / Unpin (in Overview) -->
@@ -404,26 +321,6 @@
                                             </button>
                                         </form>
                                     </th:block>
-
-                                    <!-- Draft Delete -->
-                                    <form th:if="${selectedLocation.name() == 'DRAFT'}"
-                                        th:action="@{/projects/bulk/delete-drafts}" method="post"
-                                        data-confirm="Möchtest du diesen Entwurf endgültig löschen?"
-                                        data-confirm-title="Entwurf löschen" data-confirm-btn="Endgültig löschen"
-                                        data-confirm-variant="danger" style="margin: 0;">
-                                        <input type="hidden" name="projectIds" th:value="${project.id}">
-                                        <button class="pf-dropdown__item pf-dropdown__item--danger" type="submit">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path
-                                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                                </path>
-                                            </svg>
-                                            <span>Entwurf löschen</span>
-                                        </button>
-                                    </form>
                                 </div>
                             </details>
                         </div>
@@ -496,89 +393,44 @@
     </main>
 
     <script>
-        (() => {
-            const bulkBar = document.getElementById('bulk-project-form');
-            const selectAll = document.getElementById('select-all-projects');
-            const countSpan = document.getElementById('bulk-selected-count');
-            const projectCheckboxes = () => Array.from(document.querySelectorAll('input[name="projectIds"]'));
-
-            function updateSelectionState() {
-                const boxes = projectCheckboxes();
-                const checkedBoxes = boxes.filter(cb => cb.checked);
-                const count = checkedBoxes.length;
-
-                if (countSpan) {
-                    countSpan.textContent = count;
+        // Close dropdowns on outside click
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('details.pf-dropdown[open]').forEach(details => {
+                if (!details.contains(e.target)) {
+                    details.removeAttribute('open');
                 }
+            });
+        });
 
-                if (bulkBar) {
-                    if (count > 0) {
-                        bulkBar.classList.add('is-visible');
-                    } else {
-                        bulkBar.classList.remove('is-visible');
-                    }
-                }
+        // Click on project card opens the project
+        document.addEventListener('click', (e) => {
+            const card = e.target.closest('.pf-project-card[data-card-href]');
+            if (!card) return;
 
-                if (selectAll) {
-                    selectAll.checked = boxes.length > 0 && boxes.every(cb => cb.checked);
-                    selectAll.indeterminate = count > 0 && count < boxes.length;
-                }
+            // Do not navigate if clicking on interactive controls
+            if (e.target.closest('input, button, label, details, summary, a, select, textarea, .pf-card-menu, .pf-project-card__select')) {
+                return;
             }
 
-            if (selectAll) {
-                selectAll.addEventListener('change', () => {
-                    projectCheckboxes().forEach(cb => cb.checked = selectAll.checked);
-                    updateSelectionState();
-                });
+            const href = card.getAttribute('data-card-href');
+            if (href) {
+                window.location.href = href;
             }
+        });
 
-            document.addEventListener('change', (e) => {
-                if (e.target && e.target.name === 'projectIds') {
-                    updateSelectionState();
-                }
-            });
-
-            // Close dropdowns on outside click
-            document.addEventListener('click', (e) => {
-                document.querySelectorAll('details.pf-dropdown[open]').forEach(details => {
-                    if (!details.contains(e.target)) {
-                        details.removeAttribute('open');
-                    }
-                });
-            });
-
-            // Click on project card opens the project
-            document.addEventListener('click', (e) => {
-                const card = e.target.closest('.pf-project-card[data-card-href]');
-                if (!card) return;
-
-                // Do not navigate if clicking on interactive controls
-                if (e.target.closest('input, button, label, details, summary, a, select, textarea, .pf-card-menu, .pf-project-card__select')) {
-                    return;
-                }
-
-                const href = card.getAttribute('data-card-href');
-                if (href) {
-                    window.location.href = href;
-                }
-            });
-
-            // Keyboard navigation on focused card
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    const card = document.activeElement;
-                    if (card && card.classList.contains('pf-project-card') && card.hasAttribute('data-card-href') && e.target === card) {
-                        e.preventDefault();
-                        const href = card.getAttribute('data-card-href');
-                        if (href) {
-                            window.location.href = href;
-                        }
+        // Keyboard navigation on focused card
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const card = document.activeElement;
+                if (card && card.classList.contains('pf-project-card') && card.hasAttribute('data-card-href') && e.target === card) {
+                    e.preventDefault();
+                    const href = card.getAttribute('data-card-href');
+                    if (href) {
+                        window.location.href = href;
                     }
                 }
-            });
-
-            updateSelectionState();
-        })();
+            }
+        });
     </script>
 
     <th:block th:replace="~{fragments/layout :: site-footer}" />

@@ -33,4 +33,6 @@ public class ProjectSummaryDto implements ProjectClassification {
     private boolean pinned;
     private boolean owner;
     private Integer progress;
+    private Long completedTasks = 0L;
+    private Long totalTasks = 0L;
 }
