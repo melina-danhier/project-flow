@@ -54,6 +54,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -359,14 +360,23 @@ class SeparatedPlanUiIntegrationTest {
                         .session(session).with(csrf())
                         .param("title", "Abnahme")
                         .param("description", "Gemeinsame Prüfung")
-                        .param("planSectionId", section.getId().toString())
-                        .param("dueDate", "2026-08-21"))
+                .param("planSectionId", section.getId().toString())
+                .param("dueDate", "2026-08-21"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/projects/" + project.getId() + "/plan"));
+                .andExpect(redirectedUrlPattern("/projects/" + project.getId() + "/milestones/*"));
 
         Milestone milestone = milestoneRepository.findAll().stream()
                 .filter(candidate -> candidate.getPlanContainer().getId().equals(project.getId()))
                 .findFirst().orElseThrow();
+        mockMvc.perform(get("/projects/{projectId}/milestones/{milestoneId}",
+                        project.getId(), milestone.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("projects/milestones/detail"))
+                .andExpect(model().attributeExists("milestone"))
+                .andExpect(content().string(containsString("Abnahme")))
+                .andExpect(content().string(containsString("Gemeinsame Prüfung")))
+                .andExpect(content().string(containsString("21.08.2026")))
+                .andExpect(content().string(containsString("Meilenstein bearbeiten")));
         MvcResult milestoneEdit = mockMvc.perform(get(
                         "/projects/{projectId}/milestones/{milestoneId}/edit", project.getId(), milestone.getId())
                 .session(session))
@@ -400,7 +410,7 @@ class SeparatedPlanUiIntegrationTest {
                         .param("sortOrder", String.valueOf(milestone.getSortOrder()))
                         .param("lockVersion", String.valueOf(milestone.getLockVersion())))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/projects/" + project.getId() + "/plan"));
+                .andExpect(redirectedUrl("/projects/" + project.getId() + "/milestones/" + milestone.getId()));
     }
 
     @Test
@@ -419,6 +429,9 @@ class SeparatedPlanUiIntegrationTest {
                         .session(session))
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/projects/{projectId}/milestones/{milestoneId}/edit",
+                        secondProject.getId(), firstMilestone.getId()).session(session))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/projects/{projectId}/milestones/{milestoneId}",
                         secondProject.getId(), firstMilestone.getId()).session(session))
                 .andExpect(status().isNotFound());
         mockMvc.perform(post("/projects/{projectId}/sections/{sectionId}",

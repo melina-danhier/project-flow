@@ -51,9 +51,21 @@ public class MilestoneController {
                     model, milestoneService.getMilestoneCreationContext(projectId, currentUser.userId()), false);
             return "projects/milestones/form";
         }
-        milestoneService.createMilestone(projectId, form, currentUser.userId());
+        MilestoneDetailsDto created = milestoneService.createMilestone(projectId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Meilenstein wurde angelegt.");
-        return "redirect:/projects/" + projectId + "/plan";
+        return milestoneRedirect(projectId, created.getId());
+    }
+
+    @GetMapping("/projects/{projectId}/milestones/{milestoneId}")
+    public String detail(
+            @PathVariable UUID projectId,
+            @PathVariable UUID milestoneId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model
+    ) {
+        model.addAttribute("milestone", milestoneService.getMilestoneDetail(
+                projectId, milestoneId, currentUser.userId()));
+        return "projects/milestones/detail";
     }
 
     @GetMapping("/projects/{projectId}/milestones/{milestoneId}/edit")
@@ -91,7 +103,7 @@ public class MilestoneController {
         }
         milestoneService.updateMilestone(projectId, milestoneId, form, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Meilenstein wurde aktualisiert.");
-        return "redirect:/projects/" + projectId + "/plan";
+        return milestoneRedirect(projectId, milestoneId);
     }
 
     @PostMapping("/projects/{projectId}/milestones/{milestoneId}/delete")
@@ -123,6 +135,10 @@ public class MilestoneController {
         form.setCompleted(milestone.isCompleted());
         form.setLockVersion(milestone.getLockVersion());
         return form;
+    }
+
+    private String milestoneRedirect(UUID projectId, UUID milestoneId) {
+        return "redirect:/projects/" + projectId + "/milestones/" + milestoneId;
     }
 
 }

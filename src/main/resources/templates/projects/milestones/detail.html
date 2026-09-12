@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Meilenstein')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects/{projectId}/plan(projectId=${milestone.planContainerId})}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zum Projektplan
+            </a>
+            <div class="pf-cluster">
+                <h1 th:text="${milestone.title}" style="margin: 0;">Meilenstein</h1>
+                <span class="pf-badge pf-badge--purple">Meilenstein</span>
+                <span class="pf-badge" th:classappend="${milestone.completed ? 'pf-badge--green' : 'pf-badge--gray'}"
+                      th:text="${milestone.completed ? 'Erledigt' : 'Offen'}">Offen</span>
+            </div>
+        </div>
+
+        <div class="pf-page-header__actions" th:if="${milestone.editable}">
+            <a class="pf-btn pf-btn--outline"
+               th:href="@{/projects/{projectId}/plan-elements/MILESTONE/{milestoneId}/improve(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
+                Mit KI verbessern
+            </a>
+            <a class="pf-btn pf-btn--secondary"
+               th:href="@{/projects/{projectId}/milestones/{milestoneId}/edit(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
+                Meilenstein bearbeiten
+            </a>
+            <form th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
+                  method="post" style="margin: 0;">
+                <button type="submit" class="pf-btn pf-btn--danger pf-btn--sm">Löschen</button>
+            </form>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/flash-messages :: all}" />
+
+    <div class="pf-card" style="max-width: 760px;">
+        <h3 style="margin-bottom: 1rem;">Details</h3>
+        <div style="display: grid; gap: 0.85rem;">
+            <div>
+                <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Beschreibung</span>
+                <p style="margin: 0.25rem 0 0; white-space: pre-line;"
+                   th:text="${milestone.description ?: 'Keine Beschreibung vorhanden.'}"></p>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Bereich</span>
+                    <div style="font-weight: 600; margin-top: 0.2rem;">
+                        <span th:if="${milestone.planSectionId == null}">Ohne Bereich</span>
+                        <span th:each="section : ${milestone.availableSections}"
+                              th:if="${section.id == milestone.planSectionId}" th:text="${section.title}"></span>
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Zieldatum</span>
+                    <div style="font-weight: 500; margin-top: 0.2rem;"
+                         th:text="${milestone.dueDate != null ? #temporals.format(milestone.dueDate, 'dd.MM.yyyy') : 'Nicht festgelegt'}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>
