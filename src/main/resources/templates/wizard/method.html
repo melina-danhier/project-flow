@@ -1,72 +1,70 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <th:block th:replace="~{fragments/layout :: head('Erstellungsweg wählen')}" />
+    <th:block th:replace="~{fragments/layout :: head('Erstellungsmethode wählen')}" />
+    <link rel="stylesheet" th:href="@{/css/components/wizard.css}">
+    <script th:src="@{/js/wizard.js}" defer></script>
 </head>
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
 
-<main>
-    <div class="pf-page-header">
+<main class="pf-wizard-container">
+    <div class="pf-page-header pf-wizard-header">
         <div class="pf-page-header__left">
-            <div class="pf-cluster" style="margin-bottom: 0.25rem;">
-                <span class="pf-badge pf-badge--purple">Schritt 2</span>
-                <span class="pf-badge pf-badge--gray">Projekt-Assistent</span>
-            </div>
-            <h1 style="margin: 0;">Wie möchtest du starten?</h1>
+            <h1 style="margin: 0;">Projekt erstellen</h1>
             <p class="pf-page-header__subtitle">
                 Die Grundangaben für „<strong th:text="${wizardState.title}">Projekt</strong>" sind gespeichert. Wähle nun die gewünschte Erstellungsmethode.
             </p>
         </div>
     </div>
 
-    <div class="pf-card" style="max-width: 760px;">
-        <div th:if="${wizardState.selectedTemplateId != null}" class="pf-alert pf-alert--info" style="margin-bottom:1rem">
-            Deine zuvor ausgewählte Vorlage ist gespeichert. Mit „Vorhandenes Template“ gelangst du direkt zur Bestätigung.
+    <div class="pf-wizard-card">
+        <div th:if="${wizardState.selectedTemplateId != null}" class="pf-alert pf-alert--info" style="margin-bottom:1.25rem">
+            Deine zuvor ausgewählte Vorlage ist gespeichert. Mit „Aus Vorlage“ gelangst du direkt zur Bestätigung.
         </div>
         <form th:action="@{/projects/new/method}" th:object="${creationMethodForm}" method="post">
-            <fieldset style="border: none; padding: 0; margin: 0 0 1.5rem;">
-                <legend style="padding: 0; font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem;">Erstellungsmethode</legend>
+            <fieldset style="border: none; padding: 0; margin: 0;">
+                <legend style="padding: 0; font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem;">Erstellungsmethode</legend>
                 
-                <div style="display: grid; gap: 1rem;">
+                <div class="pf-creation-methods-grid" role="radiogroup" aria-label="Erstellungsmethode auswählen">
                     <!-- Option 1: AI -->
-                    <label class="pf-choice-card">
-                        <input type="radio" th:field="*{creationType}" value="AI" style="margin-top: 0.25rem;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <strong style="font-size: 1rem; color: var(--pf-text-main);">KI-generierter Plan (Empfohlen)</strong>
+                    <label class="pf-method-card" th:classappend="*{creationType != null and creationType.name() == 'AI' ? 'is-selected' : ''}">
+                        <div>
+                            <div class="pf-method-card__top">
                                 <span class="pf-badge pf-badge--purple">Smart AI</span>
+                                <input type="radio" th:field="*{creationType}" value="AI">
                             </div>
-                            <p style="margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--pf-text-muted);">
-                                Lass dir auf Basis deiner Vorgaben automatisch einen strukturierten Projektplan mit Bereichen, Aufgaben und Meilensteinen vorschlagen.
+                            <h3 class="pf-method-card__title">KI-generierter Plan</h3>
+                            <p class="pf-method-card__desc">
+                                Automatisch vorgeschlagene Phasen, Aufgaben und Meilensteine auf Basis deiner Angaben.
                             </p>
                         </div>
                     </label>
 
                     <!-- Option 2: Template -->
-                    <label class="pf-choice-card">
-                        <input type="radio" th:field="*{creationType}" value="TEMPLATE" style="margin-top: 0.25rem;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <strong style="font-size: 1rem; color: var(--pf-text-main);">Vorhandenes Template</strong>
+                    <label class="pf-method-card" th:classappend="*{creationType != null and creationType.name() == 'TEMPLATE' ? 'is-selected' : ''}">
+                        <div>
+                            <div class="pf-method-card__top">
                                 <span class="pf-badge pf-badge--blue">Vorlagen</span>
+                                <input type="radio" th:field="*{creationType}" value="TEMPLATE">
                             </div>
-                            <p style="margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--pf-text-muted);">
-                                Wähle aus vorkonfigurierten Branchen- und Aufgaben-Templates die passende Struktur aus.
+                            <h3 class="pf-method-card__title">Aus Vorlage</h3>
+                            <p class="pf-method-card__desc">
+                                Erprobte Strukturen und Zeitpläne aus fertigen Projektvorlagen übernehmen.
                             </p>
                         </div>
                     </label>
 
                     <!-- Option 3: Manual / Empty -->
-                    <label class="pf-choice-card">
-                        <input type="radio" th:field="*{creationType}" value="EMPTY" style="margin-top: 0.25rem;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <strong style="font-size: 1rem; color: var(--pf-text-main);">Ohne anfängliche Aufgaben</strong>
+                    <label class="pf-method-card" th:classappend="*{creationType != null and creationType.name() == 'EMPTY' ? 'is-selected' : ''}">
+                        <div>
+                            <div class="pf-method-card__top">
                                 <span class="pf-badge pf-badge--gray">Flexibel</span>
+                                <input type="radio" th:field="*{creationType}" value="EMPTY">
                             </div>
-                            <p style="margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--pf-text-muted);">
-                                Starte mit einem leeren Projektplan und erstelle Bereiche, Aufgaben und Meilensteine manuell nach deinen eigenen Vorstellungen.
+                            <h3 class="pf-method-card__title">Leeres Projekt</h3>
+                            <p class="pf-method-card__desc">
+                                Mit einem leeren Plan starten und Bereiche sowie Aufgaben ganz frei selbst anlegen.
                             </p>
                         </div>
                     </label>
@@ -75,13 +73,13 @@
 
             <div th:if="${#fields.hasErrors('creationType')}" th:errors="*{creationType}" class="pf-alert pf-alert--error" role="alert"></div>
 
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="pf-wizard-footer">
+                <div class="pf-wizard-footer__left">
                     <a th:href="@{/projects/new}" class="pf-btn pf-btn--secondary">
                         ← Grundangaben bearbeiten
                     </a>
                     <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
-                        Abbrechen
+                        Erstellung abbrechen
                     </button>
                 </div>
                 <button id="method-submit" type="submit" class="pf-btn pf-btn--primary">
@@ -94,19 +92,6 @@
               onsubmit="return confirm('Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
               style="display: none;"></form>
     </div>
-
-    <script>
-        (() => {
-            const labels = {EMPTY: 'Projekt erstellen', TEMPLATE: 'Vorlage auswählen', AI: 'Weiter zu den KI-Angaben'};
-            const button = document.getElementById('method-submit');
-            const update = () => {
-                const selected = document.querySelector('input[name="creationType"]:checked');
-                button.textContent = labels[selected?.value] ?? 'Weiter';
-            };
-            document.querySelectorAll('input[name="creationType"]').forEach(input => input.addEventListener('change', update));
-            update();
-        })();
-    </script>
 </main>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />

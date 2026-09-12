@@ -40,7 +40,7 @@ public class ProjectBasicsForm implements ProjectClassification {
     private String otherProjectTypeDescription;
 
     @NotNull(message = "Bitte wähle Einzel- oder Gruppenprojekt aus.")
-    private CollaborationMode collaborationMode;
+    private CollaborationMode collaborationMode = CollaborationMode.INDIVIDUAL;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate startDate;
@@ -61,7 +61,7 @@ public class ProjectBasicsForm implements ProjectClassification {
         form.setCategory(state.getCategory() == null ? ProjectCategory.OTHER : state.getCategory());
         form.setOtherProjectTypeDescription(state.getOtherProjectTypeDescription());
         form.setSubcategory(state.getSubcategory());
-        form.setCollaborationMode(state.getCollaborationMode());
+        form.setCollaborationMode(state.getCollaborationMode() == null ? CollaborationMode.INDIVIDUAL : state.getCollaborationMode());
         form.setStartDate(state.getStartDate());
         form.setEndDate(state.getEndDate());
         form.setDurationDays(state.getDurationDays());

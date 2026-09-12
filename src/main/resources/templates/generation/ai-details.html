@@ -1,82 +1,102 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <th:block th:replace="~{fragments/layout :: head('Angaben passend zu deinem Projekt')}" />
+    <th:block th:replace="~{fragments/layout :: head('Angaben für die KI-Planung')}" />
+    <link rel="stylesheet" th:href="@{/css/components/wizard.css}">
 </head>
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
 
-<main>
-    <div class="pf-page-header">
+<main class="pf-wizard-container">
+    <div class="pf-page-header pf-wizard-header">
         <div class="pf-page-header__left">
-            <div class="pf-cluster" style="margin-bottom: 0.25rem;">
-                <span class="pf-badge pf-badge--purple">Schritt 3</span>
-                <span class="pf-badge pf-badge--gray">KI-Projektfragen</span>
-            </div>
-            <h1 style="margin: 0;">Angaben passend zu deinem Projekt</h1>
+            <h1 style="margin: 0;">Projekt erstellen</h1>
             <p class="pf-page-header__subtitle">
-                Beantworte nur, was bereits feststeht. Diese Angaben helfen bei Vorprüfung und Planentwurf für „<strong th:text="${wizardState.title}">Projekt</strong>“.
+                Zusätzliche Detailfragen für die KI-Planung von „<strong th:text="${wizardState.title}">Projekt</strong>“.
             </p>
         </div>
     </div>
 
-    <div class="pf-card" style="max-width: 760px;">
+    <div class="pf-wizard-card">
+        <!-- Explanation of temporary AI fields -->
+        <div class="pf-alert pf-alert--info" style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.1rem;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <div>
+                <strong>Hinweis zu diesen Angaben:</strong> Diese Antworten sind temporäre Eingaben für die KI-Generierung. Sie dienen dazu, den vorgeschlagenen Planentwurf präziser auf deine Situation abzustimmen, und werden nicht als dauerhafte Projektdaten gespeichert.
+            </div>
+        </div>
+
         <form th:action="@{/projects/new/ai/details}" th:object="${aiProjectDetailsForm}" method="post">
             <div th:if="${#fields.hasAnyErrors()}" th:each="error : ${#fields.allErrors()}"
                  class="pf-alert pf-alert--error" th:text="${error}" role="alert"></div>
 
-            <div class="pf-form-group">
+            <!-- Available working time -->
+            <div class="pf-form-row">
                 <label for="availableWorkingTime" class="pf-label">
-                   <span>Wie viel Arbeitszeit kannst du ungefähr für das Projekt aufbringen?</span>
-                   <span class="pf-hint">(optional)</span>
+                    <span>Wie viel Arbeitszeit kannst du ungefähr für das Projekt aufbringen?</span>
+                    <span class="pf-hint">(optional)</span>
                 </label>
-                <input id="availableWorkingTime"
-                      class="pf-input"
-                      type="text"
-                      th:field="*{availableWorkingTime}"
-                      maxlength="1000"
-                      placeholder="z. B. ca. 5 Stunden pro Woche oder nur am Wochenende">
-                <div th:if="${#fields.hasErrors('availableWorkingTime')}"
-                    th:errors="*{availableWorkingTime}"
-                    class="pf-alert pf-alert--error" role="alert"></div>
+                <div class="pf-form-field">
+                    <input id="availableWorkingTime"
+                           class="pf-input"
+                           type="text"
+                           th:field="*{availableWorkingTime}"
+                           maxlength="1000"
+                           placeholder="z. B. ca. 5 Stunden pro Woche oder nur am Wochenende">
+                    <div th:if="${#fields.hasErrors('availableWorkingTime')}"
+                         th:errors="*{availableWorkingTime}"
+                         class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
             </div>
 
-            <div th:each="question : ${questions}" class="pf-form-group">
+            <!-- Dynamic category-specific questions -->
+            <div th:each="question : ${questions}" class="pf-form-row">
                 <label th:for="|answer-${question.key}|" class="pf-label">
                     <span th:text="${question.label}">Frage</span>
                     <span th:if="${!question.required}" class="pf-hint">(optional)</span>
                     <span th:if="${question.required}" class="pf-required-star" aria-hidden="true">*</span>
                 </label>
-                <textarea th:id="|answer-${question.key}|"
-                          class="pf-textarea"
-                          th:field="*{answers[__${question.key}__]}"
-                          th:maxlength="${question.maxLength}"
-                          th:required="${question.required}"></textarea>
-                <p th:if="${question.helpText != null}" class="pf-hint" th:text="${question.helpText}"></p>
+                <div class="pf-form-field">
+                    <textarea th:id="|answer-${question.key}|"
+                              class="pf-textarea"
+                              th:field="*{answers[__${question.key}__]}"
+                              th:maxlength="${question.maxLength}"
+                              th:required="${question.required}"
+                              rows="3"></textarea>
+                    <p th:if="${question.helpText != null}" class="pf-hint" th:text="${question.helpText}" style="margin: 0.25rem 0 0;"></p>
+                </div>
             </div>
 
-            <div class="pf-form-group">
+            <!-- Additional wishes and constraints -->
+            <div class="pf-form-row">
                 <label for="additionalInformation" class="pf-label">
-                    <span>Zusätzliche Wünsche oder Einschränkungen</span>
+                    <span>Besondere Wünsche & Einschränkungen</span>
                     <span class="pf-hint">(optional)</span>
                 </label>
-                <textarea id="additionalInformation"
-                          class="pf-textarea"
-                          th:field="*{additionalInformation}"
-                          maxlength="2000"
-                          placeholder="z. B. Besondere Prioritäten, bestimmte Tools oder zeitliche Einschränkungen..."></textarea>
-                <div th:if="${#fields.hasErrors('additionalInformation')}"
-                     th:errors="*{additionalInformation}"
-                     class="pf-alert pf-alert--error" role="alert"></div>
+                <div class="pf-form-field">
+                    <textarea id="additionalInformation"
+                              class="pf-textarea"
+                              th:field="*{additionalInformation}"
+                              maxlength="2000"
+                              rows="3"
+                              placeholder="z. B. Besondere Prioritäten, bestimmte Tools oder zeitliche Einschränkungen..."></textarea>
+                    <div th:if="${#fields.hasErrors('additionalInformation')}"
+                         th:errors="*{additionalInformation}"
+                         class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
             </div>
 
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="pf-wizard-footer">
+                <div class="pf-wizard-footer__left">
                     <a th:href="@{/projects/new/method}" class="pf-btn pf-btn--secondary">
                         ← Zurück zur Erstellungsart
                     </a>
                     <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
-                        Abbrechen
+                        Erstellung abbrechen
                     </button>
                 </div>
                 <button type="submit" class="pf-btn pf-btn--primary">
@@ -86,7 +106,7 @@
         </form>
 
         <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
-              onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
+              onsubmit="return confirm('Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
               style="display: none;"></form>
     </div>
 </main>

@@ -21,16 +21,18 @@
 </div>
 
 <div th:fragment="collaboration-mode" class="pf-form-group">
-    <fieldset>
-        <legend>Wer arbeitet am Projekt? <span class="pf-required-star" aria-hidden="true">*</span></legend>
-        <label>
-            <input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required>
-            <span>Nur ich (Einzelprojekt)</span>
-        </label>
-        <label>
-            <input type="radio" th:field="*{collaborationMode}" value="GROUP">
-            <span>Eine Gruppe / Team</span>
-        </label>
+    <fieldset style="border:none;padding:0;margin:0;">
+        <legend class="pf-label" style="padding:0;margin-bottom:0.4rem;">Wer arbeitet am Projekt? <span class="pf-required-star" aria-hidden="true">*</span></legend>
+        <div class="pf-collaboration-options">
+            <label class="pf-collaboration-label">
+                <input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required th:checked="*{collaborationMode == null or collaborationMode.name() == 'INDIVIDUAL'}">
+                <span>Nur ich (Einzelprojekt)</span>
+            </label>
+            <label class="pf-collaboration-label">
+                <input type="radio" th:field="*{collaborationMode}" value="GROUP" th:checked="*{collaborationMode != null and collaborationMode.name() == 'GROUP'}">
+                <span>Eine Gruppe / Team</span>
+            </label>
+        </div>
     </fieldset>
     <div th:if="${#fields.hasErrors('collaborationMode')}" class="pf-alert pf-alert--error" th:errors="*{collaborationMode}" role="alert"></div>
 </div>

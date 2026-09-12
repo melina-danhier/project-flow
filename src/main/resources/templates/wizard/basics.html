@@ -1,82 +1,135 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <th:block th:replace="~{fragments/layout :: head('Projekt anlegen')}" />
+    <th:block th:replace="~{fragments/layout :: head('Projekt erstellen')}" />
+    <link rel="stylesheet" th:href="@{/css/components/wizard.css}">
+    <script th:src="@{/js/wizard.js}" defer></script>
 </head>
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
 
-<main>
-    <div class="pf-page-header">
+<main class="pf-wizard-container">
+    <div class="pf-page-header pf-wizard-header">
         <div class="pf-page-header__left">
-            <div class="pf-cluster" style="margin-bottom: 0.25rem;">
-                <span class="pf-badge pf-badge--purple">Schritt 1 von 2</span>
-                <span class="pf-badge pf-badge--gray">Projekt-Assistent</span>
-            </div>
-            <h1 style="margin: 0;">Grundangaben zum Projekt</h1>
-            <p class="pf-page-header__subtitle">Diese Basisdaten gelten unabhängig davon, wie du dein Projekt im nächsten Schritt erstellst.</p>
+            <h1 style="margin: 0;">Projekt erstellen</h1>
+            <p class="pf-page-header__subtitle">Grundlegende Informationen für dein neues Projekt.</p>
         </div>
     </div>
 
-    <div class="pf-card" style="max-width: 760px;">
-        <div th:if="${selectedTemplate}" class="pf-alert pf-alert--info" style="margin-bottom:1rem">
+    <div class="pf-wizard-card">
+        <div th:if="${selectedTemplate}" class="pf-alert pf-alert--info" style="margin-bottom:1.25rem">
             Ausgewählte Vorlage: <strong th:text="${selectedTemplate.title}">Vorlage</strong>. Sie bleibt während des Assistenten gespeichert.
         </div>
         <form th:action="@{/projects/new}" th:object="${projectBasicsForm}" method="post">
-            <th:block th:replace="~{fragments/form-fields :: title-field('Projekttitel')}" />
             
-            <div class="pf-form-group">
+            <!-- Title -->
+            <div class="pf-form-row">
+                <label for="title" class="pf-label">
+                    <span>Projekttitel <span class="pf-required-star" aria-hidden="true">*</span></span>
+                    <span class="pf-hint">Name deines Vorhabens</span>
+                </label>
+                <div class="pf-form-field">
+                    <input id="title" class="pf-input" th:field="*{title}" required maxlength="100" placeholder="z. B. Website Relaunch oder Masterarbeit">
+                    <div th:if="${#fields.hasErrors('title')}" class="pf-alert pf-alert--error" th:errors="*{title}" role="alert"></div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="pf-form-row">
                 <label for="description" class="pf-label">
                     <span>Beschreibung</span>
                     <span class="pf-hint">(optional)</span>
                 </label>
-                <textarea id="description" class="pf-textarea" th:field="*{description}" maxlength="2000" placeholder="Zielsetzung, Notizen oder Hintergrundinformationen..."></textarea>
-                <div th:if="${#fields.hasErrors('description')}" class="pf-alert pf-alert--error" th:errors="*{description}" role="alert"></div>
+                <div class="pf-form-field">
+                    <textarea id="description" class="pf-textarea" th:field="*{description}" maxlength="2000" rows="3" placeholder="Zielsetzung, Notizen oder Hintergrundinformationen..."></textarea>
+                    <div th:if="${#fields.hasErrors('description')}" class="pf-alert pf-alert--error" th:errors="*{description}" role="alert"></div>
+                </div>
             </div>
 
-            <div th:replace="~{fragments/project-classification :: fields(false)}"></div>
-            <th:block th:replace="~{fragments/form-fields :: collaboration-mode}" />
+            <!-- Classification (Category & Subcategory) -->
+            <div class="pf-form-row">
+                <label for="category" class="pf-label">
+                    <span>Kategorie <span class="pf-required-star" aria-hidden="true">*</span></span>
+                    <span class="pf-hint">Themenbereich</span>
+                </label>
+                <div class="pf-form-field">
+                    <div th:replace="~{fragments/project-classification :: fields(false)}"></div>
+                </div>
+            </div>
+
+            <!-- Collaboration Mode -->
+            <div class="pf-form-row">
+                <div class="pf-label">
+                    <span>Beteiligte Personen <span class="pf-required-star" aria-hidden="true">*</span></span>
+                    <span class="pf-hint">Zusammenarbeit</span>
+                </div>
+                <div class="pf-form-field">
+                    <div class="pf-collaboration-options" role="radiogroup" aria-label="Beteiligte Personen">
+                        <label class="pf-collaboration-label">
+                            <input type="radio" th:field="*{collaborationMode}" value="INDIVIDUAL" required th:checked="*{collaborationMode == null or collaborationMode.name() == 'INDIVIDUAL'}">
+                            <span>Nur ich (Einzelprojekt)</span>
+                        </label>
+                        <label class="pf-collaboration-label">
+                            <input type="radio" th:field="*{collaborationMode}" value="GROUP" th:checked="*{collaborationMode != null and collaborationMode.name() == 'GROUP'}">
+                            <span>Eine Gruppe / Team</span>
+                        </label>
+                    </div>
+                    <div th:if="${#fields.hasErrors('collaborationMode')}" class="pf-alert pf-alert--error" th:errors="*{collaborationMode}" role="alert"></div>
+                </div>
+            </div>
             
-            <div style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
-                <h3 style="margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 600;">Zeitlicher Rahmen</h3>
-                <p class="pf-hint" style="margin: 0 0 1rem 0;">Trage nur die Angaben ein, die dir bereits bekannt sind. Alle Angaben sind optional.</p>
+            <!-- Time-related Section -->
+            <div class="pf-time-section-box">
+                <div class="pf-time-section-header">
+                    <h3>Zeitlicher Rahmen & Arbeitszeit</h3>
+                    <p>
+                        Diese Werte beschreiben die Zeit, die dir für die eigentliche Arbeit zur Verfügung steht (z. B. bis zum Event-, Abgabe- oder Liefertermin). Alle Zeitangaben sind optional.
+                    </p>
+                </div>
+
+                <div class="pf-time-grid">
+                    <div class="pf-form-group">
+                        <label for="startDate" class="pf-label">
+                            <span>Startdatum</span>
+                            <span class="pf-hint">(optional)</span>
+                        </label>
+                        <div class="pf-start-date-row">
+                            <input id="startDate" type="date" th:field="*{startDate}" class="pf-input" style="flex: 1; min-width: 140px;">
+                            <label class="pf-today-checkbox" title="Startdatum auf heutigen Tag setzen">
+                                <input type="checkbox" id="start-date-today-checkbox">
+                                <span>Heute</span>
+                            </label>
+                        </div>
+                        <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
+                    </div>
+
+                    <div class="pf-form-group">
+                        <label for="endDate" class="pf-label">
+                            <span>Endtermin / Deadline</span>
+                            <span class="pf-hint">(optional)</span>
+                        </label>
+                        <input id="endDate" type="date" th:field="*{endDate}" class="pf-input">
+                        <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="pf-alert pf-alert--error" role="alert"></div>
+                    </div>
+
+                    <div class="pf-form-group">
+                        <label for="durationDays" class="pf-label">
+                            <span>Geschätzte Dauer</span>
+                            <span class="pf-hint">(in Tagen)</span>
+                        </label>
+                        <input id="durationDays" type="number" min="1" step="1" th:field="*{durationDays}" class="pf-input" placeholder="z. B. 14">
+                        <div th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}" class="pf-alert pf-alert--error" role="alert"></div>
+                    </div>
+                </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                <div class="pf-form-group">
-                    <label for="startDate" class="pf-label">
-                        <span>Wann möchtest du beginnen?</span>
-                        <span class="pf-hint">(optional)</span>
-                    </label>
-                    <input id="startDate" type="date" th:field="*{startDate}" class="pf-input">
-                    <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
-                </div>
-
-                <div class="pf-form-group">
-                    <label for="endDate" class="pf-label">
-                        <span>Gibt es einen gewünschten oder festen Endtermin?</span>
-                        <span class="pf-hint">(optional)</span>
-                    </label>
-                    <input id="endDate" type="date" th:field="*{endDate}" class="pf-input">
-                    <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="pf-alert pf-alert--error" role="alert"></div>
-                </div>
-
-                <div class="pf-form-group">
-                    <label for="durationDays" class="pf-label">
-                        <span>Wie lange möchtest du ungefähr an dem Projekt arbeiten?</span>
-                        <span class="pf-hint">(optional)</span>
-                    </label>
-                    <input id="durationDays" type="number" min="1" step="1" th:field="*{durationDays}" class="pf-input" placeholder="z. B. 14 (Tage)">
-                    <div th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}" class="pf-alert pf-alert--error" role="alert"></div>
-                </div>
-            </div>
-
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <!-- Footer Actions -->
+            <div class="pf-wizard-footer">
                 <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
-                    Assistent abbrechen
+                    Erstellung abbrechen
                 </button>
                 <button type="submit" class="pf-btn pf-btn--primary">
-                    Weiter zum nächsten Schritt →
+                    Weiter zur Erstellungsmethode →
                 </button>
             </div>
         </form>
