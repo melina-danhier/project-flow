@@ -495,12 +495,9 @@ class DraftReviewIntegrationTest {
                         .param("priority", "HIGH")
                         .with(user(f.owner())).with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(view().name("generation/draft-review"))
+                .andExpect(view().name("generation/draft-element-form"))
                 .andExpect(model().attributeHasFieldErrors(
-                        "draftTaskForm", "title", "dateRangeValid"))
-                .andExpect(model().attribute("editingDraftTaskId", task.getId()))
-                .andExpect(content().string(containsString(
-                        "<details class=\"element-edit\" open")))
+                        "taskForm", "title", "dateRangeValid"))
                 .andExpect(content().string(containsString(invalidTitle)))
                 .andExpect(content().string(containsString(
                         "Diese Korrektur darf nicht verloren gehen")))
