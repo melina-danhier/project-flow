@@ -587,6 +587,35 @@ button:disabled,
     background: linear-gradient(135deg, #f8fafc, #f1f5f9);
 }
 
+.pf-study-task {
+    margin-bottom: 1.5rem;
+}
+
+.pf-study-task__details > summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.pf-study-task__details > summary::marker {
+    color: var(--pf-primary);
+}
+
+.pf-study-task__content {
+    margin-top: 1rem;
+}
+
+.pf-study-task__content p {
+    margin: 0.35rem 0 0.85rem;
+}
+
+.pf-study-task__content p:last-child {
+    margin-bottom: 0;
+}
+
+.pf-study-task__return-hint {
+    margin-top: 1rem;
+}
+
 .pf-card__header {
     display: flex;
     align-items: center;

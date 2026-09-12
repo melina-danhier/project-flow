@@ -17,10 +17,21 @@
 
 <th:block th:fragment="study-return">
     <div th:if="${session != null and session.studySessionId != null and session.studyPhase == 'TASK_1'}"
-         class="pf-card pf-card--tint"
-         style="margin-bottom: 1.5rem;">
-        <strong>Aufgabe 1 der Nutzerstudie</strong>
-        <p>
+         class="pf-card pf-card--tint pf-study-task">
+        <details class="pf-study-task__details" open>
+            <summary>Aufgabe 1 der Nutzerstudie</summary>
+            <div class="pf-study-task__content">
+                <strong>Szenario</strong>
+                <p>Du ziehst in sechs Wochen in eine Wohnung in einer anderen Stadt. Du organisierst den Umzug selbst und bekommst Unterstützung von Freunden. Dein Ziel ist es, den Umzug möglichst vollständig vorzubereiten und keine wichtigen Aufgaben zu vergessen.</p>
+                <p>Halte dich bei der Bearbeitung an diese Rahmenbedingungen. Angaben, die nicht festgelegt wurden, darfst du selbst sinnvoll und realistisch ergänzen. Verändere dabei keine ausdrücklich genannten Bedingungen.</p>
+
+                <strong>Aufgabe</strong>
+                <p>Erstelle mit ProjectFlow einen Projektplan für diesen Umzug. Nutze dabei die angebotene KI-Unterstützung. Prüfe die erzeugten Vorschläge so, wie du es auch bei einem eigenen Projekt tun würdest. Du darfst Vorschläge übernehmen, ändern oder ablehnen.</p>
+                <p>Übernimm am Ende einen Projektplan, mit dem du grundsätzlich weiterarbeiten würdest.</p>
+                <p>Es gibt nicht den einen richtigen Projektplan. Bewertet wird nicht deine Planungsleistung, sondern die Unterstützung durch ProjectFlow.</p>
+            </div>
+        </details>
+        <p class="pf-study-task__return-hint">
             Wenn du mit der Erstellung und Prüfung des Projektplans fertig bist,
             kehre zur Befragung zurück.
         </p>
@@ -29,10 +40,19 @@
         </a>
     </div>
     <div th:if="${session != null and session.studySessionId != null and session.studyPhase == 'TASK_2'}"
-         class="pf-card pf-card--tint"
-         style="margin-bottom: 1.5rem;">
-        <strong>Aufgabe 2 der Nutzerstudie</strong>
-        <p>
+         class="pf-card pf-card--tint pf-study-task">
+        <details class="pf-study-task__details" open>
+            <summary>Aufgabe 2 der Nutzerstudie</summary>
+            <div class="pf-study-task__content">
+                <strong>Geänderte Situation</strong>
+                <p>Die Freunde, die dir ursprünglich beim Transport helfen wollten, können am geplanten Umzugstag kurzfristig nicht mehr helfen.</p>
+
+                <strong>Aufgabe</strong>
+                <p>Passe deinen bestehenden Projektplan mithilfe der KI-Unterstützung von ProjectFlow an diese neue Situation an.</p>
+                <p>Prüfe den Änderungsvorschlag und entscheide anschließend selbst, welche vorgeschlagenen Änderungen du übernehmen möchtest.</p>
+            </div>
+        </details>
+        <p class="pf-study-task__return-hint">
             Wenn du die Anpassung des Projektplans abgeschlossen und geprüft hast,
             kehre zur Befragung zurück.
         </p>

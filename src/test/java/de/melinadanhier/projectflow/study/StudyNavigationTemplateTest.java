@@ -23,6 +23,15 @@ class StudyNavigationTemplateTest {
         assertThat(plan).contains("fragments/layout :: study-return");
         assertThat(layout)
                 .contains("th:fragment=\"study-return\"")
+                .contains("session.studyPhase == 'TASK_1'")
+                .contains("session.studyPhase == 'TASK_2'")
+                .contains("Aufgabe 1 der Nutzerstudie")
+                .contains("Du ziehst in sechs Wochen in eine Wohnung in einer anderen Stadt.")
+                .contains("Übernimm am Ende einen Projektplan, mit dem du grundsätzlich weiterarbeiten würdest.")
+                .contains("Aufgabe 2 der Nutzerstudie")
+                .contains("Die Freunde, die dir ursprünglich beim Transport helfen wollten")
+                .contains("Prüfe den Änderungsvorschlag und entscheide anschließend selbst")
+                .contains("<details class=\"pf-study-task__details\" open>")
                 .contains("@{/study/return}")
                 .contains("@{/study/finish}");
     }
