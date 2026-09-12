@@ -12,6 +12,7 @@ import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepo
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import de.melinadanhier.projectflow.user.model.User;
@@ -195,6 +196,13 @@ class AiWizardSummaryIntegrationTest {
                 .andExpect(content().string(containsString("name=\"rating\"")))
                 .andExpect(content().string(containsString("formaction=\"/ai-feedback/skip\"")))
                 .andExpect(content().string(not(containsString("Feedback geben"))));
+
+        request.session().setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, UUID.randomUUID());
+
+        mockMvc.perform(get("/projects/new/ai/summary")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("id=\"ai-feedback-dialog\""))));
     }
 
     @Test

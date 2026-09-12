@@ -99,17 +99,15 @@ public class DraftApplicationController {
         draftApplicationService.discard(projectId, draftId, currentUser.userId(), lockVersion);
         projectService.deleteDraftProjectPermanently(projectId, currentUser.userId());
         wizardService.clearOwned(currentUser.userId(), session);
-        session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
-                new AiFeedbackOpportunity(AiFeedbackContext.DRAFT_DELETED, draftId, "/projects"));
+        offerFeedback(session, AiFeedbackContext.DRAFT_DELETED, draftId, "/projects");
         return "redirect:/projects";
     }
 
     private String appliedRedirect(UUID projectId, UUID draftId, RedirectAttributes redirectAttributes,
                                    HttpSession session) {
         studyTrackingService.trackIfActive(session, StudyEventType.PLAN_ADOPTED);
-        session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
-                new AiFeedbackOpportunity(AiFeedbackContext.PLAN_ADOPTED, draftId,
-                        "/projects/" + projectId + "/plan"));
+        offerFeedback(session, AiFeedbackContext.PLAN_ADOPTED, draftId,
+                "/projects/" + projectId + "/plan");
         redirectAttributes.addFlashAttribute("successMessage",
                 "Der KI-Entwurf wurde übernommen.");
         return "redirect:/projects/" + projectId + "/plan";
@@ -121,5 +119,15 @@ public class DraftApplicationController {
         } catch (DataAccessException exception) {
             throw new DraftApplicationPersistenceException(exception);
         }
+    }
+
+    private void offerFeedback(HttpSession session, AiFeedbackContext context, UUID actionId,
+                               String returnUrl) {
+        if (studyTrackingService.isActive(session)) {
+            session.removeAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE);
+            return;
+        }
+        session.setAttribute(AiFeedbackOpportunity.SESSION_ATTRIBUTE,
+                new AiFeedbackOpportunity(context, actionId, returnUrl));
     }
 }

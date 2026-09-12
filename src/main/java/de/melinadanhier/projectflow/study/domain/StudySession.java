@@ -26,4 +26,8 @@ public class StudySession {
 
     @Column(name = "project_id")
     private UUID projectId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "current_phase", length = 20)
+    private StudyPhase currentPhase;
 }
