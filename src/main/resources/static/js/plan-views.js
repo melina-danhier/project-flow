@@ -373,6 +373,17 @@ function initializePlanViews() {
             button.classList.toggle('is-active', active);
             button.setAttribute('aria-pressed', String(active));
         });
+        var currentLabel = switcher.querySelector('.pf-view-current-label');
+        if (currentLabel) {
+            var activeBtn = switcher.querySelector('[data-plan-view="' + view + '"]');
+            if (activeBtn) {
+                var span = activeBtn.querySelector('span');
+                currentLabel.textContent = span ? span.textContent.trim() : activeBtn.textContent.trim();
+            }
+        }
+        if (switcher.tagName === 'DETAILS' && switcher.hasAttribute('open')) {
+            switcher.removeAttribute('open');
+        }
         if (!isList) {
             var phases = collectPhases();
             alternativeView.appendChild(view === 'cards' ? renderCards(phases) : view === 'board' ? renderBoard(phases) : renderCalendar(phases));

@@ -39,7 +39,7 @@ public class PlanElementViewDto {
 
     public String getDateLabel() {
         if (relevantDate == null) return null;
-        String prefix = type == PlanElementType.MILESTONE ? "Termin: " : "Fällig: ";
+        String prefix = type == PlanElementType.MILESTONE ? "" : "Fällig: ";
         return prefix + relevantDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
     }
 

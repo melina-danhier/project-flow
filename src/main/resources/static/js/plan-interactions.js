@@ -139,5 +139,188 @@
     window.addEventListener('pagehide', () => captureState(planMain()));
     document.addEventListener('DOMContentLoaded', () => restoreState(planMain()));
 
+    // Global dropdown click-outside closer
+    document.addEventListener('click', event => {
+        document.querySelectorAll('details.pf-dropdown[open]').forEach(dropdown => {
+            if (!dropdown.contains(event.target)) {
+                dropdown.removeAttribute('open');
+            }
+        });
+    });
+
+    // Phase collapse behavior: Only toggle when clicking caret (.pf-phase-toggle-btn)
+    document.addEventListener('click', event => {
+        const phaseMenuOrEdit = event.target.closest('.pf-phase-menu, .pf-phase-inline-edit');
+        if (phaseMenuOrEdit) {
+            event.stopPropagation();
+            return;
+        }
+
+        const toggleBtn = event.target.closest('.pf-phase-toggle-btn');
+        if (toggleBtn) {
+            event.preventDefault();
+            const details = toggleBtn.closest('details.plan-section');
+            if (details) {
+                details.open = !details.open;
+                captureState(planMain());
+            }
+            return;
+        }
+
+        const header = event.target.closest('.pf-plan-section__header');
+        if (header) {
+            event.preventDefault();
+        }
+    });
+
+    // Phase Inline Edit: Reveal edit form on 'Bearbeiten'
+    document.addEventListener('click', event => {
+        const editBtn = event.target.closest('.pf-phase-edit-btn');
+        if (editBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const section = editBtn.closest('details.plan-section');
+            const menu = editBtn.closest('details.pf-phase-menu');
+            if (menu) menu.removeAttribute('open');
+            if (section) {
+                const displayWrap = section.querySelector('.pf-phase-display-wrap');
+                const editForm = section.querySelector('.pf-phase-inline-edit');
+                if (displayWrap) displayWrap.hidden = true;
+                if (editForm) {
+                    editForm.hidden = false;
+                    const input = editForm.querySelector('.pf-phase-edit-title');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                }
+            }
+            return;
+        }
+
+        // Phase Inline Edit: Cancel button
+        const cancelBtn = event.target.closest('.pf-phase-cancel-btn');
+        if (cancelBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const section = cancelBtn.closest('details.plan-section');
+            if (section) {
+                const displayWrap = section.querySelector('.pf-phase-display-wrap');
+                const editForm = section.querySelector('.pf-phase-inline-edit');
+                if (editForm) editForm.hidden = true;
+                if (displayWrap) displayWrap.hidden = false;
+            }
+            return;
+        }
+    });
+
+    // Modals: New Section & Delete Section & Back to Top
+    function setupPlanModals() {
+        const newSectionDialog = document.getElementById('new-section-dialog');
+        const openNewSectionBtn = document.getElementById('open-new-section-btn');
+        const closeNewSectionBtn = document.getElementById('close-new-section-btn');
+
+        if (openNewSectionBtn && newSectionDialog) {
+            openNewSectionBtn.onclick = () => {
+                const actionsDropdown = document.getElementById('project-actions-dropdown');
+                if (actionsDropdown) actionsDropdown.removeAttribute('open');
+                newSectionDialog.showModal();
+                newSectionDialog.querySelector('#new-section-title')?.focus();
+            };
+        }
+        if (closeNewSectionBtn && newSectionDialog) {
+            closeNewSectionBtn.onclick = () => {
+                newSectionDialog.close();
+            };
+        }
+        if (newSectionDialog && newSectionDialog.querySelector('.pf-alert--error')) {
+            newSectionDialog.showModal();
+        }
+
+        const deleteSectionDialog = document.getElementById('delete-section-dialog');
+        const deleteSectionForm = document.getElementById('delete-section-form');
+        const closeDeleteSectionBtn = document.getElementById('close-delete-section-btn');
+        const deleteModeSelect = document.getElementById('delete-mode-select');
+        const targetSectionWrap = document.getElementById('delete-section-target-wrap');
+        const targetSectionSelect = document.getElementById('target-section-select');
+        const deleteSectionTitleDisplay = document.getElementById('delete-section-title-display');
+        const deleteSectionDescDisplay = document.getElementById('delete-section-desc-display');
+        const deleteSectionHandlingGroup = document.getElementById('delete-section-handling-group');
+
+        if (deleteModeSelect && targetSectionWrap) {
+            deleteModeSelect.onchange = () => {
+                const isMove = deleteModeSelect.value === 'MOVE_CONTENT';
+                targetSectionWrap.hidden = !isMove;
+                if (targetSectionSelect) {
+                    targetSectionSelect.required = isMove;
+                }
+            };
+        }
+
+        if (closeDeleteSectionBtn && deleteSectionDialog) {
+            closeDeleteSectionBtn.onclick = () => {
+                deleteSectionDialog.close();
+            };
+        }
+
+        document.addEventListener('click', event => {
+            const deleteBtn = event.target.closest('.pf-phase-delete-trigger');
+            if (deleteBtn && deleteSectionDialog && deleteSectionForm) {
+                event.preventDefault();
+                event.stopPropagation();
+                const menu = deleteBtn.closest('details.pf-phase-menu');
+                if (menu) menu.removeAttribute('open');
+
+                const sectionId = deleteBtn.dataset.sectionId;
+                const sectionTitle = deleteBtn.dataset.sectionTitle || 'Bereich';
+                const count = parseInt(deleteBtn.dataset.elementCount || '0', 10);
+                const projectId = document.getElementById('project-id-holder')?.value
+                    || document.querySelector('main[data-project-id]')?.dataset.projectId;
+
+                deleteSectionForm.action = `/projects/${projectId}/sections/${sectionId}/delete`;
+                if (deleteSectionTitleDisplay) {
+                    deleteSectionTitleDisplay.textContent = `Bereich „${sectionTitle}“ löschen`;
+                }
+
+                if (count > 0) {
+                    if (deleteSectionDescDisplay) {
+                        deleteSectionDescDisplay.textContent = `Dieser Bereich enthält ${count} ${count === 1 ? 'Element' : 'Elemente'}. Was möchtest du mit den Inhalten tun?`;
+                    }
+                    if (deleteSectionHandlingGroup) deleteSectionHandlingGroup.hidden = false;
+                    if (deleteModeSelect) deleteModeSelect.value = 'DELETE_CONTENT';
+                    if (targetSectionWrap) targetSectionWrap.hidden = true;
+                    if (targetSectionSelect) {
+                        targetSectionSelect.required = false;
+                        Array.from(targetSectionSelect.options).forEach(opt => {
+                            opt.hidden = (opt.value === sectionId);
+                            opt.disabled = (opt.value === sectionId);
+                        });
+                        targetSectionSelect.value = '';
+                    }
+                } else {
+                    if (deleteSectionDescDisplay) {
+                        deleteSectionDescDisplay.textContent = `Möchtest du diesen Bereich wirklich löschen?`;
+                    }
+                    if (deleteSectionHandlingGroup) deleteSectionHandlingGroup.hidden = true;
+                    if (deleteModeSelect) deleteModeSelect.value = 'DELETE_CONTENT';
+                    if (targetSectionWrap) targetSectionWrap.hidden = true;
+                }
+
+                deleteSectionDialog.showModal();
+            }
+        });
+
+        // Back to top button
+        const backToTopBtn = document.getElementById('pf-back-to-top-btn');
+        if (backToTopBtn) {
+            backToTopBtn.onclick = () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', setupPlanModals);
+    document.addEventListener('projectflow:plan-updated', setupPlanModals);
+
     window.ProjectFlowPlan = { submit: submitFields };
 })();

@@ -188,6 +188,15 @@ public class TaskController {
         return "redirect:/projects/" + projectId + "/plan";
     }
 
+    @PostMapping("/projects/{projectId}/tasks/{taskId}/status")
+    public String updateStatus(@PathVariable UUID projectId, @PathVariable UUID taskId,
+                               @RequestParam TaskStatus status,
+                               @RequestParam long taskLockVersion,
+                               @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        taskService.updateStatus(projectId, taskId, status, taskLockVersion, currentUser.userId());
+        return "redirect:/projects/" + projectId + "/plan";
+    }
+
     @PostMapping("/projects/{projectId}/tasks/{taskId}/delete")
     public String delete(
             @PathVariable UUID projectId,

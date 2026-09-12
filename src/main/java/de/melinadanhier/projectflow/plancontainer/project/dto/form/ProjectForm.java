@@ -7,6 +7,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.classification.P
 import de.melinadanhier.projectflow.plancontainer.project.model.collaboration.ProjectCollaboration;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.TaskProgressDisplay;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -47,6 +48,7 @@ public abstract class ProjectForm implements ProjectClassification, ProjectColla
 
     private StructureMode structureMode;
     private SortMode sortMode;
+    private TaskProgressDisplay taskProgressDisplay;
 
     @AssertTrue(message = "Das Projektende darf nicht vor dem Projektstart liegen.")
     public boolean isDateRangeValid() {

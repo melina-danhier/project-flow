@@ -846,7 +846,7 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(content().string(containsString("<summary")))
                 .andExpect(content().string(containsString("Planelemente ohne Phase")))
                 .andExpect(content().string(containsString("Fällig: 12.01.2027")))
-                .andExpect(content().string(containsString("Termin: 08.01.2027")))
+                .andExpect(content().string(containsString("08.01.2027")))
                 .andExpect(content().string(containsString("In Bearbeitung")))
                 .andExpect(content().string(containsString("Erreicht")))
                 .andExpect(content().string(containsString("KI-Vorschlag")))

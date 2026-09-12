@@ -127,6 +127,14 @@ public class MilestoneService {
         milestoneRepository.flush();
     }
 
+    @Transactional
+    public void setCompleted(UUID projectId, UUID milestoneId, boolean completed, long lockVersion, UUID userId) {
+        authorizationService.requireEditableMemberForUpdate(projectId, userId);
+        Milestone milestone = requireMilestone(projectId, milestoneId);
+        requireCurrentVersion(milestone.getLockVersion(), lockVersion);
+        milestone.setCompleted(completed);
+    }
+
     private Milestone requireMilestone(UUID projectId, UUID milestoneId) {
         return milestoneRepository.findByIdAndPlanContainerId(milestoneId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Meilenstein wurde nicht gefunden."));

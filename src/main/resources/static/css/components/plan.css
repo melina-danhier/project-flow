@@ -7,12 +7,13 @@
    ========================================================================== */
 
 .pf-plan-section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.25rem;
     background: #ffffff;
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-lg);
     box-shadow: var(--pf-shadow-xs);
+    transition: var(--pf-transition);
 }
 
 .pf-plan-section__header {
@@ -20,10 +21,16 @@
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 1rem;
-    padding-bottom: 0.85rem;
-    margin-bottom: 1rem;
+    gap: 0.75rem;
+    padding-bottom: 0.65rem;
+    margin-bottom: 0.75rem;
     border-bottom: 1px solid var(--pf-border);
+    list-style: none;
+    cursor: default;
+}
+
+.pf-plan-section__header::-webkit-details-marker {
+    display: none;
 }
 
 .pf-element-list {
@@ -32,14 +39,14 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 0.5rem;
 }
 
 .pf-element-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.85rem 1.15rem;
+    padding: 0.55rem 0.85rem;
     background: var(--pf-surface);
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-md);
@@ -612,3 +619,276 @@
         min-width: 42rem;
     }
 }
+
+/* ==========================================================================
+   Project View Redesign - Control Bar, Phase Header & Elements
+   ========================================================================== */
+
+/* Control Bar */
+.pf-plan-control-bar {
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    padding: 0.65rem 1rem;
+    background: #ffffff;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg);
+    box-shadow: var(--pf-shadow-xs);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+}
+
+.pf-sort-control-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pf-sort-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--pf-text-secondary);
+}
+
+.pf-info-tooltip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--pf-text-muted);
+    cursor: help;
+    transition: color 0.15s ease;
+}
+
+.pf-info-tooltip:hover {
+    color: var(--pf-primary);
+}
+
+/* View Selector Dropdown */
+.pf-plan-view-dropdown summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.pf-plan-view-dropdown .pf-dropdown__menu {
+    min-width: 140px;
+}
+
+/* Phase Header */
+.pf-phase-header__left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.pf-phase-header__right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.pf-phase-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--pf-text-secondary);
+    cursor: pointer;
+    border-radius: var(--pf-radius-sm);
+    transition: background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.pf-phase-toggle-btn:hover {
+    background: var(--pf-surface-subtle);
+    color: var(--pf-primary);
+}
+
+.pf-phase-caret {
+    transition: transform 0.2s ease;
+}
+
+details:not([open]) .pf-phase-caret {
+    transform: rotate(-90deg);
+}
+
+details[open] .pf-phase-caret {
+    transform: rotate(0deg);
+}
+
+.pf-phase-display-wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.pf-phase-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--pf-text-main);
+    line-height: 1.3;
+}
+
+.pf-phase-desc {
+    margin: 0.15rem 0 0;
+    font-size: 0.82rem;
+    color: var(--pf-text-muted);
+    line-height: 1.4;
+}
+
+/* Phase Inline Edit */
+.pf-phase-inline-edit {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.pf-phase-inline-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 240px;
+}
+
+.pf-phase-inline-inputs .pf-input {
+    flex: 1;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
+}
+
+.pf-phase-inline-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Tasks & Milestones Items */
+.pf-element-item--milestone {
+    border-left: 3.5px solid var(--pf-purple);
+    background: #faf8ff;
+}
+
+.pf-element-item--milestone:hover {
+    border-left-color: #7c3aed;
+    background: #f5f3ff;
+}
+
+.pf-element-item__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.pf-element-item__title {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--pf-text-main);
+    text-decoration: none;
+    transition: color 0.15s ease;
+    line-height: 1.35;
+}
+
+.pf-element-item__title:hover {
+    color: var(--pf-primary);
+}
+
+.pf-element-item__desc {
+    font-size: 0.8rem;
+    color: var(--pf-text-muted);
+    margin-top: 0.15rem;
+}
+
+.pf-element-item__assignees {
+    font-size: 0.76rem;
+    color: var(--pf-text-muted);
+    margin-top: 0.15rem;
+}
+
+.pf-element-item__right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Status Controls */
+.pf-status-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 0.2rem 1.6rem 0.2rem 0.65rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    border-radius: var(--pf-radius-full);
+    border: 1px solid var(--pf-border);
+    cursor: pointer;
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 10px 10px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    transition: var(--pf-transition);
+}
+
+.pf-status-select--open {
+    background-color: var(--pf-surface-subtle);
+    color: var(--pf-text-secondary);
+    border-color: var(--pf-border);
+}
+
+.pf-status-select--in_progress {
+    background-color: var(--pf-primary-soft);
+    color: var(--pf-primary-active);
+    border-color: var(--pf-primary-border);
+}
+
+.pf-status-select--completed {
+    background-color: var(--pf-success-bg);
+    color: var(--pf-success-text);
+    border-color: var(--pf-success-border);
+}
+
+.pf-status-select--milestone {
+    background-color: var(--pf-purple-bg);
+    color: var(--pf-purple-text);
+    border-color: var(--pf-purple-border);
+}
+
+.pf-status-select:focus-visible {
+    outline: 2px solid var(--pf-primary);
+    outline-offset: 1px;
+}
+
+/* Item Action Menus */
+.pf-item-menu .pf-card-menu__btn {
+    width: 26px;
+    height: 26px;
+}
+
+.pf-item-menu .pf-card-menu__btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.pf-item-menu .pf-dropdown__menu {
+    min-width: 170px;
+}
+
+/* Back to Top */
+.pf-back-to-top-wrap {
+    margin: 2rem 0 1rem;
+    text-align: center;
+}
+

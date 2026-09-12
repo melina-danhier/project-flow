@@ -13,10 +13,11 @@
       th:data-editable="${plan.editable}">
     <!-- Hidden project lock version for JS move operations -->
     <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+    <input type="hidden" id="project-id-holder" th:value="${plan.project.id}">
 
     <th:block th:replace="~{fragments/layout :: study-return}" />
 
-    <!-- Page Header with Breadcrumbs and Actions -->
+    <!-- Page Header with Breadcrumbs and Consolidated Action Menu -->
     <div class="pf-page-header">
         <div class="pf-page-header__left">
             <a th:href="@{/projects}" class="pf-page-header__back">
@@ -33,303 +34,472 @@
             </div>
         </div>
 
-        <nav th:if="${plan.editable}" aria-label="Planaktionen" class="pf-page-header__actions">
-            <a class="pf-btn pf-btn--primary" th:href="@{/projects/{projectId}/plan/ai-change(projectId=${plan.project.id})}">
-                Plan mit KI anpassen
-            </a>
-            <a class="pf-btn pf-btn--outline" th:href="@{/projects/{projectId}/tasks/new(projectId=${plan.project.id})}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                </svg>
-                Aufgabe hinzufügen
-            </a>
-            <a class="pf-btn pf-btn--outline" th:href="@{/projects/{projectId}/milestones/new(projectId=${plan.project.id})}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
-                    <line x1="4" y1="22" x2="4" y2="15"></line>
-                </svg>
-                Meilenstein hinzufügen
-            </a>
-            <a th:if="${plan.owner}" class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/edit(projectId=${plan.project.id})}">
-                Projektdetails bearbeiten
-            </a>
-            <a th:if="${plan.project.groupProject}" class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/members(projectId=${plan.project.id})}">
-                Mitglieder verwalten
-            </a>
-        </nav>
+        <div class="pf-page-header__actions">
+            <!-- Consolidated Project Actions Dropdown -->
+            <details class="pf-dropdown pf-dropdown--right" id="project-actions-dropdown">
+                <summary class="pf-btn pf-btn--primary pf-dropdown__trigger">
+                    <span>Projektaktionen</span>
+                    <svg class="pf-dropdown__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </summary>
+                <div class="pf-dropdown__menu">
+                    <div class="pf-dropdown__header" th:if="${plan.editable}">
+                        <span class="pf-dropdown__eyebrow">Hinzufügen</span>
+                    </div>
+                    <a th:if="${plan.editable}" class="pf-dropdown__item" th:href="@{/projects/{projectId}/tasks/new(projectId=${plan.project.id})}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 11 12 14 22 4"></polyline>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                        <span>Aufgabe hinzufügen</span>
+                    </a>
+                    <a th:if="${plan.editable}" class="pf-dropdown__item" th:href="@{/projects/{projectId}/milestones/new(projectId=${plan.project.id})}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                            <line x1="4" y1="22" x2="4" y2="15"></line>
+                        </svg>
+                        <span>Meilenstein hinzufügen</span>
+                    </a>
+                    <button th:if="${plan.editable}" type="button" class="pf-dropdown__item" id="open-new-section-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Bereich hinzufügen</span>
+                    </button>
+
+                    <div th:if="${plan.editable}" class="pf-dropdown__divider"></div>
+                    <a th:if="${plan.editable}" class="pf-dropdown__item" th:href="@{/projects/{projectId}/plan/ai-change(projectId=${plan.project.id})}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                        </svg>
+                        <span>Plan mit KI anpassen</span>
+                    </a>
+
+                    <div class="pf-dropdown__divider"></div>
+                    <div class="pf-dropdown__header">
+                        <span class="pf-dropdown__eyebrow">Verwaltung</span>
+                    </div>
+                    <a th:if="${plan.owner}" class="pf-dropdown__item" th:href="@{/projects/{projectId}/edit(projectId=${plan.project.id})}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>Projektdetails bearbeiten</span>
+                    </a>
+                    <a th:if="${plan.project.groupProject}" class="pf-dropdown__item" th:href="@{/projects/{projectId}/members(projectId=${plan.project.id})}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>Mitglieder verwalten</span>
+                    </a>
+
+                    <!-- Lifecycle actions (archive, trash, reactivate, delete) -->
+                    <th:block th:if="${plan.owner}">
+                        <div class="pf-dropdown__divider"></div>
+                        <form th:if="${plan.project.location.name() == 'OVERVIEW'}"
+                              th:action="@{/projects/{id}/archive(id=${plan.project.id})}" method="post"
+                              data-confirm="Möchtest du dieses Projekt archivieren?"
+                              data-confirm-title="Projekt archivieren"
+                              data-confirm-btn="Archivieren"
+                              data-confirm-variant="primary" style="margin:0;">
+                            <button type="submit" class="pf-dropdown__item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                                    <rect x="1" y="3" width="22" height="5"></rect>
+                                    <line x1="10" y1="12" x2="14" y2="12"></line>
+                                </svg>
+                                <span>Projekt archivieren</span>
+                            </button>
+                        </form>
+                        <form th:if="${plan.project.location.name() == 'OVERVIEW' or plan.project.location.name() == 'ARCHIVE'}"
+                              th:action="@{/projects/{id}/trash(id=${plan.project.id})}" method="post"
+                              data-confirm="Möchtest du dieses Projekt in den Papierkorb verschieben?"
+                              data-confirm-title="In den Papierkorb verschieben"
+                              data-confirm-btn="In den Papierkorb"
+                              data-confirm-variant="danger" style="margin:0;">
+                            <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                                <span>In den Papierkorb</span>
+                            </button>
+                        </form>
+                        <form th:if="${plan.project.location.name() == 'TRASH' or plan.project.location.name() == 'ARCHIVE'}"
+                              th:action="@{/projects/{id}/reactivate(id=${plan.project.id})}" method="post" style="margin:0;">
+                            <button type="submit" class="pf-dropdown__item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="1 4 1 10 7 10"></polyline>
+                                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                </svg>
+                                <span>Wiederherstellen</span>
+                            </button>
+                        </form>
+                        <form th:if="${plan.project.location.name() == 'TRASH'}"
+                              th:action="@{/projects/{id}/delete(id=${plan.project.id})}" method="post"
+                              data-confirm="Möchtest du dieses Projekt endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
+                              data-confirm-title="Projekt endgültig löschen"
+                              data-confirm-btn="Endgültig löschen"
+                              data-confirm-variant="danger" style="margin:0;">
+                            <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                <span>Endgültig löschen</span>
+                            </button>
+                        </form>
+                    </th:block>
+                </div>
+            </details>
+        </div>
     </div>
 
     <!-- Flash Messages -->
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
-    <!-- Plan Ordering & Sort Mode Bar -->
-    <div class="pf-card pf-card--subtle" style="margin-top: 1.5rem; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-            <span style="font-weight: 600; color: var(--pf-text-main); font-size: 0.95rem;">Sortiermodus:</span>
-            <span class="pf-badge pf-badge--blue" th:if="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</span>
-            <span class="pf-badge pf-badge--purple" th:if="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</span>
-            <span class="pf-badge pf-badge--yellow" th:unless="${plan.editable}">Schreibgeschützt</span>
-            <small class="pf-text-muted" th:if="${plan.project.sortMode.name() == 'DATE'}" style="font-size: 0.85rem; color: var(--pf-text-muted);">
-                (Nach dem Verschieben werden datierte Elemente automatisch nach Datum einsortiert)
-            </small>
-            <small class="pf-text-muted" th:if="${plan.project.sortMode.name() == 'MANUAL'}" style="font-size: 0.85rem; color: var(--pf-text-muted);">
-                (Elemente können frei im Plan und zwischen Bereichen verschoben werden)
-            </small>
-        </div>
-        <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/plan/sort-mode(projectId=${plan.project.id})}" method="post" class="pf-cluster" id="plan-sort-mode-form" style="margin: 0;">
-            <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-            <label for="plan-sort-mode-select" class="pf-label" style="margin-bottom: 0; font-size: 0.85rem; color: var(--pf-text-secondary); font-weight: 600;">Modus ändern:</label>
-            <select id="plan-sort-mode-select" name="sortMode" class="pf-select" style="width: auto; padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="this.form.requestSubmit()">
-                <option value="DATE" th:selected="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</option>
-                <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
-            </select>
-            <noscript>
-                <button type="submit" class="pf-btn pf-btn--sm pf-btn--outline">Anwenden</button>
-            </noscript>
-        </form>
-        <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/plan/task-progress-display(projectId=${plan.project.id})}" method="post" class="pf-cluster" id="task-progress-display-form" data-native-submit style="margin: 0;">
-            <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-            <label for="task-progress-display" class="pf-label" style="margin-bottom: 0; font-size: 0.85rem;">Aufgabenfortschritt:</label>
-            <select id="task-progress-display" name="display" class="pf-select" style="width: auto; padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="this.form.requestSubmit()">
-                <option value="CHECKBOX" th:selected="${plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX'}">Checkboxen</option>
-                <option value="STATUS" th:selected="${plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}">Statuswerte</option>
-            </select>
-        </form>
-    </div>
-
-    <!-- Plan Sections -->
-    <div style="margin-top: 1.5rem;">
-        <div class="pf-plan-view-heading">
-            <h2 style="display: flex; align-items: center; gap: 0.5rem; margin: 0;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--pf-primary);">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-                Phasen und Planelemente
-            </h2>
-
-            <div class="pf-plan-view-switcher" role="group" aria-label="Planansicht auswählen">
-                <button type="button" class="pf-plan-view-button is-active" data-plan-view="list" aria-pressed="true">Liste</button>
-                <button type="button" class="pf-plan-view-button" data-plan-view="cards" aria-pressed="false">Karten</button>
-                <button type="button" class="pf-plan-view-button" data-plan-view="board" aria-pressed="false">Board</button>
-                <button type="button" class="pf-plan-view-button" data-plan-view="calendar" aria-pressed="false">Kalender</button>
+    <!-- Plan Control Bar: Consistent Sorting Control & Compact View Selector -->
+    <div class="pf-plan-control-bar">
+        <!-- Sorting Control -->
+        <div class="pf-sort-control-wrap">
+            <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/plan/sort-mode(projectId=${plan.project.id})}" method="post" id="plan-sort-mode-form" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
+                <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+                <label for="plan-sort-mode-select" class="pf-sort-label">Sortierung:</label>
+                <select id="plan-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" onchange="this.form.requestSubmit()">
+                    <option value="DATE" th:selected="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</option>
+                    <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
+                </select>
+                <span class="pf-info-tooltip" title="Nach Datum: Datierte Elemente werden chronologisch einsortiert. Manuell: Elemente können frei verschoben werden." aria-label="Sortierhinweis">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </span>
+            </form>
+            <div th:unless="${plan.editable}" style="display:flex; align-items:center; gap:0.5rem;">
+                <span class="pf-sort-label">Sortierung:</span>
+                <span class="pf-badge pf-badge--gray" th:text="${plan.project.sortMode.name() == 'DATE' ? 'Nach Datum' : 'Manuelle Reihenfolge'}">Nach Datum</span>
             </div>
         </div>
 
-        <div id="plan-alternative-view" class="pf-plan-alternative-view" hidden aria-live="polite"></div>
-
-        <!-- Sections Container for Drag-and-Drop -->
-        <div id="plan-sections">
-            <!-- Sections Loop -->
-            <details th:each="section, sectionStat : ${plan.sections}"
-                 class="pf-plan-section plan-phase plan-section"
-                 th:attr="data-section-id=${section.id},data-section-title=${section.title},data-section-description=${section.description},data-position=${sectionStat.index},data-move-url=@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})},draggable=${plan.editable},open=${editingSectionId == section.id ? 'open' : null}">
-                <summary class="pf-plan-section__header" style="cursor: pointer; list-style-position: inside;">
-                    <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <div>
-                            <strong th:text="${section.title}" style="font-size: 1.2rem;">Phase</strong>
-                            <p th:if="${section.description}" th:text="${section.description}" style="margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--pf-text-muted);"></p>
-                        </div>
-                    </div>
-                    <div class="pf-cluster">
-                        <span class="pf-badge pf-badge--blue" th:text="${section.taskCount + ' Aufgaben'}">0 Aufgaben</span>
-                        <span class="pf-badge pf-badge--purple" th:text="${section.milestoneCount + ' Meilensteine'}">0 Meilensteine</span>
-                        <span class="pf-badge pf-badge--outline" th:if="${section.originLabel}" th:text="${section.originLabel}"></span>
-                        <a th:if="${plan.editable}" class="pf-btn pf-btn--sm pf-btn--outline"
-                           th:href="@{/projects/{projectId}/plan-elements/SECTION/{elementId}/improve(projectId=${plan.project.id},elementId=${section.id})}">Mit KI verbessern</a>
-                    </div>
+        <!-- View Selection Dropdown -->
+        <div class="pf-plan-view-wrap">
+            <details class="pf-dropdown pf-dropdown--right pf-plan-view-dropdown pf-plan-view-switcher" role="group" aria-label="Planansicht auswählen">
+                <summary class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span class="pf-view-current-label">Liste</span>
+                    <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                 </summary>
+                <div class="pf-dropdown__menu">
+                    <button type="button" class="pf-dropdown__item is-active" data-plan-view="list" aria-pressed="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        <span>Liste</span>
+                    </button>
+                    <button type="button" class="pf-dropdown__item" data-plan-view="cards" aria-pressed="false">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                        <span>Karten</span>
+                    </button>
+                    <button type="button" class="pf-dropdown__item" data-plan-view="board" aria-pressed="false">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18"></rect><rect x="10" y="3" width="5" height="18"></rect><rect x="17" y="3" width="5" height="18"></rect></svg>
+                        <span>Board</span>
+                    </button>
+                    <button type="button" class="pf-dropdown__item" data-plan-view="calendar" aria-pressed="false">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span>Kalender</span>
+                    </button>
+                </div>
+            </details>
+        </div>
+    </div>
 
-                <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Phase neu anordnen" style="margin-bottom: 0.75rem;">
-                    <button type="button" class="section-drag-handle pf-drag-handle" title="Phase ziehen" aria-label="Phase ziehen">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Alternative View Container (Cards, Board, Calendar) -->
+    <div id="plan-alternative-view" class="pf-plan-alternative-view" hidden aria-live="polite"></div>
+
+    <!-- Plan Sections Container -->
+    <div id="plan-sections">
+        <!-- Sections Loop -->
+        <details th:each="section, sectionStat : ${plan.sections}"
+                 class="pf-plan-section plan-phase plan-section"
+                 open="open"
+                 th:attr="data-section-id=${section.id},data-section-title=${section.title},data-section-description=${section.description},data-position=${sectionStat.index},data-move-url=@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})},draggable=${plan.editable}">
+            
+            <!-- Phase Header: Triangle caret (left), Title & Description, Right-aligned Actions Menu -->
+            <summary class="pf-plan-section__header">
+                <div class="pf-phase-header__left">
+                    <!-- Collapse Toggle Button (Caret) -->
+                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen">
+                        <svg class="pf-phase-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+
+                    <!-- Section Drag Handle -->
+                    <button th:if="${plan.editable}" type="button" class="section-drag-handle pf-drag-handle" title="Bereich verschieben" aria-label="Bereich verschieben">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
                             <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
                         </svg>
                     </button>
-                    <form th:if="${!sectionStat.first}" th:action="@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="display:inline; margin:0;">
-                        <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                        <input type="hidden" name="targetPosition" th:value="${sectionStat.index - 1}">
-                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" title="Phase nach oben verschieben" aria-label="Phase nach oben verschieben">Phase nach oben</button>
-                    </form>
-                    <form th:if="${!sectionStat.last}" th:action="@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="display:inline; margin:0;">
-                        <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                        <input type="hidden" name="targetPosition" th:value="${sectionStat.index + 1}">
-                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" title="Phase nach unten verschieben" aria-label="Phase nach unten verschieben">Phase nach unten</button>
-                    </form>
-                </div>
 
-                <!-- Elements in this Section -->
-                <ul class="pf-element-list plan-elements" th:attr="data-section-id=${section.id}" style="margin-bottom: 1.25rem;">
-                    <li th:if="${#lists.isEmpty(section.elements)}" class="pf-element-item--empty" style="padding: 1rem; color: var(--pf-text-muted); text-align: center; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md);">
-                        Keine Aufgaben oder Meilensteine in diesem Bereich vorhanden.
-                    </li>
-                    <li th:each="element, elementStat : ${section.elements}"
-                        class="pf-element-item plan-element"
-                        th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id=${section.id},data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
-                        <div class="pf-element-item__left">
-                            <button th:if="${plan.editable}" type="button" class="element-drag-handle pf-drag-handle" title="Element verschieben" aria-label="Element verschieben">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="9" cy="5" r="1.5"></circle>
-                                    <circle cx="9" cy="12" r="1.5"></circle>
-                                    <circle cx="9" cy="19" r="1.5"></circle>
-                                    <circle cx="15" cy="5" r="1.5"></circle>
-                                    <circle cx="15" cy="12" r="1.5"></circle>
-                                    <circle cx="15" cy="19" r="1.5"></circle>
-                                </svg>
-                            </button>
-                            <form th:if="${element.type.name() == 'TASK' and plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" class="pf-task-completion-form"
-                                  th:action="@{/projects/{projectId}/tasks/{taskId}/completion(projectId=${plan.project.id},taskId=${element.id})}" method="post">
-                                <input type="hidden" name="taskLockVersion" th:value="${element.lockVersion}">
-                                <input type="checkbox" name="completed" value="true" th:checked="${element.taskCompleted}"
-                                       th:aria-label="${element.taskCompleted ? 'Aufgabe als offen markieren: ' : 'Aufgabe als erledigt markieren: '} + ${element.title}"
-                                       onchange="this.form.requestSubmit()">
-                            </form>
-                            <span class="pf-element-item__icon pf-element-item__icon--task" th:if="${element.type.name() == 'TASK' and !plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" th:text="${element.taskCompleted ? '✓' : '○'}"></span>
-                            <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}">
-                                ◆
-                            </span>
-                            <div>
-                                <span class="pf-badge" th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-badge--purple' : 'pf-badge--blue'}"
-                                      th:text="${element.typeLabel}"></span>
-                                <a th:if="${element.type.name() == 'TASK'}"
-                                   th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
-                                   th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
-                                <a th:if="${element.type.name() == 'MILESTONE'}"
-                                   th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
-                                   th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
-                                <small th:if="${element.description}" th:text="${element.description}" style="color: var(--pf-text-muted);"></small>
-                                <small th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}"
-                                       th:text="${'Zugewiesen an: ' + #strings.listJoin(element.assigneeDisplayNames, ', ')}"
-                                       style="display:block;color:var(--pf-text-muted);"></small>
-                            </div>
-                        </div>
-                        <div class="pf-cluster">
-                            <a th:if="${plan.editable}" class="pf-btn pf-btn--sm pf-btn--ghost"
-                               th:href="@{/projects/{projectId}/plan-elements/{elementType}/{elementId}/improve(projectId=${plan.project.id},elementType=${element.type},elementId=${element.id})}">Mit KI verbessern</a>
-                            <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
-                            <span class="pf-badge pf-badge--gray" th:if="${element.stateLabel != null and (element.type.name() != 'TASK' or (plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'))}" th:text="${element.stateLabel}"></span>
-                            <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
-                            <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
-                            <!-- Accessible element move controls when editable -->
-                            <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Element anordnen">
-                                <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost element-move-btn element-move-up" title="Nach oben verschieben" aria-label="Nach oben verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">▲</button>
-                                <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost element-move-btn element-move-down" title="Nach unten verschieben" aria-label="Nach unten verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">▼</button>
-                                <!-- In MANUAL mode, allow section move dropdown/button -->
-                                <details th:if="${plan.project.sortMode.name() == 'MANUAL' and #lists.size(plan.sections) > 1}" class="pf-dropdown" style="position: relative; display: inline-block;">
-                                    <summary class="pf-btn pf-btn--sm pf-btn--ghost" title="In anderen Bereich verschieben" aria-label="In anderen Bereich verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">⇄ Bereich</summary>
-                                    <div class="pf-dropdown__menu" style="position: absolute; right: 0; top: 100%; z-index: 20; background: var(--pf-surface); border: 1px solid var(--pf-border); border-radius: var(--pf-radius-md); box-shadow: var(--pf-shadow-md); padding: 0.5rem; min-width: 180px;">
-                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--pf-text-muted); padding: 0.25rem 0.5rem;">Zielbereich wählen:</div>
-                                        <form th:each="targetSec : ${plan.sections}" th:unless="${targetSec.id == section.id}"
-                                              th:action="@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})}"
-                                              method="post" style="margin: 0.2rem 0;">
-                                            <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                                            <input type="hidden" name="targetSectionId" th:value="${targetSec.id}">
-                                            <input type="hidden" name="targetDate" th:value="${element.relevantDate != null ? element.relevantDate.toString() : ''}">
-                                            <input type="hidden" name="targetPosition" th:value="${#lists.size(targetSec.elements)}">
-                                            <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" style="width: 100%; text-align: left; justify-content: flex-start;" th:text="${targetSec.title}"></button>
-                                        </form>
-                                    </div>
-                                </details>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-
-                <!-- Section Settings Accordion / Form -->
-                <details th:if="${plan.editable}" style="border-top: 1px solid var(--pf-border); padding-top: 0.85rem; margin-top: 0.5rem;">
-                    <summary style="cursor: pointer; color: var(--pf-text-muted); font-size: 0.85rem; font-weight: 600;">
-                        Bereich bearbeiten oder löschen
-                    </summary>
-                    <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
-                        <!-- Edit Section -->
-                        <form th:action="@{/projects/{projectId}/sections/{sectionId}(projectId=${plan.project.id},sectionId=${section.id})}"
-                              th:object="${sectionForm}" method="post">
-                            <input type="hidden" name="lockVersion" th:value="${section.lockVersion}">
-                            <input type="hidden" name="sortOrder" th:value="${section.sortOrder}">
-                            <div class="pf-form-group">
-                                <label th:for="${'section-title-' + section.id}" class="pf-label">Bereichstitel</label>
-                                <input th:id="${'section-title-' + section.id}" name="title"
-                                       th:value="${editingSectionId == section.id ? sectionForm.title : section.title}" required maxlength="100" class="pf-input">
-                                <div th:if="${editingSectionId == section.id and #fields.hasErrors('title')}"
-                                     th:errors="*{title}" class="pf-alert pf-alert--error" role="alert"></div>
-                            </div>
-                            <div class="pf-form-group">
-                                <label th:for="${'section-description-' + section.id}" class="pf-label">Beschreibung</label>
-                                <textarea th:id="${'section-description-' + section.id}" name="description" maxlength="2000" class="pf-textarea" style="min-height: 70px;"
-                                          th:text="${editingSectionId == section.id ? sectionForm.description : section.description}"></textarea>
-                                <div th:if="${editingSectionId == section.id and #fields.hasErrors('description')}"
-                                     th:errors="*{description}" class="pf-alert pf-alert--error" role="alert"></div>
-                            </div>
-                            <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Bereich speichern</button>
-                        </form>
-
-                        <!-- Delete Section -->
-                        <form th:action="@{/projects/{projectId}/sections/{sectionId}/delete(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="border-left: 1px solid var(--pf-border); padding-left: 1.25rem;">
-                            <div class="pf-form-group">
-                                <label th:for="${'delete-mode-' + section.id}" class="pf-label">Inhalte handhaben</label>
-                                <select th:id="${'delete-mode-' + section.id}" name="mode" required class="pf-select">
-                                    <option value="DELETE_CONTENT">Mit Inhalten löschen</option>
-                                    <option value="MOVE_CONTENT">In anderen Bereich verschieben</option>
-                                </select>
-                            </div>
-                            <div class="pf-form-group">
-                                <label th:for="${'target-section-' + section.id}" class="pf-label">Zielbereich</label>
-                                <select th:id="${'target-section-' + section.id}" name="targetSectionId" class="pf-select">
-                                    <option value="">Keine</option>
-                                    <option th:each="target : ${plan.sections}" th:unless="${target.id == section.id}"
-                                            th:value="${target.id}" th:text="${target.title}"></option>
-                                </select>
-                            </div>
-                            <button type="submit" class="pf-btn pf-btn--sm pf-btn--danger">Bereich löschen</button>
-                        </form>
+                    <!-- Display Mode (Title + Description) -->
+                    <div class="pf-phase-display-wrap" th:hidden="${editingSectionId == section.id}">
+                        <strong class="pf-phase-title" th:text="${section.title}">Phase</strong>
+                        <p class="pf-phase-desc" th:if="${section.description}" th:text="${section.description}"></p>
                     </div>
-                </details>
-            </details>
-        </div>
 
-        <!-- Add New Section Card -->
-        <div th:if="${plan.editable}" class="pf-card pf-card--tint" style="margin-top: 2rem;">
-            <h3 style="margin-bottom: 0.85rem;">Neuen Bereich anlegen</h3>
-            <form th:action="@{/projects/{projectId}/sections(projectId=${plan.project.id})}"
-                  th:object="${sectionForm}" method="post">
-                <div class="pf-form-group">
-                    <label for="new-section-title" class="pf-label">Titel des neuen Bereichs</label>
-                    <input id="new-section-title" th:field="*{title}" required maxlength="100" class="pf-input" placeholder="z. B. Konzeption, Entwicklung oder Abschluss">
-                    <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="pf-alert pf-alert--error" role="alert"></div>
+                    <!-- Inline Phase Edit Form (Hidden by default, shown on 'Bearbeiten') -->
+                    <form th:if="${plan.editable}" class="pf-phase-inline-edit"
+                          th:action="@{/projects/{projectId}/sections/{sectionId}(projectId=${plan.project.id},sectionId=${section.id})}"
+                          method="post" th:hidden="${editingSectionId != section.id}">
+                        <input type="hidden" name="lockVersion" th:value="${section.lockVersion}">
+                        <input type="hidden" name="sortOrder" th:value="${section.sortOrder}">
+                        <div class="pf-phase-inline-inputs">
+                            <input name="title" th:value="${editingSectionId == section.id ? sectionForm.title : section.title}"
+                                   required maxlength="100" class="pf-input pf-phase-edit-title" placeholder="Bereichstitel">
+                            <input name="description" th:value="${editingSectionId == section.id ? sectionForm.description : section.description}"
+                                   maxlength="2000" class="pf-input pf-phase-edit-desc" placeholder="Beschreibung (optional)">
+                        </div>
+                        <div class="pf-phase-inline-actions">
+                            <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Speichern</button>
+                            <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost pf-phase-cancel-btn">Abbrechen</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="pf-form-group">
-                    <label for="new-section-description" class="pf-label">Beschreibung (optional)</label>
-                    <textarea id="new-section-description" th:field="*{description}" maxlength="2000" class="pf-textarea" style="min-height: 80px;" placeholder="Details zu dieser Projektphase..."></textarea>
-                    <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="pf-alert pf-alert--error" role="alert"></div>
+
+                <!-- Phase Header Right: Counts and Hamburger Menu -->
+                <div class="pf-phase-header__right">
+                    <span class="pf-badge pf-badge--blue" th:text="${section.taskCount + ' Aufgaben'}">0 Aufgaben</span>
+                    <span class="pf-badge pf-badge--purple" th:text="${section.milestoneCount + ' Meilensteine'}">0 Meilensteine</span>
+                    <span class="pf-badge pf-badge--outline" th:if="${section.originLabel}" th:text="${section.originLabel}"></span>
+
+                    <!-- Phase Overflow Menu (Right-Aligned Hamburger) -->
+                    <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-phase-menu">
+                        <summary class="pf-card-menu__btn" title="Bereichsoptionen" aria-label="Bereichsoptionen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1.5"></circle>
+                                <circle cx="12" cy="5" r="1.5"></circle>
+                                <circle cx="12" cy="19" r="1.5"></circle>
+                            </svg>
+                        </summary>
+                        <div class="pf-dropdown__menu">
+                            <button type="button" class="pf-dropdown__item pf-phase-edit-btn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                <span>Bearbeiten</span>
+                            </button>
+                            <a class="pf-dropdown__item" th:href="@{/projects/{projectId}/plan-elements/SECTION/{elementId}/improve(projectId=${plan.project.id},elementId=${section.id})}">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                                </svg>
+                                <span>Mit KI verbessern</span>
+                            </a>
+                            <form th:if="${!sectionStat.first}" th:action="@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="margin:0;">
+                                <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+                                <input type="hidden" name="targetPosition" th:value="${sectionStat.index - 1}">
+                                <button type="submit" class="pf-dropdown__item">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                    <span>Phase nach oben</span>
+                                </button>
+                            </form>
+                            <form th:if="${!sectionStat.last}" th:action="@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})}" method="post" style="margin:0;">
+                                <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+                                <input type="hidden" name="targetPosition" th:value="${sectionStat.index + 1}">
+                                <button type="submit" class="pf-dropdown__item">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    <span>Phase nach unten</span>
+                                </button>
+                            </form>
+                            <div class="pf-dropdown__divider"></div>
+                            <button type="button" class="pf-dropdown__item pf-dropdown__item--danger pf-phase-delete-trigger"
+                                    th:attr="data-section-id=${section.id},data-section-title=${section.title},data-element-count=${section.taskCount + section.milestoneCount}">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                                <span>Bereich löschen</span>
+                            </button>
+                        </div>
+                    </details>
                 </div>
-                <button type="submit" class="pf-btn pf-btn--primary">Bereich anlegen</button>
-            </form>
-        </div>
+            </summary>
+
+            <!-- Elements in this Section -->
+            <ul class="pf-element-list plan-elements" th:attr="data-section-id=${section.id}">
+                <li th:if="${#lists.isEmpty(section.elements)}" class="pf-element-item--empty" style="padding: 0.85rem; color: var(--pf-text-muted); text-align: center; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); font-size: 0.88rem;">
+                    Keine Aufgaben oder Meilensteine in diesem Bereich vorhanden.
+                </li>
+                <li th:each="element, elementStat : ${section.elements}"
+                    class="pf-element-item plan-element"
+                    th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-element-item--milestone' : 'pf-element-item--task'}"
+                    th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id=${section.id},data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
+                    
+                    <div class="pf-element-item__left">
+                        <!-- Element Drag Handle -->
+                        <button th:if="${plan.editable}" type="button" class="element-drag-handle pf-drag-handle" title="Element verschieben" aria-label="Element verschieben">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
+                                <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
+                            </svg>
+                        </button>
+
+                        <!-- Task Completion Checkbox (CHECKBOX mode) -->
+                        <form th:if="${element.type.name() == 'TASK' and plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" class="pf-task-completion-form"
+                              th:action="@{/projects/{projectId}/tasks/{taskId}/completion(projectId=${plan.project.id},taskId=${element.id})}" method="post">
+                            <input type="hidden" name="taskLockVersion" th:value="${element.lockVersion}">
+                            <input type="checkbox" name="completed" value="true" th:checked="${element.taskCompleted}"
+                                   th:aria-label="${element.taskCompleted ? 'Aufgabe als offen markieren: ' : 'Aufgabe als erledigt markieren: '} + ${element.title}"
+                                   onchange="this.form.requestSubmit()">
+                        </form>
+
+                        <!-- Task Status Dropdown (STATUS mode) -->
+                        <form th:if="${element.type.name() == 'TASK' and plan.editable and plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}"
+                              th:action="@{/projects/{projectId}/tasks/{taskId}/status(projectId=${plan.project.id},taskId=${element.id})}" method="post" style="margin:0;">
+                            <input type="hidden" name="taskLockVersion" th:value="${element.lockVersion}">
+                            <select name="status" class="pf-status-select" th:classappend="${'pf-status-select--' + #strings.toLowerCase(element.taskStatus.name())}"
+                                    onchange="this.form.requestSubmit()" title="Status ändern">
+                                <option value="OPEN" th:selected="${element.taskStatus.name() == 'OPEN'}">Offen</option>
+                                <option value="IN_PROGRESS" th:selected="${element.taskStatus.name() == 'IN_PROGRESS'}">In Bearbeitung</option>
+                                <option value="COMPLETED" th:selected="${element.taskStatus.name() == 'COMPLETED'}">Erledigt</option>
+                            </select>
+                        </form>
+
+                        <!-- Milestone Status Dropdown -->
+                        <form th:if="${element.type.name() == 'MILESTONE' and plan.editable}"
+                              th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${plan.project.id},milestoneId=${element.id})}" method="post" style="margin:0;">
+                            <input type="hidden" name="milestoneLockVersion" th:value="${element.lockVersion}">
+                            <select name="completed" class="pf-status-select pf-status-select--milestone"
+                                    onchange="this.form.requestSubmit()" title="Meilensteinstatus ändern">
+                                <option value="false" th:selected="${!element.milestoneCompleted}">Offen</option>
+                                <option value="true" th:selected="${element.milestoneCompleted}">Erreicht</option>
+                            </select>
+                        </form>
+
+                        <!-- Read-only icon indicators -->
+                        <span class="pf-element-item__icon pf-element-item__icon--task" th:if="${element.type.name() == 'TASK' and !plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" th:text="${element.taskCompleted ? '✓' : '○'}"></span>
+                        <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}" title="Meilenstein: Markiert ein wichtiges Zwischenziel">◆</span>
+
+                        <!-- Element Title & Description -->
+                        <div class="pf-element-item__body">
+                            <a th:if="${element.type.name() == 'TASK'}"
+                               th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
+                               th:text="${element.title}" class="pf-element-item__title"></a>
+                            <a th:if="${element.type.name() == 'MILESTONE'}"
+                               th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
+                               th:text="${element.title}" class="pf-element-item__title"></a>
+                            <small th:if="${element.description}" th:text="${element.description}" class="pf-element-item__desc"></small>
+                            <small th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}"
+                                   th:text="${'Zugewiesen: ' + #strings.listJoin(element.assigneeDisplayNames, ', ')}"
+                                   class="pf-element-item__assignees"></small>
+                        </div>
+                    </div>
+
+                    <div class="pf-element-item__right">
+                        <!-- Date Badge (Milestones omit "Termin:") -->
+                        <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
+                        
+                        <!-- Read-only Status Badge -->
+                        <span class="pf-badge pf-badge--gray" th:if="${!plan.editable and element.stateLabel != null}" th:text="${element.stateLabel}"></span>
+                        
+                        <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
+                        <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
+
+                        <!-- Element Action Menu (Far-right hamburger) -->
+                        <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
+                            <summary class="pf-card-menu__btn" title="Elementoptionen" aria-label="Elementoptionen">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle>
+                                </svg>
+                            </summary>
+                            <div class="pf-dropdown__menu">
+                                <a class="pf-dropdown__item"
+                                   th:href="${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id + '/edit' : '/projects/' + plan.project.id + '/milestones/' + element.id + '/edit'}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    <span>Bearbeiten</span>
+                                </a>
+                                <a class="pf-dropdown__item"
+                                   th:href="@{/projects/{projectId}/plan-elements/{elementType}/{elementId}/improve(projectId=${plan.project.id},elementType=${element.type},elementId=${element.id})}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+                                    <span>Mit KI verbessern</span>
+                                </a>
+                                <button type="button" class="pf-dropdown__item element-move-btn element-move-up">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                    <span>Nach oben</span>
+                                </button>
+                                <button type="button" class="pf-dropdown__item element-move-btn element-move-down">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    <span>Nach unten</span>
+                                </button>
+
+                                <!-- In MANUAL mode: Move to another section options -->
+                                <th:block th:if="${plan.project.sortMode.name() == 'MANUAL' and #lists.size(plan.sections) > 1}">
+                                    <div class="pf-dropdown__divider"></div>
+                                    <div class="pf-dropdown__header"><span class="pf-dropdown__eyebrow">In Bereich verschieben</span></div>
+                                    <form th:each="targetSec : ${plan.sections}" th:unless="${targetSec.id == section.id}"
+                                          th:action="@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})}"
+                                          method="post" style="margin: 0.15rem 0;">
+                                        <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+                                        <input type="hidden" name="targetSectionId" th:value="${targetSec.id}">
+                                        <input type="hidden" name="targetDate" th:value="${element.relevantDate != null ? element.relevantDate.toString() : ''}">
+                                        <input type="hidden" name="targetPosition" th:value="${#lists.size(targetSec.elements)}">
+                                        <button type="submit" class="pf-dropdown__item" th:text="${targetSec.title}"></button>
+                                    </form>
+                                </th:block>
+
+                                <div class="pf-dropdown__divider"></div>
+                                <form th:action="${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id + '/delete' : '/projects/' + plan.project.id + '/milestones/' + element.id + '/delete'}" method="post"
+                                      data-confirm="Möchtest du dieses Element endgültig löschen?"
+                                      data-confirm-title="Element löschen"
+                                      data-confirm-btn="Löschen"
+                                      data-confirm-variant="danger" style="margin:0;">
+                                    <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                        <span>Löschen</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </details>
+                    </div>
+                </li>
+            </ul>
+        </details>
     </div>
 
-    <!-- Unsectioned Elements -->
-    <div th:unless="${#lists.isEmpty(plan.unsectionedElements)}" class="pf-plan-section plan-section unsectioned" style="margin-top: 2rem; border-style: dashed;"
+    <!-- Unsectioned Elements (If any exist) -->
+    <div th:unless="${#lists.isEmpty(plan.unsectionedElements)}" class="pf-plan-section plan-section unsectioned" style="margin-top: 1.5rem; border-style: dashed;"
          data-section-id="">
-        <h2>Planelemente ohne Phase</h2>
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem;">Planelemente ohne Phase</h3>
         <ul class="pf-element-list plan-elements" data-section-id="">
             <li th:each="element, elementStat : ${plan.unsectionedElements}"
                 class="pf-element-item plan-element"
+                th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-element-item--milestone' : 'pf-element-item--task'}"
                 th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id='',data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
+                
                 <div class="pf-element-item__left">
                     <button th:if="${plan.editable}" type="button" class="element-drag-handle pf-drag-handle" title="Element verschieben" aria-label="Element verschieben">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="9" cy="5" r="1.5"></circle>
-                            <circle cx="9" cy="12" r="1.5"></circle>
-                            <circle cx="9" cy="19" r="1.5"></circle>
-                            <circle cx="15" cy="5" r="1.5"></circle>
-                            <circle cx="15" cy="12" r="1.5"></circle>
-                            <circle cx="15" cy="19" r="1.5"></circle>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
+                            <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
                         </svg>
                     </button>
+
+                    <!-- Task Completion Checkbox (CHECKBOX mode) -->
                     <form th:if="${element.type.name() == 'TASK' and plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" class="pf-task-completion-form"
                           th:action="@{/projects/{projectId}/tasks/{taskId}/completion(projectId=${plan.project.id},taskId=${element.id})}" method="post">
                         <input type="hidden" name="taskLockVersion" th:value="${element.lockVersion}">
@@ -337,90 +507,194 @@
                                th:aria-label="${element.taskCompleted ? 'Aufgabe als offen markieren: ' : 'Aufgabe als erledigt markieren: '} + ${element.title}"
                                onchange="this.form.requestSubmit()">
                     </form>
+
+                    <!-- Task Status Dropdown (STATUS mode) -->
+                    <form th:if="${element.type.name() == 'TASK' and plan.editable and plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}"
+                          th:action="@{/projects/{projectId}/tasks/{taskId}/status(projectId=${plan.project.id},taskId=${element.id})}" method="post" style="margin:0;">
+                        <input type="hidden" name="taskLockVersion" th:value="${element.lockVersion}">
+                        <select name="status" class="pf-status-select" th:classappend="${'pf-status-select--' + #strings.toLowerCase(element.taskStatus.name())}"
+                                onchange="this.form.requestSubmit()" title="Status ändern">
+                            <option value="OPEN" th:selected="${element.taskStatus.name() == 'OPEN'}">Offen</option>
+                            <option value="IN_PROGRESS" th:selected="${element.taskStatus.name() == 'IN_PROGRESS'}">In Bearbeitung</option>
+                            <option value="COMPLETED" th:selected="${element.taskStatus.name() == 'COMPLETED'}">Erledigt</option>
+                        </select>
+                    </form>
+
+                    <!-- Milestone Status Dropdown -->
+                    <form th:if="${element.type.name() == 'MILESTONE' and plan.editable}"
+                          th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${plan.project.id},milestoneId=${element.id})}" method="post" style="margin:0;">
+                        <input type="hidden" name="milestoneLockVersion" th:value="${element.lockVersion}">
+                        <select name="completed" class="pf-status-select pf-status-select--milestone"
+                                onchange="this.form.requestSubmit()" title="Meilensteinstatus ändern">
+                            <option value="false" th:selected="${!element.milestoneCompleted}">Offen</option>
+                            <option value="true" th:selected="${element.milestoneCompleted}">Erreicht</option>
+                        </select>
+                    </form>
+
                     <span class="pf-element-item__icon pf-element-item__icon--task" th:if="${element.type.name() == 'TASK' and !plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" th:text="${element.taskCompleted ? '✓' : '○'}"></span>
-                    <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}">◆</span>
-                    <div>
-                        <span class="pf-badge" th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-badge--purple' : 'pf-badge--blue'}"
-                              th:text="${element.typeLabel}"></span>
+                    <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}" title="Meilenstein: Markiert ein wichtiges Zwischenziel">◆</span>
+
+                    <div class="pf-element-item__body">
                         <a th:if="${element.type.name() == 'TASK'}"
                            th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
-                           th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
+                           th:text="${element.title}" class="pf-element-item__title"></a>
                         <a th:if="${element.type.name() == 'MILESTONE'}"
                            th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
-                           th:text="${element.title}" style="display: block; font-weight: 600; margin-top: 0.25rem;"></a>
-                        <small th:if="${element.description}" th:text="${element.description}" style="color: var(--pf-text-muted);"></small>
+                           th:text="${element.title}" class="pf-element-item__title"></a>
+                        <small th:if="${element.description}" th:text="${element.description}" class="pf-element-item__desc"></small>
                         <small th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}"
-                               th:text="${'Zugewiesen an: ' + #strings.listJoin(element.assigneeDisplayNames, ', ')}"
-                               style="display:block;color:var(--pf-text-muted);"></small>
+                               th:text="${'Zugewiesen: ' + #strings.listJoin(element.assigneeDisplayNames, ', ')}"
+                               class="pf-element-item__assignees"></small>
                     </div>
                 </div>
-                <div class="pf-cluster">
-                    <a th:if="${plan.editable}" class="pf-btn pf-btn--sm pf-btn--ghost"
-                       th:href="@{/projects/{projectId}/plan-elements/{elementType}/{elementId}/improve(projectId=${plan.project.id},elementType=${element.type},elementId=${element.id})}">Mit KI verbessern</a>
+
+                <div class="pf-element-item__right">
                     <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
-                    <span class="pf-badge pf-badge--gray" th:if="${element.stateLabel != null and (element.type.name() != 'TASK' or (plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'))}" th:text="${element.stateLabel}"></span>
+                    <span class="pf-badge pf-badge--gray" th:if="${!plan.editable and element.stateLabel != null}" th:text="${element.stateLabel}"></span>
                     <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
                     <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
-                    <div th:if="${plan.editable}" class="pf-ordering-buttons" role="group" aria-label="Element anordnen">
-                        <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost element-move-btn element-move-up" title="Nach oben verschieben" aria-label="Nach oben verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">▲</button>
-                        <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost element-move-btn element-move-down" title="Nach unten verschieben" aria-label="Nach unten verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">▼</button>
-                        <details th:if="${plan.project.sortMode.name() == 'MANUAL' and !#lists.isEmpty(plan.sections)}" class="pf-dropdown" style="position: relative; display: inline-block;">
-                            <summary class="pf-btn pf-btn--sm pf-btn--ghost" title="In Bereich verschieben" aria-label="In Bereich verschieben" style="padding: 0.2rem 0.45rem; font-size: 0.75rem;">⇄ Bereich</summary>
-                            <div class="pf-dropdown__menu" style="position: absolute; right: 0; top: 100%; z-index: 20; background: var(--pf-surface); border: 1px solid var(--pf-border); border-radius: var(--pf-radius-md); box-shadow: var(--pf-shadow-md); padding: 0.5rem; min-width: 180px;">
-                                <div style="font-size: 0.75rem; font-weight: 700; color: var(--pf-text-muted); padding: 0.25rem 0.5rem;">Zielbereich wählen:</div>
+
+                    <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
+                        <summary class="pf-card-menu__btn" title="Elementoptionen" aria-label="Elementoptionen">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle>
+                            </svg>
+                        </summary>
+                        <div class="pf-dropdown__menu">
+                            <a class="pf-dropdown__item"
+                               th:href="${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id + '/edit' : '/projects/' + plan.project.id + '/milestones/' + element.id + '/edit'}">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                <span>Bearbeiten</span>
+                            </a>
+                            <a class="pf-dropdown__item"
+                               th:href="@{/projects/{projectId}/plan-elements/{elementType}/{elementId}/improve(projectId=${plan.project.id},elementType=${element.type},elementId=${element.id})}">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+                                <span>Mit KI verbessern</span>
+                            </a>
+                            <button type="button" class="pf-dropdown__item element-move-btn element-move-up">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                <span>Nach oben</span>
+                            </button>
+                            <button type="button" class="pf-dropdown__item element-move-btn element-move-down">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                <span>Nach unten</span>
+                            </button>
+
+                            <th:block th:if="${plan.project.sortMode.name() == 'MANUAL' and !#lists.isEmpty(plan.sections)}">
+                                <div class="pf-dropdown__divider"></div>
+                                <div class="pf-dropdown__header"><span class="pf-dropdown__eyebrow">In Bereich verschieben</span></div>
                                 <form th:each="targetSec : ${plan.sections}"
                                       th:action="@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})}"
-                                      method="post" style="margin: 0.2rem 0;">
+                                      method="post" style="margin: 0.15rem 0;">
                                     <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
                                     <input type="hidden" name="targetSectionId" th:value="${targetSec.id}">
                                     <input type="hidden" name="targetDate" th:value="${element.relevantDate != null ? element.relevantDate.toString() : ''}">
                                     <input type="hidden" name="targetPosition" th:value="${#lists.size(targetSec.elements)}">
-                                    <button type="submit" class="pf-btn pf-btn--sm pf-btn--ghost" style="width: 100%; text-align: left; justify-content: flex-start;" th:text="${targetSec.title}"></button>
+                                    <button type="submit" class="pf-dropdown__item" th:text="${targetSec.title}"></button>
                                 </form>
-                            </div>
-                        </details>
-                    </div>
+                            </th:block>
+
+                            <div class="pf-dropdown__divider"></div>
+                            <form th:action="${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id + '/delete' : '/projects/' + plan.project.id + '/milestones/' + element.id + '/delete'}" method="post"
+                                  data-confirm="Möchtest du dieses Element endgültig löschen?"
+                                  data-confirm-title="Element löschen"
+                                  data-confirm-btn="Löschen"
+                                  data-confirm-variant="danger" style="margin:0;">
+                                <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    <span>Löschen</span>
+                                </button>
+                            </form>
+                        </div>
+                    </details>
                 </div>
             </li>
         </ul>
     </div>
 
-    <!-- Project Administration Section -->
-    <div style="margin-top: 3.5rem; padding-top: 1.75rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-        <div class="pf-cluster">
-            <a th:if="${plan.editable and plan.owner}" th:href="@{/projects/{id}/edit(id=${plan.project.id})}" class="pf-btn pf-btn--sm pf-btn--secondary">
-                Projekt bearbeiten
-            </a>
-            <form th:if="${plan.owner and (plan.project.location.name() == 'OVERVIEW' or plan.project.location.name() == 'ARCHIVE')}"
-                  th:action="@{/projects/{id}/trash(id=${plan.project.id})}" method="post"
-                  data-confirm="Möchtest du dieses Projekt in den Papierkorb verschieben?"
-                  data-confirm-title="In den Papierkorb verschieben"
-                  data-confirm-btn="In den Papierkorb"
-                  data-confirm-variant="danger" style="margin:0;">
-                <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary" style="color: var(--pf-danger);">
-                    In den Papierkorb
-                </button>
-            </form>
-            <form th:if="${plan.owner and plan.project.location.name() == 'OVERVIEW'}"
-                  th:action="@{/projects/{id}/archive(id=${plan.project.id})}" method="post"
-                  data-confirm="Möchtest du dieses Projekt archivieren?"
-                  data-confirm-title="Projekt archivieren"
-                  data-confirm-btn="Archivieren"
-                  data-confirm-variant="primary" style="margin:0;">
-                <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary">Archivieren</button>
-            </form>
-            <form th:if="${plan.owner and (plan.project.location.name() == 'TRASH' or plan.project.location.name() == 'ARCHIVE')}" th:action="@{/projects/{id}/reactivate(id=${plan.project.id})}" method="post" style="margin:0;">
-                <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Wiederherstellen</button>
-            </form>
-            <form th:if="${plan.owner and plan.project.location.name() == 'TRASH'}" th:action="@{/projects/{id}/delete(id=${plan.project.id})}" method="post"
-                  data-confirm="Möchtest du dieses Projekt endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
-                  data-confirm-title="Projekt endgültig löschen"
-                  data-confirm-btn="Endgültig löschen"
-                  data-confirm-variant="danger" style="margin:0;">
-                <button type="submit" class="pf-btn pf-btn--sm pf-btn--danger">Endgültig löschen</button>
+    <!-- Back to Top Button -->
+    <div class="pf-back-to-top-wrap">
+        <button type="button" class="pf-btn pf-btn--ghost pf-btn--sm" id="pf-back-to-top-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.35rem;">
+                <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+            Zurück nach oben
+        </button>
+    </div>
+
+    <!-- Modal: Neuen Bereich anlegen -->
+    <dialog id="new-section-dialog" class="pf-confirm-dialog" style="max-width: 480px;">
+        <div class="pf-confirm-dialog__content">
+            <div class="pf-confirm-dialog__header">
+                <div class="pf-confirm-icon-wrap pf-confirm-icon-wrap--primary">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </div>
+                <div class="pf-confirm-dialog__body">
+                    <h3 class="pf-confirm-title">Neuen Bereich anlegen</h3>
+                    <p class="pf-confirm-message">Füge eine neue Phase oder einen Arbeitsbereich zu deinem Projekt hinzu.</p>
+                </div>
+            </div>
+            <form th:action="@{/projects/{projectId}/sections(projectId=${plan.project.id})}"
+                  th:object="${sectionForm}" method="post" id="new-section-form" style="display:flex; flex-direction:column; gap:1rem;">
+                <div class="pf-form-group">
+                    <label for="new-section-title" class="pf-label">Titel des Bereichs</label>
+                    <input id="new-section-title" th:field="*{title}" required maxlength="100" class="pf-input" placeholder="z. B. Konzeption, Entwicklung oder Abschluss">
+                    <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+                <div class="pf-form-group">
+                    <label for="new-section-description" class="pf-label">Beschreibung (optional)</label>
+                    <textarea id="new-section-description" th:field="*{description}" maxlength="2000" class="pf-textarea" style="min-height: 80px;" placeholder="Details zu diesem Bereich..."></textarea>
+                    <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+                <div class="pf-confirm-dialog__actions">
+                    <button type="button" class="pf-btn pf-btn--secondary" id="close-new-section-btn">Abbrechen</button>
+                    <button type="submit" class="pf-btn pf-btn--primary">Bereich anlegen</button>
+                </div>
             </form>
         </div>
-    </div>
+    </dialog>
+
+    <!-- Modal: Bereich löschen Confirmation Dialog -->
+    <dialog id="delete-section-dialog" class="pf-confirm-dialog" style="max-width: 480px;">
+        <div class="pf-confirm-dialog__content">
+            <div class="pf-confirm-dialog__header">
+                <div class="pf-confirm-icon-wrap pf-confirm-icon-wrap--danger">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </div>
+                <div class="pf-confirm-dialog__body">
+                    <h3 class="pf-confirm-title" id="delete-section-title-display">Bereich löschen</h3>
+                    <p class="pf-confirm-message" id="delete-section-desc-display">Möchtest du diesen Bereich wirklich löschen?</p>
+                </div>
+            </div>
+            <form id="delete-section-form" method="post" style="display:flex; flex-direction:column; gap:1rem;">
+                <div id="delete-section-handling-group" class="pf-form-group">
+                    <label for="delete-mode-select" class="pf-label">Inhalte handhaben</label>
+                    <select id="delete-mode-select" name="mode" required class="pf-select">
+                        <option value="DELETE_CONTENT">Mit Inhalten löschen</option>
+                        <option value="MOVE_CONTENT">In anderen Bereich verschieben</option>
+                    </select>
+                    <div id="delete-section-target-wrap" style="margin-top: 0.75rem;" hidden>
+                        <label for="target-section-select" class="pf-label">Zielbereich</label>
+                        <select id="target-section-select" name="targetSectionId" class="pf-select">
+                            <option value="">Keine</option>
+                            <option th:each="target : ${plan.sections}"
+                                    th:value="${target.id}" th:text="${target.title}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pf-confirm-dialog__actions">
+                    <button type="button" class="pf-btn pf-btn--secondary" id="close-delete-section-btn">Abbrechen</button>
+                    <button type="submit" class="pf-btn pf-btn--danger">Bereich löschen</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
 </main>
 
 <script th:src="@{/js/plan-interactions.js}"></script>

@@ -118,6 +118,15 @@ public class MilestoneController {
         return "redirect:/projects/" + projectId + "/plan";
     }
 
+    @PostMapping("/projects/{projectId}/milestones/{milestoneId}/completion")
+    public String setCompleted(@PathVariable UUID projectId, @PathVariable UUID milestoneId,
+                               @RequestParam(defaultValue = "false") boolean completed,
+                               @RequestParam long milestoneLockVersion,
+                               @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        milestoneService.setCompleted(projectId, milestoneId, completed, milestoneLockVersion, currentUser.userId());
+        return "redirect:/projects/" + projectId + "/plan";
+    }
+
     private void populateFormModel(Model model, MilestoneDetailsDto context, boolean editing) {
         model.addAttribute("projectId", context.getPlanContainerId());
         model.addAttribute("milestoneId", context.getId());

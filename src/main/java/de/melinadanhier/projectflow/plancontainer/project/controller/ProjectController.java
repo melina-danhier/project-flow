@@ -95,6 +95,7 @@ public class ProjectController {
         form.setEndDate(project.getEndDate());
         form.setStructureMode(project.getStructureMode());
         form.setSortMode(project.getSortMode());
+        form.setTaskProgressDisplay(project.getTaskProgressDisplay());
         form.setLockVersion(project.getLockVersion());
         model.addAttribute("project", project);
         model.addAttribute("projectForm", form);

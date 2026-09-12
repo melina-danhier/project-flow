@@ -382,6 +382,9 @@ public class ProjectService {
         if (form.getSortMode() != null) {
             project.setSortMode(form.getSortMode());
         }
+        if (form.getTaskProgressDisplay() != null) {
+            project.setTaskProgressDisplay(form.getTaskProgressDisplay());
+        }
         return projectMapper.toDetailsDto(project);
     }
 
@@ -587,13 +590,10 @@ public class ProjectService {
                 if (progress.getTotalTasks() > 0) {
                     summary.setProgress((int) Math.round(
                             progress.getCompletedTasks() * 100.0 / progress.getTotalTasks()));
-                } else {
-                    summary.setProgress(0);
                 }
             } else {
                 summary.setCompletedTasks(0L);
                 summary.setTotalTasks(0L);
-                summary.setProgress(0);
             }
         });
         return summaries;

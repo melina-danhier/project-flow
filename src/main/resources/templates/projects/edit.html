@@ -64,6 +64,17 @@
             </div>
             <div th:if="${#fields.hasErrors('dateRangeValid')}" th:errors="*{dateRangeValid}" class="pf-alert pf-alert--error" role="alert"></div>
 
+            <div class="pf-form-group" style="margin-top: 1rem;">
+                <label for="taskProgressDisplay" class="pf-label">Aufgabenfortschritt im Plan</label>
+                <select id="taskProgressDisplay" th:field="*{taskProgressDisplay}" class="pf-select" style="max-width: 300px;">
+                    <option value="CHECKBOX">Checkboxen (Erledigt abhaken)</option>
+                    <option value="STATUS">Statuswerte (Offen / In Bearbeitung / Erledigt)</option>
+                </select>
+                <small class="pf-text-muted" style="display: block; margin-top: 0.35rem; font-size: 0.84rem;">
+                    Legt fest, ob Aufgaben im Plan primär über einfache Checkboxen oder über Statuswerte dargestellt und gesteuert werden.
+                </small>
+            </div>
+
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <a th:href="@{/projects/{id}/plan(id=${project.id})}" class="pf-btn pf-btn--secondary">Abbrechen</a>
                 <button type="submit" class="pf-btn pf-btn--primary">Speichern</button>
