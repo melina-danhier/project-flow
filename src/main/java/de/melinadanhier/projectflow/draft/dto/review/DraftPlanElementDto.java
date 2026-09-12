@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.draft.dto.review;
 
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
@@ -29,10 +28,6 @@ public class DraftPlanElementDto {
     private LocalDate dueDate;
     private Integer estimatedHours;
     private TaskPriority priority;
-
-    public GeneratedElementOrigin getAiOrigin() {
-        return origin == ElementOrigin.USER ? GeneratedElementOrigin.USER_INPUT : GeneratedElementOrigin.AI_INFERRED;
-    }
 
     public boolean isUserModified() {
         return origin == ElementOrigin.AI_MODIFIED || origin == ElementOrigin.TEMPLATE_MODIFIED;

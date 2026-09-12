@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.ai.model;
 
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
@@ -199,7 +198,6 @@ public final class AiResponseSchemas {
                 entry("estimatedHours", nullable(positiveInteger(MAX_ESTIMATED_HOURS))),
                 entry("startDate", nullable(date())),
                 entry("dueDate", nullable(date())),
-                entry("origin", enumeration(GeneratedElementOrigin.class)),
                 entry("order", positiveInteger()), // Gemeinsamer Nummernkreis innerhalb der Section (z. B. 100, 200...)
                 entry("prerequisiteTaskTempIds", array(string(), 0, MAX_DEPENDENCIES)),
                 entry("priority", nullable(enumeration(TaskPriority.class)))

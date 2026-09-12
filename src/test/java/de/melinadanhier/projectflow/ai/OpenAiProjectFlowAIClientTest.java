@@ -6,7 +6,6 @@ import de.melinadanhier.projectflow.ai.provider.AiResponsesGateway;
 
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
@@ -39,7 +38,7 @@ class OpenAiProjectFlowAIClientTest {
                 (Optional<String>) null, "Section", null, 1, List.of(), List.of());
         var task = new OpenAiGenerationOutput.Task(
                 "task-1", "Aufgabe", null, null, null, null,
-                GeneratedElementOrigin.AI_INFERRED, 1, List.of(), null);
+                1, List.of(), null);
         var milestone = new OpenAiGenerationOutput.Milestone((Optional<String>) null, "Meilenstein", null, 1);
 
         assertThat(Arrays.asList(
@@ -51,8 +50,7 @@ class OpenAiProjectFlowAIClientTest {
         assertThat(new OpenAiGenerationOutput.Section(
                 (String) null, "Section", null, 1, List.of(), List.of())).isEqualTo(section);
         assertThat(new OpenAiGenerationOutput.Task(
-                "task-1", "Aufgabe", null, null, null, null,
-                GeneratedElementOrigin.AI_INFERRED, 1)).isEqualTo(task);
+                "task-1", "Aufgabe", null, null, null, null, 1)).isEqualTo(task);
         assertThat(new OpenAiGenerationOutput.Milestone((String) null, "Meilenstein", null, 1))
                 .isEqualTo(milestone);
     }
@@ -65,7 +63,7 @@ class OpenAiProjectFlowAIClientTest {
         var section = new OpenAiGenerationOutput.Section(text, "Section", text, 1, List.of(), List.of());
         var task = new OpenAiGenerationOutput.Task(
                 "task-1", "Aufgabe", text, hours, date, date,
-                GeneratedElementOrigin.AI_INFERRED, 1, List.of(), text);
+                1, List.of(), text);
         var milestone = new OpenAiGenerationOutput.Milestone(text, "Meilenstein", date, 1);
 
         assertThat(List.of(section.tempId(), section.description(), task.description(),
@@ -192,8 +190,7 @@ class OpenAiProjectFlowAIClientTest {
                                 "section-1", "Section", null, 1,
                                 List.of(new OpenAiGenerationOutput.Task(
                                         "task-1", "Aufgabe", null, Optional.of(1),
-                                        null, null,
-                                        GeneratedElementOrigin.AI_INFERRED, 1, List.of(), priority)),
+                                        null, null, 1, List.of(), priority)),
                                 List.of())));
             }
             return responseType.cast(output);

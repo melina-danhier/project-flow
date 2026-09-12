@@ -239,7 +239,7 @@ class GenerationResponseValidatorTest {
     @Test
     void rejectsBlankOptionalDescriptionsAndOutOfRangeEffort() {
         GeneratedTask invalidTask = new GeneratedTask("task-1", "Eins", "  ", 10_001,
-                null, null, GeneratedElementOrigin.AI_INFERRED, 1, List.of(), TaskPriority.HIGH);
+                null, null, 1, List.of(), TaskPriority.HIGH);
         GeneratedSection section = new GeneratedSection(null, "Section", " ", 1,
                 List.of(invalidTask, task("task-2", "Zwei", 2, null, null),
                         task("task-3", "Drei", 3, null, null)), List.of());
@@ -330,7 +330,7 @@ class GenerationResponseValidatorTest {
     private GeneratedTask task(String id, String title, int order, LocalDate start, LocalDate due,
                                List<String> prerequisites) {
         return new GeneratedTask(id, title, null, 1, start, due,
-                GeneratedElementOrigin.AI_INFERRED, order, prerequisites);
+                order, prerequisites);
     }
 
     private GeneratedMilestone milestone(String id, int order, LocalDate date) {

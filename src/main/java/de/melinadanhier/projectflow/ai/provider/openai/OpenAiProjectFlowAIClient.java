@@ -117,7 +117,6 @@ public class OpenAiProjectFlowAIClient extends AbstractProviderAiClient<OpenAiGe
                 task.estimatedHours().orElse(null),
                 task.startDate().orElse(null),
                 task.dueDate().orElse(null),
-                task.origin(),
                 task.order(),
                 task.prerequisiteTaskTempIds(),
                 mapPriority(task.priority().orElse(null))

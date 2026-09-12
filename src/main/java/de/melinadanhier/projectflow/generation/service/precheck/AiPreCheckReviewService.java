@@ -123,10 +123,22 @@ public class AiPreCheckReviewService {
         return true;
     }
 
+    @Transactional
+    public void regenerate(UUID workflowId, UUID userId) {
+        AiPlanGenerationWorkflow workflow = workflowRepository.findOwnedByIdForUpdate(workflowId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
+        requireReviewable(workflow);
+        restartPreCheck(workflow, workflow.getConfirmedSnapshot());
+    }
+
     private void restartPreCheck(AiPlanGenerationWorkflow workflow, AiWizardSnapshot updatedSnapshot) {
+        restartPreCheck(workflow, snapshotCodec.writeSnapshot(updatedSnapshot));
+    }
+
+    private void restartPreCheck(AiPlanGenerationWorkflow workflow, String confirmedSnapshot) {
         UUID runId = UUID.randomUUID();
         Instant now = Instant.now(clock);
-        workflow.restartPreCheck(snapshotCodec.writeSnapshot(updatedSnapshot), runId,
+        workflow.restartPreCheck(confirmedSnapshot, runId,
                 now.plus(executionProperties.getMaxRunTime()));
         events.publishEvent(new AiPreCheckRequestedEvent(workflow.getId(), runId));
     }

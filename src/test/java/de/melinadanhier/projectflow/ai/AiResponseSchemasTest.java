@@ -42,6 +42,10 @@ class AiResponseSchemasTest {
         var sectionProperties = (Map<String, Object>) section.get("properties");
         assertThat(sectionProperties).containsKeys("title", "description", "order", "tasks", "milestones")
                 .doesNotContainKeys("startDate", "endDate");
+        var tasks = (Map<String, Object>) sectionProperties.get("tasks");
+        var task = (Map<String, Object>) tasks.get("items");
+        var taskProperties = (Map<String, Object>) task.get("properties");
+        assertThat(taskProperties).doesNotContainKey("origin");
     }
 
     @Test

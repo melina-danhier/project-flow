@@ -6,6 +6,7 @@ import de.melinadanhier.projectflow.ai.model.generation.*;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
 import de.melinadanhier.projectflow.draft.model.DraftPlanElement;
 import de.melinadanhier.projectflow.draft.model.DraftTask;
+import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -66,13 +67,13 @@ class GeneratedPlanDraftMapperTest {
         var result = mapper.map(new GeneratedPlanResponse(List.of(
                 new GeneratedSection("later", "Later", null, 5,
                         List.of(new GeneratedTask("late", "Late task", null, null, null, null,
-                                GeneratedElementOrigin.AI_INFERRED, 4)),
+                                4)),
                         List.of()),
                 new GeneratedSection("earlier", "Earlier", null, 2,
                         List.of(new GeneratedTask("last", "Last", null, null, null, null,
-                                        GeneratedElementOrigin.AI_INFERRED, 8),
+                                        8),
                                 new GeneratedTask("first", "First", null, null, null, null,
-                                        GeneratedElementOrigin.AI_INFERRED, 2)),
+                                        2)),
                         List.of(new GeneratedMilestone(null, "Middle", null, 5))))));
 
         assertThat(result.sections()).extracting("title").containsExactly("Earlier", "Later");
@@ -83,6 +84,9 @@ class GeneratedPlanDraftMapperTest {
         assertThat(result.sections().getFirst().getElements())
                 .extracting(DraftPlanElement::getSortOrder)
                 .containsExactly(100, 200, 300);
+        assertThat(result.elements())
+                .extracting(DraftPlanElement::getOrigin)
+                .containsOnly(ElementOrigin.AI);
     }
 
     private void assertInvalid(GeneratedPlanResponse response) {
@@ -97,6 +101,6 @@ class GeneratedPlanDraftMapperTest {
 
     private GeneratedTask task(String id, List<String> prerequisites) {
         return new GeneratedTask(id, "Aufgabe", null, null, null, null,
-                GeneratedElementOrigin.AI_INFERRED, 1, prerequisites);
+                1, prerequisites);
     }
 }

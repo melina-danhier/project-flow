@@ -81,7 +81,7 @@ class SdkOpenAiResponsesGatewayTest {
                   "tempId":null,"title":"Section","description":null,"order":1,
                   "tasks":[{
                     "tempId":"task-1","title":"Aufgabe","description":null,"estimatedHours":null,
-                    "startDate":null,"dueDate":null,"origin":"AI_INFERRED",
+                    "startDate":null,"dueDate":null,
                     "order":1,"prerequisiteTaskTempIds":[],"priority":null
                   }],
                   "milestones":[{"tempId":null,"title":"Meilenstein","date":null,"order":1}]

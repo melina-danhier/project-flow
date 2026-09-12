@@ -101,7 +101,7 @@ public class DraftValidationService {
     private GeneratedTask task(DraftTask task, Set<DraftPlanElement> included) {
         return new GeneratedTask(task.getId().toString(), task.getTitle(), task.getDescription(),
                 task.getEstimatedHours(), task.getStartDate(), task.getDueDate(),
-                generatedOrigin(task), task.getSortOrder() + 1, task.getPrerequisites().stream()
+                task.getSortOrder() + 1, task.getPrerequisites().stream()
                 .filter(included::contains)
                 .map(prerequisite -> prerequisite.getId().toString()).toList(), task.getPriority());
     }
@@ -175,11 +175,6 @@ public class DraftValidationService {
         active.remove(task);
         completed.add(task);
         return false;
-    }
-
-    private GeneratedElementOrigin generatedOrigin(DraftPlanElement element) {
-        return element.getOrigin() == de.melinadanhier.projectflow.planelement.model.ElementOrigin.USER
-                ? GeneratedElementOrigin.USER_INPUT : GeneratedElementOrigin.AI_INFERRED;
     }
 
     private boolean sameEntity(de.melinadanhier.projectflow.common.model.MutableEntity left,

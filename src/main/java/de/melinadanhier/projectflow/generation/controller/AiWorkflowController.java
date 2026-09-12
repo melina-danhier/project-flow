@@ -116,6 +116,15 @@ public class AiWorkflowController {
         return preCheckReviewRedirect(workflowId);
     }
 
+    @PostMapping("/problems/{workflowId}/regenerate")
+    public String regeneratePreCheck(
+            @PathVariable UUID workflowId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser
+    ) {
+        preCheckReviewService.regenerate(workflowId, currentUser.userId());
+        return "redirect:/projects/new/ai/status/" + workflowId;
+    }
+
     @PostMapping("/status/{workflowId}/retry")
     public String retryGeneration(
             @PathVariable UUID workflowId,

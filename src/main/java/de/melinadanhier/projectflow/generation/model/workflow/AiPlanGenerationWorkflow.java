@@ -322,7 +322,13 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     }
 
     public void restartPreCheck(String updatedConfirmedSnapshot, UUID runId, Instant expiresAt) {
-        requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+        if (status != AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW
+                && status != AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED
+                && status != AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED) {
+            throw new IllegalStateException(
+                    "Ungültiger KI-Workflow-Übergang aus " + status
+                            + "; die Vorprüfung kann nur aus einem prüfbaren Zustand neu gestartet werden.");
+        }
         if (updatedConfirmedSnapshot == null || updatedConfirmedSnapshot.isBlank()) {
             throw new IllegalArgumentException("Die aktualisierten Projektdaten dürfen nicht leer sein.");
         }

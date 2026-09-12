@@ -379,6 +379,36 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     @Test
+    void preCheckCanBeRegeneratedWithoutChangingConfirmedInputs() throws Exception {
+        User owner = saveUser("precheck-regenerate@example.org");
+        when(aiClient.preCheck(any()))
+                .thenReturn(result(warning("Erster Hinweis")))
+                .thenReturn(result(warning("Neuer Hinweis")));
+        UUID workflowId = start(owner);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+        String confirmedSnapshot = workflowRepository.findById(workflowId)
+                .orElseThrow().getConfirmedSnapshot();
+
+        mockMvc.perform(get(problemsUrl(workflowId)).with(user(principal(owner))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Vorprüfung erneut durchführen")));
+
+        mockMvc.perform(post(problemsUrl(workflowId) + "/regenerate")
+                        .with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(statusUrl(workflowId)));
+
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+        assertThat(workflowRepository.findById(workflowId).orElseThrow().getConfirmedSnapshot())
+                .isEqualTo(confirmedSnapshot);
+        mockMvc.perform(get(problemsUrl(workflowId)).with(user(principal(owner))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Neuer Hinweis")))
+                .andExpect(content().string(not(containsString("Erster Hinweis"))));
+        verify(aiClient, times(2)).preCheck(any());
+    }
+
+    @Test
     void editFromStatusPageReturnsToSummary() throws Exception {
         User owner = saveUser("status-edit@example.org");
         when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
@@ -535,7 +565,7 @@ class AiPreCheckWizardIntegrationTest {
     private GeneratedTask generatedTask(String id, String title, int order) {
         return new GeneratedTask(id, title, null, 1,
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20),
-                GeneratedElementOrigin.AI_INFERRED, order);
+                order);
     }
 
     private AiWizardSnapshot snapshot() {

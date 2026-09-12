@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.draft.model;
 
-import de.melinadanhier.projectflow.ai.model.generation.GeneratedElementOrigin;
 import de.melinadanhier.projectflow.common.model.MutableEntity;
 import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import jakarta.persistence.Column;
@@ -66,16 +65,6 @@ public abstract class DraftPlanElement extends MutableEntity {
 
     public void markContentModified() {
         origin = origin.modifiedByUser();
-    }
-
-    /** Compatibility at the AI response boundary. */
-    public void setAiOrigin(GeneratedElementOrigin generatedOrigin) {
-        origin = generatedOrigin == GeneratedElementOrigin.USER_INPUT ? ElementOrigin.USER : ElementOrigin.AI;
-    }
-
-    /** Compatibility for callers that still inspect generated provenance. */
-    public GeneratedElementOrigin getAiOrigin() {
-        return origin == ElementOrigin.USER ? GeneratedElementOrigin.USER_INPUT : GeneratedElementOrigin.AI_INFERRED;
     }
 
     /** Kept as a derived compatibility property; modification is represented by origin. */
