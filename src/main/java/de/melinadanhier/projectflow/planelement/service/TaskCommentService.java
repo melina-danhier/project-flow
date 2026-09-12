@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.planelement.service;
 
 import de.melinadanhier.projectflow.common.exception.ForbiddenOperationException;
+import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
@@ -54,6 +55,23 @@ public class TaskCommentService {
     }
 
     @Transactional
+    public TaskCommentDto updateOwnComment(UUID projectId, UUID taskId, UUID commentId,
+                                           TaskCommentForm form, UUID userId) {
+        ProjectMember membership = authorizationService.requireEditableMember(projectId, userId);
+        TaskComment comment = taskCommentRepository.findForTask(projectId, taskId, commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Beitrag wurde nicht gefunden."));
+        if (!comment.getAuthor().getId().equals(membership.getId())) {
+            throw new ForbiddenOperationException("Du kannst nur eigene Beiträge bearbeiten.");
+        }
+        if (form.getLockVersion() == null || comment.getLockVersion() != form.getLockVersion()) {
+            throw new ConflictException(
+                    "Der Beitrag wurde zwischenzeitlich geändert. Bitte lade die Seite neu.");
+        }
+        comment.setContent(form.getContent().trim());
+        return toDto(comment, true);
+    }
+
+    @Transactional
     public void deleteOwnComment(UUID projectId, UUID taskId, UUID commentId, UUID userId) {
         ProjectMember membership = authorizationService.requireEditableMember(projectId, userId);
         TaskComment comment = taskCommentRepository.findForTask(projectId, taskId, commentId)
@@ -75,6 +93,7 @@ public class TaskCommentService {
                 comment.getContent(),
                 comment.getAuthor().getUser().getDisplayName(),
                 comment.getCreatedAt(),
+                comment.getLockVersion(),
                 deletable
         );
     }

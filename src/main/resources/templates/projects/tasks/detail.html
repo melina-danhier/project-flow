@@ -151,13 +151,25 @@
                             <strong th:text="${comment.authorDisplayName}">Name</strong> · 
                             <time th:datetime="${comment.createdAt}" th:text="${#temporals.format(comment.createdAt, 'dd.MM.yyyy HH:mm')}">Zeitpunkt</time>
                         </span>
-                        <form th:if="${comment.deletable}"
-                              th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
-                              method="post" style="margin: 0;">
-                            <button type="submit" style="background: none; border: none; color: var(--pf-danger); cursor: pointer; padding: 0; font-size: 0.78rem; font-weight: 600;">
-                                Löschen
-                            </button>
-                        </form>
+                        <div th:if="${comment.deletable}" class="pf-cluster" style="gap: 0.75rem;">
+                            <details>
+                                <summary style="cursor: pointer; color: var(--pf-primary); font-weight: 600;">Bearbeiten</summary>
+                                <form th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
+                                      method="post" style="margin-top: 0.6rem; min-width: min(22rem, 70vw);">
+                                    <input type="hidden" name="lockVersion" th:value="${comment.lockVersion}">
+                                    <label th:for="${'comment-content-' + comment.id}" class="pf-label">Beitrag bearbeiten</label>
+                                    <textarea th:id="${'comment-content-' + comment.id}" name="content" maxlength="2000" required
+                                              class="pf-textarea" style="min-height: 80px;" th:text="${comment.content}"></textarea>
+                                    <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary" style="margin-top: 0.5rem;">Speichern</button>
+                                </form>
+                            </details>
+                            <form th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
+                                  method="post" style="margin: 0;">
+                                <button type="submit" style="background: none; border: none; color: var(--pf-danger); cursor: pointer; padding: 0; font-size: 0.78rem; font-weight: 600;">
+                                    Löschen
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

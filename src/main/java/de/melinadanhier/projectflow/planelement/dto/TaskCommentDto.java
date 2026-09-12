@@ -8,6 +8,7 @@ public record TaskCommentDto(
         String content,
         String authorDisplayName,
         Instant createdAt,
+        long lockVersion,
         boolean deletable
 ) {
 }

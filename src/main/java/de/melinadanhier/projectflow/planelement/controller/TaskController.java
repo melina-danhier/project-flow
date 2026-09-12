@@ -106,6 +106,27 @@ public class TaskController {
         return taskRedirect(projectId, taskId);
     }
 
+    @PostMapping("/projects/{projectId}/tasks/{taskId}/comments/{commentId}")
+    public String updateComment(
+            @PathVariable UUID projectId,
+            @PathVariable UUID taskId,
+            @PathVariable UUID commentId,
+            @Valid @ModelAttribute("commentForm") TaskCommentForm form,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("errorMessage", "Der Beitrag darf nicht leer sein und höchstens 2000 Zeichen enthalten.");
+            populateDetailModel(model, projectId, taskId, currentUser.userId());
+            return "projects/tasks/detail";
+        }
+        commentService.updateOwnComment(projectId, taskId, commentId, form, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", "Beitrag wurde aktualisiert.");
+        return taskRedirect(projectId, taskId);
+    }
+
     @PostMapping("/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete")
     public String deleteComment(
             @PathVariable UUID projectId,

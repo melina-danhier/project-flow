@@ -14,4 +14,6 @@ public class TaskCommentForm {
     @NotBlank(message = "Der Beitrag darf nicht leer sein.")
     @Size(max = 2000, message = "Der Beitrag darf höchstens 2000 Zeichen lang sein.")
     private String content;
+
+    private Long lockVersion;
 }
