@@ -292,7 +292,7 @@ class AiPreCheckWizardIntegrationTest {
     }
 
     @Test
-    void acceptedCriticalAssumptionChangesWizardDataOnlyAfterConsentAndRunsPreCheckAgain() throws Exception {
+    void acceptedCriticalAssumptionChangesSnapshotAndGeneratesWithoutSecondPreCheck() throws Exception {
         User owner = saveUser("critical-assumption@example.org");
         when(aiClient.preCheck(any())).thenReturn(
                 result(criticalAssumption("Der Umfang ist für den Zeitraum unrealistisch.",
@@ -310,21 +310,47 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(statusUrl(workflowId)));
 
-        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
         assertThat(workflowRepository.findById(workflowId).orElseThrow().getConfirmedSnapshot())
                 .contains("Nur den eigentlichen Umzug abschließen");
-        verify(aiClient, times(2)).preCheck(any());
-        verify(aiClient, never()).generatePlan(any());
-
-        mockMvc.perform(post(statusUrl(workflowId) + "/generate")
-                        .with(user(principal(owner))).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        verify(aiClient).preCheck(any());
         ArgumentCaptor<de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest> requestCaptor =
                 ArgumentCaptor.forClass(de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest.class);
         verify(aiClient).generatePlan(requestCaptor.capture());
         assertThat(requestCaptor.getValue().confirmedWizardData().projectGoal())
                 .isEqualTo("Nur den eigentlichen Umzug abschließen");
+        assertThat(requestCaptor.getValue().acceptedOpenPoints()).isEmpty();
+    }
+
+    @Test
+    void acceptedCriticalAssumptionAppliesMultipleChangesDeterministically() throws Exception {
+        User owner = saveUser("multiple-precheck-changes@example.org");
+        var problem = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                "Für dieses Ziel ist der Zeitraum zu knapp.",
+                "Zeitraum verlängern oder Umfang reduzieren.",
+                "Das Enddatum wird von 21.09.2026 auf 30.09.2026 und die Dauer von 21 auf 30 Tage geändert.",
+                List.of(
+                        new AiPreCheckInputChange("endDate", "2026-09-21", "2026-09-30"),
+                        new AiPreCheckInputChange("durationDays", "21", "30")));
+        when(aiClient.preCheck(any())).thenReturn(result(problem));
+        when(aiClient.generatePlan(any())).thenReturn(generatedPlan());
+        UUID workflowId = start(owner);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+
+        mockMvc.perform(post(acceptUrl(workflowId, 0)).with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(statusUrl(workflowId)));
+
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        ArgumentCaptor<de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest> requestCaptor =
+                ArgumentCaptor.forClass(de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest.class);
+        verify(aiClient).generatePlan(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().confirmedWizardData().endDate())
+                .isEqualTo(LocalDate.of(2026, 9, 30));
+        assertThat(requestCaptor.getValue().confirmedWizardData().durationDays()).isEqualTo(30);
+        assertThat(requestCaptor.getValue().acceptedOpenPoints()).isEmpty();
+        verify(aiClient).preCheck(any());
     }
 
     @Test
@@ -541,9 +567,7 @@ class AiPreCheckWizardIntegrationTest {
                 AiPreCheckProblemType.CRITICAL_ASSUMPTION,
                 message, "Zeitraum verlängern oder verfügbare Arbeitszeit erhöhen.",
                 field + " wird von „Rechtzeitig umziehen“ auf „" + value + "“ geändert; alle übrigen Angaben bleiben erhalten.",
-                List.of(new AiPreCheckInputChange(field, "Rechtzeitig umziehen", value)),
-                List.of(de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckAdjustmentOption.EXTEND_TIMEFRAME,
-                        de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckAdjustmentOption.INCREASE_AVAILABLE_TIME));
+                List.of(new AiPreCheckInputChange(field, "Rechtzeitig umziehen", value)));
     }
 
     private AiPreCheckProblem error(String message) {

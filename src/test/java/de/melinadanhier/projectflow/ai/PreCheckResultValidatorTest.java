@@ -6,7 +6,6 @@ import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckInputChange;
-import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckAdjustmentOption;
 import de.melinadanhier.projectflow.ai.validation.precheck.PreCheckResultValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,16 +80,14 @@ class PreCheckResultValidatorTest {
     }
 
     @Test
-    void criticalAssumptionRequiresGeneralOptionsAndConcretePreferredChange() {
+    void criticalAssumptionRequiresConcretePreferredChange() {
         assertThatCode(() -> validator.validate(new AiPreCheckResult(List.of(
                 new AiPreCheckProblem(AiPreCheckSeverity.WARNING,
                         AiPreCheckProblemType.CRITICAL_ASSUMPTION,
                         "Der Zeitraum ist unrealistisch.",
                         "Du kannst verschiedene Angaben ändern.",
                         "Die Dauer wird von 2 auf 10 Tage geändert.",
-                        List.of(new AiPreCheckInputChange("durationDays", "2", "10")),
-                        List.of(AiPreCheckAdjustmentOption.EXTEND_TIMEFRAME,
-                                AiPreCheckAdjustmentOption.INCREASE_AVAILABLE_TIME))))))
+                        List.of(new AiPreCheckInputChange("durationDays", "2", "10")))))))
                 .doesNotThrowAnyException();
 
         assertThatThrownBy(() -> validator.validate(new AiPreCheckResult(List.of(
@@ -117,9 +114,7 @@ class PreCheckResultValidatorTest {
                         "Zwei Tage reichen bei zwei Stunden täglich ohne Java-Vorkenntnisse nicht für den vollständigen Java-/Spring-Boot-Umfang; kein Thema darf ausgelassen werden.",
                         "Zeitraum verlängern, tägliche Lernzeit erhöhen oder weniger Themen bearbeiten.",
                         "Das Enddatum wird von 15.09.2026 auf 25.10.2026 geändert. 2 Stunden täglich und alle Themen bleiben erhalten.",
-                        List.of(new AiPreCheckInputChange("endDate", "2026-09-15", "2026-10-25")),
-                        List.of(AiPreCheckAdjustmentOption.EXTEND_TIMEFRAME,
-                                AiPreCheckAdjustmentOption.INCREASE_AVAILABLE_TIME))))))
+                        List.of(new AiPreCheckInputChange("endDate", "2026-09-15", "2026-10-25")))))))
                 .doesNotThrowAnyException();
 
         assertThatCode(() -> validator.validate(new AiPreCheckResult(List.of(
@@ -129,9 +124,7 @@ class PreCheckResultValidatorTest {
                         "Zeitraum verlängern, Lernzeit erhöhen oder Themenumfang reduzieren.",
                         "Der Umfang wird von 22 Java- und Spring-Themen auf Syntax, OOP, Collections, Exceptions, Streams, Spring Core, Spring MVC, JPA geändert.",
                         List.of(new AiPreCheckInputChange("projectGoal", "22 Java- und Spring-Themen",
-                                "Syntax, OOP, Collections, Exceptions, Streams, Spring Core, Spring MVC, JPA")),
-                        List.of(AiPreCheckAdjustmentOption.REDUCE_SCOPE,
-                                AiPreCheckAdjustmentOption.EXTEND_TIMEFRAME))))))
+                                "Syntax, OOP, Collections, Exceptions, Streams, Spring Core, Spring MVC, JPA")))))))
                 .doesNotThrowAnyException();
     }
 

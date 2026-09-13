@@ -50,10 +50,6 @@ public class PreCheckResultValidator {
                     && !problem.proposedInputChanges().isEmpty()) {
                 issues.add("PROPOSED_INPUT_CHANGES_INVALID | problems[" + index + "].proposedInputChanges");
             }
-            if (problem != null && problem.type() != AiPreCheckProblemType.CRITICAL_ASSUMPTION
-                    && !problem.adjustmentOptions().isEmpty()) {
-                issues.add("ADJUSTMENT_OPTIONS_INVALID | problems[" + index + "].adjustmentOptions");
-            }
             if (problem != null && problem.proposedInputChanges().stream()
                     .anyMatch(change -> !isSupportedInputField(change.field()))) {
                 issues.add("PROPOSED_INPUT_FIELD_INVALID | problems[" + index + "].proposedInputChanges");
@@ -62,10 +58,6 @@ public class PreCheckResultValidator {
                 if (problem.proposedInputChanges().isEmpty()) {
                     issues.add("PREFERRED_CONCRETE_CHANGE_MISSING | problems[" + index
                             + "].proposedInputChanges");
-                }
-                if (problem.adjustmentOptions().stream().distinct().count() < 2) {
-                    issues.add("GENERAL_ADJUSTMENT_OPTIONS_MISSING | problems[" + index
-                            + "].adjustmentOptions");
                 }
                 validateConcreteChanges(problem, index, issues);
             }

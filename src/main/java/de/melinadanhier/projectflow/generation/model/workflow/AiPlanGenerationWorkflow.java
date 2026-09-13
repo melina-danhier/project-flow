@@ -312,6 +312,14 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
         return acceptedOpenPointIndices.add(problemIndex);
     }
 
+    public void updateConfirmedSnapshotAfterAcceptedPreCheckChange(String updatedConfirmedSnapshot) {
+        requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+        if (updatedConfirmedSnapshot == null || updatedConfirmedSnapshot.isBlank()) {
+            throw new IllegalArgumentException("Die aktualisierten Projektdaten dürfen nicht leer sein.");
+        }
+        confirmedSnapshot = updatedConfirmedSnapshot;
+    }
+
     public boolean confirmOpenPointContext(int problemIndex, String confirmedContext) {
         requireStatus(AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
         if (confirmedContext == null || confirmedContext.isBlank() || confirmedContext.length() > 1000) {

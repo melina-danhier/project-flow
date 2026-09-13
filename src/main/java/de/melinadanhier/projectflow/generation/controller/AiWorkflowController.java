@@ -84,6 +84,7 @@ public class AiWorkflowController {
             @AuthenticationPrincipal AuthenticatedUser currentUser
     ) {
         if (preCheckReviewService.acceptOpenPoint(workflowId, currentUser.userId(), problemIndex)) {
+            workflowControlService.startGeneration(workflowId, currentUser.userId());
             return "redirect:/projects/new/ai/status/" + workflowId;
         }
         return preCheckReviewRedirect(workflowId);
@@ -105,6 +106,7 @@ public class AiWorkflowController {
         }
         if (form.getPlanningContext() == null || form.getPlanningContext().isBlank()) {
             if (preCheckReviewService.acceptOpenPoint(workflowId, currentUser.userId(), problemIndex)) {
+                workflowControlService.startGeneration(workflowId, currentUser.userId());
                 return "redirect:/projects/new/ai/status/" + workflowId;
             }
             return preCheckReviewRedirect(workflowId);

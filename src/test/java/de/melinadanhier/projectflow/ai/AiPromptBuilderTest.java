@@ -46,42 +46,24 @@ class AiPromptBuilderTest {
         var instructions = preCheckPromptBuilder.build(snapshot()).systemInstructions();
 
         assertThat(instructions)
-                .contains("voraussichtlich wesentlich beeinträchtigen")
-                .contains("Im Zweifel nicht warnen")
-                .contains("Menü, Dekoration oder", "Unterhaltung sind kein Problem")
-                .contains("Projektgröße, Einzel- oder Gruppenmodus, Zeitraum")
-                .contains("zeitlich", "begrenzte Aussagen", "nicht zu dauerhaften Einschränkungen")
-                .contains("normale Klärungs- oder Auswahlaufgabe")
-                .contains("Personen, Rollen, Anbieter, Ressourcen")
+                .contains("wesentlich beeinträchtigen")
+                .contains("Im Zweifel warne nicht")
+                .contains("Fehlende optionale Details")
+                .contains("Ziel, Umfang, Projektzeitraum, verfügbare Arbeitszeit")
+                .contains("Erfinde keine Fakten, Zahlen")
                 .contains("Erzeuge keine Rückfrage")
                 .doesNotContain("reviewQuestion")
-                .contains("mindestens zwei grundsätzlich mögliche Stellschrauben")
-                .contains("immer genau einen bevorzugten, konkreten")
-                .contains("zusätzliche Personen", "Aufteilung der Arbeiten in mehrere Abschnitte")
-                .contains("am wenigsten unnötig in die Angaben eingreift")
-                .contains("Eine bloß etwas", "größere Zahl genügt nicht")
-                .contains("mindestens zwei realistische Alternativen")
-                .contains("nicht immer dieselbe Standardliste")
-                .contains("warum diese Anpassung gegenüber den genannten Alternativen")
-                .contains("immer genau einen bevorzugten, konkreten und direkt")
-                .contains("darf nicht ohne einen solchen Vorschlag")
-                .contains("nur ein Vorschlag ist")
-                .contains("eine eigene Anpassung")
-                .contains("grobe Planungsannahme")
-                .contains("niemals automatisch eine Verlängerung")
+                .contains("genau eine bevorzugte Empfehlung")
+                .contains("Zeitraum, Umfang und Arbeitszeit")
+                .contains("möglichst kleine plausible Änderung")
                 .contains("previousValue und newValue")
-                .contains("Menschen ohne Projektmanagement- oder Technikkenntnisse")
-                .contains("Dafür reicht die eingeplante Zeit nicht aus")
+                .contains("ohne Projektmanagement- oder Technikbegriffe")
                 .contains("TT.MM.JJJJ")
-                .contains("Warnung ignoriert und mit den bestehenden")
                 .contains("CRITICAL_ASSUMPTION")
-                .contains("mindestens eine bestätigte Nutzervorgabe geändert werden muss")
-                .contains("niemals nur als RISK oder ASSUMPTION")
-                .contains("Zeitraum", "verfügbare Zeit", "Erfahrung", "Anforderungen", "gewünschte Übungen oder Ergebnisse")
+                .contains("mindestens eine bestätigte Eingabe geändert werden muss")
                 .contains("proposedInputChanges")
-                .contains("erst nach", "ausdrücklicher Zustimmung")
-                .contains("formuliere nicht stärker")
-                .contains("unterstelle keine nicht genannten");
+                .contains("erst nach ausdrücklicher", "Zustimmung übernommen")
+                .contains("Formuliere nicht stärker");
     }
 
     @Test
@@ -101,11 +83,9 @@ class AiPromptBuilderTest {
         var prompt = preCheckPromptBuilder.build(simplePrivateProject());
 
         assertThat(prompt.systemInstructions())
-                .contains("Optionale Details dürfen fehlen")
-                .contains("eine leere problems-Liste ein normales", "Ergebnis")
-                .contains("seltenen Gefahren, Sonderfällen oder Eventualitäten")
-                .contains("keinen konkreten Anhaltspunkt")
-                .contains("bekannte Nutzereingaben nicht lediglich als Problem");
+                .contains("Fehlende optionale Details")
+                .contains("Gib bei plausiblen Angaben", "{\"problems\":[]}")
+                .contains("Erfinde keine Fakten, Zahlen", "Risiken oder künstlichen Alternativen");
         assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("confirmedWizardData"))
                 .isEqualTo(objectMapper.valueToTree(simplePrivateProject()));
     }
@@ -129,20 +109,14 @@ class AiPromptBuilderTest {
         var instructions = prompt.systemInstructions();
 
         assertThat(instructions)
-                .contains("offensichtliche Missverhältnisse")
-                .contains("transparenten Zeitschätzung")
-                .contains("keine pauschalen Pufferwerte")
-                .contains("Eine nicht erwähnte Information ist kein Beleg")
-                .contains("Gasanschlüsse, bestimmte Handwerker")
-                .contains("für das festgestellte Kernproblem")
-                .contains("relevant sind")
-                .contains("Bündele zusammenhängende Ursachen und Folgen")
-                .contains("nur eine", "prägnante Warnung")
-                .contains("nicht als sicher unmöglich")
-                .contains("adjustmentOptions", "EXTEND_TIMEFRAME", "INCREASE_AVAILABLE_TIME", "REDUCE_SCOPE")
-                .contains("Halte beide Felder kurz")
-                .contains("verzichte auf", "Empfehlungen ohne unmittelbaren Bezug")
-                .contains("direkt festgestellten Problem")
+                .contains("Ziel, Umfang, Projektzeitraum, verfügbare Arbeitszeit")
+                .contains("Im Zweifel warne nicht")
+                .contains("Bündele zusammenhängende Ursachen in genau einer Warnung")
+                .contains("Nutzereingaben dürfen niemals ohne Zustimmung geändert werden")
+                .contains("Mögliche Anpassungen")
+                .contains("genau eine bevorzugte Empfehlung")
+                .contains("Ein späteres Ereignis ist allein kein Problem")
+                .doesNotContain("adjustmentOptions")
                 .doesNotContain("80-m²");
         assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("confirmedWizardData"))
                 .isEqualTo(objectMapper.valueToTree(renovation));
@@ -243,9 +217,8 @@ class AiPromptBuilderTest {
         var prompt = preCheckPromptBuilder.build(partial);
 
         assertThat(prompt.systemInstructions())
-                .contains("Warne niemals allein deshalb")
-                .contains("WARNING vom type ASSUMPTION")
-                .contains("Schätzung");
+                .contains("Fehlende optionale Details")
+                .contains("Im Zweifel warne nicht");
         assertThat(prompt.confirmedUserData())
                 .contains("availableWorkingTime", "Etwa 2 Stunden täglich")
                 .contains("additionalInformation", "Zuerst ein nutzbares MVP");
@@ -256,18 +229,10 @@ class AiPromptBuilderTest {
         String instructions = preCheckPromptBuilder.build(snapshot()).systemInstructions();
 
         assertThat(instructions)
-                .contains("zeitliche Kohärenz")
-                .contains("Ziel, Rahmenbedingungen, zusätzlichen Informationen")
-                .contains("Ist es nur Kontext für eine aktuelle Recherche")
-                .contains("Ein Ereignis nach dem Projektende ist allein niemals ein Problem")
-                .contains("klar", "abgegrenzte aktuelle Planungsphase")
-                .contains("WARNING vom type ASSUMPTION")
-                .contains("Stelle keine harte Behauptung auf")
-                .contains("klar einen Schritt oder ein Ergebnis umfasst")
-                .contains("ungewöhnliche, aber mögliche", "frühe Planung")
-                .contains("das Ziel auf die aktuelle Planungsphase zu begrenzen")
-                .contains("Folgeprojekt vorzusehen")
-                .contains("Nutzeralternativen offen");
+                .contains("ausdrücklich zum Projektziel gehörende Schritte")
+                .contains("Ein späteres Ereignis ist allein kein Problem")
+                .contains("Vorbereitung, Recherche oder eine", "frühe Planungsphase")
+                .contains("unterschiedliche Auslegungen den Plan wesentlich verändern");
     }
 
     private AiWizardSnapshot snapshot() {

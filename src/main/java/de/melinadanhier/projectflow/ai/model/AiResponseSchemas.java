@@ -4,7 +4,6 @@ import de.melinadanhier.projectflow.ai.model.generation.GeneratedPlanResponse;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
-import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckAdjustmentOption;
 import de.melinadanhier.projectflow.ai.model.improvement.AiTextImprovementResponse;
 import de.melinadanhier.projectflow.ai.model.improvement.AiTaskReplanResponse;
 import de.melinadanhier.projectflow.ai.model.improvement.AiMilestoneReplanResponse;
@@ -164,7 +163,6 @@ public final class AiResponseSchemas {
                 entry("message", string()),
                 entry("suggestedUserAction", string()),
                 entry("acceptedInterpretation", string()),
-                entry("adjustmentOptions", array(enumeration(AiPreCheckAdjustmentOption.class), 0, 3)),
                 entry("proposedInputChanges", array(object(Map.of(
                         "field", string(),
                         "previousValue", string(),

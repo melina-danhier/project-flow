@@ -138,7 +138,7 @@ class AiPreCheckProcessorTest {
         AiPreCheckRequest request = new AiPreCheckRequest(snapshot);
         AiPreCheckResult validResult = AiPreCheckResult.withoutIssues();
         var validationException = new AiOutputValidationException("Ungültiger Output",
-                List.of("GENERAL_ADJUSTMENT_OPTIONS_MISSING | problems[0].adjustmentOptions"));
+                List.of("PREFERRED_CONCRETE_CHANGE_MISSING | problems[0].proposedInputChanges"));
         when(executionProperties.getMaxAttempts()).thenReturn(2);
         when(workflowService.recordRetry(
                 org.mockito.ArgumentMatchers.eq(workflowId), org.mockito.ArgumentMatchers.eq(runId),

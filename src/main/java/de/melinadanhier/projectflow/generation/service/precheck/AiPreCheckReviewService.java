@@ -52,8 +52,7 @@ public class AiPreCheckReviewService {
                     index, problem.severity(), problem.type(), problem.message(),
                     problem.suggestedUserAction(), problem.acceptedInterpretation(),
                     workflow.getAcceptedOpenPointIndices().contains(index), problem.proposedInputChanges(),
-                    proposedChangesMatchSnapshot(snapshot, problem.proposedInputChanges()),
-                    problem.adjustmentOptions()));
+                    proposedChangesMatchSnapshot(snapshot, problem.proposedInputChanges())));
         }
         return new AiPreCheckReviewDto(workflowId, workflow.getProject().getId(), problems);
     }
@@ -85,8 +84,10 @@ public class AiPreCheckReviewService {
             if (!proposedChangesMatchSnapshot(snapshot, problem.proposedInputChanges())) {
                 throw new ConflictException("Die vorgeschlagene Änderung ist nicht konkret oder nicht mehr aktuell.");
             }
-            restartPreCheck(workflow, applyProposedChanges(snapshot, problem.proposedInputChanges()));
-            return true;
+            AiWizardSnapshot updatedSnapshot = applyProposedChanges(snapshot, problem.proposedInputChanges());
+            workflow.updateConfirmedSnapshotAfterAcceptedPreCheckChange(snapshotCodec.writeSnapshot(updatedSnapshot));
+            workflow.acceptOpenPoint(problemIndex);
+            return completeReviewIfPossible(workflow, result);
         }
         workflow.acceptOpenPoint(problemIndex);
         return completeReviewIfPossible(workflow, result);

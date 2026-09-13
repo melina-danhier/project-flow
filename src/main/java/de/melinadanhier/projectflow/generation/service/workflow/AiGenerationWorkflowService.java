@@ -77,6 +77,7 @@ public class AiGenerationWorkflowService {
                 payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()),
                 java.util.stream.IntStream.range(0, result.problems().size())
                         .filter(acceptedIndices::contains)
+                        .filter(index -> result.problems().get(index).proposedInputChanges().isEmpty())
                         .mapToObj(index -> withConfirmedInterpretation(
                                 result.problems().get(index), customInterpretations.get(index)))
                         .toList(),
@@ -92,8 +93,7 @@ public class AiGenerationWorkflowService {
         }
         return new AiPreCheckProblem(
                 problem.severity(), problem.type(), problem.message(), problem.suggestedUserAction(),
-                customInterpretation, problem.proposedInputChanges(),
-                problem.adjustmentOptions());
+                customInterpretation, problem.proposedInputChanges());
     }
 
     @Transactional

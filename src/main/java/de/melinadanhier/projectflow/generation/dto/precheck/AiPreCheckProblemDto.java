@@ -3,7 +3,6 @@ package de.melinadanhier.projectflow.generation.dto.precheck;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckInputChange;
-import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckAdjustmentOption;
 
 import java.util.List;
 
@@ -16,8 +15,7 @@ public record AiPreCheckProblemDto(
         String acceptedInterpretation,
         boolean accepted,
         List<AiPreCheckInputChange> proposedInputChanges,
-        boolean proposedChangeApplicable,
-        List<AiPreCheckAdjustmentOption> adjustmentOptions
+        boolean proposedChangeApplicable
 ) {
     public boolean isOpenPoint() {
         return severity == AiPreCheckSeverity.WARNING;
