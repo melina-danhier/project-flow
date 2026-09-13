@@ -11,6 +11,10 @@ import de.melinadanhier.projectflow.common.exception.ConflictException;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper;
 import de.melinadanhier.projectflow.draft.model.DraftPlanStatus;
+import de.melinadanhier.projectflow.draft.model.DraftMilestone;
+import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
+import de.melinadanhier.projectflow.draft.model.DraftTask;
+import de.melinadanhier.projectflow.ai.model.generation.RejectedPlanElement;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import de.melinadanhier.projectflow.draft.service.DraftVersionConflictException;
@@ -35,6 +39,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.UUID;
 
 @Service
@@ -228,13 +233,29 @@ public class AiGenerationWorkflowService {
                                 .getId())
                 .orElseThrow(() -> new ResourceNotFoundException("KI-Workflow wurde nicht gefunden."));
         var snapshot = payloadCodec.readSnapshot(workflow.getConfirmedSnapshot());
+        var currentlyRejectedElements = Stream.concat(
+                        draft.getSections().stream()
+                                .filter(section -> section.getReviewStatus() == DraftReviewStatus.REJECTED)
+                                .map(section -> new RejectedPlanElement(
+                                        "SECTION", section.getTitle(), section.getDescription())),
+                        draft.getElements().stream()
+                                .filter(element -> element.getReviewStatus() == DraftReviewStatus.REJECTED)
+                                .map(element -> new RejectedPlanElement(
+                                        element instanceof DraftTask ? "TASK"
+                                                : element instanceof DraftMilestone ? "MILESTONE" : "ELEMENT",
+                                        element.getTitle(), element.getDescription())));
+        var rejectedElements = Stream.concat(
+                        snapshot.rejectedElements().stream(), currentlyRejectedElements)
+                .distinct()
+                .toList();
         var answers = new java.util.LinkedHashMap<>(snapshot.projectSpecificAnswers());
         answers.put("draftRegenerationFeedback", regenerationComment.trim());
         var updatedSnapshot = new de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot(
                 snapshot.title(), snapshot.description(), snapshot.startDate(), snapshot.endDate(),
                 snapshot.collaborationMode(), snapshot.category(), snapshot.subcategory(),
                 snapshot.otherProjectTypeDescription(), snapshot.projectGoal(), snapshot.constraints(),
-                snapshot.additionalInformation(), snapshot.durationDays(), snapshot.availableWorkingTime(), answers);
+                snapshot.additionalInformation(), snapshot.durationDays(), snapshot.availableWorkingTime(), answers,
+                rejectedElements);
         workflow.updateConfirmedSnapshotForRegeneration(payloadCodec.writeSnapshot(updatedSnapshot));
         project.attachDraft(null);
         draftRepository.delete(draft);

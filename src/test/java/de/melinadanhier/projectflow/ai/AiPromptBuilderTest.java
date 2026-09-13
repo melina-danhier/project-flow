@@ -10,6 +10,7 @@ import de.melinadanhier.projectflow.ai.prompt.PreCheckPromptBuilder;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
+import de.melinadanhier.projectflow.ai.model.generation.RejectedPlanElement;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblemType;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -138,8 +139,10 @@ class AiPromptBuilderTest {
         assertThat(prompt.systemInstructions())
                 .isNotBlank()
                 .doesNotContain("Umzug planen", "Zeitraum knapp");
+        var expectedWizardData = (tools.jackson.databind.node.ObjectNode) objectMapper.valueToTree(snapshot());
+        expectedWizardData.remove("rejectedElements");
         assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("confirmedWizardData"))
-                .isEqualTo(objectMapper.valueToTree(snapshot()));
+                .isEqualTo(expectedWizardData);
         assertThat(objectMapper.readTree(prompt.confirmedUserData()).get("confirmedPlanningContext"))
                 .isEqualTo(objectMapper.valueToTree(List.of(
                         "Mehr Zeit einplanen", "Umfang reduzieren")));
@@ -203,6 +206,35 @@ class AiPromptBuilderTest {
         var data = objectMapper.readTree(prompt.confirmedUserData());
         assertThat(data.at("/confirmedPlanningContext/0").asText())
                 .isEqualTo("Plane mit vier Stunden pro Woche.");
+    }
+
+    @Test
+    void generationPromptIncludesRejectedElementsAsNonAbsoluteNegativeFeedback() throws Exception {
+        var request = new AiGenerationRequest(snapshot(), List.of(), List.of(), List.of(
+                new RejectedPlanElement("TASK", "Balkon ausmessen", "Maße für neue Möbel ermitteln"),
+                new RejectedPlanElement("MILESTONE", "Auswahl abgeschlossen", null)));
+
+        var prompt = generationPromptBuilder.build(request);
+        var data = objectMapper.readTree(prompt.confirmedUserData());
+
+        assertThat(prompt.systemInstructions())
+                .contains("ausdrücklich verworfen", "semantisch nahezu gleichbedeutende")
+                .contains("kein absolutes Verbot", "deutlich angepasster Form")
+                .contains("nicht lediglich um");
+        assertThat(data.at("/rejectedElements/0/type").asText()).isEqualTo("TASK");
+        assertThat(data.at("/rejectedElements/0/title").asText()).isEqualTo("Balkon ausmessen");
+        assertThat(data.at("/rejectedElements/0/description").asText())
+                .isEqualTo("Maße für neue Möbel ermitteln");
+        assertThat(data.at("/rejectedElements/1/type").asText()).isEqualTo("MILESTONE");
+        assertThat(data.toString()).doesNotContain("id");
+    }
+
+    @Test
+    void generationPromptWithoutRejectedElementsKeepsInputSectionAbsent() throws Exception {
+        var prompt = generationPromptBuilder.build(new AiGenerationRequest(snapshot(), List.of()));
+
+        assertThat(objectMapper.readTree(prompt.confirmedUserData()).has("rejectedElements")).isFalse();
+        assertThat(prompt.systemInstructions()).doesNotContain("Zuvor verworfene Elemente");
     }
 
     @Test

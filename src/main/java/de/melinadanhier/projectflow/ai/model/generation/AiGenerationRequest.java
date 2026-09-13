@@ -10,7 +10,8 @@ import java.util.Objects;
 public record AiGenerationRequest(
         AiWizardSnapshot confirmedWizardData,
         List<AiPreCheckProblem> acceptedOpenPoints,
-        List<String> previousValidationIssues
+        List<String> previousValidationIssues,
+        List<RejectedPlanElement> rejectedElements
 ) {
     public AiGenerationRequest {
         Objects.requireNonNull(confirmedWizardData, "confirmedWizardData darf nicht null sein");
@@ -24,12 +25,20 @@ public record AiGenerationRequest(
         previousValidationIssues = previousValidationIssues == null
                 ? List.of()
                 : List.copyOf(previousValidationIssues);
+        rejectedElements = rejectedElements == null ? List.of() : List.copyOf(rejectedElements);
     }
 
     public AiGenerationRequest(
             AiWizardSnapshot confirmedWizardData,
             List<AiPreCheckProblem> acceptedOpenPoints
     ) {
-        this(confirmedWizardData, acceptedOpenPoints, List.of());
+        this(confirmedWizardData, acceptedOpenPoints, List.of(), confirmedWizardData.rejectedElements());
+    }
+
+    public AiGenerationRequest(AiWizardSnapshot confirmedWizardData,
+                               List<AiPreCheckProblem> acceptedOpenPoints,
+                               List<String> previousValidationIssues) {
+        this(confirmedWizardData, acceptedOpenPoints, previousValidationIssues,
+                confirmedWizardData == null ? List.of() : confirmedWizardData.rejectedElements());
     }
 }

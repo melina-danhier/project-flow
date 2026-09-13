@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.wizard;
 
+import de.melinadanhier.projectflow.ai.model.generation.RejectedPlanElement;
 import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
@@ -13,6 +14,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,6 +81,18 @@ class ProjectWizardSnapshotTimeFrameTest {
         assertThat(restored.endDate()).isEqualTo(LocalDate.of(2026, 9, 10));
         assertThat(restored.durationDays()).isNull();
         assertThat(restored.availableWorkingTime()).isNull();
+    }
+
+    @Test
+    void persistsRejectedElementsForAsynchronousRegeneration() {
+        var original = new AiWizardSnapshot("Projekt", null, null, null,
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
+                null, null, null, null, null, Map.of(),
+                List.of(new RejectedPlanElement("TASK", "Balkon ausmessen", "Maße aufnehmen")));
+        var codec = new AiWorkflowPayloadCodec(JsonMapper.builder().build());
+
+        assertThat(codec.readSnapshot(codec.writeSnapshot(original)).rejectedElements())
+                .containsExactlyElementsOf(original.rejectedElements());
     }
 
     @Test

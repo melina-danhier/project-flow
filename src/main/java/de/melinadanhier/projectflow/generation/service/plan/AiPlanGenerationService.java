@@ -42,7 +42,7 @@ public class AiPlanGenerationService {
             Runnable beforeProviderCall
     ) {
         AiGenerationRequest request = new AiGenerationRequest(
-                confirmedSnapshot, acceptedOpenPoints, List.of());
+                confirmedSnapshot, acceptedOpenPoints, List.of(), confirmedSnapshot.rejectedElements());
         int attempts = alreadyUsedAttempts;
         int maxAttempts = executionProperties.getMaxAttempts();
         while (true) {

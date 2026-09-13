@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -116,12 +117,25 @@ public class GenerationPromptBuilder {
               diesen niemals stillschweigend. Nachbereitung gehört nur in den Plan, wenn sie ausdrücklich
               zum Ziel oder Scope gehört, und muss dann innerhalb des bestätigten Zeitraums liegen.
             - Priorisiere bei Konflikten in dieser Reihenfolge: confirmedWizardData, danach ergänzender
-              confirmedPlanningContext, danach Hinweise aus previousOutputValidationIssues und zuletzt
-              die übrigen Regeln dieses Prompts.
+              confirmedPlanningContext, danach rejectedElements, danach Hinweise aus
+              previousOutputValidationIssues und zuletzt die übrigen Regeln dieses Prompts.
             - Die vom Nutzer bestätigten Planungsgrundlagen in confirmedPlanningContext sind verbindlich.
               Verwende jede acceptedInterpretation als Grundlage der Planung, hinterfrage oder interpretiere
               sie nicht erneut und gib sie nicht als neue offene Annahme zurück. Sie dürfen bestätigte
               Nutzereingaben nur ergänzen, niemals ersetzen.
+
+            """;
+
+    private static final String REJECTED_ELEMENTS_INSTRUCTIONS = """
+
+            Zuvor verworfene Elemente:
+            - Die unter rejectedElements aufgeführten Elemente wurden vom Nutzer in einem vorherigen
+              Entwurf ausdrücklich verworfen. Schlage weder diese noch semantisch nahezu gleichbedeutende
+              Elemente erneut vor. Wähle nach Möglichkeit andere sinnvolle Planungsschritte.
+            - Diese Ablehnung ist kein absolutes Verbot. Ist der zugrunde liegende Inhalt für einen
+              vollständigen oder realistischen Projektplan tatsächlich notwendig, darfst du ihn in
+              deutlich angepasster Form berücksichtigen. Verändere dabei den Planungsschritt inhaltlich
+              sinnvoll und formuliere ihn nicht lediglich um.
             """;
 
     private final ObjectMapper objectMapper;
@@ -137,19 +151,26 @@ public class GenerationPromptBuilder {
     public AiPrompt build(AiGenerationRequest request) {
         return new AiPrompt(
                 AiPromptVersions.GENERATION_PROMPT,
-                SYSTEM_INSTRUCTIONS_TEMPLATE,
+                SYSTEM_INSTRUCTIONS_TEMPLATE + (request.rejectedElements().isEmpty()
+                        ? ""
+                        : REJECTED_ELEMENTS_INSTRUCTIONS),
                 serializeRequestData(request)
         );
     }
 
     private String serializeRequestData(AiGenerationRequest request) {
         Map<String, Object> context = new LinkedHashMap<>();
-        context.put("confirmedWizardData", request.confirmedWizardData());
+        ObjectNode confirmedWizardData = objectMapper.valueToTree(request.confirmedWizardData());
+        confirmedWizardData.remove("rejectedElements");
+        context.put("confirmedWizardData", confirmedWizardData);
         context.put("confirmedPlanningContext", request.acceptedOpenPoints().stream()
                 .map(AiPreCheckProblem::acceptedInterpretation)
                 .toList());
         if (!request.previousValidationIssues().isEmpty()) {
             context.put("previousOutputValidationIssues", request.previousValidationIssues());
+        }
+        if (!request.rejectedElements().isEmpty()) {
+            context.put("rejectedElements", request.rejectedElements());
         }
         try {
             return objectMapper.writeValueAsString(context);

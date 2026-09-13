@@ -156,6 +156,19 @@ class AiGenerationWorkflowServiceTest {
         project.setLocation(de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation.DRAFT);
         var draft = new de.melinadanhier.projectflow.draft.model.DraftPlan();
         draft.setProject(project);
+        var rejectedTask = new de.melinadanhier.projectflow.draft.model.DraftTask();
+        rejectedTask.setTitle("Balkon ausmessen");
+        rejectedTask.setDescription("Maße für neue Möbel ermitteln");
+        rejectedTask.setReviewStatus(de.melinadanhier.projectflow.draft.model.DraftReviewStatus.REJECTED);
+        draft.addElement(rejectedTask);
+        var acceptedMilestone = new de.melinadanhier.projectflow.draft.model.DraftMilestone();
+        acceptedMilestone.setTitle("Plan bestätigt");
+        acceptedMilestone.setReviewStatus(de.melinadanhier.projectflow.draft.model.DraftReviewStatus.ACCEPTED);
+        draft.addElement(acceptedMilestone);
+        var pendingSection = new de.melinadanhier.projectflow.draft.model.DraftSection();
+        pendingSection.setTitle("Offener Bereich");
+        pendingSection.setReviewStatus(de.melinadanhier.projectflow.draft.model.DraftReviewStatus.PENDING);
+        draft.addSection(pendingSection);
         var workflow = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow.create(
                 project, "{}", "v1", UUID.randomUUID(), Instant.now(), "v1");
         ReflectionTestUtils.setField(draft, "id", draftId);
@@ -171,7 +184,9 @@ class AiGenerationWorkflowServiceTest {
                 "Projekt", null, null, null,
                 de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.INDIVIDUAL,
                 de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory.OTHER,
-                null, null, null, null, null, null, null, java.util.Map.of());
+                null, null, null, null, null, null, null, java.util.Map.of(), java.util.List.of(
+                new de.melinadanhier.projectflow.ai.model.generation.RejectedPlanElement(
+                        "MILESTONE", "Frühere Ablehnung", null)));
         when(payloadCodec.readSnapshot("{}")).thenReturn(snapshot);
         when(payloadCodec.writeSnapshot(any())).thenReturn("{\"updated\":true}");
 
@@ -183,6 +198,12 @@ class AiGenerationWorkflowServiceTest {
         verify(payloadCodec).writeSnapshot(snapshotCaptor.capture());
         assertThat(snapshotCaptor.getValue().projectSpecificAnswers())
                 .containsEntry("draftRegenerationFeedback", "Der bisherige Plan war zu detailliert.");
+        assertThat(snapshotCaptor.getValue().rejectedElements())
+                .containsExactly(
+                        new de.melinadanhier.projectflow.ai.model.generation.RejectedPlanElement(
+                                "MILESTONE", "Frühere Ablehnung", null),
+                        new de.melinadanhier.projectflow.ai.model.generation.RejectedPlanElement(
+                                "TASK", "Balkon ausmessen", "Maße für neue Möbel ermitteln"));
 
         var order = inOrder(projectRepository, draftRepository, workflowRepository);
         order.verify(projectRepository).findForUpdate(projectId);
