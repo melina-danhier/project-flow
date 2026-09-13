@@ -113,19 +113,32 @@
                     </div>
 
                     <div class="pf-form-group">
-                        <label for="durationDays" class="pf-label">
+                        <label for="durationValue" class="pf-label">
                             <span>Geschätzte Dauer</span>
-                            <span class="pf-hint">(in Tagen)</span>
+                            <span class="pf-hint">(optional)</span>
                         </label>
-                        <input id="durationDays" type="number" min="1" step="1" th:field="*{durationDays}" class="pf-input" placeholder="z. B. 14">
-                        <div th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}" class="pf-alert pf-alert--error" role="alert"></div>
+                        <div class="pf-duration-picker">
+                            <input id="durationValue" type="number" min="1" step="1" th:field="*{durationValue}" class="pf-input pf-duration-value" placeholder="z. B. 6">
+                            <select id="durationUnit" th:field="*{durationUnit}" class="pf-select pf-duration-unit" aria-label="Dauereinheit">
+                                <option value="DAYS">Tage</option>
+                                <option value="WEEKS">Wochen</option>
+                                <option value="MONTHS">Monate</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="durationDays" th:field="*{durationDays}">
+                        <div th:if="${#fields.hasErrors('durationValue')}" th:errors="*{durationValue}" class="pf-alert pf-alert--error" role="alert"></div>
+                        <div th:if="${#fields.hasErrors('durationDays') and !#fields.hasErrors('durationValue')}" th:errors="*{durationDays}" class="pf-alert pf-alert--error" role="alert"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Footer Actions -->
             <div class="pf-wizard-footer">
-                <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
+                <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);"
+                        data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
+                        data-confirm-title="Projekterstellung abbrechen?"
+                        data-confirm-btn="Erstellung abbrechen"
+                        data-confirm-variant="danger">
                     Erstellung abbrechen
                 </button>
                 <button type="submit" class="pf-btn pf-btn--primary">
@@ -135,7 +148,10 @@
         </form>
 
         <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
-              onsubmit="return confirm('Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
+              data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
+              data-confirm-title="Projekterstellung abbrechen?"
+              data-confirm-btn="Erstellung abbrechen"
+              data-confirm-variant="danger"
               style="display: none;"></form>
     </div>
 

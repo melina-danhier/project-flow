@@ -85,4 +85,31 @@
         updateSelectedMethod();
     }
 
+    // 3. Duration Picker Sync (Number + Unit to durationDays)
+    const durationValueInput = document.getElementById('durationValue');
+    const durationUnitSelect = document.getElementById('durationUnit');
+    const durationDaysHidden = document.getElementById('durationDays');
+
+    if (durationValueInput && durationUnitSelect && durationDaysHidden) {
+        const syncDuration = () => {
+            const val = parseInt(durationValueInput.value, 10);
+            if (isNaN(val) || val <= 0) {
+                durationDaysHidden.value = '';
+                return;
+            }
+            const unit = durationUnitSelect.value;
+            let days = val;
+            if (unit === 'WEEKS') {
+                days = val * 7;
+            } else if (unit === 'MONTHS') {
+                days = val * 30;
+            }
+            durationDaysHidden.value = days;
+        };
+
+        durationValueInput.addEventListener('input', syncDuration);
+        durationUnitSelect.addEventListener('change', syncDuration);
+        syncDuration();
+    }
+
 })();

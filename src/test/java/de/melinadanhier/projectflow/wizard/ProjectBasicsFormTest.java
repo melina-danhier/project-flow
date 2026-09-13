@@ -94,6 +94,43 @@ class ProjectBasicsFormTest {
     }
 
     @Test
+    void convertsDurationUnitsProperly() {
+        ProjectBasicsForm weeksForm = validForm();
+        weeksForm.setDurationValue(6);
+        weeksForm.setDurationUnit("WEEKS");
+        assertThat(weeksForm.getDurationDays()).isEqualTo(42);
+        assertThat(validator.validate(weeksForm)).isEmpty();
+
+        ProjectBasicsForm monthsForm = validForm();
+        monthsForm.setDurationValue(3);
+        monthsForm.setDurationUnit("MONTHS");
+        assertThat(monthsForm.getDurationDays()).isEqualTo(90);
+        assertThat(validator.validate(monthsForm)).isEmpty();
+
+        ProjectBasicsForm daysForm = validForm();
+        daysForm.setDurationValue(14);
+        daysForm.setDurationUnit("DAYS");
+        assertThat(daysForm.getDurationDays()).isEqualTo(14);
+        assertThat(validator.validate(daysForm)).isEmpty();
+
+        // Testing conversion from legacy durationDays
+        ProjectBasicsForm legacyWeeks = validForm();
+        legacyWeeks.setDurationDays(21);
+        assertThat(legacyWeeks.getDurationValue()).isEqualTo(3);
+        assertThat(legacyWeeks.getDurationUnit()).isEqualTo("WEEKS");
+
+        ProjectBasicsForm legacyMonths = validForm();
+        legacyMonths.setDurationDays(60);
+        assertThat(legacyMonths.getDurationValue()).isEqualTo(2);
+        assertThat(legacyMonths.getDurationUnit()).isEqualTo("MONTHS");
+
+        ProjectBasicsForm legacyDays = validForm();
+        legacyDays.setDurationDays(19);
+        assertThat(legacyDays.getDurationValue()).isEqualTo(19);
+        assertThat(legacyDays.getDurationUnit()).isEqualTo("DAYS");
+    }
+
+    @Test
     void acceptsOnlyAvailableWorkingTimeAndNoTimeInformation() {
         ProjectBasicsForm form = validForm();
         assertThat(validator.validate(form)).isEmpty();
