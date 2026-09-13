@@ -19,6 +19,7 @@ import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import de.melinadanhier.projectflow.draft.service.DraftVersionConflictException;
 import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
+import de.melinadanhier.projectflow.generation.event.AiPreCheckRequestedEvent;
 import de.melinadanhier.projectflow.generation.model.workflow.AiGenerationWork;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
@@ -204,10 +205,10 @@ public class AiGenerationWorkflowService {
     @Transactional
     public UUID regenerateDraft(UUID projectId, UUID draftId, UUID userId, long lockVersion,
                                 String regenerationComment) {
-        if (regenerationComment == null || regenerationComment.isBlank()
-                || regenerationComment.trim().length() > 1000) {
+        String normalizedComment = regenerationComment == null ? "" : regenerationComment.trim();
+        if (normalizedComment.length() > 1000) {
             throw new de.melinadanhier.projectflow.common.exception.DomainValidationException(
-                    "Bitte beschreibe in 1 bis 1000 Zeichen, was am bisherigen Entwurf verbessert werden soll.");
+                    "Der Änderungswunsch darf höchstens 1000 Zeichen lang sein.");
         }
         projectRepository.findForUpdate(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
@@ -249,20 +250,34 @@ public class AiGenerationWorkflowService {
                 .distinct()
                 .toList();
         var answers = new java.util.LinkedHashMap<>(snapshot.projectSpecificAnswers());
-        answers.put("draftRegenerationFeedback", regenerationComment.trim());
+        answers.remove("draftRegenerationFeedback");
+        answers.remove("previousDraftContext");
+        if (!normalizedComment.isEmpty()) {
+            answers.put("draftRegenerationFeedback", normalizedComment);
+            if (workflow.getGeneratedPlan() != null && !workflow.getGeneratedPlan().isBlank()) {
+                answers.put("previousDraftContext", workflow.getGeneratedPlan());
+            }
+        }
         var updatedSnapshot = new de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot(
                 snapshot.title(), snapshot.description(), snapshot.startDate(), snapshot.endDate(),
                 snapshot.collaborationMode(), snapshot.category(), snapshot.subcategory(),
                 snapshot.otherProjectTypeDescription(), snapshot.projectGoal(), snapshot.constraints(),
                 snapshot.additionalInformation(), snapshot.durationDays(), snapshot.availableWorkingTime(), answers,
                 rejectedElements);
-        workflow.updateConfirmedSnapshotForRegeneration(payloadCodec.writeSnapshot(updatedSnapshot));
+        String serializedSnapshot = payloadCodec.writeSnapshot(updatedSnapshot);
         project.attachDraft(null);
         draftRepository.delete(draft);
         UUID runId = UUID.randomUUID();
-        workflow.startGeneration(runId, Instant.now(clock).plus(
-                maxRunTime != null ? maxRunTime : Duration.ofMinutes(5)));
-        eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflow.getId(), runId));
+        Instant expiresAt = Instant.now(clock).plus(
+                maxRunTime != null ? maxRunTime : Duration.ofMinutes(5));
+        if (normalizedComment.isEmpty()) {
+            workflow.updateConfirmedSnapshotForRegeneration(serializedSnapshot);
+            workflow.startGeneration(runId, expiresAt);
+            eventPublisher.publishEvent(new AiGenerationRequestedEvent(workflow.getId(), runId));
+        } else {
+            workflow.restartPreCheck(serializedSnapshot, runId, expiresAt);
+            eventPublisher.publishEvent(new AiPreCheckRequestedEvent(workflow.getId(), runId));
+        }
         return workflow.getId();
     }
 

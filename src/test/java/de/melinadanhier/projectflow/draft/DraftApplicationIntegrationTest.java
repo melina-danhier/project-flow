@@ -57,6 +57,7 @@ class DraftApplicationIntegrationTest {
     @Autowired de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository workflows;
     @MockitoSpyBean de.melinadanhier.projectflow.draft.service.DraftPlanAdoptionFactory adoptionFactory;
     @MockitoBean de.melinadanhier.projectflow.generation.event.listener.AiGenerationRequestedEventListener generationListener;
+    @MockitoBean de.melinadanhier.projectflow.generation.event.listener.AiPreCheckRequestedEventListener preCheckListener;
 
     @Test
     void adoptsReviewedGraphWithNormalizedSharedOrderOriginsFieldsAndDependencies() throws Exception {
@@ -179,9 +180,10 @@ class DraftApplicationIntegrationTest {
         assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
         assertThat(drafts.findById(fixture.draftId())).isEmpty();
         assertThat(workflows.findById(workflowId).orElseThrow().getStatus())
-                .isEqualTo(de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_PENDING);
-        verify(generationListener).onGenerationRequested(
-                any(de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent.class));
+                .isEqualTo(de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING);
+        verify(preCheckListener).onPreCheckRequested(
+                any(de.melinadanhier.projectflow.generation.event.AiPreCheckRequestedEvent.class));
+        verifyNoInteractions(generationListener);
     }
 
     @Test

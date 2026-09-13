@@ -297,19 +297,19 @@
             <button type="button" class="pf-modal__close-btn" id="close-regenerate-modal-btn" aria-label="Schließen">×</button>
         </div>
         <div class="pf-modal__body">
-            <p class="pf-text-muted" style="margin-top: 0;">Der aktuelle Entwurf wird ersetzt. Beschreibe kurz, was daran nicht gut funktioniert hat.</p>
+            <p class="pf-text-muted" style="margin-top: 0;">Der aktuelle Entwurf wird ersetzt. Optional kannst du beschreiben, was sich ändern soll.</p>
             <form id="regenerate-plan-form" th:action="@{/projects/{projectId}/draft/regenerate(projectId=${draft.projectId})}" method="post">
                 <input type="hidden" name="draftId" th:value="${draft.id}">
                 <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
                 <div class="pf-form-group">
-                    <label for="regeneration-comment" class="pf-label">Was war am bisherigen Entwurf schlecht oder unpassend?</label>
+                    <label for="regeneration-comment" class="pf-label">Was soll sich ändern? <span class="pf-text-muted">(optional)</span></label>
                     <textarea id="regeneration-comment" name="regenerationComment" class="pf-textarea"
-                              maxlength="1000" required rows="4"
+                              maxlength="1000" rows="4"
                               placeholder="z. B. Der Plan war zu detailliert und hat meinen vorhandenen Arbeitsstand nicht berücksichtigt."></textarea>
                 </div>
                 <div class="pf-modal__actions">
                     <button type="button" class="pf-btn pf-btn--ghost" id="cancel-regenerate-modal-btn">Abbrechen</button>
-                    <button type="submit" class="pf-btn pf-btn--primary">Mit diesem Hinweis neu generieren</button>
+                    <button type="submit" class="pf-btn pf-btn--primary">Neu generieren</button>
                 </div>
             </form>
         </div>

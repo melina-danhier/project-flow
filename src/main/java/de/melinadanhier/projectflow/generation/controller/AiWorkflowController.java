@@ -46,8 +46,12 @@ public class AiWorkflowController {
                 workflowId, currentUser.userId()
         );
         switch (workflow.status()) {
-            case PRE_CHECK_NEEDS_REVIEW, PRE_CHECK_COMPLETED, GENERATION_CANCELLED -> {
+            case PRE_CHECK_NEEDS_REVIEW, GENERATION_CANCELLED -> {
                 return preCheckReviewRedirect(workflowId);
+            }
+            case PRE_CHECK_COMPLETED -> {
+                workflowControlService.startGeneration(workflowId, currentUser.userId());
+                return "redirect:/projects/new/ai/status/" + workflowId;
             }
             case GENERATION_COMPLETED -> {
                 studyTrackingService.trackGeneratedPlanIfActive(session, workflowId);

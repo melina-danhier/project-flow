@@ -9,6 +9,7 @@ import de.melinadanhier.projectflow.draft.mapper.GeneratedPlanDraftMapper.Mapped
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftMaterializationService;
 import de.melinadanhier.projectflow.generation.event.AiGenerationRequestedEvent;
+import de.melinadanhier.projectflow.generation.event.AiPreCheckRequestedEvent;
 import de.melinadanhier.projectflow.generation.persistence.AiWorkflowPayloadCodec;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
@@ -175,6 +176,7 @@ class AiGenerationWorkflowServiceTest {
         ReflectionTestUtils.setField(workflow, "id", workflowId);
         ReflectionTestUtils.setField(workflow, "status",
                 de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        ReflectionTestUtils.setField(workflow, "generatedPlan", "{\"sections\":[{\"title\":\"Bisheriger Plan\"}]}");
         when(projectRepository.findForUpdate(projectId)).thenReturn(Optional.of(projectId));
         when(draftRepository.findForUpdateByProjectId(projectId)).thenReturn(Optional.of(draft));
         when(workflowRepository.findByProjectId(projectId)).thenReturn(Optional.of(workflow));
@@ -197,7 +199,8 @@ class AiGenerationWorkflowServiceTest {
                 de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot.class);
         verify(payloadCodec).writeSnapshot(snapshotCaptor.capture());
         assertThat(snapshotCaptor.getValue().projectSpecificAnswers())
-                .containsEntry("draftRegenerationFeedback", "Der bisherige Plan war zu detailliert.");
+                .containsEntry("draftRegenerationFeedback", "Der bisherige Plan war zu detailliert.")
+                .containsEntry("previousDraftContext", "{\"sections\":[{\"title\":\"Bisheriger Plan\"}]}");
         assertThat(snapshotCaptor.getValue().rejectedElements())
                 .containsExactly(
                         new de.melinadanhier.projectflow.ai.model.generation.RejectedPlanElement(
@@ -210,6 +213,9 @@ class AiGenerationWorkflowServiceTest {
         order.verify(draftRepository).findForUpdateByProjectId(projectId);
         order.verify(workflowRepository).findByProjectId(projectId);
         order.verify(workflowRepository).findByIdForUpdate(workflowId);
+        assertThat(workflow.getStatus()).isEqualTo(AiPlanGenerationWorkflowStatus.PRE_CHECK_PENDING);
+        verify(eventPublisher).publishEvent(new AiPreCheckRequestedEvent(workflowId, workflow.getActiveRunId()));
+        verify(eventPublisher, never()).publishEvent(any(AiGenerationRequestedEvent.class));
     }
 
     private AiGenerationWorkflowService service() {

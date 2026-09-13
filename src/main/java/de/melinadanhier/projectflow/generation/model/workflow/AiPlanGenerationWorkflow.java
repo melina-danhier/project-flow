@@ -332,7 +332,8 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
     public void restartPreCheck(String updatedConfirmedSnapshot, UUID runId, Instant expiresAt) {
         if (status != AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW
                 && status != AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED
-                && status != AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED) {
+                && status != AiPlanGenerationWorkflowStatus.GENERATION_CANCELLED
+                && status != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
             throw new IllegalStateException(
                     "Ungültiger KI-Workflow-Übergang aus " + status
                             + "; die Vorprüfung kann nur aus einem prüfbaren Zustand neu gestartet werden.");

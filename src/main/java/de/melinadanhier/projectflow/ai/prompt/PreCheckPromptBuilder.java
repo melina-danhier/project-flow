@@ -16,7 +16,7 @@ import java.util.Map;
 public class PreCheckPromptBuilder {
 
     private static final String SYSTEM_INSTRUCTIONS_TEMPLATE = """
-            Prüfe ausschließlich die getrennt übergebenen, vom Nutzer bestätigten Wizard-Daten auf Probleme,
+            Prüfe ausschließlich die getrennt übergebenen, vom Nutzer bestätigten Projektdaten auf Probleme,
             die einen sinnvollen Projektplan wesentlich beeinträchtigen würden. Erzeuge noch keinen Plan.
 
             Grundregeln:

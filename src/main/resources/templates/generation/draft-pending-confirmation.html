@@ -62,10 +62,10 @@
                       style="margin: 0; width: 100%;">
                     <input type="hidden" name="draftId" th:value="${summary.draftId}">
                     <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
-                    <label for="empty-draft-regeneration-comment" class="pf-label">Was war am bisherigen Entwurf schlecht oder unpassend?</label>
+                    <label for="empty-draft-regeneration-comment" class="pf-label">Was soll sich ändern? (optional)</label>
                     <textarea id="empty-draft-regeneration-comment" name="regenerationComment" class="pf-textarea"
-                              maxlength="1000" required></textarea>
-                    <button type="submit" class="pf-btn pf-btn--primary">Mit diesem Hinweis neu generieren</button>
+                              maxlength="1000"></textarea>
+                    <button type="submit" class="pf-btn pf-btn--primary">Neu generieren</button>
                 </form>
                 <form th:action="@{/projects/{projectId}/draft/confirm-empty(projectId=${summary.projectId})}" method="post" style="margin: 0;">
                     <input type="hidden" name="draftId" th:value="${summary.draftId}">
