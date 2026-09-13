@@ -24,11 +24,24 @@
             </div>
         </div>
         <div class="pf-page-header__actions">
+            <button th:if="${wizardContext}" type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost pf-btn--sm" style="color: var(--pf-text-muted);"
+                    data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
+                    data-confirm-title="Projekterstellung abbrechen?"
+                    data-confirm-btn="Erstellung abbrechen"
+                    data-confirm-variant="danger">
+                Erstellung abbrechen
+            </button>
             <form th:if="${wizardContext}" th:action="@{/projects/new/template/{id}(id=${template.id})}" method="post">
                 <button class="pf-btn pf-btn--primary" type="submit">Vorlage verwenden →</button>
             </form>
             <a th:unless="${wizardContext}" sec:authorize="isAuthenticated()" th:href="@{/projects/new(templateId=${template.id})}" class="pf-btn pf-btn--primary">Vorlage verwenden →</a>
             <a th:unless="${wizardContext}" sec:authorize="!isAuthenticated()" th:href="@{/projects/new(templateId=${template.id})}" class="pf-btn pf-btn--primary">Anmelden und Vorlage verwenden →</a>
+            <form th:if="${wizardContext}" id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
+                  data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
+                  data-confirm-title="Projekterstellung abbrechen?"
+                  data-confirm-btn="Erstellung abbrechen"
+                  data-confirm-variant="danger"
+                  style="display: none;"></form>
         </div>
     </div>
 
@@ -48,43 +61,47 @@
                 </div>
             </summary>
             <ul class="pf-element-list">
-                <li th:each="task : ${template.tasks}" th:if="${task.planSectionId == section.id}" class="pf-element-item">
+                <li th:each="task : ${template.tasks}" th:if="${task.planSectionId == section.id}" class="pf-element-item pf-element-item--task">
                     <div class="pf-element-item__main">
-                        <div class="pf-element-heading">
-                            <span class="pf-badge pf-badge--blue">Aufgabe</span>
-                            <strong class="pf-element-title" th:text="${task.title}"></strong>
+                        <div class="pf-element-header-row">
+                            <div class="pf-element-header-left">
+                                <span class="pf-element-item__icon pf-element-item__icon--task" aria-hidden="true">○</span>
+                                <strong class="pf-element-title" th:text="${task.title}"></strong>
+                            </div>
+                            <div class="pf-element-meta">
+                                <span th:if="${task.priority != null}" class="pf-badge pf-badge--sm"
+                                      th:classappend="${task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
+                                      th:text="${task.priority.name() == 'LOW' ? 'Priorität: Niedrig' : (task.priority.name() == 'HIGH' ? 'Priorität: Hoch' : 'Priorität: Mittel')}"></span>
+                                <span th:if="${task.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Aufwand: ' + task.estimatedHours + ' Std.'}"></span>
+                                <span th:if="${task.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Start: ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
+                                <span th:if="${task.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Fällig: ' + #temporals.format(task.dueDate, 'dd.MM.yyyy')}"></span>
+                                <span th:if="${task.relativeStartDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Start: Tag ' + task.relativeStartDay + ' ab Projektstart'}"></span>
+                                <span th:if="${task.relativeDueDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Fällig: Tag ' + task.relativeDueDay + ' ab Projektstart'}"></span>
+                            </div>
                         </div>
                         <p th:if="${task.description}" th:text="${task.description}" class="pf-element-desc"></p>
-                        <div class="pf-element-meta">
-                            <span th:if="${task.priority != null}" class="pf-badge pf-badge--sm"
-                                  th:classappend="${task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
-                                  th:text="${task.priority.name() == 'LOW' ? 'Priorität: Niedrig' : (task.priority.name() == 'HIGH' ? 'Priorität: Hoch' : 'Priorität: Mittel')}"></span>
-                            <span th:if="${task.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Aufwand: ' + task.estimatedHours + ' Std.'}"></span>
-                            <span th:if="${task.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Start: ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
-                            <span th:if="${task.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Fällig: ' + #temporals.format(task.dueDate, 'dd.MM.yyyy')}"></span>
-                            <span th:if="${task.relativeStartDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Start: Tag ' + task.relativeStartDay + ' ab Projektstart'}"></span>
-                            <span th:if="${task.relativeDueDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Fällig: Tag ' + task.relativeDueDay + ' ab Projektstart'}"></span>
-                        </div>
                     </div>
                 </li>
                 <li th:each="milestone : ${template.milestones}" th:if="${milestone.planSectionId == section.id}" class="pf-element-item pf-element-item--milestone">
                     <div class="pf-element-item__main">
-                        <div class="pf-element-heading">
-                            <span class="pf-badge pf-badge--purple">Meilenstein</span>
-                            <strong class="pf-element-title" th:text="${milestone.title}"></strong>
+                        <div class="pf-element-header-row">
+                            <div class="pf-element-header-left">
+                                <span class="pf-element-item__icon pf-element-item__icon--milestone" aria-hidden="true">◆</span>
+                                <strong class="pf-element-title" th:text="${milestone.title}"></strong>
+                            </div>
+                            <div class="pf-element-meta" th:if="${milestone.dueDate != null or milestone.relativeDueDay != null}">
+                                <span th:if="${milestone.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Termin: ' + #temporals.format(milestone.dueDate, 'dd.MM.yyyy')}"></span>
+                                <span th:if="${milestone.relativeDueDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Termin: Tag ' + milestone.relativeDueDay + ' ab Projektstart'}"></span>
+                            </div>
                         </div>
                         <p th:if="${milestone.description}" th:text="${milestone.description}" class="pf-element-desc"></p>
-                        <div class="pf-element-meta" th:if="${milestone.dueDate != null or milestone.relativeDueDay != null}">
-                            <span th:if="${milestone.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Termin: ' + #temporals.format(milestone.dueDate, 'dd.MM.yyyy')}"></span>
-                            <span th:if="${milestone.relativeDueDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Termin: Tag ' + milestone.relativeDueDay + ' ab Projektstart'}"></span>
-                        </div>
                     </div>
                 </li>
             </ul>
@@ -97,45 +114,53 @@
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </button>
-                    <strong class="pf-phase-title">Ohne Phase</strong>
+                    <div class="pf-phase-display-wrap">
+                        <strong class="pf-phase-title">Ohne Phase</strong>
+                    </div>
                 </div>
             </summary>
             <ul class="pf-element-list">
-                <li th:each="task : ${template.tasks}" th:if="${task.planSectionId == null}" class="pf-element-item">
+                <li th:each="task : ${template.tasks}" th:if="${task.planSectionId == null}" class="pf-element-item pf-element-item--task">
                     <div class="pf-element-item__main">
-                        <div class="pf-element-heading">
-                            <span class="pf-badge pf-badge--blue">Aufgabe</span>
-                            <strong class="pf-element-title" th:text="${task.title}"></strong>
+                        <div class="pf-element-header-row">
+                            <div class="pf-element-header-left">
+                                <span class="pf-element-item__icon pf-element-item__icon--task" aria-hidden="true">○</span>
+                                <strong class="pf-element-title" th:text="${task.title}"></strong>
+                            </div>
+                            <div class="pf-element-meta">
+                                <span th:if="${task.priority != null}" class="pf-badge pf-badge--sm"
+                                      th:classappend="${task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
+                                      th:text="${task.priority.name() == 'LOW' ? 'Priorität: Niedrig' : (task.priority.name() == 'HIGH' ? 'Priorität: Hoch' : 'Priorität: Mittel')}"></span>
+                                <span th:if="${task.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Aufwand: ' + task.estimatedHours + ' Std.'}"></span>
+                                <span th:if="${task.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Start: ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
+                                <span th:if="${task.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Fällig: ' + #temporals.format(task.dueDate, 'dd.MM.yyyy')}"></span>
+                                <span th:if="${task.relativeStartDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Start: Tag ' + task.relativeStartDay + ' ab Projektstart'}"></span>
+                                <span th:if="${task.relativeDueDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Fällig: Tag ' + task.relativeDueDay + ' ab Projektstart'}"></span>
+                            </div>
                         </div>
                         <p th:if="${task.description}" th:text="${task.description}" class="pf-element-desc"></p>
-                        <div class="pf-element-meta">
-                            <span th:if="${task.priority != null}" class="pf-badge pf-badge--sm"
-                                  th:classappend="${task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
-                                  th:text="${task.priority.name() == 'LOW' ? 'Priorität: Niedrig' : (task.priority.name() == 'HIGH' ? 'Priorität: Hoch' : 'Priorität: Mittel')}"></span>
-                            <span th:if="${task.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Aufwand: ' + task.estimatedHours + ' Std.'}"></span>
-                            <span th:if="${task.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Start: ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
-                            <span th:if="${task.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Fällig: ' + #temporals.format(task.dueDate, 'dd.MM.yyyy')}"></span>
-                            <span th:if="${task.relativeStartDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Start: Tag ' + task.relativeStartDay + ' ab Projektstart'}"></span>
-                            <span th:if="${task.relativeDueDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                  th:text="${'Fällig: Tag ' + task.relativeDueDay + ' ab Projektstart'}"></span>
-                        </div>
                     </div>
                 </li>
                 <li th:each="milestone : ${template.milestones}" th:if="${milestone.planSectionId == null}" class="pf-element-item pf-element-item--milestone">
-                    <div class="pf-element-heading">
-                        <span class="pf-badge pf-badge--purple">Meilenstein</span>
-                        <strong class="pf-element-title" th:text="${milestone.title}"></strong>
-                    </div>
-                    <p th:if="${milestone.description}" th:text="${milestone.description}" class="pf-element-desc"></p>
-                    <div class="pf-element-meta" th:if="${milestone.dueDate != null or milestone.relativeDueDay != null}">
-                        <span th:if="${milestone.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                              th:text="${'Termin: ' + #temporals.format(milestone.dueDate, 'dd.MM.yyyy')}"></span>
-                        <span th:if="${milestone.relativeDueDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                              th:text="${'Termin: Tag ' + milestone.relativeDueDay + ' ab Projektstart'}"></span>
+                    <div class="pf-element-item__main">
+                        <div class="pf-element-header-row">
+                            <div class="pf-element-header-left">
+                                <span class="pf-element-item__icon pf-element-item__icon--milestone" aria-hidden="true">◆</span>
+                                <strong class="pf-element-title" th:text="${milestone.title}"></strong>
+                            </div>
+                            <div class="pf-element-meta" th:if="${milestone.dueDate != null or milestone.relativeDueDay != null}">
+                                <span th:if="${milestone.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Termin: ' + #temporals.format(milestone.dueDate, 'dd.MM.yyyy')}"></span>
+                                <span th:if="${milestone.relativeDueDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Termin: Tag ' + milestone.relativeDueDay + ' ab Projektstart'}"></span>
+                            </div>
+                        </div>
+                        <p th:if="${milestone.description}" th:text="${milestone.description}" class="pf-element-desc"></p>
                     </div>
                 </li>
             </ul>

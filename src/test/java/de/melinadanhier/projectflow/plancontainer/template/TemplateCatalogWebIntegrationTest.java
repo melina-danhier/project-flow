@@ -94,7 +94,8 @@ class TemplateCatalogWebIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Umzug kompakt planen")))
                 .andExpect(content().string(containsString("1 Aufgabe")))
-                .andExpect(content().string(containsString("1 Meilenstein")));
+                .andExpect(content().string(containsString("1 Meilenstein")))
+                .andExpect(content().string(not(containsString("pf-template-nav__recommended"))));
         mockMvc.perform(get("/templates/search").param("q", "WOHNUNGS"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Umzug kompakt planen")));
@@ -105,7 +106,45 @@ class TemplateCatalogWebIntegrationTest {
                 .andExpect(content().string(containsString("Tag 3 ab Projektstart")))
                 .andExpect(content().string(containsString("Aufwand: 2 Std.")))
                 .andExpect(content().string(not(containsString("Aufgabe hinzufügen"))))
+                .andExpect(content().string(not(containsString("pf-badge--blue\">Aufgabe<"))))
+                .andExpect(content().string(not(containsString("pf-badge--purple\">Meilenstein<"))))
                 .andExpect(content().string(containsString("Anmelden und Vorlage verwenden")));
+    }
+
+    @Test
+    void recommendedSubsectionAppearsOnlyInWizardAndSeparatesRecommendations() throws Exception {
+        // In public catalog: Empfohlen is hidden
+        mockMvc.perform(get("/templates"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("pf-template-nav__recommended"))));
+
+        // In wizard flow with HOME category (matching template): Empfohlen is visible
+        MockHttpSession session = login("wizard-rec-" + UUID.randomUUID() + "@example.org");
+        ProjectWizardState state = wizardState(null, java.time.LocalDate.of(2026, 9, 20));
+        session.setAttribute(ProjectWizardService.SESSION_ATTRIBUTE, state);
+
+        mockMvc.perform(get("/projects/new/template").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("pf-template-nav__recommended")))
+                .andExpect(content().string(containsString("Empfohlen")))
+                .andExpect(content().string(containsString("Erstellung abbrechen")))
+                .andExpect(content().string(containsString("data-confirm=\"Möchtest du die Projekterstellung wirklich abbrechen?")));
+
+        // Navigating to recommended explicitly
+        mockMvc.perform(get("/projects/new/template").param("recommended", "true").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Empfohlene Vorlagen")))
+                .andExpect(content().string(containsString("Umzug kompakt planen")));
+
+        // Preview in wizard context: cancel button with data-confirm is present, type tags removed, icons present
+        mockMvc.perform(get("/projects/new/template/{id}", templateId).session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Erstellung abbrechen")))
+                .andExpect(content().string(containsString("data-confirm=\"Möchtest du die Projekterstellung wirklich abbrechen?")))
+                .andExpect(content().string(not(containsString("pf-badge--blue\">Aufgabe<"))))
+                .andExpect(content().string(not(containsString("pf-badge--purple\">Meilenstein<"))))
+                .andExpect(content().string(containsString("pf-element-item__icon--task")))
+                .andExpect(content().string(containsString("pf-element-item__icon--milestone")));
     }
 
     @Test

@@ -7,13 +7,30 @@
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
 <main>
-    <div class="pf-page-header"><div class="pf-page-header__left">
-        <a th:if="${wizardContext}" th:href="@{/projects/new/method}" class="pf-page-header__back">← Zur Methodenauswahl</a>
-        <a th:unless="${wizardContext}" sec:authorize="isAuthenticated()" th:href="@{/projects}" class="pf-page-header__back">← Zur Projektübersicht</a>
-        <a th:unless="${wizardContext}" sec:authorize="!isAuthenticated()" th:href="@{/}" class="pf-page-header__back">← Zur Startseite</a>
-        <h1 style="margin:0" th:text="${wizardContext ? 'Vorlage auswählen' : 'Projektvorlagen'}">Projektvorlagen</h1>
-        <p class="pf-page-header__subtitle" th:text="${wizardContext ? 'Deine bisherigen Projektangaben bleiben beim Stöbern erhalten.' : 'Entdecke erprobte Strukturen und sieh dir alle Inhalte vor der Verwendung an.'}"></p>
-    </div></div>
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:if="${wizardContext}" th:href="@{/projects/new/method}" class="pf-page-header__back">← Zur Methodenauswahl</a>
+            <a th:unless="${wizardContext}" sec:authorize="isAuthenticated()" th:href="@{/projects}" class="pf-page-header__back">← Zur Projektübersicht</a>
+            <a th:unless="${wizardContext}" sec:authorize="!isAuthenticated()" th:href="@{/}" class="pf-page-header__back">← Zur Startseite</a>
+            <h1 style="margin:0" th:text="${wizardContext ? 'Vorlage auswählen' : 'Projektvorlagen'}">Projektvorlagen</h1>
+            <p class="pf-page-header__subtitle" th:text="${wizardContext ? 'Deine bisherigen Projektangaben bleiben beim Stöbern erhalten.' : 'Entdecke erprobte Strukturen und sieh dir alle Inhalte vor der Verwendung an.'}"></p>
+        </div>
+        <div th:if="${wizardContext}" class="pf-page-header__actions">
+            <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost pf-btn--sm" style="color: var(--pf-text-muted);"
+                    data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
+                    data-confirm-title="Projekterstellung abbrechen?"
+                    data-confirm-btn="Erstellung abbrechen"
+                    data-confirm-variant="danger">
+                Erstellung abbrechen
+            </button>
+            <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
+                  data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
+                  data-confirm-title="Projekterstellung abbrechen?"
+                  data-confirm-btn="Erstellung abbrechen"
+                  data-confirm-variant="danger"
+                  style="display: none;"></form>
+        </div>
+    </div>
 
     <div class="pf-template-catalog-layout">
         <aside class="pf-card pf-template-sidebar" aria-label="Vorlagenkategorien">
@@ -29,19 +46,31 @@
                     <span>Suche</span>
                 </a>
 
+                <!-- 2. Recommended Entry directly below Search (Wizard flow with recommendations only) -->
+                <a th:if="${wizardContext and recommendedTemplates != null and !#lists.isEmpty(recommendedTemplates)}"
+                   th:href="@{/projects/new/template(recommended=true)}"
+                   class="pf-btn pf-btn--sm pf-template-nav__item pf-template-nav__recommended"
+                   th:classappend="${recommendedPage == true ? ' pf-btn--primary' : ' pf-btn--ghost'}">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    <span>Empfohlen</span>
+                    <span class="pf-badge pf-badge--purple pf-badge--sm" style="margin-left: auto; font-size: 0.72rem; padding: 0.15rem 0.45rem;" th:text="${#lists.size(recommendedTemplates)}">3</span>
+                </a>
+
                 <div class="pf-template-nav__divider"></div>
 
-                <!-- 2. Template Categories -->
+                <!-- 3. Template Categories -->
                 <div class="pf-template-nav__section-title">Kategorien</div>
-                <a th:href="${wizardContext} ? @{/projects/new/template} : @{/templates}"
+                <a th:href="${wizardContext} ? @{/projects/new/template(all=true)} : @{/templates}"
                    class="pf-btn pf-btn--sm pf-template-nav__item"
-                   th:classappend="${!searchPage and selectedCategory == null ? ' pf-btn--primary' : ' pf-btn--ghost'}">
+                   th:classappend="${!searchPage and (recommendedPage != true) and selectedCategory == null ? ' pf-btn--primary' : ' pf-btn--ghost'}">
                     <span>Alle Vorlagen</span>
                 </a>
                 <a th:each="category : ${categories}"
                    th:href="${wizardContext} ? @{/projects/new/template(category=${category})} : @{/templates(category=${category})}"
                    class="pf-btn pf-btn--sm pf-template-nav__item"
-                   th:classappend="${!searchPage and selectedCategory == category ? ' pf-btn--primary' : ' pf-btn--ghost'}"
+                   th:classappend="${!searchPage and (recommendedPage != true) and selectedCategory == category ? ' pf-btn--primary' : ' pf-btn--ghost'}"
                    th:text="${category.label}">Kategorie</a>
             </nav>
         </aside>
@@ -60,32 +89,32 @@
                 <button class="pf-btn pf-btn--primary" type="submit">Suchen</button>
             </form>
 
-            <section th:if="${wizardContext and !searchPage and !#lists.isEmpty(recommendedTemplates)}" style="margin-bottom:1.75rem">
-                <h2 style="margin-bottom:.25rem">Passend zu deinen Angaben</h2>
-                <p style="color:var(--pf-text-muted);margin-top:0">Ausgewählt anhand deiner Projektkategorie.</p>
-                <div class="pf-project-grid">
-                    <div th:each="item : ${recommendedTemplates}" class="pf-project-card">
-                        <div><div class="pf-project-card__top"><span class="pf-badge pf-badge--purple">Empfohlen</span><span class="pf-badge pf-badge--gray" th:text="${item.subcategory != null ? item.subcategory.label : (item.category != null ? item.category.label : 'Sonstiges')}">Kategorie</span></div>
-                            <h3 class="pf-project-card__title"><a th:href="@{/projects/new/template/{id}(id=${item.id},category=${selectedCategory})}" th:text="${item.title}">Vorlage</a></h3>
-                            <p th:if="${item.description}" th:text="${item.description}" style="font-size:.88rem;color:var(--pf-text-muted);margin-top:.5rem"></p></div>
-                        <div class="pf-project-card__meta" style="justify-content:space-between"><span th:text="${item.taskCount + ' Aufgaben'}"></span><span th:text="${item.milestoneCount + ' Meilensteine'}"></span></div>
-                        <form th:action="@{/projects/new/template/{id}(id=${item.id})}" method="post"><button class="pf-btn pf-btn--primary pf-btn--sm" type="submit">Direkt verwenden</button></form>
-                    </div>
-                </div>
-            </section>
+            <h2 th:text="${searchPage ? (query.isBlank() ? 'Vorlagen suchen' : 'Suchergebnisse für „' + query + '“') : (recommendedPage == true ? 'Empfohlene Vorlagen' : (selectedCategory == null ? 'Alle Vorlagen' : selectedCategory.label))}">Kategorie</h2>
+            <p th:if="${recommendedPage == true}" style="color:var(--pf-text-muted);margin-top:0">Ausgewählt anhand deiner bisherigen Projektangaben.</p>
 
-            <h2 th:text="${searchPage ? (query.isBlank() ? 'Vorlagen suchen' : 'Suchergebnisse für „' + query + '“') : (selectedCategory == null ? 'Alle Vorlagen' : selectedCategory.label)}">Kategorie</h2>
             <div th:if="${#lists.isEmpty(templates)}" class="pf-empty-state">
                 <div class="pf-empty-state__title" th:text="${searchPage and query.isBlank() ? 'Gib einen Suchbegriff ein' : 'Keine Vorlagen gefunden'}"></div>
-                <p class="pf-empty-state__text">Die Suche berücksichtigt ausschließlich Titel und Beschreibung.</p>
+                <p class="pf-empty-state__text" th:text="${searchPage ? 'Die Suche berücksichtigt ausschließlich Titel und Beschreibung.' : (recommendedPage == true ? 'Für deine Angaben wurden keine passenden Vorlagen gefunden.' : 'In dieser Kategorie sind derzeit keine Vorlagen vorhanden.')}">Beschreibung</p>
             </div>
             <div class="pf-project-grid" th:unless="${#lists.isEmpty(templates)}">
                 <div th:each="item : ${templates}" class="pf-project-card">
-                    <div><div class="pf-project-card__top"><span class="pf-badge pf-badge--gray" th:text="${item.subcategory != null ? item.subcategory.label : (item.category != null ? item.category.label : 'Sonstiges')}">Kategorie</span></div>
-                        <h3 class="pf-project-card__title"><a th:href="${wizardContext} ? @{/projects/new/template/{id}(id=${item.id},category=${selectedCategory},q=${searchPage ? query : null})} : @{/templates/{id}(id=${item.id},category=${selectedCategory},q=${searchPage ? query : null})}" th:text="${item.title}">Vorlage</a></h3>
-                        <p th:if="${item.description}" th:text="${item.description}" style="font-size:.88rem;color:var(--pf-text-muted);margin-top:.5rem"></p></div>
-                    <div class="pf-project-card__meta" style="justify-content:space-between"><span th:text="${item.taskCount + (item.taskCount == 1 ? ' Aufgabe' : ' Aufgaben')}"></span><span th:text="${item.milestoneCount + (item.milestoneCount == 1 ? ' Meilenstein' : ' Meilensteine')}"></span></div>
-                    <form th:if="${wizardContext}" th:action="@{/projects/new/template/{id}(id=${item.id})}" method="post"><button class="pf-btn pf-btn--primary pf-btn--sm" type="submit">Direkt verwenden</button></form>
+                    <div>
+                        <div class="pf-project-card__top">
+                            <span th:if="${recommendedPage == true}" class="pf-badge pf-badge--purple">Empfohlen</span>
+                            <span class="pf-badge pf-badge--gray" th:text="${item.subcategory != null ? item.subcategory.label : (item.category != null ? item.category.label : 'Sonstiges')}">Kategorie</span>
+                        </div>
+                        <h3 class="pf-project-card__title">
+                            <a th:href="${wizardContext} ? @{/projects/new/template/{id}(id=${item.id},category=${selectedCategory},recommended=${recommendedPage ? true : null},q=${searchPage ? query : null})} : @{/templates/{id}(id=${item.id},category=${selectedCategory},q=${searchPage ? query : null})}" th:text="${item.title}">Vorlage</a>
+                        </h3>
+                        <p th:if="${item.description}" th:text="${item.description}" style="font-size:.88rem;color:var(--pf-text-muted);margin-top:.5rem"></p>
+                    </div>
+                    <div class="pf-project-card__meta" style="justify-content:space-between">
+                        <span th:text="${item.taskCount + (item.taskCount == 1 ? ' Aufgabe' : ' Aufgaben')}"></span>
+                        <span th:text="${item.milestoneCount + (item.milestoneCount == 1 ? ' Meilenstein' : ' Meilensteine')}"></span>
+                    </div>
+                    <form th:if="${wizardContext}" th:action="@{/projects/new/template/{id}(id=${item.id})}" method="post">
+                        <button class="pf-btn pf-btn--primary pf-btn--sm" type="submit">Direkt verwenden</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -93,4 +122,5 @@
 </main>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />
-</body></html>
+</body>
+</html>

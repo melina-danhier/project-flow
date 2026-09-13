@@ -127,23 +127,47 @@ public class ProjectWizardController {
     public String templateCatalog(
             @RequestParam(required = false) ProjectCategory category,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) Boolean recommended,
+            @RequestParam(required = false) Boolean all,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             HttpSession session,
             Model model
     ) {
         ProjectWizardState state = wizardService.requireOwnedFor(
                 CreationType.TEMPLATE, currentUser.userId(), session);
-        ProjectCategory selected = category == null ? state.getCategory() : category;
-        if (selected == null) {
-            selected = ProjectCategory.EDUCATION;
-        }
+        var recommendedList = templateService.recommendations(
+                state.getCategory(), state.getSubcategory());
+        boolean hasRecommendations = recommendedList != null && !recommendedList.isEmpty();
         boolean search = q != null;
+
+        boolean isRecommended;
+        ProjectCategory selected = null;
+        if (search) {
+            isRecommended = false;
+        } else if (Boolean.TRUE.equals(recommended)) {
+            isRecommended = true;
+        } else if (category != null) {
+            isRecommended = false;
+            selected = category;
+        } else if (Boolean.TRUE.equals(all)) {
+            isRecommended = false;
+            selected = null;
+        } else {
+            if (hasRecommendations && !Boolean.FALSE.equals(recommended)) {
+                isRecommended = true;
+            } else {
+                isRecommended = false;
+                selected = state.getCategory() != null ? state.getCategory() : ProjectCategory.EDUCATION;
+            }
+        }
+
         model.addAttribute("wizardState", state);
         model.addAttribute("categories", ProjectCategory.values());
-        model.addAttribute("selectedCategory", search ? null : selected);
-        model.addAttribute("templates", search ? templateService.search(q) : templateService.getTemplates(selected));
-        model.addAttribute("recommendedTemplates", templateService.recommendations(
-                state.getCategory(), state.getSubcategory()));
+        model.addAttribute("selectedCategory", (search || isRecommended) ? null : selected);
+        model.addAttribute("recommendedPage", isRecommended);
+        model.addAttribute("recommendedTemplates", recommendedList);
+        model.addAttribute("templates", search ? templateService.search(q)
+                : (isRecommended ? recommendedList : (selected == null ? templateService.getTemplates() : templateService.getTemplates(selected))));
         model.addAttribute("searchPage", search);
         model.addAttribute("query", q == null ? "" : q);
         model.addAttribute("wizardContext", true);
@@ -155,6 +179,7 @@ public class ProjectWizardController {
             @PathVariable UUID templateId,
             @RequestParam(required = false) ProjectCategory category,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) Boolean recommended,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             HttpSession session,
             Model model
@@ -163,10 +188,18 @@ public class ProjectWizardController {
                 CreationType.TEMPLATE, currentUser.userId(), session));
         model.addAttribute("template", templateService.getTemplate(templateId));
         model.addAttribute("wizardContext", true);
-        model.addAttribute("backUrl", q == null ? "/projects/new/template"
-                + (category == null ? "" : "?category=" + category.name())
-                : org.springframework.web.util.UriComponentsBuilder.fromPath("/projects/new/template")
-                        .queryParam("q", q).build().encode().toUriString());
+        String backUrl;
+        if (q != null) {
+            backUrl = org.springframework.web.util.UriComponentsBuilder.fromPath("/projects/new/template")
+                    .queryParam("q", q).build().encode().toUriString();
+        } else if (Boolean.TRUE.equals(recommended)) {
+            backUrl = "/projects/new/template?recommended=true";
+        } else if (category != null) {
+            backUrl = "/projects/new/template?category=" + category.name();
+        } else {
+            backUrl = "/projects/new/template";
+        }
+        model.addAttribute("backUrl", backUrl);
         return "wizard/template-preview";
     }
 

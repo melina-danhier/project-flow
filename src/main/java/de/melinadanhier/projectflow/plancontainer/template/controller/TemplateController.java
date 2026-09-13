@@ -57,6 +57,7 @@ public class TemplateController {
         model.addAttribute("selectedCategory", selectedCategory);
         model.addAttribute("templates", templates);
         model.addAttribute("searchPage", search);
+        model.addAttribute("recommendedPage", false);
         model.addAttribute("query", query == null ? "" : query);
         model.addAttribute("wizardContext", false);
     }
