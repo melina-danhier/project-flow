@@ -21,9 +21,12 @@
         </div>
     </div>
 
-    <div class="pf-card" style="max-width: 760px;">
+    <div class="pf-card" style="max-width: 860px; margin: 0 auto; padding: 1.5rem;">
         <form th:action="@{/projects/{id}/edit(id=${project.id})}" th:object="${projectForm}" method="post">
             <input type="hidden" th:field="*{lockVersion}">
+            <!-- Requirement 14: Hidden input for conversion confirmation, prompted via dialog when switching to INDIVIDUAL -->
+            <input type="hidden" id="confirmIndividualConversion" th:field="*{confirmIndividualConversion}">
+
             <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error" role="alert">
                 Das Projekt konnte nicht gespeichert werden, weil der Bearbeitungsstand ungültig ist. Bitte lade die Seite neu.
             </div>
@@ -33,55 +36,142 @@
             <th:block th:replace="~{fragments/form-fields :: title-field('Projekttitel')}" />
             <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung', false)}" />
             <div th:replace="~{fragments/project-classification :: fields(true)}"></div>
-            <th:block th:replace="~{fragments/form-fields :: collaboration-mode}" />
             
-            <div th:if="${#fields.hasErrors('projectCollaborationModeValid')}" th:errors="*{projectCollaborationModeValid}" class="pf-alert pf-alert--error" role="alert"></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 0.5rem;">
+                <div>
+                    <th:block th:replace="~{fragments/form-fields :: collaboration-mode}" />
+                    <div th:if="${#fields.hasErrors('projectCollaborationModeValid')}" th:errors="*{projectCollaborationModeValid}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
 
-            <div th:if="${project.groupProject or project.collaborationMode == null}" class="pf-alert pf-alert--warning" style="flex-direction: column; align-items: flex-start;">
-                <strong style="margin-bottom: 0.35rem;">Hinweis zur Konvertierung in ein Einzelprojekt:</strong>
-                <p style="margin: 0 0 0.75rem; font-size: 0.86rem;">
-                    Beim Wechsel zum Einzelprojekt werden alle weiteren Projektmitglieder, ihre Kommentare
-                    und sämtliche Aufgabenzuständigkeiten entfernt. Diese Personen verlieren ihren Zugriff.
-                    Du bleibst Eigentümer; Aufgaben, Inhalte und deine eigenen Beiträge bleiben als Notizen erhalten.
-                </p>
-                <label style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
-                    <input type="checkbox" th:field="*{confirmIndividualConversion}">
-                    <span>Ich bestätige das Entfernen, falls ich zum Einzelprojekt wechsle.</span>
-                </label>
+                <div class="pf-form-group">
+                    <label for="taskProgressDisplay" class="pf-label">Aufgabenfortschritt im Plan</label>
+                    <select id="taskProgressDisplay" th:field="*{taskProgressDisplay}" class="pf-select">
+                        <option value="CHECKBOX">Checkboxen (Erledigt abhaken)</option>
+                        <option value="STATUS">Statuswerte (Offen / In Bearbeitung / Erledigt)</option>
+                    </select>
+                    <small class="pf-text-muted" style="display: block; margin-top: 0.35rem; font-size: 0.82rem; line-height: 1.4;">
+                        Legt fest, ob Aufgaben im Plan primär über einfache Checkboxen oder über Statuswerte dargestellt und gesteuert werden.
+                    </small>
+                </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
                 <div class="pf-form-group">
-                    <label for="startDate" class="pf-label">Startdatum</label>
+                    <label for="startDate" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Startdatum
+                    </label>
                     <input id="startDate" type="date" th:field="*{startDate}" class="pf-input">
                     <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
                 <div class="pf-form-group">
-                    <label for="endDate" class="pf-label">Enddatum</label>
+                    <label for="endDate" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Enddatum
+                    </label>
                     <input id="endDate" type="date" th:field="*{endDate}" class="pf-input">
                     <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
             </div>
             <div th:if="${#fields.hasErrors('dateRangeValid')}" th:errors="*{dateRangeValid}" class="pf-alert pf-alert--error" role="alert"></div>
 
-            <div class="pf-form-group" style="margin-top: 1rem;">
-                <label for="taskProgressDisplay" class="pf-label">Aufgabenfortschritt im Plan</label>
-                <select id="taskProgressDisplay" th:field="*{taskProgressDisplay}" class="pf-select" style="max-width: 300px;">
-                    <option value="CHECKBOX">Checkboxen (Erledigt abhaken)</option>
-                    <option value="STATUS">Statuswerte (Offen / In Bearbeitung / Erledigt)</option>
-                </select>
-                <small class="pf-text-muted" style="display: block; margin-top: 0.35rem; font-size: 0.84rem;">
-                    Legt fest, ob Aufgaben im Plan primär über einfache Checkboxen oder über Statuswerte dargestellt und gesteuert werden.
-                </small>
-            </div>
-
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <a th:href="@{/projects/{id}/plan(id=${project.id})}" class="pf-btn pf-btn--secondary">Abbrechen</a>
                 <button type="submit" class="pf-btn pf-btn--primary">Speichern</button>
             </div>
         </form>
     </div>
+
+    <!-- Requirement 14: Single-project conversion warning confirmation dialog -->
+    <dialog id="conversion-warning-dialog" class="pf-modal-dialog" style="padding: 0; border: none; border-radius: var(--pf-radius-lg); box-shadow: var(--pf-shadow-xl); max-width: 520px; width: 90%;">
+        <div style="padding: 1.5rem; background: #ffffff;">
+            <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--pf-warning-bg); color: var(--pf-warning-text); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0 0 0.5rem; font-size: 1.15rem; color: var(--pf-text-main);">Projekt in Einzelprojekt umwandeln?</h3>
+                    <p style="margin: 0; font-size: 0.88rem; color: var(--pf-text-secondary); line-height: 1.5;">
+                        Beim Wechsel zum Einzelprojekt werden <strong>alle weiteren Projektmitglieder, ihre Kommentare und sämtliche Aufgabenzuständigkeiten entfernt</strong>. Diese Personen verlieren dauerhaft ihren Zugriff auf dieses Projekt.
+                    </p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.84rem; color: var(--pf-text-muted);">
+                        Du bleibst Eigentümer; deine eigenen Aufgaben und Notizen bleiben erhalten.
+                    </p>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" id="cancel-conversion-btn" class="pf-btn pf-btn--secondary">Abbrechen</button>
+                <button type="button" id="confirm-conversion-btn" class="pf-btn pf-btn--danger">Ich bestätige die Umwandlung</button>
+            </div>
+        </div>
+    </dialog>
 </main>
+
+<script th:inline="javascript">
+    (() => {
+        const isGroupProject = /*[[${project.groupProject}]]*/ false;
+        if (!isGroupProject) return;
+
+        const dialog = document.getElementById('conversion-warning-dialog');
+        const confirmHidden = document.getElementById('confirmIndividualConversion');
+        const individualRadio = document.querySelector('input[name="collaborationMode"][value="INDIVIDUAL"]');
+        const groupRadio = document.querySelector('input[name="collaborationMode"][value="GROUP"]');
+        const cancelBtn = document.getElementById('cancel-conversion-btn');
+        const confirmBtn = document.getElementById('confirm-conversion-btn');
+
+        if (!individualRadio || !dialog) return;
+
+        let confirmed = confirmHidden.value === 'true';
+
+        individualRadio.addEventListener('change', () => {
+            if (individualRadio.checked && !confirmed) {
+                dialog.showModal();
+            }
+        });
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                dialog.close();
+                if (groupRadio) {
+                    groupRadio.checked = true;
+                }
+                confirmed = false;
+                confirmHidden.value = 'false';
+            });
+        }
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                dialog.close();
+                confirmed = true;
+                confirmHidden.value = 'true';
+            });
+        }
+
+        if (groupRadio) {
+            groupRadio.addEventListener('change', () => {
+                if (groupRadio.checked) {
+                    confirmed = false;
+                    confirmHidden.value = 'false';
+                }
+            });
+        }
+    })();
+</script>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>

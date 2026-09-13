@@ -213,6 +213,7 @@ public class TaskController {
     public String addDependency(
             @PathVariable UUID projectId,
             @PathVariable UUID taskId,
+            @RequestParam(required = false) String returnTo,
             @Valid @ModelAttribute("dependencyForm") TaskDependencyForm form,
             BindingResult bindingResult,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -221,6 +222,10 @@ public class TaskController {
     ) {
         form.setSuccessorTaskId(taskId);
         if (bindingResult.hasErrors()) {
+            if ("edit".equals(returnTo)) {
+                populateFormModel(model, taskService.getTaskForEditing(projectId, taskId, currentUser.userId()), true);
+                return "projects/tasks/form";
+            }
             populateDetailModel(model, projectId, taskId, currentUser.userId());
             return "projects/tasks/detail";
         }
@@ -228,10 +233,17 @@ public class TaskController {
             dependencyService.createDependency(projectId, form, currentUser.userId());
         } catch (ConflictException | DomainValidationException exception) {
             model.addAttribute("errorMessage", exception.getMessage());
+            if ("edit".equals(returnTo)) {
+                populateFormModel(model, taskService.getTaskForEditing(projectId, taskId, currentUser.userId()), true);
+                return "projects/tasks/form";
+            }
             populateDetailModel(model, projectId, taskId, currentUser.userId());
             return "projects/tasks/detail";
         }
         redirectAttributes.addFlashAttribute("successMessage", "Voraussetzung wurde hinzugefügt.");
+        if ("edit".equals(returnTo)) {
+            return "redirect:/projects/" + projectId + "/tasks/" + taskId + "/edit";
+        }
         return taskRedirect(projectId, taskId);
     }
 
@@ -240,11 +252,15 @@ public class TaskController {
             @PathVariable UUID projectId,
             @PathVariable UUID taskId,
             @PathVariable UUID prerequisiteId,
+            @RequestParam(required = false) String returnTo,
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             RedirectAttributes redirectAttributes
     ) {
         dependencyService.deleteDependency(projectId, taskId, prerequisiteId, currentUser.userId());
         redirectAttributes.addFlashAttribute("successMessage", "Voraussetzung wurde entfernt.");
+        if ("edit".equals(returnTo)) {
+            return "redirect:/projects/" + projectId + "/tasks/" + taskId + "/edit";
+        }
         return taskRedirect(projectId, taskId);
     }
 
@@ -266,6 +282,18 @@ public class TaskController {
         model.addAttribute("groupProject", context.isGroupProject());
         model.addAttribute("taskBlocked", context.isBlocked());
         model.addAttribute("openPrerequisites", context.getOpenPrerequisites());
+        model.addAttribute("predecessors", context.getPredecessors());
+        model.addAttribute("availablePrerequisites", context.getAvailablePrerequisites());
+        var grouped = context.getAvailablePrerequisites().stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        dto -> dto.getPlanSectionTitle() != null ? dto.getPlanSectionTitle() : "Ohne Bereich",
+                        java.util.LinkedHashMap::new,
+                        java.util.stream.Collectors.toList()
+                ));
+        model.addAttribute("groupedPrerequisites", grouped);
+        if (!model.containsAttribute("dependencyForm")) {
+            model.addAttribute("dependencyForm", new TaskDependencyForm());
+        }
         model.addAttribute("editing", editing);
     }
 

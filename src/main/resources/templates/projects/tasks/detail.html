@@ -7,7 +7,7 @@
 <th:block th:replace="~{fragments/layout :: site-header}" />
 
 <main>
-    <!-- Header with Back Link and Actions -->
+    <!-- Header with Back Link, Title and Actions -->
     <div class="pf-page-header">
         <div class="pf-page-header__left">
             <a th:href="@{/projects/{projectId}/plan(projectId=${task.planContainerId})}" class="pf-page-header__back">
@@ -17,38 +17,46 @@
                 </svg>
                 Zum Projektplan
             </a>
-            <div class="pf-cluster">
-                <h1 th:text="${task.title}" style="margin: 0;">Aufgabe</h1>
-                <form th:if="${task.editable}"
-                      th:action="@{/projects/{projectId}/tasks/{taskId}/status(projectId=${task.planContainerId},taskId=${task.id})}"
-                      method="post" style="margin: 0; display: inline-flex; align-items: center;">
-                    <input type="hidden" name="taskLockVersion" th:value="${task.lockVersion}">
-                    <select name="status" class="pf-status-select"
-                            th:classappend="${'pf-status-select--' + #strings.toLowerCase(task.status.name())}"
-                            onchange="this.form.submit()" title="Status ändern">
-                        <option value="OPEN" th:selected="${task.status.name() == 'OPEN'}">Offen</option>
-                        <option value="IN_PROGRESS" th:selected="${task.status.name() == 'IN_PROGRESS'}">In Bearbeitung</option>
-                        <option value="COMPLETED" th:selected="${task.status.name() == 'COMPLETED'}">Erledigt</option>
-                    </select>
-                </form>
-                <span th:unless="${task.editable}" class="pf-badge pf-badge--blue" th:text="${task.status}">Status</span>
-                <span class="pf-badge"
-                      th:classappend="${task.priority != null and task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority != null and task.priority.name() == 'MEDIUM' ? 'pf-badge--yellow' : 'pf-badge--gray')}"
-                      th:text="${task.priority}">Priorität</span>
-                <span class="pf-badge pf-badge--warning" th:if="${task.blocked}">Blockiert</span>
-            </div>
+            <h1 th:text="${task.title}" style="margin: 0;">Aufgabe</h1>
         </div>
 
         <div class="pf-page-header__actions" th:if="${task.editable}">
-            <a class="pf-btn pf-btn--outline" th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
-                Mit KI verbessern
+            <!-- Direct Edit Button (Requirement 6) -->
+            <a class="pf-btn pf-btn--primary" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Bearbeiten
             </a>
-            <a class="pf-btn pf-btn--secondary" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}">
-                Aufgabe bearbeiten
-            </a>
-            <form th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post" style="margin: 0;">
-                <button type="submit" class="pf-btn pf-btn--danger pf-btn--sm">Löschen</button>
-            </form>
+
+            <!-- Right-Aligned Overflow Menu for Secondary Actions (Requirement 5) -->
+            <details class="pf-dropdown pf-dropdown--right">
+                <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Weitere Aktionen" aria-label="Weitere Aktionen">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="1.5"></circle>
+                        <circle cx="12" cy="5" r="1.5"></circle>
+                        <circle cx="12" cy="19" r="1.5"></circle>
+                    </svg>
+                </summary>
+                <div class="pf-dropdown__menu">
+                    <a class="pf-dropdown__item" th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                        </svg>
+                        <span>Mit KI verbessern</span>
+                    </a>
+                    <form th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post" style="margin: 0;">
+                        <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            <span>Löschen</span>
+                        </button>
+                    </form>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -56,138 +64,244 @@
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
     <!-- Grid Layout: Details Card + Comments & Dependencies -->
-    <div class="pf-grid pf-grid--2" style="align-items: start;">
+    <div class="pf-grid pf-grid--2" style="align-items: start; gap: 1.25rem;">
         <!-- Left: Task Metadata & Prerequisites -->
-        <div class="pf-stack">
+        <div class="pf-stack" style="gap: 1.25rem;">
             <!-- Facts Card -->
-            <div class="pf-card">
-                <h3 style="margin-bottom: 1rem;">Details</h3>
-                <div style="display: grid; gap: 0.85rem;">
-                    <div>
-                        <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Beschreibung</span>
-                        <p style="margin: 0.25rem 0 0; white-space: pre-line;" th:text="${task.description ?: 'Keine Beschreibung vorhanden.'}"></p>
+            <div class="pf-card" style="padding: 1.25rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--pf-border); padding-bottom: 0.75rem;">
+                    <h3 style="margin: 0; font-size: 1.1rem;">Details</h3>
+                    <a th:if="${task.editable}" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}"
+                       class="pf-btn pf-btn--ghost pf-btn--sm" style="color: var(--pf-primary); font-weight: 600; font-size: 0.82rem;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        Bearbeiten
+                    </a>
+                </div>
+
+                <!-- Grid of Properties with Icons -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                    <!-- Status (Requirement 4: Directly editable) -->
+                    <div class="pf-detail-prop">
+                        <span class="pf-detail-prop__icon" title="Status">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">Status</span>
+                            <form th:if="${task.editable}"
+                                  th:action="@{/projects/{projectId}/tasks/{taskId}/status(projectId=${task.planContainerId},taskId=${task.id})}"
+                                  method="post" style="margin: 0; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                <input type="hidden" name="taskLockVersion" th:value="${task.lockVersion}">
+                                <select name="status" class="pf-status-select"
+                                        th:classappend="${'pf-status-select--' + #strings.toLowerCase(task.status.name())}"
+                                        onchange="this.form.submit()" title="Status ändern">
+                                    <option value="OPEN" th:selected="${task.status.name() == 'OPEN'}">Offen</option>
+                                    <option value="IN_PROGRESS" th:selected="${task.status.name() == 'IN_PROGRESS'}">In Bearbeitung</option>
+                                    <option value="COMPLETED" th:selected="${task.status.name() == 'COMPLETED'}">Erledigt</option>
+                                </select>
+                            </form>
+                            <span th:unless="${task.editable}" class="pf-badge pf-badge--blue" th:text="${task.status}">Status</span>
+                            <span class="pf-badge pf-badge--warning" th:if="${task.blocked}" style="margin-left: 0.3rem;">Blockiert</span>
+                        </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">
-                        <div>
-                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Bereich</span>
-                            <div style="font-weight: 600; margin-top: 0.2rem;">
-                                <span th:if="${task.planSectionId == null}">Ohne Bereich</span>
+
+                    <!-- Priority (Requirement 3 & 11) -->
+                    <div class="pf-detail-prop">
+                        <span class="pf-detail-prop__icon" title="Priorität">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                                <line x1="4" y1="22" x2="4" y2="15"></line>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">Priorität</span>
+                            <span class="pf-badge"
+                                  th:classappend="${task.priority != null and task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority != null and task.priority.name() == 'MEDIUM' ? 'pf-badge--yellow' : 'pf-badge--gray')}"
+                                  th:text="${task.priority}">Priorität</span>
+                        </div>
+                    </div>
+
+                    <!-- Section / Phase -->
+                    <div class="pf-detail-prop">
+                        <span class="pf-detail-prop__icon" title="Bereich">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                <polyline points="2 17 12 22 22 17"></polyline>
+                                <polyline points="2 12 12 17 22 12"></polyline>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">Bereich</span>
+                            <div class="pf-detail-prop__value">
+                                <span th:if="${task.planSectionId == null}" style="color: var(--pf-text-muted);">Ohne Bereich</span>
                                 <span th:each="section : ${task.availableSections}" th:if="${section.id == task.planSectionId}" th:text="${section.title}"></span>
                             </div>
                         </div>
-                        <div th:if="${task.groupProject}">
-                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Zugewiesen an</span>
-                            <div style="margin-top: 0.25rem;">
-                                <span th:if="${#lists.isEmpty(task.assignees)}" style="color: var(--pf-text-muted); font-size: 0.88rem;">Nicht zugewiesen</span>
-                                <div th:unless="${#lists.isEmpty(task.assignees)}" class="pf-assignee-chips">
-                                    <span th:each="assignee : ${task.assignees}" class="pf-assignee-chip">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                            <circle cx="12" cy="7" r="4"></circle>
-                                        </svg>
-                                        <span th:text="${assignee.displayName}">Name</span>
-                                    </span>
-                                </div>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="pf-detail-prop">
+                        <span class="pf-detail-prop__icon" title="Startdatum">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">Startdatum</span>
+                            <div class="pf-detail-prop__value" th:text="${task.startDate != null ? #temporals.format(task.startDate, 'dd.MM.yyyy') : 'Nicht festgelegt'}"></div>
+                        </div>
+                    </div>
+
+                    <!-- Due Date -->
+                    <div class="pf-detail-prop">
+                        <span class="pf-detail-prop__icon" title="Fälligkeitsdatum">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">Fälligkeitsdatum</span>
+                            <div class="pf-detail-prop__value" th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd.MM.yyyy') : 'Nicht festgelegt'}"></div>
+                        </div>
+                    </div>
+
+                    <!-- Effort -->
+                    <div class="pf-detail-prop">
+                        <span class="pf-detail-prop__icon" title="Aufwand">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">Aufwand</span>
+                            <div class="pf-detail-prop__value" th:text="${task.estimatedHours != null ? task.estimatedHours + ' Stunden' : 'Nicht festgelegt'}"></div>
+                        </div>
+                    </div>
+
+                    <!-- Assignees (Group Project) -->
+                    <div th:if="${task.groupProject}" class="pf-detail-prop" style="grid-column: 1 / -1;">
+                        <span class="pf-detail-prop__icon" title="Zugewiesen an">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">Zugewiesen an</span>
+                            <div th:if="${#lists.isEmpty(task.assignees)}" class="pf-detail-prop__value" style="color: var(--pf-text-muted);">Nicht zugewiesen</div>
+                            <div th:unless="${#lists.isEmpty(task.assignees)}" class="pf-assignee-chips">
+                                <span th:each="assignee : ${task.assignees}" class="pf-assignee-chip">
+                                    <span th:text="${assignee.displayName}">Name</span>
+                                </span>
                             </div>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">
-                        <div>
-                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Startdatum</span>
-                            <div style="font-weight: 500; margin-top: 0.2rem;" th:text="${task.startDate ?: 'Nicht festgelegt'}"></div>
+
+                    <!-- Description -->
+                    <div class="pf-detail-prop" style="grid-column: 1 / -1; margin-top: 0.25rem;">
+                        <span class="pf-detail-prop__icon" title="Beschreibung">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="21" y1="10" x2="3" y2="10"></line>
+                                <line x1="21" y1="6" x2="3" y2="6"></line>
+                                <line x1="21" y1="14" x2="3" y2="14"></line>
+                                <line x1="21" y1="18" x2="3" y2="18"></line>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">Beschreibung</span>
+                            <p style="margin: 0.2rem 0 0; white-space: pre-line; color: var(--pf-text-secondary); line-height: 1.5; font-size: 0.92rem;"
+                               th:text="${task.description ?: 'Keine Beschreibung vorhanden.'}"></p>
                         </div>
-                        <div>
-                            <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Fälligkeitsdatum</span>
-                            <div style="font-weight: 500; margin-top: 0.2rem;" th:text="${task.dueDate ?: 'Nicht festgelegt'}"></div>
-                        </div>
-                    </div>
-                    <div style="padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">
-                        <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Aufwand</span>
-                        <div style="font-weight: 500; margin-top: 0.2rem;"
-                             th:text="${task.estimatedHours != null ? task.estimatedHours + ' Stunden' : 'Nicht festgelegt'}"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Prerequisites Card -->
-            <div class="pf-card">
-                <h3 style="margin-bottom: 0.85rem;">Voraussetzungen</h3>
-                <div th:if="${task.blocked}" class="pf-alert pf-alert--warning" role="status">
+            <!-- Read-Only Prerequisites Card (Requirement 7) -->
+            <div class="pf-card" style="padding: 1.25rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                    <h3 style="margin: 0; font-size: 1.05rem;">Voraussetzungen</h3>
+                    <a th:if="${task.editable}" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}"
+                       class="pf-btn pf-btn--ghost pf-btn--sm" style="color: var(--pf-text-muted); font-size: 0.8rem;">
+                        Im Bearbeitungsmodus anpassen
+                    </a>
+                </div>
+
+                <div th:if="${task.blocked}" class="pf-alert pf-alert--warning" role="status" style="margin-bottom: 0.75rem;">
                     <span>Diese Aufgabe wartet noch auf:</span>
-                    <ul style="margin: 0.5rem 0 0 1.25rem;">
+                    <ul style="margin: 0.35rem 0 0 1.25rem;">
                         <li th:each="prerequisite : ${task.openPrerequisites}" th:text="${prerequisite.title}"></li>
                     </ul>
                 </div>
+
                 <div th:unless="${#lists.isEmpty(task.temporalDependencyWarnings)}"
-                     class="pf-alert pf-alert--warning" role="status" style="display: block;">
+                     class="pf-alert pf-alert--warning" role="status" style="display: block; margin-bottom: 0.75rem;">
                     <strong>Hinweis zur zeitlichen Reihenfolge</strong>
-                    <ul style="margin: 0.5rem 0 0 1.25rem;">
+                    <ul style="margin: 0.35rem 0 0 1.25rem;">
                         <li th:each="warning : ${task.temporalDependencyWarnings}" th:text="${warning}"></li>
                     </ul>
-                    <small>Die Planung bleibt trotzdem speicherbar.</small>
+                    <small style="display: block; margin-top: 0.25rem;">Die Planung bleibt trotzdem speicherbar.</small>
                 </div>
-                <p th:if="${#lists.isEmpty(task.predecessors)}" style="color: var(--pf-text-muted); font-size: 0.9rem;">Keine Voraussetzungen definiert.</p>
-                <ul th:unless="${#lists.isEmpty(task.predecessors)}" class="pf-element-list" style="margin-bottom: 1rem;">
-                    <li th:each="prerequisite : ${task.predecessors}" class="pf-element-item">
-                        <a th:href="@{/projects/{projectId}/tasks/{taskId}(projectId=${task.planContainerId},taskId=${prerequisite.id})}"
-                           th:text="${prerequisite.title}" style="font-weight: 600;"></a>
-                        <form th:if="${task.editable}"
-                              th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies/{prerequisiteId}/remove(projectId=${task.planContainerId},taskId=${task.id},prerequisiteId=${prerequisite.id})}"
-                              method="post" style="margin: 0;">
-                            <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary">Entfernen</button>
-                        </form>
+
+                <p th:if="${#lists.isEmpty(task.predecessors)}" style="color: var(--pf-text-muted); font-size: 0.88rem; margin: 0;">
+                    Keine Voraussetzungen definiert.
+                </p>
+
+                <ul th:unless="${#lists.isEmpty(task.predecessors)}" class="pf-element-list" style="margin: 0;">
+                    <li th:each="prerequisite : ${task.predecessors}" class="pf-element-item" style="padding: 0.5rem 0.75rem;">
+                        <div class="pf-element-item__body">
+                            <a th:href="@{/projects/{projectId}/tasks/{taskId}(projectId=${task.planContainerId},taskId=${prerequisite.id})}"
+                               th:text="${prerequisite.title}" style="font-weight: 600; text-decoration: none; color: var(--pf-text-main);"></a>
+                        </div>
                     </li>
                 </ul>
-
-                <!-- Add Prerequisite Form -->
-                <form th:if="${task.editable and !#lists.isEmpty(task.availablePrerequisites)}"
-                      th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies(projectId=${task.planContainerId},taskId=${task.id})}"
-                      th:object="${dependencyForm}" method="post" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
-                    <div class="pf-form-group">
-                        <label for="prerequisite" class="pf-label">Voraussetzung hinzufügen</label>
-                        <select id="prerequisite" th:field="*{prerequisiteTaskId}" required class="pf-select">
-                            <option value="">Bitte wählen...</option>
-                            <option th:each="candidate : ${task.availablePrerequisites}" th:value="${candidate.id}" th:text="${candidate.title}"></option>
-                        </select>
-                        <div th:if="${#fields.hasErrors('prerequisiteTaskId')}" th:errors="*{prerequisiteTaskId}" class="pf-alert pf-alert--error" role="alert"></div>
-                    </div>
-                    <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Hinzufügen</button>
-                </form>
             </div>
         </div>
 
-        <!-- Right: Comments / Notes Feed -->
-        <div class="pf-card">
-            <h3 style="margin-bottom: 1rem;" th:text="${commentGroupProject ? 'Kommentare' : 'Notizen'}">Notizen</h3>
+        <!-- Right: Comments / Notes Feed (Requirement 2) -->
+        <div class="pf-card" style="padding: 1.25rem;">
+            <h3 style="margin-bottom: 0.85rem; font-size: 1.05rem;" th:text="${commentGroupProject ? 'Kommentare' : 'Notizen'}">Notizen</h3>
             
-            <p th:if="${#lists.isEmpty(comments)}" style="color: var(--pf-text-muted); font-size: 0.9rem;"
+            <p th:if="${#lists.isEmpty(comments)}" style="color: var(--pf-text-muted); font-size: 0.88rem; margin: 0 0 1rem;"
                th:text="${commentGroupProject ? 'Noch keine Kommentare vorhanden.' : 'Noch keine Notizen vorhanden.'}">
                Noch keine Einträge vorhanden.
             </p>
 
-            <div th:unless="${#lists.isEmpty(comments)}" style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.5rem;">
-                <div th:each="comment : ${comments}" style="padding: 0.85rem 1rem; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); border: 1px solid var(--pf-border);">
-                    <p th:text="${comment.content}" style="margin: 0 0 0.5rem; color: var(--pf-text-main);"></p>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--pf-text-muted);">
+            <div th:unless="${#lists.isEmpty(comments)}" style="display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.25rem;">
+                <div th:each="comment : ${comments}" style="padding: 0.65rem 0.85rem; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); border: 1px solid var(--pf-border);">
+                    <p th:text="${comment.content}" style="margin: 0 0 0.35rem; color: var(--pf-text-main); font-size: 0.88rem; line-height: 1.45;"></p>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.76rem; color: var(--pf-text-muted);">
                         <span>
                             <strong th:text="${comment.authorDisplayName}">Name</strong> · 
                             <time th:datetime="${comment.createdAt}" th:text="${#temporals.format(comment.createdAt, 'dd.MM.yyyy HH:mm')}">Zeitpunkt</time>
                         </span>
-                        <div th:if="${comment.deletable}" class="pf-cluster" style="gap: 0.75rem;">
+                        <div th:if="${comment.deletable}" class="pf-cluster" style="gap: 0.5rem;">
                             <details>
-                                <summary style="cursor: pointer; color: var(--pf-primary); font-weight: 600;">Bearbeiten</summary>
+                                <summary style="cursor: pointer; color: var(--pf-primary); font-weight: 600; font-size: 0.76rem;">Bearbeiten</summary>
                                 <form th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
-                                      method="post" style="margin-top: 0.6rem; min-width: min(22rem, 70vw);">
+                                      method="post" style="margin-top: 0.5rem; min-width: min(20rem, 65vw);">
                                     <input type="hidden" name="lockVersion" th:value="${comment.lockVersion}">
-                                    <label th:for="${'comment-content-' + comment.id}" class="pf-label">Beitrag bearbeiten</label>
-                                    <textarea th:id="${'comment-content-' + comment.id}" name="content" maxlength="2000" required
-                                              class="pf-textarea" style="min-height: 80px;" th:text="${comment.content}"></textarea>
-                                    <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary" style="margin-top: 0.5rem;">Speichern</button>
+                                    <textarea name="content" maxlength="2000" required
+                                              class="pf-textarea" style="min-height: 60px; font-size: 0.84rem; padding: 0.4rem 0.6rem;" th:text="${comment.content}"></textarea>
+                                    <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary" style="margin-top: 0.35rem;">Speichern</button>
                                 </form>
                             </details>
                             <form th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
                                   method="post" style="margin: 0;">
-                                <button type="submit" style="background: none; border: none; color: var(--pf-danger); cursor: pointer; padding: 0; font-size: 0.78rem; font-weight: 600;">
+                                <button type="submit" style="background: none; border: none; color: var(--pf-danger); cursor: pointer; padding: 0; font-size: 0.76rem; font-weight: 600;">
                                     Löschen
                                 </button>
                             </form>
@@ -196,16 +310,17 @@
                 </div>
             </div>
 
-            <!-- New Comment Form -->
+            <!-- New Comment Form (Compact) -->
             <form th:if="${task.editable}"
                   th:action="@{/projects/{projectId}/tasks/{taskId}/comments(projectId=${task.planContainerId},taskId=${task.id})}"
-                  th:object="${commentForm}" method="post" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
-                <div class="pf-form-group">
-                    <label for="comment-content" class="pf-label" th:text="${commentGroupProject ? 'Neuer Kommentar' : 'Neue Notiz'}">Neue Notiz</label>
-                    <textarea id="comment-content" th:field="*{content}" maxlength="2000" required class="pf-textarea" style="min-height: 80px;" placeholder="Notiz oder Update eintragen..."></textarea>
+                  th:object="${commentForm}" method="post" style="padding-top: 0.85rem; border-top: 1px solid var(--pf-border);">
+                <div class="pf-form-group" style="margin-bottom: 0.65rem;">
+                    <textarea id="comment-content" th:field="*{content}" maxlength="2000" required
+                              class="pf-textarea" style="min-height: 58px; height: 58px; resize: vertical; font-size: 0.88rem;"
+                              placeholder="Notiz oder Update eintragen..."></textarea>
                     <div th:if="${#fields.hasErrors('content')}" th:errors="*{content}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
-                <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary" th:text="${commentGroupProject ? 'Kommentar absenden' : 'Notiz speichern'}">Speichern</button>
+                <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary" th:text="${commentGroupProject ? 'Kommentar senden' : 'Notiz speichern'}">Speichern</button>
             </form>
         </div>
     </div>

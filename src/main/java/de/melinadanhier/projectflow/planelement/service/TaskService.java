@@ -107,12 +107,29 @@ public class TaskService {
         dto.setTemporalDependencyWarnings(TaskDependencyPolicy.temporalWarnings(task, successors));
         dto.setAffectedDependencyCount(dto.getPredecessors().size() + dto.getSuccessors().size());
         populateOptions(dto, projectId);
+        var sections = planSectionRepository.findAllByPlanContainerIdOrderBySortOrderAsc(projectId);
+        var sectionOrderMap = new java.util.HashMap<UUID, Integer>();
+        for (int i = 0; i < sections.size(); i++) {
+            sectionOrderMap.put(sections.get(i).getId(), i);
+        }
+
         dto.setAvailablePrerequisites(taskRepository.findPlanTasks(projectId).stream()
                 .filter(candidate -> !candidate.getId().equals(taskId))
                 .filter(candidate -> task.getPrerequisites().stream()
                         .noneMatch(prerequisite -> prerequisite.getId().equals(candidate.getId())))
                 .filter(candidate -> !dependsOn(candidate, taskId, new HashSet<>()))
-                .map(candidate -> new TaskReferenceDto(candidate.getId(), candidate.getTitle()))
+                .sorted((t1, t2) -> {
+                    int secOrder1 = t1.getPlanSection() != null ? sectionOrderMap.getOrDefault(t1.getPlanSection().getId(), 999) : 1000;
+                    int secOrder2 = t2.getPlanSection() != null ? sectionOrderMap.getOrDefault(t2.getPlanSection().getId(), 999) : 1000;
+                    if (secOrder1 != secOrder2) return Integer.compare(secOrder1, secOrder2);
+                    return Integer.compare(t1.getSortOrder(), t2.getSortOrder());
+                })
+                .map(candidate -> new TaskReferenceDto(
+                        candidate.getId(),
+                        candidate.getTitle(),
+                        candidate.getPlanSection() != null ? candidate.getPlanSection().getId() : null,
+                        candidate.getPlanSection() != null ? candidate.getPlanSection().getTitle() : "Ohne Bereich"
+                ))
                 .toList());
         dto.setEditable(editable);
         return dto;

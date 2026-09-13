@@ -20,40 +20,62 @@
         </div>
     </div>
 
-    <div class="pf-card" style="max-width: 760px;">
+    <div class="pf-card" style="max-width: 860px; margin: 0 auto; padding: 1.5rem;">
         <form th:action="${editing} ? @{/projects/{projectId}/milestones/{milestoneId}(projectId=${projectId},milestoneId=${milestoneId})} : @{/projects/{projectId}/milestones(projectId=${projectId})}"
               th:object="${milestoneForm}" method="post">
             <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
             <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
+            <!-- Requirement 9 & 13: Status / completed handled on detail view, kept hidden in edit form -->
+            <input th:if="${editing}" type="hidden" th:field="*{completed}">
+
             <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error" role="alert">
                 Der Meilenstein konnte nicht gespeichert werden, weil der Bearbeitungsstand ungültig ist. Bitte lade die Seite neu.
             </div>
             
             <th:block th:replace="~{fragments/form-fields :: title-field('Titel des Meilensteins')}" />
             <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung des Meilensteins', false)}" />
-            <th:block th:replace="~{fragments/form-fields :: section-selector(${sections})}" />
             
-            <div class="pf-form-group">
-                <label for="dueDate" class="pf-label">Zieldatum</label>
-                <input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input">
-                <div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error" role="alert"></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div class="pf-form-group">
+                    <label for="section" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                        Bereich / Phase
+                    </label>
+                    <select id="section" class="pf-select" th:field="*{planSectionId}">
+                        <option value="">Ohne Bereich (Allgemein)</option>
+                        <option th:each="s : ${sections}" th:value="${s.id}" th:text="${s.title}"></option>
+                    </select>
+                    <div th:if="${#fields.hasErrors('planSectionId')}" class="pf-alert pf-alert--error"
+                         th:errors="*{planSectionId}" role="alert"></div>
+                </div>
+
+                <div class="pf-form-group">
+                    <label for="dueDate" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Zieldatum
+                    </label>
+                    <input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input">
+                    <div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
             </div>
 
-            <div th:if="${editing}" class="pf-form-group">
-                <label for="completed" style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                    <input id="completed" type="checkbox" th:field="*{completed}">
-                    <span>Als erledigt markieren</span>
-                </label>
-            </div>
-
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <a th:href="${editing} ? @{/projects/{projectId}/milestones/{milestoneId}(projectId=${projectId},milestoneId=${milestoneId})} : @{/projects/{projectId}/plan(projectId=${projectId})}"
                    class="pf-btn pf-btn--secondary">Abbrechen</a>
                 <button type="submit" class="pf-btn pf-btn--primary" th:text="${editing ? 'Meilenstein speichern' : 'Meilenstein anlegen'}">Speichern</button>
             </div>
         </form>
 
-        <form th:if="${editing}" th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${projectId},milestoneId=${milestoneId})}" method="post" style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--pf-border);">
+        <form th:if="${editing}" th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${projectId},milestoneId=${milestoneId})}" method="post" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--pf-border); display: flex; justify-content: flex-end;">
             <button type="submit" class="pf-btn pf-btn--danger pf-btn--sm">Meilenstein endgültig löschen</button>
         </form>
     </div>

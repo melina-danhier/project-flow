@@ -22,40 +22,40 @@
 
     <div th:if="${errorMessage}" class="pf-alert pf-alert--error" role="alert" th:text="${errorMessage}"></div>
 
-    <div class="pf-card" style="max-width: 760px;">
+    <div class="pf-card" style="max-width: 860px; margin: 0 auto; padding: 1.5rem;">
         <form th:action="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/tasks(projectId=${projectId})}"
               th:object="${taskForm}" method="post">
             <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
             <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
+            <!-- Requirement 9: Status is managed directly on the detail page, keep hidden in form -->
+            <input type="hidden" th:field="*{status}">
+
             <div th:if="${#fields.hasErrors('lockVersion')}" class="pf-alert pf-alert--error" role="alert">
                 Die Aufgabe konnte nicht gespeichert werden, weil der Bearbeitungsstand ungültig ist. Bitte lade die Seite neu.
+            </div>
+
+            <div id="blocked-completion-warning" th:if="${editing and taskBlocked}"
+                 class="pf-alert pf-alert--warning" role="status" style="margin-bottom: 1rem;">
+                <div>
+                    <span>Folgende Voraussetzungen sind noch offen. Du kannst die Aufgabe trotzdem als erledigt speichern:</span>
+                    <ul style="margin: 0.35rem 0 0 1.25rem;">
+                        <li th:each="prerequisite : ${openPrerequisites}" th:text="${prerequisite.title}"></li>
+                    </ul>
+                </div>
             </div>
             
             <th:block th:replace="~{fragments/form-fields :: title-field('Aufgabentitel')}" />
             <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung', false)}" />
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
                 <div class="pf-form-group">
-                    <label for="status" class="pf-label">Status</label>
-                    <select id="status" th:field="*{status}" class="pf-select">
-                        <option value="OPEN">Offen</option>
-                        <option value="IN_PROGRESS">In Bearbeitung</option>
-                        <option value="COMPLETED">Erledigt</option>
-                    </select>
-                    <div th:if="${#fields.hasErrors('status')}" th:errors="*{status}" class="pf-alert pf-alert--error" role="alert"></div>
-                    <div id="blocked-completion-warning" th:if="${editing and taskBlocked}"
-                         class="pf-alert pf-alert--warning" role="status" hidden style="margin-top: 0.75rem;">
-                        <div>
-                            <span>Folgende Voraussetzungen sind noch offen. Du kannst die Aufgabe trotzdem als erledigt speichern:</span>
-                            <ul style="margin: 0.5rem 0 0 1.25rem;">
-                                <li th:each="prerequisite : ${openPrerequisites}" th:text="${prerequisite.title}"></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pf-form-group">
-                    <label for="priority" class="pf-label">Priorität</label>
+                    <label for="priority" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                            <line x1="4" y1="22" x2="4" y2="15"></line>
+                        </svg>
+                        Priorität
+                    </label>
                     <select id="priority" th:field="*{priority}" required class="pf-select">
                         <option value="LOW">Niedrig</option>
                         <option value="MEDIUM">Mittel</option>
@@ -63,59 +63,157 @@
                     </select>
                     <div th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
+
+                <div class="pf-form-group">
+                    <label for="section" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                        Bereich / Phase
+                    </label>
+                    <select id="section" class="pf-select" th:field="*{planSectionId}">
+                        <option value="">Ohne Bereich (Allgemein)</option>
+                        <option th:each="s : ${sections}" th:value="${s.id}" th:text="${s.title}"></option>
+                    </select>
+                    <div th:if="${#fields.hasErrors('planSectionId')}" th:errors="*{planSectionId}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
             </div>
 
-            <th:block th:replace="~{fragments/form-fields :: section-selector(${sections})}" />
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                 <div class="pf-form-group">
-                    <label for="startDate" class="pf-label">Startdatum</label>
+                    <label for="startDate" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Startdatum
+                    </label>
                     <input id="startDate" type="date" th:field="*{startDate}" class="pf-input">
                     <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
                 <div class="pf-form-group">
-                    <label for="dueDate" class="pf-label">Fälligkeitsdatum</label>
+                    <label for="dueDate" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Fälligkeitsdatum
+                    </label>
                     <input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input">
                     <div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+                <div class="pf-form-group">
+                    <label for="estimatedHours" class="pf-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Aufwand in Stunden
+                    </label>
+                    <input id="estimatedHours" type="number" min="1" max="10000" step="1" th:field="*{estimatedHours}"
+                           class="pf-input" placeholder="Optional">
+                    <div th:if="${#fields.hasErrors('estimatedHours')}" th:errors="*{estimatedHours}"
+                         class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
             </div>
             <div th:if="${#fields.hasErrors('dateRangeValid')}" th:errors="*{dateRangeValid}" class="pf-alert pf-alert--error" role="alert"></div>
 
-            <div class="pf-form-group">
-                <label for="estimatedHours" class="pf-label">Aufwand in Stunden</label>
-                <input id="estimatedHours" type="number" min="1" max="10000" step="1" th:field="*{estimatedHours}"
-                       class="pf-input" placeholder="Optional">
-                <div th:if="${#fields.hasErrors('estimatedHours')}" th:errors="*{estimatedHours}"
-                     class="pf-alert pf-alert--error" role="alert"></div>
-            </div>
-
-            <div th:if="${groupProject}" class="pf-form-group">
-                <label for="assignees" class="pf-label">Zugewiesen an</label>
-                <select id="assignees" th:field="*{assigneeIds}" class="pf-select" multiple size="5">
-                    <option th:each="member : ${assignees}" th:value="${member.id}" th:text="${member.displayName}"></option>
-                </select>
-                <small class="pf-text-muted">Mehrere Personen können mit Strg bzw. Cmd ausgewählt werden.</small>
+            <!-- Requirement 12: Assignee selection for group projects -->
+            <div th:if="${groupProject}" class="pf-form-group" style="margin-top: 0.5rem;">
+                <label class="pf-label">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Zugewiesen an
+                </label>
+                <div th:if="${#lists.isEmpty(assignees)}" style="color: var(--pf-text-muted); font-size: 0.88rem;">
+                    Keine weiteren Mitglieder im Projekt vorhanden.
+                </div>
+                <div th:unless="${#lists.isEmpty(assignees)}" class="pf-member-select-grid">
+                    <label th:each="member : ${assignees}" class="pf-member-select-card">
+                        <input type="checkbox" th:field="*{assigneeIds}" th:value="${member.id}" class="pf-member-select-card__checkbox">
+                        <div class="pf-member-select-card__avatar">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="pf-member-select-card__info">
+                            <span class="pf-member-select-card__name" th:text="${member.displayName}">Name</span>
+                            <span class="pf-member-select-card__role" th:if="${member.role != null}" th:text="${member.role}">Rolle</span>
+                        </div>
+                    </label>
+                </div>
                 <div th:if="${#fields.hasErrors('assigneeIds')}" th:errors="*{assigneeIds}" class="pf-alert pf-alert--error" role="alert"></div>
             </div>
 
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <!-- Form Actions -->
+            <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <a th:href="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/plan(projectId=${projectId})}"
                    class="pf-btn pf-btn--secondary">Abbrechen</a>
                 <button type="submit" class="pf-btn pf-btn--primary" th:text="${editing ? 'Aufgabe speichern' : 'Aufgabe anlegen'}">Speichern</button>
             </div>
         </form>
+
+        <!-- Requirements 7 & 10: Manage dependencies only on edit page, grouped by phase -->
+        <div th:if="${editing}" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border);">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--pf-text-secondary);">
+                    <circle cx="12" cy="5" r="3"></circle>
+                    <line x1="12" y1="8" x2="12" y2="14"></line>
+                    <circle cx="6" cy="19" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="12" y1="14" x2="6" y2="19"></line>
+                    <line x1="12" y1="14" x2="18" y2="19"></line>
+                </svg>
+                <h3 style="margin: 0; font-size: 1.1rem;">Voraussetzungen / Abhängigkeiten</h3>
+            </div>
+            <p style="margin: 0 0 1rem; font-size: 0.86rem; color: var(--pf-text-muted);">
+                Definiere Aufgaben, die abgeschlossen sein müssen, bevor diese Aufgabe begonnen werden kann.
+            </p>
+
+            <div th:if="${#lists.isEmpty(predecessors)}" style="color: var(--pf-text-muted); font-size: 0.88rem; margin-bottom: 1rem;">
+                Aktuell sind keine Voraussetzungen verknüpft.
+            </div>
+
+            <ul th:unless="${#lists.isEmpty(predecessors)}" class="pf-element-list" style="margin-bottom: 1.25rem;">
+                <li th:each="prerequisite : ${predecessors}" class="pf-element-item" style="background: var(--pf-surface-subtle); padding: 0.55rem 0.85rem;">
+                    <span th:text="${prerequisite.title}" style="font-weight: 600; font-size: 0.9rem;"></span>
+                    <form th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies/{prerequisiteId}/remove(projectId=${projectId},taskId=${taskId},prerequisiteId=${prerequisite.id},returnTo='edit')}"
+                          method="post" style="margin: 0;">
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary" style="font-size: 0.78rem; padding: 0.25rem 0.6rem;">Entfernen</button>
+                    </form>
+                </li>
+            </ul>
+
+            <!-- Add Prerequisite Form (Requirement 10: Grouped by phase with non-clickable optgroup headers) -->
+            <form th:if="${!#lists.isEmpty(availablePrerequisites)}"
+                  th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies(projectId=${projectId},taskId=${taskId},returnTo='edit')}"
+                  th:object="${dependencyForm}" method="post" style="padding-top: 1rem; border-top: 1px dashed var(--pf-border);">
+                <div class="pf-form-group" style="margin-bottom: 0.85rem;">
+                    <label for="prerequisiteTaskId" class="pf-label">Voraussetzung hinzufügen</label>
+                    <select id="prerequisiteTaskId" th:field="*{prerequisiteTaskId}" required class="pf-select">
+                        <option value="">Aufgabe auswählen...</option>
+                        <optgroup th:each="entry : ${groupedPrerequisites}" th:label="${entry.key}">
+                            <option th:each="candidate : ${entry.value}" th:value="${candidate.id}" th:text="${candidate.title}"></option>
+                        </optgroup>
+                    </select>
+                    <div th:if="${#fields.hasErrors('prerequisiteTaskId')}" th:errors="*{prerequisiteTaskId}" class="pf-alert pf-alert--error" role="alert"></div>
+                </div>
+                <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary">Voraussetzung hinzufügen</button>
+            </form>
+        </div>
     </div>
 </main>
-
-<script th:if="${editing and taskBlocked}">
-    (() => {
-        const status = document.getElementById('status');
-        const warning = document.getElementById('blocked-completion-warning');
-        const updateWarning = () => warning.hidden = status.value !== 'COMPLETED';
-        status.addEventListener('change', updateWarning);
-        updateWarning();
-    })();
-</script>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>

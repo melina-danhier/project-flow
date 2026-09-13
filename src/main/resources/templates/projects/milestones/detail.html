@@ -16,64 +16,158 @@
                 </svg>
                 Zum Projektplan
             </a>
-            <div class="pf-cluster">
-                <h1 th:text="${milestone.title}" style="margin: 0;">Meilenstein</h1>
-                <span class="pf-badge pf-badge--purple">Meilenstein</span>
-                <form th:if="${milestone.editable}"
-                      th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
-                      method="post" style="margin: 0; display: inline-flex; align-items: center;">
-                    <input type="hidden" name="milestoneLockVersion" th:value="${milestone.lockVersion}">
-                    <select name="completed" class="pf-status-select pf-status-select--milestone"
-                            onchange="this.form.submit()" title="Meilensteinstatus ändern">
-                        <option value="false" th:selected="${!milestone.completed}">Offen</option>
-                        <option value="true" th:selected="${milestone.completed}">Erreicht</option>
-                    </select>
-                </form>
-                <span th:unless="${milestone.editable}" class="pf-badge"
-                      th:classappend="${milestone.completed ? 'pf-badge--green' : 'pf-badge--gray'}"
-                      th:text="${milestone.completed ? 'Erreicht' : 'Offen'}">Offen</span>
-            </div>
+            <h1 th:text="${milestone.title}" style="margin: 0;">Meilenstein</h1>
         </div>
 
         <div class="pf-page-header__actions" th:if="${milestone.editable}">
-            <a class="pf-btn pf-btn--outline"
-               th:href="@{/projects/{projectId}/plan-elements/MILESTONE/{milestoneId}/improve(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
-                Mit KI verbessern
-            </a>
-            <a class="pf-btn pf-btn--secondary"
+            <!-- Direct Edit Button (Requirement 6 & 13) -->
+            <a class="pf-btn pf-btn--primary"
                th:href="@{/projects/{projectId}/milestones/{milestoneId}/edit(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
                 Meilenstein bearbeiten
             </a>
-            <form th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
-                  method="post" style="margin: 0;">
-                <button type="submit" class="pf-btn pf-btn--danger pf-btn--sm">Löschen</button>
-            </form>
+
+            <!-- Overflow Menu for Secondary Actions (Requirement 5 & 13) -->
+            <details class="pf-dropdown pf-dropdown--right">
+                <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Weitere Aktionen" aria-label="Weitere Aktionen">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="1.5"></circle>
+                        <circle cx="12" cy="5" r="1.5"></circle>
+                        <circle cx="12" cy="19" r="1.5"></circle>
+                    </svg>
+                </summary>
+                <div class="pf-dropdown__menu">
+                    <a class="pf-dropdown__item"
+                       th:href="@{/projects/{projectId}/plan-elements/MILESTONE/{milestoneId}/improve(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                        </svg>
+                        <span>Mit KI verbessern</span>
+                    </a>
+                    <form th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
+                          method="post" style="margin: 0;">
+                        <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            <span>Löschen</span>
+                        </button>
+                    </form>
+                </div>
+            </details>
         </div>
     </div>
 
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
-    <div class="pf-card" style="max-width: 760px;">
-        <h3 style="margin-bottom: 1rem;">Details</h3>
-        <div style="display: grid; gap: 0.85rem;">
-            <div>
-                <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Beschreibung</span>
-                <p style="margin: 0.25rem 0 0; white-space: pre-line;"
-                   th:text="${milestone.description ?: 'Keine Beschreibung vorhanden.'}"></p>
+    <div class="pf-card" style="max-width: 860px; margin: 0 auto; padding: 1.5rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--pf-border); padding-bottom: 0.75rem;">
+            <h3 style="margin: 0; font-size: 1.1rem;">Details</h3>
+            <a th:if="${milestone.editable}"
+               th:href="@{/projects/{projectId}/milestones/{milestoneId}/edit(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
+               class="pf-btn pf-btn--ghost pf-btn--sm" style="color: var(--pf-primary); font-weight: 600; font-size: 0.82rem;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Bearbeiten
+            </a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <!-- Status (Requirement 4 & 13: Direct status control) -->
+            <div class="pf-detail-prop">
+                <span class="pf-detail-prop__icon" title="Status">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </span>
+                <div class="pf-detail-prop__content">
+                    <span class="pf-detail-prop__label">Status</span>
+                    <form th:if="${milestone.editable}"
+                          th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
+                          method="post" style="margin: 0; display: inline-flex; align-items: center;">
+                        <input type="hidden" name="milestoneLockVersion" th:value="${milestone.lockVersion}">
+                        <select name="completed" class="pf-status-select pf-status-select--milestone"
+                                onchange="this.form.submit()" title="Meilensteinstatus ändern">
+                            <option value="false" th:selected="${!milestone.completed}">Offen</option>
+                            <option value="true" th:selected="${milestone.completed}">Erreicht</option>
+                        </select>
+                    </form>
+                    <span th:unless="${milestone.editable}" class="pf-badge"
+                          th:classappend="${milestone.completed ? 'pf-badge--green' : 'pf-badge--gray'}"
+                          th:text="${milestone.completed ? 'Erreicht' : 'Offen'}">Offen</span>
+                </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">
-                <div>
-                    <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Bereich</span>
-                    <div style="font-weight: 600; margin-top: 0.2rem;">
-                        <span th:if="${milestone.planSectionId == null}">Ohne Bereich</span>
+
+            <!-- Due Date (Requirement 11 & 13) -->
+            <div class="pf-detail-prop">
+                <span class="pf-detail-prop__icon" title="Zieldatum">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </span>
+                <div class="pf-detail-prop__content">
+                    <span class="pf-detail-prop__label">Zieldatum</span>
+                    <div class="pf-detail-prop__value"
+                         th:text="${milestone.dueDate != null ? #temporals.format(milestone.dueDate, 'dd.MM.yyyy') : 'Nicht festgelegt'}"></div>
+                </div>
+            </div>
+
+            <!-- Section / Phase -->
+            <div class="pf-detail-prop">
+                <span class="pf-detail-prop__icon" title="Bereich">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </span>
+                <div class="pf-detail-prop__content">
+                    <span class="pf-detail-prop__label">Bereich</span>
+                    <div class="pf-detail-prop__value">
+                        <span th:if="${milestone.planSectionId == null}" style="color: var(--pf-text-muted);">Ohne Bereich</span>
                         <span th:each="section : ${milestone.availableSections}"
                               th:if="${section.id == milestone.planSectionId}" th:text="${section.title}"></span>
                     </div>
                 </div>
-                <div>
-                    <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Zieldatum</span>
-                    <div style="font-weight: 500; margin-top: 0.2rem;"
-                         th:text="${milestone.dueDate != null ? #temporals.format(milestone.dueDate, 'dd.MM.yyyy') : 'Nicht festgelegt'}"></div>
+            </div>
+
+            <!-- Element Type Indicator -->
+            <div class="pf-detail-prop">
+                <span class="pf-detail-prop__icon" title="Elementtyp">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                </span>
+                <div class="pf-detail-prop__content">
+                    <span class="pf-detail-prop__label">Elementtyp</span>
+                    <span class="pf-badge pf-badge--purple">Meilenstein</span>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="pf-detail-prop" style="grid-column: 1 / -1; margin-top: 0.25rem;">
+                <span class="pf-detail-prop__icon" title="Beschreibung">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="21" y1="10" x2="3" y2="10"></line>
+                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                        <line x1="21" y1="14" x2="3" y2="14"></line>
+                        <line x1="21" y1="18" x2="3" y2="18"></line>
+                    </svg>
+                </span>
+                <div class="pf-detail-prop__content">
+                    <span class="pf-detail-prop__label">Beschreibung</span>
+                    <p style="margin: 0.2rem 0 0; white-space: pre-line; color: var(--pf-text-secondary); line-height: 1.5; font-size: 0.92rem;"
+                       th:text="${milestone.description ?: 'Keine Beschreibung vorhanden.'}"></p>
                 </div>
             </div>
         </div>
