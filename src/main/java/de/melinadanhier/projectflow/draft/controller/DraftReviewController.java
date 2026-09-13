@@ -30,7 +30,7 @@ public class DraftReviewController {
     @GetMapping({"/projects/{projectId}/draft", "/projects/{projectId}/draft/review"})
     public String review(@PathVariable UUID projectId,
                          @AuthenticationPrincipal AuthenticatedUser currentUser,
-                         @RequestParam(required = false) DraftReviewStatus reviewStatus,
+                         @RequestParam(required = false) String reviewStatus,
                          Model model) {
         var workflow = workflowRepository.findOwnedByProjectId(projectId, currentUser.userId()).orElse(null);
         if (workflow != null && workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {

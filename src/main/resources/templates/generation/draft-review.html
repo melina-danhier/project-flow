@@ -57,7 +57,10 @@
                     class="pf-btn pf-btn--secondary pf-btn--sm" id="open-regenerate-modal-btn">Plan neu generieren</button>
             <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
                   th:action="@{/projects/{projectId}/draft/discard(projectId=${draft.projectId})}" method="post"
-                  onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');">
+                  data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+                  data-confirm-title="KI-Projekterstellung abbrechen?"
+                  data-confirm-btn="KI-Erstellung abbrechen"
+                  data-confirm-variant="danger">
                 <input type="hidden" name="draftId" th:value="${draft.id}">
                 <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
                 <button class="pf-btn pf-btn--ghost pf-btn--sm" type="submit">Abbrechen</button>
@@ -76,10 +79,11 @@
             <form class="pf-review-filter-form" method="get" th:action="@{/projects/{projectId}/draft/review(projectId=${draft.projectId})}">
                 <label for="review-status-filter" class="pf-filter-label">Filter:</label>
                 <select id="review-status-filter" name="reviewStatus" class="pf-select pf-select--sm" onchange="this.form.submit()">
-                    <option value="" th:selected="${draft.activeReviewStatus == null}">Alle Elemente</option>
-                    <option value="PENDING" th:selected="${draft.activeReviewStatus != null and draft.activeReviewStatus.name() == 'PENDING'}">Nur offene Elemente</option>
-                    <option value="ACCEPTED" th:selected="${draft.activeReviewStatus != null and draft.activeReviewStatus.name() == 'ACCEPTED'}">Nur übernommene Elemente</option>
-                    <option value="REJECTED" th:selected="${draft.activeReviewStatus != null and draft.activeReviewStatus.name() == 'REJECTED'}">Nur verworfene Elemente</option>
+                    <option value="" th:selected="${draft.activeReviewFilter == null or draft.activeReviewFilter == ''}">Alle Elemente</option>
+                    <option value="OPEN_AND_ACCEPTED" th:selected="${draft.activeReviewFilter == 'OPEN_AND_ACCEPTED'}">Offene und übernommene Elemente</option>
+                    <option value="PENDING" th:selected="${draft.activeReviewFilter == 'PENDING'}">Offene Elemente</option>
+                    <option value="ACCEPTED" th:selected="${draft.activeReviewFilter == 'ACCEPTED'}">Übernommene Elemente</option>
+                    <option value="REJECTED" th:selected="${draft.activeReviewFilter == 'REJECTED'}">Abgelehnte Elemente</option>
                 </select>
             </form>
 
@@ -231,13 +235,24 @@
     </div>
 
     <!-- Unsectioned Elements -->
-    <section class="draft-section unsectioned pf-plan-phase" th:if="${!draft.unsectionedElements.isEmpty() or draft.activeReviewStatus == null}">
-        <div class="section-heading pf-plan-section__header">
-            <div class="section-title">
-                <h2 class="pf-phase-title">Ohne Bereich</h2>
-                <p class="pf-phase-desc">Diese Elemente werden ohne persistierten Bereich übernommen.</p>
+    <details class="draft-section plan-phase pf-plan-phase unsectioned" th:if="${!draft.unsectionedElements.isEmpty() or draft.activeReviewFilter == null or draft.activeReviewFilter == ''}" open>
+        <summary class="pf-plan-section__header section-heading">
+            <div class="pf-phase-header__left">
+                <!-- Collapse Toggle Caret -->
+                <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen">
+                    <svg class="pf-phase-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="pf-phase-display-wrap">
+                    <h2 class="pf-phase-title">Ohne Bereich</h2>
+                    <p class="pf-phase-desc">Diese Elemente werden ohne persistierten Bereich übernommen.</p>
+                </div>
             </div>
-        </div>
+            <div class="pf-phase-header__right">
+                <span class="pf-badge pf-badge--blue" th:text="${draft.unsectionedElements.size() + (draft.unsectionedElements.size() == 1 ? ' Element' : ' Elemente')}">0 Elemente</span>
+            </div>
+        </summary>
         <ol class="plan-elements pf-element-list" data-section-id="">
             <li class="plan-element pf-element-item" th:each="element : ${draft.unsectionedElements}" th:id="${'draft-element-' + element.id}"
                 th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type},data-detail-url=${element.type == 'TASK' ? '/projects/' + draft.projectId + '/draft/tasks/' + element.id : '/projects/' + draft.projectId + '/draft/milestones/' + element.id},data-section-id='',data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null or element.startDate != null},data-date=${element.dueDate != null ? element.dueDate.toString() : (element.startDate != null ? element.startDate.toString() : '')},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : ''},data-review-status=${element.reviewStatus.name()},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
@@ -271,7 +286,7 @@
                 </div>
             </li>
         </ol>
-    </section>
+    </details>
 
     <p th:if="${draft.sections.isEmpty() and draft.unsectionedElements.isEmpty()}" class="pf-empty-state">Keine Elemente entsprechen dem gewählten Filter.</p>
 

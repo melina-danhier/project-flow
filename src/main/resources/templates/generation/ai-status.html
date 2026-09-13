@@ -156,7 +156,10 @@
             <form id="cancel-ai-run"
                   th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${workflow.workflowId})}"
                   method="post"
-                  onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');"
+                  data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+                  data-confirm-title="KI-Projekterstellung abbrechen?"
+                  data-confirm-btn="KI-Erstellung abbrechen"
+                  data-confirm-variant="danger"
                   style="margin: 0;">
                 <button type="submit" class="pf-btn pf-btn--secondary">Abbrechen</button>
             </form>
@@ -170,7 +173,10 @@
             <form th:if="${workflow.canContinueManually()}"
                   th:action="@{/projects/new/ai/status/{workflowId}/continue-manually(workflowId=${workflow.workflowId})}"
                   method="post" style="margin: 0;"
-                  onsubmit="return confirm('Möchtest du ohne KI-Plan fortfahren? Das Projekt wird leer angelegt und du kannst Phasen und Aufgaben selbst hinzufügen.');">
+                  data-confirm="Möchtest du ohne KI-Plan fortfahren? Das Projekt wird leer angelegt und du kannst Phasen und Aufgaben selbst hinzufügen."
+                  data-confirm-title="Als leeres Projekt fortfahren?"
+                  data-confirm-btn="Als leeres Projekt fortfahren"
+                  data-confirm-variant="primary">
                 <button type="submit" class="pf-btn pf-btn--secondary">Als leeres Projekt fortfahren</button>
             </form>
 

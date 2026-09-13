@@ -30,6 +30,7 @@ public class DraftReviewDto {
     private Instant generatedAt;
     private SortMode sortMode;
     private DraftReviewStatus activeReviewStatus;
+    private String activeReviewFilter;
     private int reviewedElementCount;
     private int totalElementCount;
     private int totalEstimatedHours;

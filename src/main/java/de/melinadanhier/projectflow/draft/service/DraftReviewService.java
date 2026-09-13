@@ -51,11 +51,16 @@ public class DraftReviewService {
 
     @Transactional(readOnly = true)
     public DraftReviewDto review(UUID projectId, UUID userId) {
-        return review(projectId, userId, null);
+        return review(projectId, userId, (String) null);
     }
 
     @Transactional(readOnly = true)
     public DraftReviewDto review(UUID projectId, UUID userId, DraftReviewStatus reviewStatus) {
+        return review(projectId, userId, reviewStatus != null ? reviewStatus.name() : null);
+    }
+
+    @Transactional(readOnly = true)
+    public DraftReviewDto review(UUID projectId, UUID userId, String reviewFilter) {
         var membership = authorizationService.requireMember(projectId, userId);
         DraftPlan draft = draftRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -63,7 +68,16 @@ public class DraftReviewService {
                 ));
         DraftReviewDto review = draftMapper.toReviewDto(draft);
         review.setOwner(membership.getRole() == ProjectMemberRole.OWNER);
-        review.setActiveReviewStatus(reviewStatus);
+        review.setActiveReviewFilter(reviewFilter != null ? reviewFilter.trim().toUpperCase() : "");
+        if (reviewFilter != null && !reviewFilter.isBlank()) {
+            try {
+                review.setActiveReviewStatus(DraftReviewStatus.valueOf(reviewFilter.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                review.setActiveReviewStatus(null);
+            }
+        } else {
+            review.setActiveReviewStatus(null);
+        }
         review.setTotalElementCount(draft.getSections().size() + draft.getElements().size());
         review.setTotalEstimatedHours(draft.getElements().stream()
                 .filter(de.melinadanhier.projectflow.draft.model.DraftTask.class::isInstance)
@@ -86,7 +100,7 @@ public class DraftReviewService {
                         manualPositions.put(manualOrder.get(position).getId(), position);
                     }
                     dto.setElements(PlanOrdering.display(manualOrder, draft.getProject().getSortMode(), this::date).stream()
-                            .filter(element -> matches(element, reviewStatus))
+                            .filter(element -> matches(element, reviewFilter))
                             .map(element -> {
                                 var elementDto = draftMapper.toDto(element);
                                 elementDto.setManualPosition(manualPositions.get(element.getId()));
@@ -94,11 +108,11 @@ public class DraftReviewService {
                             }).toList());
                     return dto;
                 })
-                .filter(section -> matches(section, reviewStatus)
+                .filter(section -> matches(section, reviewFilter)
                         || !section.getElements().isEmpty())
                 .toList());
         review.setElements(draft.getElements().stream()
-                .filter(element -> matches(element, reviewStatus))
+                .filter(element -> matches(element, reviewFilter))
                 .map(draftMapper::toDto).toList());
         List<DraftPlanElement> unsectioned = draft.getElements().stream()
                 .filter(element -> element.getDraftSection() == null)
@@ -109,7 +123,7 @@ public class DraftReviewService {
             unsectionedPositions.put(unsectioned.get(position).getId(), position);
         }
         review.setUnsectionedElements(PlanOrdering.display(unsectioned, draft.getProject().getSortMode(), this::date).stream()
-                .filter(element -> matches(element, reviewStatus))
+                .filter(element -> matches(element, reviewFilter))
                 .map(element -> {
                     var dto = draftMapper.toDto(element);
                     dto.setManualPosition(unsectionedPositions.get(element.getId()));
@@ -346,13 +360,30 @@ public class DraftReviewService {
         section(editable(projectId, userId, version), sectionId).setReviewStatus(status);
     }
 
-    private boolean matches(DraftPlanElement element, DraftReviewStatus status) {
-        return status == null || element.getReviewStatus() == status;
+    private boolean matches(DraftPlanElement element, String filter) {
+        if (filter == null || filter.isBlank()) return true;
+        if ("OPEN_AND_ACCEPTED".equalsIgnoreCase(filter)) {
+            return element.getReviewStatus() == DraftReviewStatus.PENDING
+                    || element.getReviewStatus() == DraftReviewStatus.ACCEPTED;
+        }
+        return element.getReviewStatus().name().equalsIgnoreCase(filter);
     }
 
-    private boolean matches(DraftSectionDto section,
-                            DraftReviewStatus status) {
-        return status == null || section.getReviewStatus() == status;
+    private boolean matches(DraftSectionDto section, String filter) {
+        if (filter == null || filter.isBlank()) return true;
+        if ("OPEN_AND_ACCEPTED".equalsIgnoreCase(filter)) {
+            return section.getReviewStatus() == DraftReviewStatus.PENDING
+                    || section.getReviewStatus() == DraftReviewStatus.ACCEPTED;
+        }
+        return section.getReviewStatus().name().equalsIgnoreCase(filter);
+    }
+
+    private boolean matches(DraftPlanElement element, DraftReviewStatus status) {
+        return matches(element, status != null ? status.name() : null);
+    }
+
+    private boolean matches(DraftSectionDto section, DraftReviewStatus status) {
+        return matches(section, status != null ? status.name() : null);
     }
 
     private void requireValid(Object form, String message) {

@@ -23,7 +23,10 @@
             </p>
         </div>
         <form th:action="@{/projects/{projectId}/draft/discard(projectId=${summary.projectId})}" method="post"
-              onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');"
+              data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+              data-confirm-title="KI-Projekterstellung abbrechen?"
+              data-confirm-btn="KI-Erstellung abbrechen"
+              data-confirm-variant="danger"
               style="margin-top: 1rem;">
             <input type="hidden" name="draftId" th:value="${summary.draftId}">
             <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
@@ -52,7 +55,10 @@
             </p>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                 <form th:action="@{/projects/{projectId}/draft/regenerate(projectId=${summary.projectId})}" method="post"
-                      onsubmit="return confirm('Möchtest du den aktuellen Entwurf vollständig ersetzen und neu generieren?');"
+                      data-confirm="Möchtest du den aktuellen Entwurf vollständig ersetzen und neu generieren?"
+                      data-confirm-title="Entwurf neu generieren?"
+                      data-confirm-btn="Neu generieren"
+                      data-confirm-variant="primary"
                       style="margin: 0; width: 100%;">
                     <input type="hidden" name="draftId" th:value="${summary.draftId}">
                     <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">

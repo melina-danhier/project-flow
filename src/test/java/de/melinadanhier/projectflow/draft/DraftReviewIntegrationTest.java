@@ -539,6 +539,13 @@ class DraftReviewIntegrationTest {
                 .extracting("title").isEqualTo("Aufgabe 1");
         assertThat(rejectedCritical.getSections()).singleElement()
                 .satisfies(section -> assertThat(section.getElements()).hasSize(1));
+
+        DraftReviewDto openAndAccepted = reviews.review(
+                f.projectId(), f.owner().userId(), "OPEN_AND_ACCEPTED");
+        assertThat(openAndAccepted.getActiveReviewFilter()).isEqualTo("OPEN_AND_ACCEPTED");
+        assertThat(openAndAccepted.getElements()).hasSize(3).allMatch(element ->
+                element.getReviewStatus() == DraftReviewStatus.PENDING
+                        || element.getReviewStatus() == DraftReviewStatus.ACCEPTED);
     }
 
     @Test

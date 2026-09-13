@@ -54,13 +54,20 @@
                 <button id="assumption-submit" type="submit" class="pf-btn pf-btn--primary pf-btn--lg" disabled>
                     Entwurf anzeigen →
                 </button>
-                <button type="submit" form="cancel-ai-creation" class="pf-btn pf-btn--secondary">Abbrechen</button>
+                <button type="submit" form="cancel-ai-creation" class="pf-btn pf-btn--secondary"
+                        data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+                        data-confirm-title="KI-Projekterstellung abbrechen?"
+                        data-confirm-btn="KI-Erstellung abbrechen"
+                        data-confirm-variant="danger">Abbrechen</button>
             </div>
         </form>
         <form id="cancel-ai-creation"
               th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${review.workflowId})}"
               method="post"
-              onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');"
+              data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+              data-confirm-title="KI-Projekterstellung abbrechen?"
+              data-confirm-btn="KI-Erstellung abbrechen"
+              data-confirm-variant="danger"
               style="display: none;"></form>
     </div>
 

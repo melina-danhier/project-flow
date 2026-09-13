@@ -46,7 +46,7 @@ public class DraftControllerAdvice {
         }
         response.setStatus(HttpServletResponse.SC_CONFLICT);
         model.addAttribute("errorMessage", exception.getMessage());
-        model.addAttribute("draft", draftReviewService.review(projectId, currentUser.userId(), null));
+        model.addAttribute("draft", draftReviewService.review(projectId, currentUser.userId()));
         return "generation/draft-review";
     }
 

@@ -175,7 +175,10 @@
             </form>
             <form th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${review.workflowId})}"
                   method="post"
-                  onsubmit="return confirm('Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht.');"
+                  data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+                  data-confirm-title="KI-Projekterstellung abbrechen?"
+                  data-confirm-btn="KI-Erstellung abbrechen"
+                  data-confirm-variant="danger"
                   style="margin: 0;">
                 <button type="submit" class="pf-btn pf-btn--ghost">Abbrechen</button>
             </form>

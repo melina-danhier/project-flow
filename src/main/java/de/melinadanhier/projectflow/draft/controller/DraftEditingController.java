@@ -224,7 +224,7 @@ public class DraftEditingController {
 
     private void populateElementDetail(UUID projectId, UUID elementId, String expectedType,
                                        UUID userId, Model model) {
-        var draft = draftReviewService.review(projectId, userId, null);
+        var draft = draftReviewService.review(projectId, userId);
         var element = draft.getElements().stream()
                 .filter(candidate -> candidate.getId().equals(elementId) && candidate.getType().equals(expectedType))
                 .findFirst()
@@ -277,7 +277,7 @@ public class DraftEditingController {
     }
 
     private String renderReview(UUID projectId, UUID userId, Model model) {
-        model.addAttribute("draft", draftReviewService.review(projectId, userId, null));
+        model.addAttribute("draft", draftReviewService.review(projectId, userId));
         return "generation/draft-review";
     }
 }
