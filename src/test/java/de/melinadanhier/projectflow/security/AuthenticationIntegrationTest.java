@@ -694,13 +694,10 @@ class AuthenticationIntegrationTest {
         mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
                         .param("title", "Anderes").param("category", "OTHER").param("subcategory", "")
                         .param("lockVersion", String.valueOf(lockVersion)))
-                .andExpect(model().attributeHasFieldErrors("projectForm", "otherProjectTypeDescription"));
-        mockMvc.perform(post("/projects/{id}/edit", id).session(session).with(csrf()).param("collaborationMode", "INDIVIDUAL")
-                        .param("title", "Anderes").param("category", "OTHER").param("subcategory", "")
-                        .param("otherProjectTypeDescription", "Besonderes Vorhaben")
-                        .param("lockVersion", String.valueOf(lockVersion)))
                 .andExpect(status().is3xxRedirection());
-        assertThat(projectRepository.findById(id).orElseThrow().getSubcategory()).isNull();
+        Project updated = projectRepository.findById(id).orElseThrow();
+        assertThat(updated.getSubcategory()).isNull();
+        assertThat(updated.getOtherProjectTypeDescription()).isNull();
     }
 
     private String subcategoryDropdown(MvcResult result) throws Exception {

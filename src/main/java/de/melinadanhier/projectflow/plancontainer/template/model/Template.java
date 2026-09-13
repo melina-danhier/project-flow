@@ -24,7 +24,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@ValidProjectClassification(requireOtherDescription = false)
+@ValidProjectClassification
 public class Template extends PlanContainer implements ProjectClassification {
 
     @Enumerated(EnumType.STRING)

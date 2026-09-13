@@ -35,7 +35,7 @@
 
             <th:block th:replace="~{fragments/form-fields :: title-field('Projekttitel')}" />
             <th:block th:replace="~{fragments/form-fields :: description-field('Beschreibung', false)}" />
-            <div th:replace="~{fragments/project-classification :: fields(true)}"></div>
+            <div th:replace="~{fragments/project-classification :: fields}"></div>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 0.5rem;">
                 <div>

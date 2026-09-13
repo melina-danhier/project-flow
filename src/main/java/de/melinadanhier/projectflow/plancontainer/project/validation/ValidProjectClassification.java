@@ -11,5 +11,4 @@ public @interface ValidProjectClassification {
     String message() default "Bitte prüfe die Projektkategorie.";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
-    boolean requireOtherDescription() default true;
 }

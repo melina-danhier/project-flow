@@ -45,13 +45,15 @@ class ProjectFormTest {
     }
 
     @Test
-    void createFormKeepsItsOtherCategoryDefaultAndOptionalTypeDescription() {
-        ProjectCreateForm form = validCreateForm();
-        form.setCategory(ProjectCategory.OTHER);
-        form.setDescription("Das Projekt ist bereits ausreichend beschrieben.");
+    void titleIsEnoughForOtherCategoryOnCreateAndUpdate() {
+        ProjectCreateForm createForm = validCreateForm();
+        ProjectUpdateForm updateForm = validUpdateForm();
+        createForm.setCategory(ProjectCategory.OTHER);
+        updateForm.setCategory(ProjectCategory.OTHER);
 
         assertThat(new ProjectCreateForm().getCategory()).isEqualTo(ProjectCategory.OTHER);
-        assertThat(validator.validate(form)).isEmpty();
+        assertThat(validator.validate(createForm)).isEmpty();
+        assertThat(validator.validate(updateForm)).isEmpty();
     }
 
     private ProjectCreateForm validCreateForm() {

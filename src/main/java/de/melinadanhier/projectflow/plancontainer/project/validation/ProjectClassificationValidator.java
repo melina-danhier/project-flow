@@ -11,12 +11,6 @@ import java.util.Map;
 
 public class ProjectClassificationValidator
         implements ConstraintValidator<ValidProjectClassification, ProjectClassification> {
-    private boolean requireOtherDescription;
-
-    @Override
-    public void initialize(ValidProjectClassification constraint) {
-        requireOtherDescription = constraint.requireOtherDescription();
-    }
 
     @Override
     public boolean isValid(ProjectClassification value, ConstraintValidatorContext context) {
@@ -24,7 +18,7 @@ public class ProjectClassificationValidator
             return true;
         }
         var errors = errors(value.getCategory(), value.getSubcategory(),
-                value.getOtherProjectTypeDescription(), requireOtherDescription);
+                value.getOtherProjectTypeDescription());
         if (!errors.isEmpty()) {
             context.disableDefaultConstraintViolation();
             errors.forEach((field, message) -> context.buildConstraintViolationWithTemplate(message)
@@ -35,22 +29,17 @@ public class ProjectClassificationValidator
 
     public static void requireValid(ProjectCategory category, ProjectSubCategory subcategory,
                                     String otherDescription) {
-        var errors = errors(category, subcategory, otherDescription, true);
+        var errors = errors(category, subcategory, otherDescription);
         if (!errors.isEmpty()) {
             throw new DomainValidationException(errors.values().iterator().next());
         }
     }
 
     private static Map<String, String> errors(ProjectCategory category, ProjectSubCategory subcategory,
-                                               String otherDescription, boolean requireDescription) {
+                                               String otherDescription) {
         Map<String, String> errors = new LinkedHashMap<>();
         if (!ProjectSubCategory.isValidFor(category, subcategory)) {
             errors.put("subcategory", "Bitte wähle eine Unterkategorie der gewählten Oberkategorie oder keine Unterkategorie.");
-        }
-        if (requireDescription && category == ProjectCategory.OTHER
-                && (otherDescription == null || otherDescription.isBlank())) {
-            errors.put("otherProjectTypeDescription",
-                    "Bitte beschreibe kurz, um welche Art von Projekt es sich handelt.");
         }
         if (otherDescription != null && otherDescription.length() > 100) {
             errors.put("otherProjectTypeDescription", "Die Beschreibung darf höchstens 100 Zeichen lang sein.");

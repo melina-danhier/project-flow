@@ -64,7 +64,6 @@ class ProjectBasicsFormTest {
 
         ProjectBasicsForm other = validForm();
         other.setCategory(ProjectCategory.OTHER);
-        other.setOtherProjectTypeDescription("Privates Organisationsprojekt");
         other.setDescription("   ");
         assertThat(validator.validate(other)).isEmpty();
     }

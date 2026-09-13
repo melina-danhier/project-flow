@@ -9,7 +9,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@ValidProjectClassification(requireOtherDescription = false)
+@ValidProjectClassification
 public class ProjectCreateForm extends ProjectForm {
 
     @NotNull

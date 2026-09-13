@@ -555,17 +555,8 @@ public class ProjectService {
     }
 
     private void validateGeneralProjectData(ProjectCreateForm form) {
-        if (form.getCategory() == ProjectCategory.OTHER
-                && (form.getDescription() == null || form.getDescription().isBlank())
-                && (form.getOtherProjectTypeDescription() == null
-                    || form.getOtherProjectTypeDescription().isBlank())) {
-            throw new DomainValidationException("Bitte beschreibe dein sonstiges Projekt.");
-        }
         ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
-                form.getCategory() == ProjectCategory.OTHER
-                        && (form.getOtherProjectTypeDescription() == null
-                            || form.getOtherProjectTypeDescription().isBlank())
-                        ? "Sonstiges Projekt" : form.getOtherProjectTypeDescription());
+                form.getOtherProjectTypeDescription());
         validateDateRange(form.getStartDate(), form.getEndDate());
         if (form.getCategory() == null) {
             throw new DomainValidationException("Bitte wähle eine Oberkategorie aus.");

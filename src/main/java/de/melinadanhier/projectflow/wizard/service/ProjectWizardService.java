@@ -27,9 +27,7 @@ public class ProjectWizardService {
 
     public ProjectWizardState saveBasics(ProjectBasicsForm form, UUID userId, HttpSession session) {
         ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
-                form.isOtherCategory() && (form.getOtherProjectTypeDescription() == null
-                        || form.getOtherProjectTypeDescription().isBlank())
-                        ? "Sonstiges Projekt" : form.getOtherProjectTypeDescription());
+                form.getOtherProjectTypeDescription());
         ProjectWizardState state = findOwned(userId, session).orElseGet(ProjectWizardState::new);
         boolean classificationChanged = state.getCategory() != form.getCategory()
                 || state.getSubcategory() != form.getSubcategory();

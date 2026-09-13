@@ -138,6 +138,23 @@ class ProjectSecurityIntegrationTest {
     }
 
     @Test
+    void otherProjectCreationNeedsNoDescription() {
+        User owner = saveUser("other-with-title-only@example.org");
+        ProjectCreateForm form = new ProjectCreateForm();
+        form.setTitle("Titel reicht aus");
+        form.setCreationType(CreationType.EMPTY);
+        form.setCategory(ProjectCategory.OTHER);
+        form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
+
+        UUID projectId = projectService.createProject(form, owner.getId()).getId();
+
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        assertThat(project.getTitle()).isEqualTo("Titel reicht aus");
+        assertThat(project.getDescription()).isNull();
+        assertThat(project.getOtherProjectTypeDescription()).isNull();
+    }
+
+    @Test
     void regularProjectCreationAcceptsOnlyEmptyCreationType() {
         User owner = saveUser("blocked-creation@example.org");
         ProjectCreateForm form = new ProjectCreateForm();

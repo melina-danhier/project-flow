@@ -37,7 +37,7 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
-@ValidProjectClassification(requireOtherDescription = false)
+@ValidProjectClassification
 public class Project extends PlanContainer implements ProjectClassification, ProjectCollaboration {
 
     @Column(name = "start_date")

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<body><div th:fragment="fields(requireOtherDescription)">
+<body><div th:fragment="fields">
     <div class="pf-form-group">
         <label for="category" class="pf-label">
             <span>Oberkategorie</span>
@@ -27,13 +27,13 @@
         </select>
         <div th:if="${#fields.hasErrors('subcategory')}" class="pf-alert pf-alert--error" th:errors="*{subcategory}" role="alert"></div>
     </div>
-    <div id="other-project-type-fields" th:if="${requireOtherDescription}" th:hidden="*{!otherCategory}" class="pf-form-group">
+    <div id="other-project-type-fields" th:hidden="*{!otherCategory}" class="pf-form-group">
         <label for="otherProjectTypeDescription" class="pf-label">
             <span>Was für ein Projekt ist es?</span>
-            <span class="pf-required-star" aria-hidden="true">*</span>
+            <span class="pf-hint" style="font-weight: normal;">(optional)</span>
         </label>
         <input id="otherProjectTypeDescription" class="pf-input" th:field="*{otherProjectTypeDescription}" maxlength="100"
-               placeholder="z. B. privater Flohmarkt" th:required="*{otherCategory}" th:disabled="*{!otherCategory}">
+               placeholder="z. B. privater Flohmarkt" th:disabled="*{!otherCategory}">
         <div th:if="${#fields.hasErrors('otherProjectTypeDescription')}" class="pf-alert pf-alert--error"
              th:errors="*{otherProjectTypeDescription}" role="alert"></div>
     </div>
