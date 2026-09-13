@@ -29,10 +29,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import jakarta.servlet.RequestDispatcher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -147,6 +150,19 @@ class AuthenticationIntegrationTest {
                         .with(csrf()))
                 .andExpect(status().isOk());
         assertThat(userRepository.existsByEmail("validation@example.org")).isFalse();
+    }
+
+    @Test
+    void forbiddenSecurityRequestUsesBrandedErrorPage() throws Exception {
+        mockMvc.perform(get("/error")
+                        .accept(MediaType.TEXT_HTML)
+                        .requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 403)
+                        .requestAttr(RequestDispatcher.ERROR_REQUEST_URI, "/login"))
+                .andExpect(status().isForbidden())
+                .andExpect(view().name("error/403"))
+                .andExpect(content().string(containsString("Zugriff nicht möglich")))
+                .andExpect(content().string(containsString("Zur Anmeldung")))
+                .andExpect(content().string(not(containsString("Whitelabel Error Page"))));
     }
 
     @Test

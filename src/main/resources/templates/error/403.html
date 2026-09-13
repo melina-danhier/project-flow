@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Zugriff nicht möglich')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+<main>
+    <div class="pf-card" style="max-width: 680px; margin: 3rem auto; text-align: center;">
+        <span class="pf-badge pf-badge--yellow">Fehler 403</span>
+        <h1>Zugriff nicht möglich</h1>
+        <p>Die Anfrage konnte aus Sicherheitsgründen nicht ausgeführt werden. Bitte lade die Seite neu und versuche es erneut.</p>
+        <a sec:authorize="!isAuthenticated()" class="pf-btn pf-btn--primary" th:href="@{/login}">Zur Anmeldung</a>
+        <a sec:authorize="isAuthenticated()" class="pf-btn pf-btn--primary" th:href="@{/projects}">Zur Projektübersicht</a>
+    </div>
+</main>
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>
