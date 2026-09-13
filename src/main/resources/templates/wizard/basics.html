@@ -95,7 +95,7 @@
                     <div class="pf-form-group">
                         <label for="startDate" class="pf-label">
                             <span>Startdatum</span>
-                            <span class="pf-hint">(optional – berechnet aus Endtermin & Dauer)</span>
+                            <span class="pf-hint">(optional)</span>
                         </label>
                         <div class="pf-start-date-row">
                             <input id="startDate" type="date" th:field="*{startDate}" class="pf-input" style="flex: 1; min-width: 140px;">
@@ -110,7 +110,7 @@
                     <div class="pf-form-group">
                         <label for="endDate" class="pf-label">
                             <span>Endtermin / Deadline</span>
-                            <span class="pf-hint">(optional – berechnet aus Start & Dauer)</span>
+                            <span class="pf-hint">(optional)</span>
                         </label>
                         <input id="endDate" type="date" th:field="*{endDate}" class="pf-input">
                         <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="pf-alert pf-alert--error" role="alert"></div>
@@ -119,7 +119,7 @@
                     <div class="pf-form-group">
                         <label for="durationValue" class="pf-label">
                             <span>Geschätzte Dauer</span>
-                            <span class="pf-hint">(optional – berechnet aus Start & Endtermin)</span>
+                            <span class="pf-hint">(optional)</span>
                         </label>
                         <div class="pf-duration-picker">
                             <input id="durationValue" type="number" min="1" step="1" th:field="*{durationValue}" class="pf-input pf-duration-value" placeholder="z. B. 6">

@@ -61,7 +61,7 @@
             <!-- Facts Card -->
             <div class="pf-card" style="padding: 1.25rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--pf-border); padding-bottom: 0.75rem;">
-                    <h3 style="margin: 0; font-size: 1.1rem;">Details</h3>
+                    <h3 style="margin: 0; font-size: 1.1rem;">Aufgabendetails</h3>
                     <a th:if="${task.editable}" th:href="@{/projects/{projectId}/tasks/{taskId}/edit(projectId=${task.planContainerId},taskId=${task.id})}"
                        class="pf-btn pf-btn--ghost pf-btn--sm" style="color: var(--pf-primary); font-weight: 600; font-size: 0.82rem;">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -273,32 +273,37 @@
             </p>
 
             <div th:unless="${#lists.isEmpty(comments)}" style="display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.25rem;">
-                <div th:each="comment : ${comments}" style="padding: 0.65rem 0.85rem; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); border: 1px solid var(--pf-border);">
-                    <p th:text="${comment.content}" style="margin: 0 0 0.35rem; color: var(--pf-text-main); font-size: 0.88rem; line-height: 1.45;"></p>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.76rem; color: var(--pf-text-muted);">
-                        <span>
-                            <strong th:text="${comment.authorDisplayName}">Name</strong> · 
-                            <time th:datetime="${comment.createdAt}" th:text="${#temporals.format(comment.createdAt, 'dd.MM.yyyy HH:mm')}">Zeitpunkt</time>
-                        </span>
-                        <div th:if="${comment.deletable}" class="pf-cluster" style="gap: 0.5rem;">
-                            <details>
-                                <summary style="cursor: pointer; color: var(--pf-primary); font-weight: 600; font-size: 0.76rem;">Bearbeiten</summary>
-                                <form th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
-                                      method="post" style="margin-top: 0.5rem; min-width: min(20rem, 65vw);">
-                                    <input type="hidden" name="lockVersion" th:value="${comment.lockVersion}">
-                                    <textarea name="content" maxlength="2000" required
-                                              class="pf-textarea" style="min-height: 60px; font-size: 0.84rem; padding: 0.4rem 0.6rem;" th:text="${comment.content}"></textarea>
-                                    <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary" style="margin-top: 0.35rem;">Speichern</button>
+                <div th:each="comment : ${comments}" class="pf-comment-item" style="padding: 0.65rem 0.85rem; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); border: 1px solid var(--pf-border);">
+                    <div class="pf-comment-display-wrap">
+                        <p th:text="${comment.content}" class="pf-comment-text" style="margin: 0 0 0.35rem; color: var(--pf-text-main); font-size: 0.88rem; line-height: 1.45;"></p>
+                        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.76rem; color: var(--pf-text-muted);">
+                            <span>
+                                <strong th:text="${comment.authorDisplayName}">Name</strong> · 
+                                <time th:datetime="${comment.createdAt}" th:text="${#temporals.format(comment.createdAt, 'dd.MM.yyyy HH:mm')}">Zeitpunkt</time>
+                            </span>
+                            <div th:if="${comment.deletable}" class="pf-cluster" style="gap: 0.5rem;">
+                                <button type="button" class="pf-comment-edit-btn" style="background: none; border: none; color: var(--pf-primary); font-weight: 600; font-size: 0.76rem; cursor: pointer; padding: 0;">Bearbeiten</button>
+                                <form th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
+                                      method="post" style="margin: 0;">
+                                    <button type="submit" style="background: none; border: none; color: var(--pf-danger); cursor: pointer; padding: 0; font-size: 0.76rem; font-weight: 600;">
+                                        Löschen
+                                    </button>
                                 </form>
-                            </details>
-                            <form th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}/delete(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
-                                  method="post" style="margin: 0;">
-                                <button type="submit" style="background: none; border: none; color: var(--pf-danger); cursor: pointer; padding: 0; font-size: 0.76rem; font-weight: 600;">
-                                    Löschen
-                                </button>
-                            </form>
+                            </div>
                         </div>
                     </div>
+                    <!-- Inline edit form -->
+                    <form class="pf-comment-inline-edit" th:hidden="true"
+                          th:action="@{/projects/{projectId}/tasks/{taskId}/comments/{commentId}(projectId=${task.planContainerId},taskId=${task.id},commentId=${comment.id})}"
+                          method="post" style="margin-top: 0.35rem;">
+                        <input type="hidden" name="lockVersion" th:value="${comment.lockVersion}">
+                        <textarea name="content" maxlength="2000" required
+                                  class="pf-textarea" style="min-height: 60px; font-size: 0.84rem; padding: 0.4rem 0.6rem;" th:text="${comment.content}"></textarea>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.35rem;">
+                            <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Speichern</button>
+                            <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost pf-comment-cancel-btn">Abbrechen</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -316,7 +321,41 @@
             </form>
         </div>
     </div>
+
+    <!-- Back to Project Plan Navigation at Bottom -->
+    <div style="max-width: 1200px; margin: 2rem auto 0; padding-top: 1rem; border-top: 1px solid var(--pf-border); display: flex; justify-content: flex-start;">
+        <a th:href="@{/projects/{projectId}/plan(projectId=${task.planContainerId})}" class="pf-btn pf-btn--ghost pf-btn--sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Zurück zum Projektplan
+        </a>
+    </div>
 </main>
+
+<script>
+    document.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.pf-comment-edit-btn');
+        if (editBtn) {
+            const item = editBtn.closest('.pf-comment-item');
+            if (item) {
+                item.querySelector('.pf-comment-display-wrap').hidden = true;
+                const form = item.querySelector('.pf-comment-inline-edit');
+                form.hidden = false;
+                form.querySelector('textarea')?.focus();
+            }
+        }
+        const cancelBtn = e.target.closest('.pf-comment-cancel-btn');
+        if (cancelBtn) {
+            const item = cancelBtn.closest('.pf-comment-item');
+            if (item) {
+                item.querySelector('.pf-comment-display-wrap').hidden = false;
+                item.querySelector('.pf-comment-inline-edit').hidden = true;
+            }
+        }
+    });
+</script>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>

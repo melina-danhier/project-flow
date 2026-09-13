@@ -176,7 +176,7 @@
                 <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/plan/sort-mode(projectId=${plan.project.id})}" method="post" id="plan-sort-mode-form" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
                     <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
                     <label for="plan-sort-mode-select" class="pf-sort-label">Sortierung:</label>
-                    <select id="plan-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" onchange="this.form.requestSubmit()">
+                    <select id="plan-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; font-size:0.85rem;" onchange="this.form.requestSubmit()">
                         <option value="DATE" th:selected="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</option>
                         <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
                     </select>
@@ -197,7 +197,7 @@
             <!-- Task Status Filter Control -->
             <div class="pf-task-filter-wrap">
                 <label for="plan-task-filter-select" class="pf-sort-label">Status:</label>
-                <select id="plan-task-filter-select" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" aria-label="Aufgaben nach Status filtern">
+                <select id="plan-task-filter-select" class="pf-select pf-select--sm" style="width:auto; font-size:0.85rem;" aria-label="Aufgaben nach Status filtern">
                     <option value="ALL">Alle Status</option>
                     <option value="OPEN">Offene</option>
                     <option value="IN_PROGRESS">In Bearbeitung</option>
@@ -209,7 +209,7 @@
             <!-- Task Assignment Filter Control (Requirement 5) -->
             <div class="pf-assignment-filter-wrap">
                 <label for="plan-assignment-filter-select" class="pf-sort-label">Zuweisung:</label>
-                <select id="plan-assignment-filter-select" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" aria-label="Aufgaben nach Zuweisung filtern">
+                <select id="plan-assignment-filter-select" class="pf-select pf-select--sm" style="width:auto; font-size:0.85rem;" aria-label="Aufgaben nach Zuweisung filtern">
                     <option value="ALL">Alle Aufgaben</option>
                     <option value="MINE">Meine Aufgaben</option>
                     <option value="UNASSIGNED">Nicht zugewiesen</option>
@@ -275,13 +275,13 @@
                         </svg>
                     </button>
 
-                    <!-- Section Drag Handle -->
-                    <button th:if="${plan.editable}" type="button" class="section-drag-handle pf-drag-handle" title="Bereich verschieben" aria-label="Bereich verschieben">
+                    <!-- Section Drag Indicator (Visual cue) -->
+                    <span th:if="${plan.editable}" class="section-drag-handle pf-drag-handle-visual" aria-hidden="true" title="Bereich verschieben">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
                             <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
                         </svg>
-                    </button>
+                    </span>
 
                     <!-- Display Mode (Title + Description) -->
                     <div class="pf-phase-display-wrap" th:hidden="${editingSectionId == section.id}">
@@ -381,13 +381,13 @@
                     th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-task-status=${element.type.name() == 'TASK' and element.taskStatus != null ? element.taskStatus.name() : (element.taskCompleted ? 'COMPLETED' : 'OPEN')},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id=${section.id},data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : (element.relevantDate != null ? element.relevantDate.toString() : '')},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-milestone-completed=${element.type.name() == 'MILESTONE' ? element.milestoneCompleted : null},data-priority=${element.taskPriority != null ? element.taskPriority.name() : ''},data-priority-label=${element.taskPriority != null ? (element.taskPriority.name() == 'HIGH' ? 'Hoch' : (element.taskPriority.name() == 'LOW' ? 'Niedrig' : 'Mittel')) : ''},data-effort=${element.estimatedHours != null ? element.estimatedHours : ''},data-assigned-me=${element.assignedToCurrentUser ? 'true' : 'false'},data-has-assignees=${element.hasAssignees ? 'true' : 'false'},data-assignees=${#strings.listJoin(element.assigneeDisplayNames, ', ')},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
                     
                     <div class="pf-element-item__left">
-                        <!-- Element Drag Handle -->
-                        <button th:if="${plan.editable}" type="button" class="element-drag-handle pf-drag-handle" title="Element verschieben" aria-label="Element verschieben">
+                        <!-- Element Drag Indicator (Visual cue) -->
+                        <span th:if="${plan.editable}" class="element-drag-handle pf-drag-handle-visual" aria-hidden="true" title="Element verschieben">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
                                 <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
                             </svg>
-                        </button>
+                        </span>
 
                         <!-- Task Completion Checkbox (CHECKBOX mode) -->
                         <form th:if="${element.type.name() == 'TASK' and plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" class="pf-task-completion-form"
@@ -469,7 +469,7 @@
                                   th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy') + ' – ' + #temporals.format(element.dueDate, 'dd.MM.yyyy')}"></span>
                             <span class="pf-badge pf-badge--outline"
                                   th:if="${element.startDate != null and element.dueDate == null}"
-                                  th:text="${'Start: ' + #temporals.format(element.startDate, 'dd.MM.yyyy')}"></span>
+                                  th:text="${'ab ' + #temporals.format(element.startDate, 'dd.MM.yyyy')}"></span>
                             <span class="pf-badge pf-badge--outline"
                                   th:if="${element.startDate == null and element.dueDate != null}"
                                   th:text="${'Fällig: ' + #temporals.format(element.dueDate, 'dd.MM.yyyy')}"></span>
@@ -514,19 +514,23 @@
                                     <span>Nach unten</span>
                                 </button>
 
-                                <!-- In MANUAL mode: Move to another section options -->
-                                <th:block th:if="${plan.project.sortMode.name() == 'MANUAL' and #lists.size(plan.sections) > 1}">
+                                <!-- Move to another section dialog trigger -->
+                                <th:block th:if="${plan.project.sortMode.name() == 'MANUAL'}">
                                     <div class="pf-dropdown__divider"></div>
-                                    <div class="pf-dropdown__header"><span class="pf-dropdown__eyebrow">In Bereich verschieben</span></div>
-                                    <form th:each="targetSec : ${plan.sections}" th:unless="${targetSec.id == section.id}"
-                                          th:action="@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})}"
-                                          method="post" style="margin: 0.15rem 0;">
-                                        <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                                        <input type="hidden" name="targetSectionId" th:value="${targetSec.id}">
-                                        <input type="hidden" name="targetDate" th:value="${element.relevantDate != null ? element.relevantDate.toString() : ''}">
-                                        <input type="hidden" name="targetPosition" th:value="${#lists.size(targetSec.elements)}">
-                                        <button type="submit" class="pf-dropdown__item" th:text="${targetSec.title}"></button>
-                                    </form>
+                                    <button type="button" class="pf-dropdown__item open-move-dialog-btn"
+                                            th:attr="data-element-id=${element.id},
+                                                     data-element-title=${element.title},
+                                                     data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},
+                                                     data-current-section-id=${section.id},
+                                                     data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''}">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="17 1 21 5 17 9"></polyline>
+                                            <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                                            <polyline points="7 23 3 19 7 15"></polyline>
+                                            <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                                        </svg>
+                                        <span>In Bereich verschieben</span>
+                                    </button>
                                 </th:block>
 
                                 <div class="pf-dropdown__divider"></div>
@@ -548,23 +552,27 @@
         </details>
     </div>
 
-    <!-- Unsectioned Elements (If any exist) -->
-    <div th:unless="${#lists.isEmpty(plan.unsectionedElements)}" class="pf-plan-section plan-section unsectioned" style="margin-top: 1.5rem; border-style: dashed;"
+    <!-- Unsectioned Elements (Always visible in project plan views) -->
+    <div class="pf-plan-section plan-section unsectioned" style="margin-top: 1.5rem; border-style: dashed;"
          data-section-id="">
-        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem;">Planelemente ohne Phase</h3>
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem;">Ohne Bereich <span class="pf-sr-only">(Planelemente ohne Phase)</span></h3>
         <ul class="pf-element-list plan-elements" data-section-id="">
+            <li th:if="${#lists.isEmpty(plan.unsectionedElements)}" class="pf-element-item--empty" style="padding: 0.85rem; color: var(--pf-text-muted); text-align: center; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); font-size: 0.88rem;">
+                Keine Aufgaben oder Meilensteine ohne Bereich vorhanden.
+            </li>
             <li th:each="element, elementStat : ${plan.unsectionedElements}"
                 class="pf-element-item plan-element"
                 th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-element-item--milestone' : 'pf-element-item--task'}"
                 th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-task-status=${element.type.name() == 'TASK' and element.taskStatus != null ? element.taskStatus.name() : (element.taskCompleted ? 'COMPLETED' : 'OPEN')},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id='',data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : (element.relevantDate != null ? element.relevantDate.toString() : '')},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-milestone-completed=${element.type.name() == 'MILESTONE' ? element.milestoneCompleted : null},data-priority=${element.taskPriority != null ? element.taskPriority.name() : ''},data-priority-label=${element.taskPriority != null ? (element.taskPriority.name() == 'HIGH' ? 'Hoch' : (element.taskPriority.name() == 'LOW' ? 'Niedrig' : 'Mittel')) : ''},data-effort=${element.estimatedHours != null ? element.estimatedHours : ''},data-assigned-me=${element.assignedToCurrentUser ? 'true' : 'false'},data-has-assignees=${element.hasAssignees ? 'true' : 'false'},data-assignees=${#strings.listJoin(element.assigneeDisplayNames, ', ')},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
                 
                 <div class="pf-element-item__left">
-                    <button th:if="${plan.editable}" type="button" class="element-drag-handle pf-drag-handle" title="Element verschieben" aria-label="Element verschieben">
+                    <!-- Element Drag Indicator (Visual cue) -->
+                    <span th:if="${plan.editable}" class="element-drag-handle pf-drag-handle-visual" aria-hidden="true" title="Element verschieben">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
                             <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
                         </svg>
-                    </button>
+                    </span>
 
                     <!-- Task Completion Checkbox (CHECKBOX mode) -->
                     <form th:if="${element.type.name() == 'TASK' and plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" class="pf-task-completion-form"
@@ -646,7 +654,7 @@
                               th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy') + ' – ' + #temporals.format(element.dueDate, 'dd.MM.yyyy')}"></span>
                         <span class="pf-badge pf-badge--outline"
                               th:if="${element.startDate != null and element.dueDate == null}"
-                              th:text="${'Start: ' + #temporals.format(element.startDate, 'dd.MM.yyyy')}"></span>
+                              th:text="${'ab ' + #temporals.format(element.startDate, 'dd.MM.yyyy')}"></span>
                         <span class="pf-badge pf-badge--outline"
                               th:if="${element.startDate == null and element.dueDate != null}"
                               th:text="${'Fällig: ' + #temporals.format(element.dueDate, 'dd.MM.yyyy')}"></span>
@@ -690,18 +698,23 @@
                                 <span>Nach unten</span>
                             </button>
 
-                            <th:block th:if="${plan.project.sortMode.name() == 'MANUAL' and !#lists.isEmpty(plan.sections)}">
+                            <!-- Move to another section dialog trigger -->
+                            <th:block th:if="${plan.project.sortMode.name() == 'MANUAL'}">
                                 <div class="pf-dropdown__divider"></div>
-                                <div class="pf-dropdown__header"><span class="pf-dropdown__eyebrow">In Bereich verschieben</span></div>
-                                <form th:each="targetSec : ${plan.sections}"
-                                      th:action="@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})}"
-                                      method="post" style="margin: 0.15rem 0;">
-                                    <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                                    <input type="hidden" name="targetSectionId" th:value="${targetSec.id}">
-                                    <input type="hidden" name="targetDate" th:value="${element.relevantDate != null ? element.relevantDate.toString() : ''}">
-                                    <input type="hidden" name="targetPosition" th:value="${#lists.size(targetSec.elements)}">
-                                    <button type="submit" class="pf-dropdown__item" th:text="${targetSec.title}"></button>
-                                </form>
+                                <button type="button" class="pf-dropdown__item open-move-dialog-btn"
+                                        th:attr="data-element-id=${element.id},
+                                                 data-element-title=${element.title},
+                                                 data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},
+                                                 data-current-section-id='',
+                                                 data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="17 1 21 5 17 9"></polyline>
+                                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                                        <polyline points="7 23 3 19 7 15"></polyline>
+                                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                                    </svg>
+                                    <span>In Bereich verschieben</span>
+                                </button>
                             </th:block>
 
                             <div class="pf-dropdown__divider"></div>
@@ -801,6 +814,45 @@
                 <div class="pf-confirm-dialog__actions">
                     <button type="button" class="pf-btn pf-btn--secondary" id="close-delete-section-btn">Abbrechen</button>
                     <button type="submit" class="pf-btn pf-btn--danger">Bereich löschen</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+ 
+    <!-- Modal: In Bereich verschieben -->
+    <dialog id="move-element-dialog" class="pf-confirm-dialog" style="max-width: 480px;">
+        <div class="pf-confirm-dialog__content">
+            <div class="pf-confirm-dialog__header">
+                <div class="pf-confirm-icon-wrap pf-confirm-icon-wrap--primary">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="17 1 21 5 17 9"></polyline>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                        <polyline points="7 23 3 19 7 15"></polyline>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                </div>
+                <div class="pf-confirm-dialog__body">
+                    <h3 class="pf-confirm-title">In Bereich verschieben</h3>
+                    <p class="pf-confirm-message" id="move-element-title-display">Wähle den Zielbereich für dieses Element aus.</p>
+                </div>
+            </div>
+            <form id="move-element-form" method="post" style="display:flex; flex-direction:column; gap:1rem;">
+                <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+                <input type="hidden" name="targetDate" id="move-element-target-date" value="">
+                <input type="hidden" name="targetPosition" id="move-element-target-position" value="0">
+                <div class="pf-form-group">
+                    <label for="move-target-section-select" class="pf-label">Zielbereich</label>
+                    <select id="move-target-section-select" name="targetSectionId" class="pf-select">
+                        <option value="" th:attr="data-count=${#lists.size(plan.unsectionedElements)}">Ohne Bereich</option>
+                        <option th:each="target : ${plan.sections}"
+                                th:value="${target.id}"
+                                th:text="${target.title}"
+                                th:attr="data-count=${#lists.size(target.elements)}"></option>
+                    </select>
+                </div>
+                <div class="pf-confirm-dialog__actions">
+                    <button type="button" class="pf-btn pf-btn--secondary" id="close-move-element-btn">Abbrechen</button>
+                    <button type="submit" class="pf-btn pf-btn--primary">Verschieben</button>
                 </div>
             </form>
         </div>

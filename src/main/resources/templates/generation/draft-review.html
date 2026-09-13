@@ -24,6 +24,9 @@
                 <h1 th:text="${draft.projectTitle}" style="margin: 0;">Projekttitel</h1>
                 <span class="pf-badge pf-badge--purple">KI-Entwurf</span>
             </div>
+            <p class="pf-draft-review-hint" style="margin: 0.35rem 0 0.5rem; font-size: 0.85rem; color: var(--pf-text-muted); max-width: 680px; line-height: 1.45;">
+                Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest.
+            </p>
             <div class="pf-project-facts" th:if="${draft.categoryLabel != null or draft.projectStartDate != null or draft.projectEndDate != null or draft.totalEstimatedHours > 0}">
                 <span class="pf-badge pf-badge--gray" th:if="${draft.categoryLabel}" th:text="${draft.categoryLabel}"></span>
                 <span class="pf-badge pf-badge--outline" th:if="${draft.projectStartDate != null or draft.projectEndDate != null}">
@@ -45,7 +48,6 @@
             <!-- Reviewed Element Count Badge at top-right -->
             <span class="pf-badge pf-badge--blue" role="status" title="Prüfungsfortschritt">
                 <strong th:text="${draft.reviewedElementCount + ' / ' + draft.totalElementCount + ' geprüft'}">0 / 0 geprüft</strong>
-                <span th:if="${draft.pendingElementCount > 0}" th:text="${' · ' + draft.pendingElementCount + ' offen'}"></span>
             </span>
 
             <!-- Draft Review Actions -->
@@ -150,13 +152,13 @@
                         </svg>
                     </button>
 
-                    <!-- Section Drag Handle -->
-                    <button th:if="${draft.status.name() != 'APPLIED'}" type="button" class="drag-handle section-drag-handle pf-drag-handle" title="Bereich verschieben" aria-label="Bereich verschieben">
+                    <!-- Section Drag Handle (Visual cue only) -->
+                    <span th:if="${draft.status.name() != 'APPLIED'}" class="pf-drag-handle-visual" aria-hidden="true" title="Bereich verschieben">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
                             <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
                         </svg>
-                    </button>
+                    </span>
 
                     <!-- Section Display Wrap (Title & Description) -->
                     <div class="pf-phase-display-wrap" th:hidden="${editingDraftSectionId == section.id}">
@@ -209,10 +211,13 @@
                             <span th:if="${element.type == 'TASK' and element.priority != null}" class="pf-badge pf-badge--sm"
                                   th:classappend="${element.priority.name() == 'HIGH' ? 'pf-badge--red' : (element.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
                                   th:text="${element.priority.name() == 'LOW' ? 'Niedrig' : (element.priority.name() == 'HIGH' ? 'Hoch' : 'Mittel')}"></span>
-                            <span th:if="${element.type == 'TASK' and element.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline">
-                                Start: <time th:datetime="${element.startDate}" th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy')}"></time>
+                            <span th:if="${element.type == 'TASK' and element.startDate != null and element.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline">
+                                <time th:datetime="${element.startDate}" th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy')}"></time> – <time th:datetime="${element.dueDate}" th:text="${#temporals.format(element.dueDate, 'dd.MM.yyyy')}"></time>
                             </span>
-                            <span th:if="${element.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline">
+                            <span th:if="${element.type == 'TASK' and element.startDate != null and element.dueDate == null}" class="pf-badge pf-badge--sm pf-badge--outline">
+                                ab <time th:datetime="${element.startDate}" th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy')}"></time>
+                            </span>
+                            <span th:if="${element.dueDate != null and (element.type != 'TASK' or element.startDate == null)}" class="pf-badge pf-badge--sm pf-badge--outline">
                                 <span th:text="${element.type == 'TASK' ? 'Fällig: ' : ''}"></span>
                                 <time th:datetime="${element.dueDate}" th:text="${#temporals.format(element.dueDate, 'dd.MM.yyyy')}"></time>
                             </span>
@@ -234,61 +239,7 @@
         </details>
     </div>
 
-    <!-- Unsectioned Elements -->
-    <details class="draft-section plan-phase pf-plan-phase unsectioned" th:if="${!draft.unsectionedElements.isEmpty() or draft.activeReviewFilter == null or draft.activeReviewFilter == ''}" open>
-        <summary class="pf-plan-section__header section-heading">
-            <div class="pf-phase-header__left">
-                <!-- Collapse Toggle Caret -->
-                <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen">
-                    <svg class="pf-phase-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
-                <div class="pf-phase-display-wrap">
-                    <h2 class="pf-phase-title">Ohne Bereich</h2>
-                    <p class="pf-phase-desc">Diese Elemente werden ohne persistierten Bereich übernommen.</p>
-                </div>
-            </div>
-            <div class="pf-phase-header__right">
-                <span class="pf-badge pf-badge--blue" th:text="${draft.unsectionedElements.size() + (draft.unsectionedElements.size() == 1 ? ' Element' : ' Elemente')}">0 Elemente</span>
-            </div>
-        </summary>
-        <ol class="plan-elements pf-element-list" data-section-id="">
-            <li class="plan-element pf-element-item" th:each="element : ${draft.unsectionedElements}" th:id="${'draft-element-' + element.id}"
-                th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type},data-detail-url=${element.type == 'TASK' ? '/projects/' + draft.projectId + '/draft/tasks/' + element.id : '/projects/' + draft.projectId + '/draft/milestones/' + element.id},data-section-id='',data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null or element.startDate != null},data-date=${element.dueDate != null ? element.dueDate.toString() : (element.startDate != null ? element.startDate.toString() : '')},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : ''},data-review-status=${element.reviewStatus.name()},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
-                
-                <div class="pf-element-item__main">
-                    <div th:replace="~{fragments/draft-components :: element-heading(${element}, ${draft.projectId})}"></div>
-                    
-                    <div class="pf-element-meta">
-                        <span th:if="${element.type == 'TASK' and element.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--gray" th:text="${element.estimatedHours + ' Std.'}"></span>
-                        <span th:if="${element.type == 'TASK' and element.priority != null}" class="pf-badge pf-badge--sm"
-                              th:classappend="${element.priority.name() == 'HIGH' ? 'pf-badge--red' : (element.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
-                              th:text="${element.priority.name() == 'LOW' ? 'Niedrig' : (element.priority.name() == 'HIGH' ? 'Hoch' : 'Mittel')}"></span>
-                        <span th:if="${element.type == 'TASK' and element.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline">
-                            Start: <time th:datetime="${element.startDate}" th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy')}"></time>
-                        </span>
-                        <span th:if="${element.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline">
-                            <span th:text="${element.type == 'TASK' ? 'Fällig: ' : ''}"></span>
-                            <time th:datetime="${element.dueDate}" th:text="${#temporals.format(element.dueDate, 'dd.MM.yyyy')}"></time>
-                        </span>
-                    </div>
-                    <p th:if="${element.description}" th:text="${element.description}" class="pf-element-desc"></p>
-                </div>
-
-                <div class="pf-element-item__right">
-                    <th:block th:if="${draft.status.name() != 'APPLIED'}">
-                        <div th:replace="~{fragments/draft-components :: review-actions('elements', ${element.id}, ${draft.projectId}, ${element.reviewStatus.name()}, ${draft.lockVersion})}"></div>
-                        <a class="pf-btn pf-btn--sm pf-btn--ghost pf-element-edit-btn"
-                           th:href="@{/projects/{pId}/draft/{seg}/{eId}/edit(pId=${draft.projectId},seg=${element.type == 'TASK' ? 'tasks' : 'milestones'},eId=${element.id})}"
-                           title="Element bearbeiten">Bearbeiten</a>
-                    </th:block>
-                </div>
-            </li>
-        </ol>
-    </details>
-
-    <p th:if="${draft.sections.isEmpty() and draft.unsectionedElements.isEmpty()}" class="pf-empty-state">Keine Elemente entsprechen dem gewählten Filter.</p>
+    <p th:if="${draft.sections.isEmpty()}" class="pf-empty-state">Keine Elemente entsprechen dem gewählten Filter.</p>
 
     <!-- Modal Dialog for Plan Regeneration -->
     <dialog id="regenerate-plan-dialog" class="pf-modal pf-dialog" aria-labelledby="regenerate-dialog-title">

@@ -599,10 +599,35 @@ button:disabled,
 .pf-study-task__details > summary {
     cursor: pointer;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    user-select: none;
+}
+
+.pf-study-task__details > summary::-webkit-details-marker {
+    display: none;
 }
 
 .pf-study-task__details > summary::marker {
-    color: var(--pf-primary);
+    display: none;
+}
+
+.pf-study-task__details > summary::before {
+    content: "";
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-right: 2px solid var(--pf-primary, #0284c7);
+    border-bottom: 2px solid var(--pf-primary, #0284c7);
+    transform: rotate(-45deg);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.pf-study-task__details[open] > summary::before {
+    transform: rotate(45deg);
 }
 
 .pf-study-task__content {
@@ -1352,7 +1377,7 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     position: absolute;
     top: calc(100% + 0.5rem);
     left: 0;
-    min-width: 125px;
+    min-width: 160px;
     background: var(--pf-surface, #ffffff);
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-md);
@@ -1363,6 +1388,13 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     flex-direction: column;
     gap: 0.2rem;
     animation: pfDropdownIn 0.15s ease-out;
+}
+
+.pf-dropdown__menu > form {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    display: block;
 }
 
 .pf-dropdown__menu--right {
@@ -1407,6 +1439,7 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
 .pf-dropdown__item {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 0.65rem;
     padding: 0.55rem 0.75rem;
     border-radius: var(--pf-radius-sm);
@@ -1423,6 +1456,89 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     font-family: inherit;
     box-sizing: border-box;
     box-shadow: none;
+}
+
+.pf-dropdown__item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+/* Standardized Drop Position Indicator Line */
+.pf-drop-indicator {
+    height: 3px;
+    background: var(--pf-primary, #0284c7);
+    border-radius: 2px;
+    margin: 4px 0;
+    pointer-events: none;
+    position: relative;
+    box-shadow: 0 0 6px rgba(2, 132, 199, 0.45);
+}
+
+.pf-drop-indicator::before,
+.pf-drop-indicator::after {
+    content: '';
+    position: absolute;
+    top: -3.5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--pf-primary, #0284c7);
+}
+
+.pf-drop-indicator::before {
+    left: -4px;
+}
+
+.pf-drop-indicator::after {
+    right: -4px;
+}
+
+.drop-target {
+    background-color: var(--pf-primary-soft, #f0f9ff);
+}
+
+.pf-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Visual Six-Dot Drag Indicator */
+.pf-drag-handle-visual {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--pf-text-muted);
+    opacity: 0.45;
+    margin-right: 0.35rem;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+[draggable="true"] {
+    cursor: grab;
+}
+
+[draggable="true"]:active,
+.is-dragging {
+    cursor: grabbing;
+}
+
+.pf-select--sm {
+    padding: 0.35rem 2.25rem 0.35rem 0.75rem !important;
+    font-size: 0.85rem !important;
+    background-position: calc(100% - 0.65rem) center !important;
+    background-size: 1rem 1rem !important;
+    line-height: 1.4;
+    min-height: 2rem;
 }
 
 .pf-dropdown__item:hover {

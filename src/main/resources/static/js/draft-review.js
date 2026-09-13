@@ -39,12 +39,14 @@
         form.submit();
     };
 
-    // 1. Draggable items setup
+    const isInteractive = (target) => {
+        return !!target.closest('button, a, input, select, textarea, label, form, details, summary, .pf-phase-inline-edit, .review-actions-wrap, .pf-element-edit-btn');
+    };
+
+    // 1. Draggable items setup (whole container)
     document.querySelectorAll('[draggable="true"]').forEach(item => {
-        const requiredHandle = item.classList.contains('draft-section') ? '.section-drag-handle' : '.element-drag-handle';
-        item.querySelector(requiredHandle)?.addEventListener('pointerdown', () => item.dataset.dragArmed = 'true');
         item.addEventListener('dragstart', event => {
-            if (item.dataset.dragArmed !== 'true') {
+            if (isInteractive(event.target)) {
                 event.preventDefault();
                 return;
             }
@@ -52,10 +54,9 @@
             dragged = item;
             item.classList.add('is-dragging');
             event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', item.dataset.elementId || item.dataset.sectionId);
+            event.dataTransfer.setData('text/plain', item.dataset.elementId || item.dataset.sectionId || '');
         });
         item.addEventListener('dragend', () => {
-            delete item.dataset.dragArmed;
             item.classList.remove('is-dragging');
             document.querySelectorAll('.drop-target').forEach(target => target.classList.remove('drop-target'));
             removeDropIndicator();
@@ -63,8 +64,19 @@
         });
     });
 
-    document.addEventListener('pointerup', () => {
-        document.querySelectorAll('[data-drag-armed]').forEach(item => delete item.dataset.dragArmed);
+    // Mobile review status dropdown handler
+    document.addEventListener('change', event => {
+        const select = event.target.closest('.draft-review-status-select');
+        if (!select) return;
+        const val = select.value;
+        let targetUrl = '';
+        if (val === 'ACCEPTED') targetUrl = select.dataset.acceptUrl;
+        else if (val === 'REJECTED') targetUrl = select.dataset.rejectUrl;
+        else if (val === 'PENDING') targetUrl = select.dataset.resetUrl;
+
+        if (targetUrl) {
+            submitMove(targetUrl, { lockVersion: select.dataset.lockVersion });
+        }
     });
 
     // 2. Elements drop zones (.plan-elements) with insertion line

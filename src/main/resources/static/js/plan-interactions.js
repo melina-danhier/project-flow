@@ -263,7 +263,75 @@
             };
         }
 
+        const moveElementDialog = document.getElementById('move-element-dialog');
+        const moveElementForm = document.getElementById('move-element-form');
+        const closeMoveElementBtn = document.getElementById('close-move-element-btn');
+        const moveTargetSectionSelect = document.getElementById('move-target-section-select');
+        const moveElementTitleDisplay = document.getElementById('move-element-title-display');
+        const moveElementTargetPosition = document.getElementById('move-element-target-position');
+        const moveElementTargetDate = document.getElementById('move-element-target-date');
+
+        if (closeMoveElementBtn && moveElementDialog) {
+            closeMoveElementBtn.onclick = () => moveElementDialog.close();
+        }
+
+        if (moveTargetSectionSelect && moveElementTargetPosition) {
+            moveTargetSectionSelect.onchange = () => {
+                const selected = moveTargetSectionSelect.selectedOptions[0];
+                if (selected) {
+                    moveElementTargetPosition.value = selected.dataset.count || '0';
+                }
+            };
+        }
+
+        [newSectionDialog, deleteSectionDialog, moveElementDialog].forEach(dialog => {
+            if (dialog) {
+                dialog.addEventListener('click', event => {
+                    if (event.target === dialog) dialog.close();
+                });
+            }
+        });
+
         document.addEventListener('click', event => {
+            const moveBtn = event.target.closest('.open-move-dialog-btn');
+            if (moveBtn && moveElementDialog && moveElementForm) {
+                event.preventDefault();
+                event.stopPropagation();
+                const menu = moveBtn.closest('details.pf-item-menu, details.pf-dropdown');
+                if (menu) menu.removeAttribute('open');
+
+                const title = moveBtn.dataset.elementTitle || 'Element';
+                const moveUrl = moveBtn.dataset.moveUrl;
+                const currentSectionId = moveBtn.dataset.currentSectionId || '';
+                const elementDate = moveBtn.dataset.date || '';
+
+                moveElementForm.action = moveUrl;
+                if (moveElementTargetDate) moveElementTargetDate.value = elementDate;
+                if (moveElementTitleDisplay) {
+                    moveElementTitleDisplay.textContent = `Wähle den Zielbereich für „${title}“ aus:`;
+                }
+
+                if (moveTargetSectionSelect) {
+                    Array.from(moveTargetSectionSelect.options).forEach(opt => {
+                        const isCurrent = (opt.value === currentSectionId);
+                        opt.disabled = isCurrent;
+                        const baseTitle = opt.dataset.baseTitle || opt.text.replace(' (aktuell)', '');
+                        opt.dataset.baseTitle = baseTitle;
+                        opt.text = isCurrent ? `${baseTitle} (aktuell)` : baseTitle;
+                    });
+                    const firstAvailable = Array.from(moveTargetSectionSelect.options).find(opt => !opt.disabled);
+                    if (firstAvailable) {
+                        moveTargetSectionSelect.value = firstAvailable.value;
+                        if (moveElementTargetPosition) {
+                            moveElementTargetPosition.value = firstAvailable.dataset.count || '0';
+                        }
+                    }
+                }
+
+                moveElementDialog.showModal();
+                return;
+            }
+
             const deleteBtn = event.target.closest('.pf-phase-delete-trigger');
             if (deleteBtn && deleteSectionDialog && deleteSectionForm) {
                 event.preventDefault();
@@ -325,7 +393,7 @@
         if (!card) return;
 
         // Do not navigate if clicking an interactive control
-        if (event.target.closest('button, input, textarea, select, a, label, form, .pf-drag-handle, .element-drag-handle, .pf-card-menu, details, summary')) {
+        if (event.target.closest('button, input, textarea, select, a, label, form, .pf-drag-handle, .element-drag-handle, .pf-drag-handle-visual, .pf-card-menu, details, summary, .open-move-dialog-btn')) {
             return;
         }
 

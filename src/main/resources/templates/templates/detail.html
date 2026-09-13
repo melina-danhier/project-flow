@@ -75,7 +75,7 @@
                                 <span th:if="${task.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--outline"
                                       th:text="${'Aufwand: ' + task.estimatedHours + ' Std.'}"></span>
                                 <span th:if="${task.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                      th:text="${'Start: ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
+                                      th:text="${'ab ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
                                 <span th:if="${task.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
                                       th:text="${'Fällig: ' + #temporals.format(task.dueDate, 'dd.MM.yyyy')}"></span>
                                 <span th:if="${task.relativeStartDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"
@@ -134,7 +134,7 @@
                                 <span th:if="${task.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--outline"
                                       th:text="${'Aufwand: ' + task.estimatedHours + ' Std.'}"></span>
                                 <span th:if="${task.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                      th:text="${'Start: ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
+                                      th:text="${'ab ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
                                 <span th:if="${task.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
                                       th:text="${'Fällig: ' + #temporals.format(task.dueDate, 'dd.MM.yyyy')}"></span>
                                 <span th:if="${task.relativeStartDay != null}" class="pf-badge pf-badge--sm pf-badge--outline"

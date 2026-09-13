@@ -32,9 +32,8 @@ class StudyNavigationTemplateTest {
                 .contains("Übernimm am Ende einen Projektplan, mit dem du grundsätzlich weiterarbeiten würdest.")
                 .contains("Aufgabe 2 der Nutzerstudie")
                 .contains("Die Freunde, die dir ursprünglich beim Transport helfen wollten")
-                .contains("Prüfe den Änderungsvorschlag und entscheide anschließend selbst")
-                .contains("<details class=\"pf-study-task__details\" open>")
-                .contains("@{/study/return}")
+                .contains("<details class=\"pf-study-task__details\">")
+                .doesNotContain("<details class=\"pf-study-task__details\" open>")
                 .contains("@{/study/finish}");
         assertThat(layout)
                 .contains("@{/css/study-mode.css}")

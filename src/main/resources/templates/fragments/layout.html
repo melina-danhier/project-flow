@@ -19,7 +19,7 @@
 <th:block th:fragment="study-return">
     <div th:if="${session != null and session.studySessionId != null and session.studyPhase == 'TASK_1'}"
          class="pf-card pf-card--tint pf-study-task">
-        <details class="pf-study-task__details" open>
+        <details class="pf-study-task__details">
             <summary>Aufgabe 1 der Nutzerstudie</summary>
             <div class="pf-study-task__content">
                 <strong>Szenario</strong>
@@ -37,12 +37,12 @@
             kehre zur Befragung zurück.
         </p>
         <a class="pf-btn pf-btn--primary" th:href="@{/study/return}">
-            Aufgabe 1 abschließen und zur Befragung zurückkehren
+            Aufgabe 1 abschließen
         </a>
     </div>
     <div th:if="${session != null and session.studySessionId != null and session.studyPhase == 'TASK_2'}"
          class="pf-card pf-card--tint pf-study-task">
-        <details class="pf-study-task__details" open>
+        <details class="pf-study-task__details">
             <summary>Aufgabe 2 der Nutzerstudie</summary>
             <div class="pf-study-task__content">
                 <strong>Geänderte Situation</strong>
@@ -58,7 +58,7 @@
             kehre zur Befragung zurück.
         </p>
         <a class="pf-btn pf-btn--primary" th:href="@{/study/finish}">
-            Aufgabe 2 abschließen und zur Befragung zurückkehren
+            Aufgabe 2 abschließen
         </a>
     </div>
 </th:block>

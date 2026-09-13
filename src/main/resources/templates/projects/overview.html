@@ -271,9 +271,6 @@
 
                         <!-- Other Projects Section -->
                         <section class="pf-overview-section" id="regular-projects-section" th:if="${!#lists.isEmpty(projects.?[!pinned])}">
-                            <div class="pf-overview-section__header">
-                                <h2 class="pf-overview-section__title">Weitere Projekte</h2>
-                            </div>
                             <div class="pf-project-grid">
                                 <th:block th:each="project : ${projects.?[!pinned]}">
                                     <th:block th:replace="~{fragments/project-card :: card(${project}, ${selectedLocation})}" />

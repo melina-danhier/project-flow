@@ -92,6 +92,17 @@
         </form>
     </div>
 
+    <!-- Back to Project Plan Navigation at Bottom -->
+    <div style="max-width: 680px; margin: 1.5rem auto 0; display: flex; justify-content: flex-start;">
+        <a th:href="@{/projects/{id}/plan(id=${project.id})}" class="pf-btn pf-btn--ghost pf-btn--sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Zurück zum Projektplan
+        </a>
+    </div>
+
     <!-- Requirement 14: Single-project conversion warning confirmation dialog -->
     <dialog id="conversion-warning-dialog" class="pf-modal-dialog" style="padding: 0; border: none; border-radius: var(--pf-radius-lg); box-shadow: var(--pf-shadow-xl); max-width: 520px; width: 90%;">
         <div style="padding: 1.5rem; background: #ffffff;">

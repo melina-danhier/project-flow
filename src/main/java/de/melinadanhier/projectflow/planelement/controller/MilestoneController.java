@@ -1,8 +1,10 @@
 package de.melinadanhier.projectflow.planelement.controller;
 
 import de.melinadanhier.projectflow.common.validation.UpdateValidation;
+import de.melinadanhier.projectflow.planelement.dto.MilestoneCommentForm;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneDetailsDto;
 import de.melinadanhier.projectflow.planelement.dto.MilestoneForm;
+import de.melinadanhier.projectflow.planelement.service.MilestoneCommentService;
 import de.melinadanhier.projectflow.planelement.service.MilestoneService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import jakarta.validation.Valid;
@@ -26,6 +28,7 @@ import java.util.UUID;
 public class MilestoneController {
 
     private final MilestoneService milestoneService;
+    private final MilestoneCommentService commentService;
 
     @GetMapping("/projects/{projectId}/milestones/new")
     public String createForm(
@@ -64,9 +67,61 @@ public class MilestoneController {
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
     ) {
-        model.addAttribute("milestone", milestoneService.getMilestoneDetail(
-                projectId, milestoneId, currentUser.userId()));
+        populateDetailModel(model, projectId, milestoneId, currentUser.userId());
         return "projects/milestones/detail";
+    }
+
+    @PostMapping("/projects/{projectId}/milestones/{milestoneId}/comments")
+    public String addComment(
+            @PathVariable UUID projectId,
+            @PathVariable UUID milestoneId,
+            @Valid @ModelAttribute("commentForm") MilestoneCommentForm form,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            populateDetailModel(model, projectId, milestoneId, currentUser.userId());
+            return "projects/milestones/detail";
+        }
+        commentService.addComment(projectId, milestoneId, form, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", "Beitrag wurde hinzugefügt.");
+        return milestoneRedirect(projectId, milestoneId);
+    }
+
+    @PostMapping("/projects/{projectId}/milestones/{milestoneId}/comments/{commentId}")
+    public String updateComment(
+            @PathVariable UUID projectId,
+            @PathVariable UUID milestoneId,
+            @PathVariable UUID commentId,
+            @Valid @ModelAttribute("commentForm") MilestoneCommentForm form,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("errorMessage", "Der Beitrag darf nicht leer sein und höchstens 2000 Zeichen enthalten.");
+            populateDetailModel(model, projectId, milestoneId, currentUser.userId());
+            return "projects/milestones/detail";
+        }
+        commentService.updateOwnComment(projectId, milestoneId, commentId, form, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", "Beitrag wurde aktualisiert.");
+        return milestoneRedirect(projectId, milestoneId);
+    }
+
+    @PostMapping("/projects/{projectId}/milestones/{milestoneId}/comments/{commentId}/delete")
+    public String deleteComment(
+            @PathVariable UUID projectId,
+            @PathVariable UUID milestoneId,
+            @PathVariable UUID commentId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            RedirectAttributes redirectAttributes
+    ) {
+        commentService.deleteOwnComment(projectId, milestoneId, commentId, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", "Beitrag wurde gelöscht.");
+        return milestoneRedirect(projectId, milestoneId);
     }
 
     @GetMapping("/projects/{projectId}/milestones/{milestoneId}/edit")
@@ -130,6 +185,16 @@ public class MilestoneController {
             return milestoneRedirect(projectId, milestoneId);
         }
         return "redirect:/projects/" + projectId + "/plan";
+    }
+
+    private void populateDetailModel(Model model, UUID projectId, UUID milestoneId, UUID userId) {
+        model.addAttribute("milestone", milestoneService.getMilestoneDetail(projectId, milestoneId, userId));
+        var commentSection = commentService.getCommentSection(projectId, milestoneId, userId);
+        model.addAttribute("comments", commentSection.comments());
+        model.addAttribute("commentGroupProject", commentSection.groupProject());
+        if (!model.containsAttribute("commentForm")) {
+            model.addAttribute("commentForm", new MilestoneCommentForm());
+        }
     }
 
     private void populateFormModel(Model model, MilestoneDetailsDto context, boolean editing) {

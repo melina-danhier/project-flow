@@ -770,16 +770,25 @@
 }
 
 /* View Selector Dropdown */
-.pf-plan-view-dropdown summary {
+.pf-plan-view-wrap {
+    display: flex;
+    align-items: center;
+}
+
+.pf-plan-view-dropdown summary.pf-dropdown__trigger {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 34px;
+    padding: 0 0.85rem;
+    line-height: 1;
     cursor: pointer;
     font-weight: 600;
 }
 
 .pf-plan-view-dropdown .pf-dropdown__menu {
-    min-width: 150px;
+    min-width: 170px;
     max-width: calc(100vw - 2rem);
 }
 
@@ -1013,8 +1022,11 @@ details[open] .pf-phase-caret {
     height: 16px;
 }
 
-.pf-item-menu .pf-dropdown__menu {
-    min-width: 170px;
+.pf-item-menu .pf-dropdown__menu,
+.pf-phase-menu .pf-dropdown__menu {
+    min-width: 220px;
+    width: max-content;
+    max-width: min(340px, calc(100vw - 2rem));
 }
 
 /* Back to Top */
@@ -1188,6 +1200,20 @@ details[open] .pf-phase-caret {
     .pf-task-filter-wrap .pf-select {
         flex: 1;
         max-width: 200px;
+    }
+
+    /* Mobile Plan Card Simplification */
+    .plan-element .pf-element-item__right .pf-badge--gray,
+    .plan-element .pf-element-item__right .pf-badge--red,
+    .plan-element .pf-element-item__right .pf-badge--yellow,
+    .plan-element .pf-element-item__right .pf-badge--warning {
+        display: none;
+    }
+    .plan-element .pf-element-item__right {
+        gap: 0.35rem;
+    }
+    .plan-element {
+        padding: 0.65rem 0.75rem;
     }
 }
 
