@@ -38,7 +38,7 @@
             <!-- Consolidated Project Actions Dropdown -->
             <details class="pf-dropdown pf-dropdown--right" id="project-actions-dropdown">
                 <summary class="pf-btn pf-btn--primary pf-dropdown__trigger">
-                    <span>Projektaktionen</span>
+                    <span>Aktionen</span>
                     <svg class="pf-dropdown__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
@@ -188,6 +188,18 @@
                 <span class="pf-sort-label">Sortierung:</span>
                 <span class="pf-badge pf-badge--gray" th:text="${plan.project.sortMode.name() == 'DATE' ? 'Nach Datum' : 'Manuelle Reihenfolge'}">Nach Datum</span>
             </div>
+        </div>
+
+        <!-- Task Filter Control -->
+        <div class="pf-task-filter-wrap">
+            <label for="plan-task-filter-select" class="pf-sort-label">Aufgaben:</label>
+            <select id="plan-task-filter-select" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" aria-label="Aufgaben nach Status filtern">
+                <option value="ALL">Alle</option>
+                <option value="OPEN">Offene</option>
+                <option value="IN_PROGRESS">In Bearbeitung</option>
+                <option value="COMPLETED">Erledigte</option>
+                <option value="UNCOMPLETED">Nicht erledigt</option>
+            </select>
         </div>
 
         <!-- View Selection Dropdown -->
@@ -348,7 +360,7 @@
                 <li th:each="element, elementStat : ${section.elements}"
                     class="pf-element-item plan-element"
                     th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-element-item--milestone' : 'pf-element-item--task'}"
-                    th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id=${section.id},data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : (element.relevantDate != null ? element.relevantDate.toString() : '')},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
+                    th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-task-status=${element.type.name() == 'TASK' and element.taskStatus != null ? element.taskStatus.name() : (element.taskCompleted ? 'COMPLETED' : 'OPEN')},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id=${section.id},data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : (element.relevantDate != null ? element.relevantDate.toString() : '')},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
                     
                     <div class="pf-element-item__left">
                         <!-- Element Drag Handle -->
@@ -380,8 +392,16 @@
                             </select>
                         </form>
 
-                        <!-- Milestone Status Dropdown -->
-                        <form th:if="${element.type.name() == 'MILESTONE' and plan.editable}"
+                        <!-- Milestone Status: Checkbox in CHECKBOX mode, Select in STATUS mode -->
+                        <form th:if="${element.type.name() == 'MILESTONE' and plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}"
+                              class="pf-milestone-completion-form"
+                              th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${plan.project.id},milestoneId=${element.id})}" method="post">
+                            <input type="hidden" name="milestoneLockVersion" th:value="${element.lockVersion}">
+                            <input type="checkbox" name="completed" value="true" th:checked="${element.milestoneCompleted}"
+                                   th:aria-label="${element.milestoneCompleted ? 'Meilenstein als offen markieren: ' : 'Meilenstein als erreicht markieren: '} + ${element.title}"
+                                   onchange="this.form.requestSubmit()">
+                        </form>
+                        <form th:if="${element.type.name() == 'MILESTONE' and plan.editable and plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}"
                               th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${plan.project.id},milestoneId=${element.id})}" method="post" style="margin:0;">
                             <input type="hidden" name="milestoneLockVersion" th:value="${element.lockVersion}">
                             <select name="completed" class="pf-status-select pf-status-select--milestone"
@@ -393,7 +413,8 @@
 
                         <!-- Read-only icon indicators -->
                         <span class="pf-element-item__icon pf-element-item__icon--task" th:if="${element.type.name() == 'TASK' and !plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" th:text="${element.taskCompleted ? '✓' : '○'}"></span>
-                        <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}" title="Meilenstein: Markiert ein wichtiges Zwischenziel">◆</span>
+                        <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE' and (!plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX'))}" th:text="${element.milestoneCompleted ? '✓' : '○'}"></span>
+                        <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE' and plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}" title="Meilenstein: Markiert ein wichtiges Zwischenziel">◆</span>
 
                         <!-- Element Title & Description -->
                         <div class="pf-element-item__body">
@@ -404,9 +425,15 @@
                                th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
                                th:text="${element.title}" class="pf-element-item__title"></a>
                             <small th:if="${element.description}" th:text="${element.description}" class="pf-element-item__desc"></small>
-                            <small th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}"
-                                   th:text="${'Zugewiesen: ' + #strings.listJoin(element.assigneeDisplayNames, ', ')}"
-                                   class="pf-element-item__assignees"></small>
+                            <div th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}" class="pf-assignee-chips">
+                                <span th:each="name : ${element.assigneeDisplayNames}" class="pf-assignee-chip" th:title="${'Zugewiesen an ' + name}">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                    <span th:text="${name}">Name</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -489,7 +516,7 @@
             <li th:each="element, elementStat : ${plan.unsectionedElements}"
                 class="pf-element-item plan-element"
                 th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-element-item--milestone' : 'pf-element-item--task'}"
-                th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id='',data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
+                th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-task-status=${element.type.name() == 'TASK' and element.taskStatus != null ? element.taskStatus.name() : (element.taskCompleted ? 'COMPLETED' : 'OPEN')},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id='',data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
                 
                 <div class="pf-element-item__left">
                     <button th:if="${plan.editable}" type="button" class="element-drag-handle pf-drag-handle" title="Element verschieben" aria-label="Element verschieben">
@@ -513,15 +540,23 @@
                           th:action="@{/projects/{projectId}/tasks/{taskId}/status(projectId=${plan.project.id},taskId=${element.id})}" method="post" style="margin:0;">
                         <input type="hidden" name="taskLockVersion" th:value="${element.lockVersion}">
                         <select name="status" class="pf-status-select" th:classappend="${'pf-status-select--' + #strings.toLowerCase(element.taskStatus.name())}"
-                                onchange="this.form.requestSubmit()" title="Status ändern">
+                                    onchange="this.form.requestSubmit()" title="Status ändern">
                             <option value="OPEN" th:selected="${element.taskStatus.name() == 'OPEN'}">Offen</option>
                             <option value="IN_PROGRESS" th:selected="${element.taskStatus.name() == 'IN_PROGRESS'}">In Bearbeitung</option>
                             <option value="COMPLETED" th:selected="${element.taskStatus.name() == 'COMPLETED'}">Erledigt</option>
                         </select>
                     </form>
 
-                    <!-- Milestone Status Dropdown -->
-                    <form th:if="${element.type.name() == 'MILESTONE' and plan.editable}"
+                    <!-- Milestone Status: Checkbox in CHECKBOX mode, Select in STATUS mode -->
+                    <form th:if="${element.type.name() == 'MILESTONE' and plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}"
+                          class="pf-milestone-completion-form"
+                          th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${plan.project.id},milestoneId=${element.id})}" method="post">
+                        <input type="hidden" name="milestoneLockVersion" th:value="${element.lockVersion}">
+                        <input type="checkbox" name="completed" value="true" th:checked="${element.milestoneCompleted}"
+                               th:aria-label="${element.milestoneCompleted ? 'Meilenstein als offen markieren: ' : 'Meilenstein als erreicht markieren: '} + ${element.title}"
+                               onchange="this.form.requestSubmit()">
+                    </form>
+                    <form th:if="${element.type.name() == 'MILESTONE' and plan.editable and plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}"
                           th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${plan.project.id},milestoneId=${element.id})}" method="post" style="margin:0;">
                         <input type="hidden" name="milestoneLockVersion" th:value="${element.lockVersion}">
                         <select name="completed" class="pf-status-select pf-status-select--milestone"
@@ -531,9 +566,12 @@
                         </select>
                     </form>
 
+                    <!-- Read-only icon indicators -->
                     <span class="pf-element-item__icon pf-element-item__icon--task" th:if="${element.type.name() == 'TASK' and !plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX')}" th:text="${element.taskCompleted ? '✓' : '○'}"></span>
-                    <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE'}" title="Meilenstein: Markiert ein wichtiges Zwischenziel">◆</span>
+                    <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE' and (!plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX'))}" th:text="${element.milestoneCompleted ? '✓' : '○'}"></span>
+                    <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE' and plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}" title="Meilenstein: Markiert ein wichtiges Zwischenziel">◆</span>
 
+                    <!-- Element Title & Description -->
                     <div class="pf-element-item__body">
                         <a th:if="${element.type.name() == 'TASK'}"
                            th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
@@ -542,9 +580,15 @@
                            th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
                            th:text="${element.title}" class="pf-element-item__title"></a>
                         <small th:if="${element.description}" th:text="${element.description}" class="pf-element-item__desc"></small>
-                        <small th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}"
-                               th:text="${'Zugewiesen: ' + #strings.listJoin(element.assigneeDisplayNames, ', ')}"
-                               class="pf-element-item__assignees"></small>
+                        <div th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}" class="pf-assignee-chips">
+                            <span th:each="name : ${element.assigneeDisplayNames}" class="pf-assignee-chip" th:title="${'Zugewiesen an ' + name}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                <span th:text="${name}">Name</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
 

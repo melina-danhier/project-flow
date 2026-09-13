@@ -319,8 +319,91 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', setupPlanModals);
-    document.addEventListener('projectflow:plan-updated', setupPlanModals);
+    // Make whole card clickable to navigate to task / milestone detail page
+    document.addEventListener('click', event => {
+        const card = event.target.closest('.pf-element-item[data-detail-url], .plan-element[data-detail-url]');
+        if (!card) return;
+
+        // Do not navigate if clicking an interactive control
+        if (event.target.closest('button, input, textarea, select, a, label, form, .pf-drag-handle, .element-drag-handle, .pf-card-menu, details, summary')) {
+            return;
+        }
+
+        const url = card.dataset.detailUrl;
+        if (url) {
+            window.location.href = url;
+        }
+    });
+
+    // Keyboard support for focused cards
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            const card = document.activeElement;
+            if (card && card.matches('.pf-element-item[data-detail-url]') && event.target === card) {
+                event.preventDefault();
+                const url = card.dataset.detailUrl;
+                if (url) window.location.href = url;
+            }
+        }
+    });
+
+    // Task Filter setup & handling
+    function applyTaskFilter(filterValue) {
+        const main = planMain();
+        if (!main) return;
+
+        try {
+            sessionStorage.setItem(`projectflow:task-filter:${main.dataset.projectId}`, filterValue);
+        } catch (_e) {}
+
+        const taskElements = main.querySelectorAll('.plan-element[data-element-type="TASK"], .pf-element-item--task');
+        taskElements.forEach(task => {
+            const status = task.dataset.taskStatus || 'OPEN';
+            const completed = task.dataset.taskCompleted === 'true';
+
+            let visible = true;
+            if (filterValue === 'OPEN') {
+                visible = (status === 'OPEN' && !completed);
+            } else if (filterValue === 'IN_PROGRESS') {
+                visible = (status === 'IN_PROGRESS');
+            } else if (filterValue === 'COMPLETED') {
+                visible = (status === 'COMPLETED' || completed);
+            } else if (filterValue === 'UNCOMPLETED') {
+                visible = (status !== 'COMPLETED' && !completed);
+            } else {
+                visible = true;
+            }
+
+            task.style.display = visible ? '' : 'none';
+        });
+    }
+
+    function setupTaskFilter() {
+        const filterSelect = document.getElementById('plan-task-filter-select');
+        const main = planMain();
+        if (!filterSelect || !main) return;
+
+        let savedFilter = 'ALL';
+        try {
+            savedFilter = sessionStorage.getItem(`projectflow:task-filter:${main.dataset.projectId}`) || 'ALL';
+        } catch (_e) {}
+
+        filterSelect.value = savedFilter;
+        applyTaskFilter(savedFilter);
+
+        filterSelect.onchange = () => {
+            applyTaskFilter(filterSelect.value);
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setupPlanModals();
+        setupTaskFilter();
+    });
+    document.addEventListener('projectflow:plan-updated', () => {
+        setupPlanModals();
+        setupTaskFilter();
+    });
 
     window.ProjectFlowPlan = { submit: submitFields };
 })();

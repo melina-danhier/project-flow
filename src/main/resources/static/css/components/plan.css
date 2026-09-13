@@ -7,12 +7,12 @@
    ========================================================================== */
 
 .pf-plan-section {
-    margin-bottom: 1.25rem;
-    padding: 1rem 1.25rem;
-    background: #ffffff;
-    border: 1px solid var(--pf-border);
+    margin-bottom: 1.5rem;
+    padding: 1.15rem 1.25rem;
+    background: var(--pf-surface-subtle, #f8fafc);
+    border: 1px solid var(--pf-border-strong, #cbd5e1);
     border-radius: var(--pf-radius-lg);
-    box-shadow: var(--pf-shadow-xs);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: var(--pf-transition);
 }
 
@@ -22,8 +22,8 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.75rem;
-    padding-bottom: 0.65rem;
-    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
     border-bottom: 1px solid var(--pf-border);
     list-style: none;
     cursor: default;
@@ -46,17 +46,63 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.55rem 0.85rem;
-    background: var(--pf-surface);
+    padding: 0.65rem 0.95rem;
+    background: #ffffff;
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-md);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     transition: var(--pf-transition);
 }
 
+.pf-element-item[data-detail-url] {
+    cursor: pointer;
+}
+
 .pf-element-item:hover {
-    border-color: var(--pf-primary-border);
-    box-shadow: var(--pf-shadow-xs);
-    background: var(--pf-bg);
+    border-color: var(--pf-primary);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    background: #ffffff;
+}
+
+.pf-assignee-chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+
+.pf-assignee-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    background: var(--pf-primary-soft, #eef2ff);
+    color: var(--pf-primary, #4f46e5);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.pf-assignee-chip svg {
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.pf-milestone-completion-form,
+.pf-task-completion-form {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+}
+
+.pf-milestone-completion-form input[type="checkbox"],
+.pf-task-completion-form input[type="checkbox"] {
+    width: 1.15rem;
+    height: 1.15rem;
+    cursor: pointer;
 }
 
 .pf-element-item__left {
@@ -676,6 +722,24 @@
 
 .pf-plan-view-dropdown .pf-dropdown__menu {
     min-width: 140px;
+}
+
+/* Widen project actions dropdown to prevent cramped lines */
+#project-actions-dropdown .pf-dropdown__menu {
+    min-width: 250px;
+    width: max-content;
+    max-width: min(340px, calc(100vw - 2rem));
+}
+
+#project-actions-dropdown .pf-dropdown__item {
+    white-space: nowrap;
+}
+
+/* Task Filter Control in Plan Control Bar */
+.pf-task-filter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 /* Phase Header */

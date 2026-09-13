@@ -19,7 +19,19 @@
             </a>
             <div class="pf-cluster">
                 <h1 th:text="${task.title}" style="margin: 0;">Aufgabe</h1>
-                <span class="pf-badge pf-badge--blue" th:text="${task.status}">Status</span>
+                <form th:if="${task.editable}"
+                      th:action="@{/projects/{projectId}/tasks/{taskId}/status(projectId=${task.planContainerId},taskId=${task.id})}"
+                      method="post" style="margin: 0; display: inline-flex; align-items: center;">
+                    <input type="hidden" name="taskLockVersion" th:value="${task.lockVersion}">
+                    <select name="status" class="pf-status-select"
+                            th:classappend="${'pf-status-select--' + #strings.toLowerCase(task.status.name())}"
+                            onchange="this.form.submit()" title="Status ändern">
+                        <option value="OPEN" th:selected="${task.status.name() == 'OPEN'}">Offen</option>
+                        <option value="IN_PROGRESS" th:selected="${task.status.name() == 'IN_PROGRESS'}">In Bearbeitung</option>
+                        <option value="COMPLETED" th:selected="${task.status.name() == 'COMPLETED'}">Erledigt</option>
+                    </select>
+                </form>
+                <span th:unless="${task.editable}" class="pf-badge pf-badge--blue" th:text="${task.status}">Status</span>
                 <span class="pf-badge"
                       th:classappend="${task.priority != null and task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority != null and task.priority.name() == 'MEDIUM' ? 'pf-badge--yellow' : 'pf-badge--gray')}"
                       th:text="${task.priority}">Priorität</span>
@@ -65,8 +77,18 @@
                         </div>
                         <div th:if="${task.groupProject}">
                             <span style="font-size: 0.8rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Zugewiesen an</span>
-                            <div style="font-weight: 600; margin-top: 0.2rem;"
-                                 th:text="${#lists.isEmpty(task.assignees) ? 'Nicht zugewiesen' : #strings.listJoin(task.assignees.![displayName], ', ')}"></div>
+                            <div style="margin-top: 0.25rem;">
+                                <span th:if="${#lists.isEmpty(task.assignees)}" style="color: var(--pf-text-muted); font-size: 0.88rem;">Nicht zugewiesen</span>
+                                <div th:unless="${#lists.isEmpty(task.assignees)}" class="pf-assignee-chips">
+                                    <span th:each="assignee : ${task.assignees}" class="pf-assignee-chip">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                        <span th:text="${assignee.displayName}">Name</span>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--pf-border);">

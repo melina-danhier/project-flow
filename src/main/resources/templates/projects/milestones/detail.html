@@ -19,8 +19,19 @@
             <div class="pf-cluster">
                 <h1 th:text="${milestone.title}" style="margin: 0;">Meilenstein</h1>
                 <span class="pf-badge pf-badge--purple">Meilenstein</span>
-                <span class="pf-badge" th:classappend="${milestone.completed ? 'pf-badge--green' : 'pf-badge--gray'}"
-                      th:text="${milestone.completed ? 'Erledigt' : 'Offen'}">Offen</span>
+                <form th:if="${milestone.editable}"
+                      th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
+                      method="post" style="margin: 0; display: inline-flex; align-items: center;">
+                    <input type="hidden" name="milestoneLockVersion" th:value="${milestone.lockVersion}">
+                    <select name="completed" class="pf-status-select pf-status-select--milestone"
+                            onchange="this.form.submit()" title="Meilensteinstatus ändern">
+                        <option value="false" th:selected="${!milestone.completed}">Offen</option>
+                        <option value="true" th:selected="${milestone.completed}">Erreicht</option>
+                    </select>
+                </form>
+                <span th:unless="${milestone.editable}" class="pf-badge"
+                      th:classappend="${milestone.completed ? 'pf-badge--green' : 'pf-badge--gray'}"
+                      th:text="${milestone.completed ? 'Erreicht' : 'Offen'}">Offen</span>
             </div>
         </div>
 
