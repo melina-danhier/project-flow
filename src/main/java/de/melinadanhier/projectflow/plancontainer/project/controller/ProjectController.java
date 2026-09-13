@@ -68,7 +68,7 @@ public class ProjectController {
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             Model model
     ) {
-        ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
+        ProjectLocation selectedLocation = location;
         model.addAttribute("projects", projectService.searchAccessibleProjects(
                 query, selectedLocation, currentUser.userId()));
         model.addAttribute("query", query);

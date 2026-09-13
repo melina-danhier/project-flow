@@ -18,8 +18,8 @@
                     th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Projektarchiv' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Papierkorb' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Projektentwürfe (KI)' : 'Meine Projekte'))}">
                     Meine Projekte</h1>
                 <p class="pf-page-header__subtitle"
-                    th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Übersicht deiner archivierten Initiativen und abgeschlossenen Projekte.' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Verwalte gelöschte Projekte oder stelle sie wieder her.' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Prüfe und überarbeite deine durch KI generierten Projektentwürfe.' : 'Verwalte deine aktiven Initiativen, Aufgabenstrukturen und Meilensteine.'))}">
-                    Verwalte deine aktiven Initiativen, Aufgabenstrukturen und Meilensteine.</p>
+                    th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Hier findest du deine abgeschlossenen und archivierten Projekte.' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Verwalte gelöschte Projekte oder stelle sie wieder her.' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Prüfe und überarbeite deine durch KI generierten Projektentwürfe.' : 'Hier siehst du deine aktiven und zugewiesenen Projekte auf einen Blick.'))}">
+                    Hier siehst du deine aktiven und zugewiesenen Projekte auf einen Blick.</p>
             </div>
             <div class="pf-page-header__actions"
                 th:if="${selectedLocation == null or selectedLocation.name() == 'OVERVIEW' or selectedLocation.name() == 'DRAFT'}">
@@ -230,268 +230,57 @@
                     </a>
                 </div>
 
-                <!-- Redesigned Project Card Grid -->
-                <div class="pf-project-grid" th:unless="${#lists.isEmpty(projects)}">
-                    <div class="pf-project-card pf-project-card--v2" th:each="project : ${projects}"
-                        th:data-card-href="${selectedLocation != null and selectedLocation.name() == 'DRAFT' ? '/projects/' + project.id + '/draft' : '/projects/' + project.id + '/plan'}"
-                        tabindex="0" role="link" aria-label="Projekt öffnen">
-                        <!-- Top Row: Checkbox (left), Title (center), Hamburger Menu (right) using Grid -->
-                        <div class="pf-project-card__header">
-                            <div class="pf-project-card__select">
-                                <input type="checkbox" name="projectIds" th:value="${project.id}"
-                                    form="bulk-project-form" class="pf-checkbox-sm" aria-label="Projekt auswählen">
-                            </div>
-
-                            <div class="pf-project-card__title-wrap">
-                                <h3 class="pf-project-card__title">
-                                    <a th:if="${selectedLocation.name() != 'DRAFT'}"
-                                        th:href="@{/projects/{id}/plan(id=${project.id})}" th:text="${project.title}"
-                                        th:title="${project.title}">Projekttitel</a>
-                                    <a th:if="${selectedLocation.name() == 'DRAFT'}"
-                                        th:href="@{/projects/{id}/draft(id=${project.id})}" th:text="${project.title}"
-                                        th:title="${project.title}">Entwurftitel</a>
-                                </h3>
-                            </div>
-
-                            <!-- Hamburger Menu Dropdown (larger button & icon) -->
-                            <details class="pf-dropdown pf-card-menu">
-                                <summary class="pf-card-menu__btn" title="Aktionen">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <line x1="4" y1="6" x2="20" y2="6"></line>
-                                        <line x1="4" y1="12" x2="20" y2="12"></line>
-                                        <line x1="4" y1="18" x2="20" y2="18"></line>
-                                    </svg>
-                                </summary>
-                                <div class="pf-dropdown__menu pf-dropdown__menu--right">
-                                    <!-- Edit Project / Review Draft (at top) -->
-                                    <a th:if="${(selectedLocation == null or selectedLocation.name() == 'OVERVIEW') and project.owner}"
-                                        th:href="@{/projects/{id}/edit(id=${project.id})}" class="pf-dropdown__item">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                        <span>Projekt bearbeiten</span>
-                                    </a>
-                                    <a th:if="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}"
-                                        th:href="@{/projects/{id}/draft(id=${project.id})}" class="pf-dropdown__item">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                        <span>Entwurf prüfen</span>
-                                    </a>
-
-                                    <!-- Pin / Unpin (in Overview) -->
-                                    <th:block th:if="${selectedLocation.name() == 'OVERVIEW'}">
-                                        <form th:if="${!project.pinned}"
-                                            th:action="@{/projects/{id}/pin(id=${project.id})}" method="post"
-                                            style="margin: 0;">
-                                            <button class="pf-dropdown__item" type="submit">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <line x1="12" y1="17" x2="12" y2="22"></line>
-                                                    <path
-                                                        d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z">
-                                                    </path>
-                                                </svg>
-                                                <span>Anpinnen</span>
-                                            </button>
-                                        </form>
-                                        <form th:if="${project.pinned}"
-                                            th:action="@{/projects/{id}/unpin(id=${project.id})}" method="post"
-                                            style="margin: 0;">
-                                            <button class="pf-dropdown__item" type="submit">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <line x1="12" y1="17" x2="12" y2="22"></line>
-                                                    <path
-                                                        d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z">
-                                                    </path>
-                                                </svg>
-                                                <span>Nicht mehr anpinnen</span>
-                                            </button>
-                                        </form>
-                                    </th:block>
-
-                                    <!-- Archive / Reactivate -->
-                                    <th:block th:if="${project.owner}">
-                                        <form th:if="${selectedLocation.name() == 'OVERVIEW'}"
-                                            th:action="@{/projects/{id}/archive(id=${project.id})}" method="post"
-                                            data-confirm="Möchtest du dieses Projekt archivieren?"
-                                            data-confirm-title="Projekt archivieren" data-confirm-btn="Archivieren"
-                                            data-confirm-variant="primary" style="margin: 0;">
-                                            <button class="pf-dropdown__item" type="submit">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <polyline points="21 8 21 21 3 21 3 8"></polyline>
-                                                    <rect x="1" y="3" width="22" height="5"></rect>
-                                                    <line x1="10" y1="12" x2="14" y2="12"></line>
-                                                </svg>
-                                                <span>Archivieren</span>
-                                            </button>
-                                        </form>
-                                        <form th:if="${selectedLocation.name() == 'ARCHIVE'}"
-                                            th:action="@{/projects/{id}/reactivate(id=${project.id})}" method="post"
-                                            style="margin: 0;">
-                                            <button class="pf-dropdown__item" type="submit">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <polyline points="1 4 1 10 7 10"></polyline>
-                                                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                                                </svg>
-                                                <span>Reaktivieren</span>
-                                            </button>
-                                        </form>
-                                        <form th:if="${selectedLocation.name() == 'TRASH'}"
-                                            th:action="@{/projects/{id}/reactivate(id=${project.id})}" method="post"
-                                            style="margin: 0;">
-                                            <button class="pf-dropdown__item" type="submit">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <polyline points="1 4 1 10 7 10"></polyline>
-                                                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                                                </svg>
-                                                <span>Wiederherstellen</span>
-                                            </button>
-                                        </form>
-                                    </th:block>
-
-                                    <!-- Delete Actions -->
-                                    <th:block th:if="${project.owner}">
-                                        <form
-                                            th:if="${selectedLocation.name() == 'OVERVIEW' or selectedLocation.name() == 'ARCHIVE'}"
-                                            th:action="@{/projects/{id}/trash(id=${project.id})}" method="post"
-                                            data-confirm="Möchtest du dieses Projekt in den Papierkorb verschieben?"
-                                            data-confirm-title="In den Papierkorb verschieben"
-                                            data-confirm-btn="In den Papierkorb" data-confirm-variant="danger"
-                                            style="margin: 0;">
-                                            <button class="pf-dropdown__item pf-dropdown__item--danger" type="submit">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                                    <path
-                                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                                    </path>
-                                                </svg>
-                                                <span>Löschen</span>
-                                            </button>
-                                        </form>
-                                        <form th:if="${selectedLocation.name() == 'TRASH'}"
-                                            th:action="@{/projects/{id}/delete(id=${project.id})}" method="post"
-                                            data-confirm="Möchtest du dieses Projekt endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
-                                            data-confirm-title="Projekt endgültig löschen"
-                                            data-confirm-btn="Endgültig löschen" data-confirm-variant="danger"
-                                            style="margin: 0;">
-                                            <button class="pf-dropdown__item pf-dropdown__item--danger" type="submit">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                                    <path
-                                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                                    </path>
-                                                </svg>
-                                                <span>Endgültig löschen</span>
-                                            </button>
-                                        </form>
-                                    </th:block>
-
-                                    <!-- Draft Delete -->
-                                    <form th:if="${selectedLocation.name() == 'DRAFT'}"
-                                        th:action="@{/projects/bulk/delete-drafts}" method="post"
-                                        data-confirm="Möchtest du diesen Entwurf endgültig löschen?"
-                                        data-confirm-title="Entwurf löschen" data-confirm-btn="Endgültig löschen"
-                                        data-confirm-variant="danger" style="margin: 0;">
-                                        <input type="hidden" name="projectIds" th:value="${project.id}">
-                                        <button class="pf-dropdown__item pf-dropdown__item--danger" type="submit">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path
-                                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                                </path>
-                                            </svg>
-                                            <span>Entwurf löschen</span>
-                                        </button>
-                                    </form>
-                                </div>
-                            </details>
-                        </div>
-
-                        <!-- Middle: Category & Timeframe (Centered) -->
-                        <div class="pf-project-card__middle">
-                            <div class="pf-project-card__category">
-                                <span class="pf-badge pf-badge--yellow" th:if="${project.pinned}" title="Angepinnt">
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                                        style="vertical-align: -1px; margin-right: 2px;">
-                                        <line x1="12" y1="17" x2="12" y2="22"></line>
-                                        <path
-                                            d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z">
-                                        </path>
-                                    </svg>
-                                    Angepinnt
-                                </span>
-                                <span class="pf-badge pf-badge--gray" th:if="${project.category != null}"
-                                    th:text="${project.category.label}">Kategorie</span>
-                                <span class="pf-badge pf-badge--gray"
-                                    th:if="${project.category == null and project.projectTypeLabel != null}"
-                                    th:text="${project.projectTypeLabel}">Kategorie</span>
-                                <span class="pf-badge pf-badge--gray"
-                                    th:if="${project.category == null and project.projectTypeLabel == null}">Allgemein</span>
-                                <span class="pf-badge pf-badge--blue"
-                                    th:if="${project.collaborationMode != null and project.collaborationMode.name() == 'GROUP'}">Team</span>
-                            </div>
-
-                            <div class="pf-project-card__timeframe">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
-                                <span th:if="${project.startDate != null or project.endDate != null}">
-                                    <span th:if="${project.startDate != null}"
-                                        th:text="${#temporals.format(project.startDate, 'dd.MM.yyyy')}">Start</span>
-                                    <span th:if="${project.startDate != null and project.endDate != null}"> – </span>
-                                    <span th:if="${project.endDate != null}"
-                                        th:text="${#temporals.format(project.endDate, 'dd.MM.yyyy')}">Ende</span>
-                                </span>
-                                <span th:if="${project.startDate == null and project.endDate == null}"
-                                    style="color: var(--pf-text-muted);">Kein Zeitraum</span>
-                            </div>
-                        </div>
-
-                        <!-- Bottom: Progress Bar with Tasks Count Detail -->
-                        <div class="pf-project-card__bottom">
-                            <div class="pf-project-card__progress-info">
-                                <span class="pf-project-card__progress-tasks"
-                                    th:text="${(project.completedTasks != null ? project.completedTasks : 0) + '/' + (project.totalTasks != null ? project.totalTasks : 0) + ' Aufgaben'}">0/0
-                                    Aufgaben</span>
-                                <span th:text="${(project.progress != null ? project.progress : 0) + '%'}">0%</span>
-                            </div>
-                            <div class="pf-project-card__progress-bar" role="progressbar"
-                                th:aria-valuenow="${project.progress != null ? project.progress : 0}" aria-valuemin="0"
-                                aria-valuemax="100">
-                                <div class="pf-project-card__progress-fill"
-                                    th:style="'width: ' + ${project.progress != null ? project.progress : 0} + '%;'">
-                                </div>
-                            </div>
-                        </div>
+                <!-- Project List Area (when not empty) -->
+                <div th:unless="${#lists.isEmpty(projects)}">
+                    <!-- Category Filter Bar (Client-side fast filtering) -->
+                    <div class="pf-filter-bar" id="project-filter-bar" aria-label="Kategoriefilter" style="display: none;">
+                        <button type="button" class="pf-filter-pill active" data-filter="all">Alle</button>
                     </div>
+
+                    <!-- When Active Overview and there are pinned projects -->
+                    <th:block th:if="${(selectedLocation == null or selectedLocation.name() == 'OVERVIEW') and !#lists.isEmpty(projects.?[pinned])}">
+                        <!-- Pinned Section -->
+                        <section class="pf-overview-section" id="pinned-projects-section">
+                            <div class="pf-overview-section__header">
+                                <h2 class="pf-overview-section__title">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--pf-primary);">
+                                        <line x1="12" y1="17" x2="12" y2="22"></line>
+                                        <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+                                    </svg>
+                                    Angepinnte Projekte
+                                </h2>
+                            </div>
+                            <div class="pf-project-grid">
+                                <th:block th:each="project : ${projects.?[pinned]}">
+                                    <th:block th:replace="~{fragments/project-card :: card(${project}, ${selectedLocation})}" />
+                                </th:block>
+                            </div>
+                        </section>
+
+                        <!-- Section Divider -->
+                        <div class="pf-overview-section__divider" th:if="${!#lists.isEmpty(projects.?[!pinned])}"></div>
+
+                        <!-- Other Projects Section -->
+                        <section class="pf-overview-section" id="regular-projects-section" th:if="${!#lists.isEmpty(projects.?[!pinned])}">
+                            <div class="pf-overview-section__header">
+                                <h2 class="pf-overview-section__title">Weitere Projekte</h2>
+                            </div>
+                            <div class="pf-project-grid">
+                                <th:block th:each="project : ${projects.?[!pinned]}">
+                                    <th:block th:replace="~{fragments/project-card :: card(${project}, ${selectedLocation})}" />
+                                </th:block>
+                            </div>
+                        </section>
+                    </th:block>
+
+                    <!-- Default Grid (no pinned projects or other locations like ARCHIVE / TRASH / DRAFT) -->
+                    <th:block th:unless="${(selectedLocation == null or selectedLocation.name() == 'OVERVIEW') and !#lists.isEmpty(projects.?[pinned])}">
+                        <div class="pf-project-grid">
+                            <th:block th:each="project : ${projects}">
+                                <th:block th:replace="~{fragments/project-card :: card(${project}, ${selectedLocation})}" />
+                            </th:block>
+                        </div>
+                    </th:block>
                 </div>
             </section>
         </div>
@@ -578,6 +367,70 @@
                     }
                 }
             });
+
+            // Category Filter Bar initialization
+            const filterBar = document.getElementById('project-filter-bar');
+            const allCards = Array.from(document.querySelectorAll('.pf-project-card[data-category]'));
+
+            if (filterBar && allCards.length > 0) {
+                const categories = Array.from(new Set(
+                    allCards.map(c => c.getAttribute('data-category')).filter(Boolean)
+                )).sort((a, b) => a.localeCompare(b, 'de'));
+
+                if (categories.length > 1) {
+                    filterBar.innerHTML = '';
+
+                    const createPill = (label, filterVal, isActive) => {
+                        const pill = document.createElement('button');
+                        pill.type = 'button';
+                        pill.className = 'pf-filter-pill' + (isActive ? ' active' : '');
+                        pill.setAttribute('data-filter', filterVal);
+                        pill.textContent = label;
+                        pill.addEventListener('click', () => applyCategoryFilter(filterVal, pill));
+                        return pill;
+                    };
+
+                    filterBar.appendChild(createPill('Alle', 'all', true));
+                    categories.forEach(cat => {
+                        filterBar.appendChild(createPill(cat, cat, false));
+                    });
+
+                    filterBar.style.display = 'flex';
+                }
+
+                function applyCategoryFilter(catVal, activePill) {
+                    filterBar.querySelectorAll('.pf-filter-pill').forEach(p => p.classList.remove('active'));
+                    activePill.classList.add('active');
+
+                    allCards.forEach(card => {
+                        const cardCat = card.getAttribute('data-category');
+                        const isMatch = catVal === 'all' || cardCat === catVal;
+                        card.style.display = isMatch ? '' : 'none';
+                    });
+
+                    // Update pinned & regular sections visibility
+                    const pinnedSec = document.getElementById('pinned-projects-section');
+                    const regularSec = document.getElementById('regular-projects-section');
+                    const divider = document.querySelector('.pf-overview-section__divider');
+
+                    let pinnedVisible = false;
+                    let regularVisible = false;
+
+                    if (pinnedSec) {
+                        pinnedVisible = Array.from(pinnedSec.querySelectorAll('.pf-project-card')).some(c => c.style.display !== 'none');
+                        pinnedSec.style.display = pinnedVisible ? '' : 'none';
+                    }
+
+                    if (regularSec) {
+                        regularVisible = Array.from(regularSec.querySelectorAll('.pf-project-card')).some(c => c.style.display !== 'none');
+                        regularSec.style.display = regularVisible ? '' : 'none';
+                    }
+
+                    if (divider) {
+                        divider.style.display = (pinnedVisible && regularVisible) ? '' : 'none';
+                    }
+                }
+            }
 
             updateSelectionState();
         })();

@@ -2,6 +2,8 @@ package de.melinadanhier.projectflow.plancontainer.project.repository;
 
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -34,15 +36,24 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
             from Project project
             join project.memberships membership
             where membership.user.id = :userId and membership.active = true
-              and project.location = :location
-              and (lower(project.title) like lower(concat('%', :query, '%'))
-                   or lower(coalesce(project.description, '')) like lower(concat('%', :query, '%')))
+              and (:location is null or project.location = :location)
+              and (
+                   lower(project.title) like lower(concat('%', :query, '%'))
+                or lower(coalesce(project.description, '')) like lower(concat('%', :query, '%'))
+                or lower(coalesce(project.otherProjectTypeDescription, '')) like lower(concat('%', :query, '%'))
+                or (:hasCategories = true and project.category in :categories)
+                or (:hasSubcategories = true and project.subcategory in :subcategories)
+              )
             order by membership.pinned desc, project.updatedAt desc
             """)
     List<Project> searchAccessibleByUserIdAndLocation(
             @Param("userId") UUID userId,
             @Param("location") ProjectLocation location,
-            @Param("query") String query
+            @Param("query") String query,
+            @Param("categories") List<ProjectCategory> categories,
+            @Param("hasCategories") boolean hasCategories,
+            @Param("subcategories") List<ProjectSubCategory> subcategories,
+            @Param("hasSubcategories") boolean hasSubcategories
     );
 
     default List<Project> findAllAccessibleByUserId(UUID userId) {

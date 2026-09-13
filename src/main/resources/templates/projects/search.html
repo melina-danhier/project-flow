@@ -102,8 +102,11 @@
 
                         <div style="min-width: 160px;">
                             <select name="location" class="pf-select">
+                                <option value=""
+                                    th:selected="${selectedLocation == null}">
+                                    Alle</option>
                                 <option value="OVERVIEW"
-                                    th:selected="${selectedLocation == null or selectedLocation.name() == 'OVERVIEW'}">
+                                    th:selected="${selectedLocation != null and selectedLocation.name() == 'OVERVIEW'}">
                                     Aktiv</option>
                                 <option value="DRAFT"
                                     th:selected="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}">
@@ -199,11 +202,21 @@
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                         </svg>
-                                        <span>Projekt bearbeiten</span>
+                                        <span>Bearbeiten</span>
+                                    </a>
+                                    <a th:if="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}"
+                                        th:href="@{/projects/{id}/draft(id=${project.id})}" class="pf-dropdown__item">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                        <span>Entwurf prüfen</span>
                                     </a>
 
                                     <!-- Pin / Unpin (in Overview) -->
-                                    <th:block th:if="${selectedLocation.name() == 'OVERVIEW'}">
+                                    <th:block th:if="${selectedLocation != null and selectedLocation.name() == 'OVERVIEW'}">
                                         <form th:if="${!project.pinned}"
                                             th:action="@{/projects/{id}/pin(id=${project.id})}" method="post"
                                             style="margin: 0;">
@@ -238,7 +251,7 @@
 
                                     <!-- Archive / Reactivate -->
                                     <th:block th:if="${project.owner}">
-                                        <form th:if="${selectedLocation.name() == 'OVERVIEW'}"
+                                        <form th:if="${selectedLocation != null and selectedLocation.name() == 'OVERVIEW'}"
                                             th:action="@{/projects/{id}/archive(id=${project.id})}" method="post"
                                             data-confirm="Möchtest du dieses Projekt archivieren?"
                                             data-confirm-title="Projekt archivieren" data-confirm-btn="Archivieren"
@@ -254,7 +267,7 @@
                                                 <span>Archivieren</span>
                                             </button>
                                         </form>
-                                        <form th:if="${selectedLocation.name() == 'ARCHIVE'}"
+                                        <form th:if="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE'}"
                                             th:action="@{/projects/{id}/reactivate(id=${project.id})}" method="post"
                                             style="margin: 0;">
                                             <button class="pf-dropdown__item" type="submit">
@@ -267,7 +280,7 @@
                                                 <span>Reaktivieren</span>
                                             </button>
                                         </form>
-                                        <form th:if="${selectedLocation.name() == 'TRASH'}"
+                                        <form th:if="${selectedLocation != null and selectedLocation.name() == 'TRASH'}"
                                             th:action="@{/projects/{id}/reactivate(id=${project.id})}" method="post"
                                             style="margin: 0;">
                                             <button class="pf-dropdown__item" type="submit">
@@ -285,7 +298,7 @@
                                     <!-- Delete Actions -->
                                     <th:block th:if="${project.owner}">
                                         <form
-                                            th:if="${selectedLocation.name() == 'OVERVIEW' or selectedLocation.name() == 'ARCHIVE'}"
+                                            th:if="${selectedLocation == null or selectedLocation.name() == 'OVERVIEW' or selectedLocation.name() == 'ARCHIVE'}"
                                             th:action="@{/projects/{id}/trash(id=${project.id})}" method="post"
                                             data-confirm="Möchtest du dieses Projekt in den Papierkorb verschieben?"
                                             data-confirm-title="In den Papierkorb verschieben"
@@ -303,7 +316,7 @@
                                                 <span>Löschen</span>
                                             </button>
                                         </form>
-                                        <form th:if="${selectedLocation.name() == 'TRASH'}"
+                                        <form th:if="${selectedLocation != null and selectedLocation.name() == 'TRASH'}"
                                             th:action="@{/projects/{id}/delete(id=${project.id})}" method="post"
                                             data-confirm="Möchtest du dieses Projekt endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
                                             data-confirm-title="Projekt endgültig löschen"

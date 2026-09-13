@@ -20,6 +20,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.Projec
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.Template;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.repository.TemplateRepository;
@@ -49,6 +50,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -268,10 +270,29 @@ public class ProjectService {
             ProjectLocation location,
             UUID userId
     ) {
-        ProjectLocation selectedLocation = location == null ? ProjectLocation.OVERVIEW : location;
         String normalizedQuery = query == null ? "" : query.trim();
+        List<ProjectCategory> matchingCategories = normalizedQuery.isBlank()
+                ? List.of()
+                : Arrays.stream(ProjectCategory.values())
+                        .filter(cat -> cat.name().equalsIgnoreCase(normalizedQuery)
+                                || cat.getLabel().toLowerCase().contains(normalizedQuery.toLowerCase()))
+                        .toList();
+
+        List<ProjectSubCategory> matchingSubcategories = normalizedQuery.isBlank()
+                ? List.of()
+                : Arrays.stream(ProjectSubCategory.values())
+                        .filter(sub -> sub.name().equalsIgnoreCase(normalizedQuery)
+                                || sub.getLabel().toLowerCase().contains(normalizedQuery.toLowerCase()))
+                        .toList();
+
+        boolean hasCategories = !matchingCategories.isEmpty();
+        boolean hasSubcategories = !matchingSubcategories.isEmpty();
+
+        List<ProjectCategory> safeCategories = hasCategories ? matchingCategories : List.of(ProjectCategory.OTHER);
+        List<ProjectSubCategory> safeSubcategories = hasSubcategories ? matchingSubcategories : List.of(ProjectSubCategory.OTHER_EDUCATION);
+
         return toSummariesWithProgress(projectRepository.searchAccessibleByUserIdAndLocation(
-                userId, selectedLocation, normalizedQuery), userId);
+                userId, location, normalizedQuery, safeCategories, hasCategories, safeSubcategories, hasSubcategories), userId);
     }
 
     @Transactional(readOnly = true)
