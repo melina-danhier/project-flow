@@ -214,6 +214,18 @@ public class ProjectController {
                 : "redirect:/projects";
     }
 
+    @PostMapping("/projects/bulk/reactivate")
+    public String reactivateSelected(@RequestParam List<UUID> projectIds,
+                                     @RequestParam(required = false) ProjectLocation sourceLocation,
+                                     @AuthenticationPrincipal AuthenticatedUser currentUser,
+                                     RedirectAttributes redirectAttributes) {
+        int count = projectService.reactivateProjects(projectIds, currentUser.userId());
+        redirectAttributes.addFlashAttribute("successMessage", count + " Projekte wurden wiederhergestellt.");
+        return sourceLocation == ProjectLocation.TRASH
+                ? "redirect:/projects?location=TRASH"
+                : (sourceLocation == ProjectLocation.ARCHIVE ? "redirect:/projects?location=ARCHIVE" : "redirect:/projects");
+    }
+
     @PostMapping("/projects/bulk/delete")
     public String deleteSelectedPermanently(@RequestParam List<UUID> projectIds,
                                             @AuthenticationPrincipal AuthenticatedUser currentUser,

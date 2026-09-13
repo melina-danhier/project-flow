@@ -474,6 +474,13 @@ public class ProjectService {
     }
 
     @Transactional
+    public int reactivateProjects(Collection<UUID> projectIds, UUID userId) {
+        List<UUID> ids = validateBulkSelection(projectIds);
+        ids.forEach(projectId -> reactivateProject(projectId, userId));
+        return ids.size();
+    }
+
+    @Transactional
     public void deleteProjectPermanently(UUID projectId, UUID userId) {
         ProjectMember owner = authorizationService.requireOwner(projectId, userId);
         Project project = owner.getProject();

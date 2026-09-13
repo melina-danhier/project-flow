@@ -119,11 +119,21 @@
                         data-confirm="Möchtest du die ausgewählten Projekte archivieren?"
                         data-confirm-title="Projekte archivieren" data-confirm-btn="Archivieren"
                         data-confirm-variant="primary">Archivieren</button>
+                    <button th:if="${selectedLocation.name() == 'ARCHIVE'}" type="submit"
+                        class="pf-btn pf-btn--sm pf-btn--outline" th:formaction="@{/projects/bulk/reactivate}"
+                        data-confirm="Möchtest du die ausgewählten Projekte reaktivieren?"
+                        data-confirm-title="Projekte reaktivieren" data-confirm-btn="Reaktivieren"
+                        data-confirm-variant="primary">Wiederherstellen</button>
                     <button th:if="${selectedLocation.name() == 'OVERVIEW' or selectedLocation.name() == 'ARCHIVE'}"
                         type="submit" class="pf-btn pf-btn--sm pf-btn--danger"
                         data-confirm="Möchtest du die ausgewählten Projekte in den Papierkorb verschieben?"
                         data-confirm-title="Projekte in den Papierkorb verschieben" data-confirm-btn="In den Papierkorb"
                         data-confirm-variant="danger">Löschen</button>
+                    <button th:if="${selectedLocation.name() == 'TRASH'}" type="submit"
+                        class="pf-btn pf-btn--sm pf-btn--outline" th:formaction="@{/projects/bulk/reactivate}"
+                        data-confirm="Möchtest du die ausgewählten Projekte wiederherstellen?"
+                        data-confirm-title="Projekte wiederherstellen" data-confirm-btn="Wiederherstellen"
+                        data-confirm-variant="primary">Wiederherstellen</button>
                     <button th:if="${selectedLocation.name() == 'TRASH'}" type="submit"
                         class="pf-btn pf-btn--sm pf-btn--danger" th:formaction="@{/projects/bulk/delete}"
                         data-confirm="Möchtest du die ausgewählten Projekte endgültig löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
@@ -232,8 +242,9 @@
 
                 <!-- Project List Area (when not empty) -->
                 <div th:unless="${#lists.isEmpty(projects)}">
-                    <!-- Category Filter Bar (Client-side fast filtering) -->
-                    <div class="pf-filter-bar" id="project-filter-bar" aria-label="Kategoriefilter" style="display: none;">
+                    <!-- Category Filter Bar (Client-side fast filtering - Only on Aktiv) -->
+                    <div th:if="${selectedLocation == null or selectedLocation.name() == 'OVERVIEW'}"
+                         class="pf-filter-bar" id="project-filter-bar" aria-label="Kategoriefilter" style="display: none;">
                         <button type="button" class="pf-filter-pill active" data-filter="all">Alle</button>
                     </div>
 

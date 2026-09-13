@@ -83,15 +83,19 @@
                 <div class="pf-time-section-header">
                     <h3>Zeitlicher Rahmen & Arbeitszeit</h3>
                     <p>
-                        Diese Werte beschreiben die Zeit, die dir für die eigentliche Arbeit zur Verfügung steht (z. B. bis zum Event-, Abgabe- oder Liefertermin). Alle Zeitangaben sind optional.
+                        Diese Werte beschreiben die Zeit, die dir für die eigentliche Arbeit zur Verfügung steht (z. B. bis zum Event-, Abgabe- oder Liefertermin).
                     </p>
+                </div>
+
+                <div class="pf-alert pf-alert--info" style="margin-bottom: 1.25rem; font-size: 0.88rem; padding: 0.65rem 0.95rem;">
+                    💡 <strong>Tipp:</strong> Zwei Angaben genügen (Startdatum, Endtermin oder Dauer) – der dritte Wert wird automatisch berechnet.
                 </div>
 
                 <div class="pf-time-grid">
                     <div class="pf-form-group">
                         <label for="startDate" class="pf-label">
                             <span>Startdatum</span>
-                            <span class="pf-hint">(optional)</span>
+                            <span class="pf-hint">(optional – berechnet aus Endtermin & Dauer)</span>
                         </label>
                         <div class="pf-start-date-row">
                             <input id="startDate" type="date" th:field="*{startDate}" class="pf-input" style="flex: 1; min-width: 140px;">
@@ -106,7 +110,7 @@
                     <div class="pf-form-group">
                         <label for="endDate" class="pf-label">
                             <span>Endtermin / Deadline</span>
-                            <span class="pf-hint">(optional)</span>
+                            <span class="pf-hint">(optional – berechnet aus Start & Dauer)</span>
                         </label>
                         <input id="endDate" type="date" th:field="*{endDate}" class="pf-input">
                         <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="pf-alert pf-alert--error" role="alert"></div>
@@ -115,7 +119,7 @@
                     <div class="pf-form-group">
                         <label for="durationValue" class="pf-label">
                             <span>Geschätzte Dauer</span>
-                            <span class="pf-hint">(optional)</span>
+                            <span class="pf-hint">(optional – berechnet aus Start & Endtermin)</span>
                         </label>
                         <div class="pf-duration-picker">
                             <input id="durationValue" type="number" min="1" step="1" th:field="*{durationValue}" class="pf-input pf-duration-value" placeholder="z. B. 6">

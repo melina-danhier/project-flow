@@ -10,7 +10,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.25rem;
-    margin: 1.5rem 0;
+    margin: 0;
 }
 
 .pf-project-card {
@@ -253,6 +253,10 @@
 
 .pf-card-menu[open] .pf-dropdown__menu {
     z-index: 120;
+    min-width: 220px;
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+    white-space: nowrap;
 }
 
 .pf-project-card--v2:hover .pf-project-card__title a {
@@ -381,6 +385,11 @@
     .pf-card-menu__btn svg {
         width: 18px;
         height: 18px;
+    }
+
+    .pf-card-menu[open] .pf-dropdown__menu {
+        min-width: 190px;
+        max-width: calc(100vw - 2.5rem);
     }
 }
 

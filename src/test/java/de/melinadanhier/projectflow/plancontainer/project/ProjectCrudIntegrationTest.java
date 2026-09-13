@@ -161,10 +161,19 @@ class ProjectCrudIntegrationTest {
         assertThat(projectRepository.findAllById(projectIds))
                 .allSatisfy(project -> assertThat(project.getLocation()).isEqualTo(ProjectLocation.ARCHIVE));
 
+        assertThat(projectService.reactivateProjects(projectIds, owner.getId())).isEqualTo(2);
+        assertThat(projectRepository.findAllById(projectIds))
+                .allSatisfy(project -> assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW));
+
         assertThat(projectService.moveProjectsToTrash(projectIds, owner.getId())).isEqualTo(2);
         assertThat(projectRepository.findAllById(projectIds))
                 .allSatisfy(project -> assertThat(project.getLocation()).isEqualTo(ProjectLocation.TRASH));
 
+        assertThat(projectService.reactivateProjects(projectIds, owner.getId())).isEqualTo(2);
+        assertThat(projectRepository.findAllById(projectIds))
+                .allSatisfy(project -> assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW));
+
+        assertThat(projectService.moveProjectsToTrash(projectIds, owner.getId())).isEqualTo(2);
         assertThat(projectService.deleteProjectsPermanently(projectIds, owner.getId())).isEqualTo(2);
         assertThat(projectRepository.findAllById(projectIds)).isEmpty();
     }
