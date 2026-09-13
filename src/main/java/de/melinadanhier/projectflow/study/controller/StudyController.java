@@ -43,11 +43,7 @@ public class StudyController {
         trackingService.startOrResume(session, participant);
         trackingService.beginTaskOne(session);
 
-        var projectId = trackingService.activeProjectId(session);
-
-        return projectId
-                .map(uuid -> "redirect:/projects/" + uuid + "/plan")
-                .orElse("redirect:/projects/new");
+        return "redirect:/projects";
     }
 
     @GetMapping("/study/return")
@@ -76,7 +72,7 @@ public class StudyController {
 
         trackingService.beginTaskTwo(session);
 
-        return "redirect:/projects/" + projectId + "/plan";
+        return "redirect:/projects";
     }
 
     @GetMapping("/study/finish")
@@ -85,6 +81,11 @@ public class StudyController {
                 .orElseThrow(() -> new IllegalStateException("Keine aktive Studien-Session vorhanden."));
         trackingService.finish(session);
         return questionnaireRedirect(participantId);
+    }
+
+    @GetMapping("/study/restricted")
+    public String restricted() {
+        return "study/restricted";
     }
 
     private String questionnaireRedirect(String participantId) {

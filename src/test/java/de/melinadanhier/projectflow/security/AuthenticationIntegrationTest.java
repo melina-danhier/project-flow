@@ -13,6 +13,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.membership.Proje
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
@@ -121,6 +122,60 @@ class AuthenticationIntegrationTest {
                 .andExpect(redirectedUrl("/login?logout"))
                 .andExpect(unauthenticated());
         assertThat(session.isInvalid()).isTrue();
+    }
+
+    @Test
+    void activeStudySessionCannotOpenLoginOrRegistration() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, UUID.randomUUID());
+
+        mockMvc.perform(get("/login").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/study/restricted"));
+        mockMvc.perform(get("/register").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/study/restricted"));
+        mockMvc.perform(post("/login")
+                        .session(session)
+                        .param("email", "manuell@example.org")
+                        .param("password", "beliebiges-passwort")
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/study/restricted"));
+        mockMvc.perform(post("/register")
+                        .session(session)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/study/restricted"));
+    }
+
+    @Test
+    void activeStudySessionCannotLogOut() throws Exception {
+        String email = "study-logout@projectflow.local";
+        saveUser(email, "zufaelliges-passwort", true);
+        MockHttpSession session = login(email, "zufaelliges-passwort");
+        session.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, UUID.randomUUID());
+
+        mockMvc.perform(post("/logout").session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/study/restricted"))
+                .andExpect(authenticated());
+        assertThat(session.isInvalid()).isFalse();
+    }
+
+    @Test
+    void activeStudySessionCanUseProjectOverviewAndStartNewProject() throws Exception {
+        String email = "study-navigation@projectflow.local";
+        saveUser(email, "zufaelliges-passwort", true);
+        MockHttpSession session = login(email, "zufaelliges-passwort");
+        session.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, UUID.randomUUID());
+
+        mockMvc.perform(get("/projects").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("projects/overview"));
+        mockMvc.perform(get("/projects/new").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("wizard/basics"));
     }
 
     @Test

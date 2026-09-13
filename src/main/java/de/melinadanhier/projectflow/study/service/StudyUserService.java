@@ -22,6 +22,7 @@ public class StudyUserService {
 
     private static final String EMAIL_PREFIX = "study-";
     private static final String EMAIL_SUFFIX = "@projectflow.local";
+    private static final String DISPLAY_NAME = "Studienteilnehmer";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -30,13 +31,23 @@ public class StudyUserService {
     @Transactional
     public User getOrCreateStudyUser(String participantId) {
         String email = EMAIL_PREFIX + participantId + EMAIL_SUFFIX;
-        return userRepository.findByEmail(email).orElseGet(() -> createStudyUser(email));
+        return userRepository.findByEmail(email)
+                .map(this::ensureStudyDisplayName)
+                .orElseGet(() -> createStudyUser(email));
+    }
+
+    private User ensureStudyDisplayName(User user) {
+        if (!DISPLAY_NAME.equals(user.getDisplayName())) {
+            user.setDisplayName(DISPLAY_NAME);
+            return userRepository.saveAndFlush(user);
+        }
+        return user;
     }
 
     private User createStudyUser(String email) {
         User user = new User();
         user.setEmail(email);
-        user.setDisplayName("Studienteilnehmer");
+        user.setDisplayName(DISPLAY_NAME);
         user.setPasswordHash(
                 passwordEncoder.encode(UUID.randomUUID().toString())
         );
@@ -57,7 +68,8 @@ public class StudyUserService {
                 user.getId(),
                 user.getEmail(),
                 user.getPasswordHash(),
-                true
+                true,
+                DISPLAY_NAME
         );
         UsernamePasswordAuthenticationToken authentication = UsernamePasswordAuthenticationToken.authenticated(
                 principal,

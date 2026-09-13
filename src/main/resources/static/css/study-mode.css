@@ -1,0 +1,7 @@
+.pf-study-disabled,
+.pf-study-disabled:disabled,
+[aria-disabled="true"].pf-study-disabled {
+    cursor: not-allowed !important;
+    opacity: 0.5;
+    filter: grayscale(0.35);
+}

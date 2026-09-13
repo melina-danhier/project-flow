@@ -588,7 +588,12 @@ button:disabled,
 }
 
 .pf-study-task {
-    margin-bottom: 1.5rem;
+    margin: 0;
+}
+
+.pf-study-task-shell {
+    width: min(1200px, calc(100% - 2rem));
+    margin: 1.5rem auto 0;
 }
 
 .pf-study-task__details > summary {

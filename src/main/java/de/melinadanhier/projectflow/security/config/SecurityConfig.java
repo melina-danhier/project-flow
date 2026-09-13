@@ -1,5 +1,6 @@
 package de.melinadanhier.projectflow.security.config;
 
+import de.melinadanhier.projectflow.security.filter.StudyModeRestrictionFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -26,6 +28,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                .addFilterBefore(
+                        new StudyModeRestrictionFilter(),
+                        LogoutFilter.class
+                )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/",

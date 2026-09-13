@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StudyNavigationTemplateTest {
 
     @Test
-    void projectOverviewAndPlanIncludeStudyReturnOptions() throws IOException {
+    void globalHeaderIncludesStudyReturnOptions() throws IOException {
         String overview = Files.readString(Path.of(
                 "src/main/resources/templates/projects/overview.html"));
         String plan = Files.readString(Path.of(
@@ -19,10 +19,12 @@ class StudyNavigationTemplateTest {
         String layout = Files.readString(Path.of(
                 "src/main/resources/templates/fragments/layout.html"));
 
-        assertThat(overview).contains("fragments/layout :: study-return");
-        assertThat(plan).contains("fragments/layout :: study-return");
+        assertThat(overview).doesNotContain("fragments/layout :: study-return");
+        assertThat(plan).doesNotContain("fragments/layout :: study-return");
         assertThat(layout)
                 .contains("th:fragment=\"study-return\"")
+                .contains("th:fragment=\"site-header\"")
+                .contains("<th:block th:replace=\"~{fragments/layout :: study-return}\" />")
                 .contains("session.studyPhase == 'TASK_1'")
                 .contains("session.studyPhase == 'TASK_2'")
                 .contains("Aufgabe 1 der Nutzerstudie")
@@ -34,5 +36,8 @@ class StudyNavigationTemplateTest {
                 .contains("<details class=\"pf-study-task__details\" open>")
                 .contains("@{/study/return}")
                 .contains("@{/study/finish}");
+        assertThat(layout)
+                .contains("@{/css/study-mode.css}")
+                .contains("@{/js/study-mode.js}");
     }
 }
