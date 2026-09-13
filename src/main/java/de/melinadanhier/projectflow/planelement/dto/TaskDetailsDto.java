@@ -51,4 +51,15 @@ public class TaskDetailsDto {
     private boolean blocked;
     private Instant completedAt;
     private long lockVersion;
+
+    public String getOriginLabel() {
+        if (origin == null) return null;
+        return switch (origin) {
+            case USER -> "Nutzereingabe";
+            case TEMPLATE -> "Vorlage";
+            case TEMPLATE_MODIFIED -> "Vorlage · bearbeitet";
+            case AI -> "KI-Vorschlag";
+            case AI_MODIFIED -> "KI-Vorschlag · bearbeitet";
+        };
+    }
 }

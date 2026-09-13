@@ -33,6 +33,9 @@ public class PlanElementViewDto {
     private boolean milestoneCompleted;
     private boolean blocked;
     private ElementOrigin origin;
+    private Integer estimatedHours;
+    private boolean assignedToCurrentUser;
+    private boolean hasAssignees;
     private List<String> assigneeDisplayNames = new ArrayList<>();
 
     public String getTypeLabel() {

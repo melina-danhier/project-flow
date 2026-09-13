@@ -29,6 +29,66 @@ function initializePlanViews() {
         return match ? match.textContent.trim() : '';
     }
 
+    function formatDate(iso) {
+        if (!iso) return '';
+        var parts = iso.split('-');
+        if (parts.length === 3) {
+            return parts[2] + '.' + parts[1] + '.' + parts[0];
+        }
+        return iso;
+    }
+
+    function formatDateRange(startIso, dueIso) {
+        return formatDate(startIso) + ' – ' + formatDate(dueIso);
+    }
+
+    function getActiveFilters() {
+        var statusFilter = 'ALL';
+        var assignmentFilter = 'ALL';
+        try {
+            statusFilter = sessionStorage.getItem('projectflow:task-filter:' + projectId) || 'ALL';
+            assignmentFilter = sessionStorage.getItem('projectflow:assignment-filter:' + projectId) || 'ALL';
+        } catch (_e) {}
+        return { statusFilter: statusFilter, assignmentFilter: assignmentFilter };
+    }
+
+    function filterItem(item, filters) {
+        if (item.type === 'task') {
+            var status = item.taskStatus || 'OPEN';
+            var completed = item.completed;
+            var matchesStatus = true;
+            if (filters.statusFilter === 'OPEN') {
+                matchesStatus = (status === 'OPEN' && !completed);
+            } else if (filters.statusFilter === 'IN_PROGRESS') {
+                matchesStatus = (status === 'IN_PROGRESS');
+            } else if (filters.statusFilter === 'COMPLETED') {
+                matchesStatus = (status === 'COMPLETED' || completed);
+            } else if (filters.statusFilter === 'UNCOMPLETED') {
+                matchesStatus = (status !== 'COMPLETED' && !completed);
+            }
+
+            var matchesAssignment = true;
+            if (filters.assignmentFilter === 'MINE') {
+                matchesAssignment = item.assignedMe === true;
+            } else if (filters.assignmentFilter === 'UNASSIGNED') {
+                matchesAssignment = item.hasAssignees === false;
+            }
+
+            return matchesStatus && matchesAssignment;
+        } else if (item.type === 'milestone') {
+            var matchesStatus = true;
+            if (filters.statusFilter === 'OPEN' || filters.statusFilter === 'UNCOMPLETED') {
+                matchesStatus = !item.completed;
+            } else if (filters.statusFilter === 'COMPLETED') {
+                matchesStatus = item.completed;
+            } else if (filters.statusFilter === 'IN_PROGRESS') {
+                matchesStatus = false;
+            }
+            return matchesStatus;
+        }
+        return true;
+    }
+
     function collectPhases() {
         var phaseNodes = Array.from(sections.querySelectorAll(':scope > .plan-phase'));
         if (unsectioned) phaseNodes.push(unsectioned);
@@ -48,6 +108,17 @@ function initializePlanViews() {
                     var type = element.dataset.elementType
                         ? element.dataset.elementType.toLowerCase()
                         : (taskLink || draftType === 'Aufgabe' ? 'task' : 'milestone');
+                    var priority = element.dataset.priority || '';
+                    var priorityLabel = element.dataset.priorityLabel || '';
+                    var effort = element.dataset.effort || '';
+                    var assignedMe = element.dataset.assignedMe === 'true';
+                    var hasAssignees = element.dataset.hasAssignees === 'true';
+                    var assignees = element.dataset.assignees || '';
+                    var taskStatus = element.dataset.taskStatus || 'OPEN';
+                    var milestoneCompleted = element.dataset.milestoneCompleted === 'true';
+                    var taskCompleted = element.dataset.taskCompleted === 'true';
+                    var isCompleted = type === 'milestone' ? milestoneCompleted : taskCompleted;
+
                     return {
                         title: element.dataset.elementTitle || (link ? link.textContent.trim() : draftTitle),
                         href: element.dataset.detailUrl || (link ? link.getAttribute('href') : '/projects/' + projectId + '/draft/'
@@ -58,7 +129,14 @@ function initializePlanViews() {
                         dueDate: element.dataset.dueDate || element.dataset.date || '',
                         dateLabel: text(element, '.pf-badge--outline') || text(element, '.element-facts time'),
                         state: text(element, '.pf-badge--gray') || text(element, '.review-status'),
-                        completed: element.dataset.taskCompleted === 'true',
+                        priority: priority,
+                        priorityLabel: priorityLabel,
+                        effort: effort,
+                        assignedMe: assignedMe,
+                        hasAssignees: hasAssignees,
+                        assignees: assignees,
+                        taskStatus: taskStatus,
+                        completed: isCompleted,
                         lockVersion: element.dataset.lockVersion || '',
                         elementId: element.dataset.elementId,
                         sectionId: element.dataset.sectionId || '',
@@ -113,34 +191,122 @@ function initializePlanViews() {
             li.appendChild(handle);
         }
         var leading = null;
-        if (item.type === 'milestone') {
+        if (!isDraft && editable) {
+            if (item.type === 'milestone') {
+                if (progressDisplay === 'CHECKBOX') {
+                    var completion = document.createElement('input');
+                    completion.type = 'checkbox';
+                    completion.checked = item.completed;
+                    completion.setAttribute('aria-label', (item.completed ? 'Meilenstein als offen markieren: ' : 'Meilenstein als erreicht markieren: ') + item.title);
+                    completion.addEventListener('change', function () {
+                        completion.disabled = true;
+                        window.ProjectFlowPlan?.submit('/projects/' + projectId + '/milestones/' + item.elementId + '/completion', {
+                            completed: completion.checked,
+                            milestoneLockVersion: item.lockVersion
+                        });
+                    });
+                    leading = completion;
+                } else {
+                    var select = document.createElement('select');
+                    select.className = 'pf-status-select pf-status-select--milestone';
+                    select.setAttribute('aria-label', 'Meilensteinstatus ändern: ' + item.title);
+                    var optOpen = document.createElement('option');
+                    optOpen.value = 'false';
+                    optOpen.textContent = 'Offen';
+                    optOpen.selected = !item.completed;
+                    var optDone = document.createElement('option');
+                    optDone.value = 'true';
+                    optDone.textContent = 'Erreicht';
+                    optDone.selected = item.completed;
+                    select.append(optOpen, optDone);
+                    select.addEventListener('change', function () {
+                        select.disabled = true;
+                        window.ProjectFlowPlan?.submit('/projects/' + projectId + '/milestones/' + item.elementId + '/completion', {
+                            completed: select.value === 'true',
+                            milestoneLockVersion: item.lockVersion
+                        });
+                    });
+                    leading = select;
+                }
+            } else if (item.type === 'task') {
+                if (progressDisplay === 'CHECKBOX') {
+                    var completion = document.createElement('input');
+                    completion.type = 'checkbox';
+                    completion.checked = item.completed;
+                    completion.setAttribute('aria-label', (item.completed ? 'Aufgabe als offen markieren: ' : 'Aufgabe als erledigt markieren: ') + item.title);
+                    completion.addEventListener('change', function () {
+                        completion.disabled = true;
+                        window.ProjectFlowPlan?.submit('/projects/' + projectId + '/tasks/' + item.elementId + '/completion', {
+                            completed: completion.checked,
+                            taskLockVersion: item.lockVersion
+                        });
+                    });
+                    leading = completion;
+                } else {
+                    var select = document.createElement('select');
+                    select.className = 'pf-status-select pf-status-select--' + (item.taskStatus ? item.taskStatus.toLowerCase() : 'open');
+                    select.setAttribute('aria-label', 'Aufgabenstatus ändern: ' + item.title);
+                    [
+                        { value: 'OPEN', label: 'Offen' },
+                        { value: 'IN_PROGRESS', label: 'In Bearbeitung' },
+                        { value: 'COMPLETED', label: 'Erledigt' }
+                    ].forEach(function (st) {
+                        var opt = document.createElement('option');
+                        opt.value = st.value;
+                        opt.textContent = st.label;
+                        if (item.taskStatus === st.value) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                    select.addEventListener('change', function () {
+                        select.disabled = true;
+                        window.ProjectFlowPlan?.submit('/projects/' + projectId + '/tasks/' + item.elementId + '/status', {
+                            status: select.value,
+                            taskLockVersion: item.lockVersion
+                        });
+                    });
+                    leading = select;
+                }
+            }
+        } else {
             leading = document.createElement('span');
             leading.className = 'pf-plan-compact-element__icon';
-            leading.textContent = '◆';
-        } else if (!isDraft && progressDisplay === 'CHECKBOX') {
-            var completion = document.createElement('input');
-            completion.type = 'checkbox';
-            completion.checked = item.completed;
-            completion.setAttribute('aria-label', (item.completed ? 'Aufgabe als offen markieren: ' : 'Aufgabe als erledigt markieren: ') + item.title);
-            completion.addEventListener('change', function () {
-                completion.disabled = true;
-                window.ProjectFlowPlan?.submit('/projects/' + projectId + '/tasks/' + item.elementId + '/completion', {
-                    completed: completion.checked,
-                    taskLockVersion: item.lockVersion
-                });
-            });
-            leading = completion;
+            leading.textContent = item.type === 'milestone' ? (item.completed ? '✓' : '◆') : (item.completed ? '✓' : '○');
         }
+
         var content = document.createElement('div');
+        content.className = 'pf-plan-compact-element__body';
         var link = document.createElement('a');
         link.href = item.href;
         link.textContent = item.title;
+        link.className = 'pf-plan-compact-element__title';
         content.appendChild(link);
-        if (item.dateLabel || item.state) {
+
+        var metaParts = [];
+        if (item.priorityLabel) {
+            metaParts.push(item.priorityLabel);
+        }
+        if (item.startDate && item.dueDate) {
+            metaParts.push(formatDateRange(item.startDate, item.dueDate));
+        } else if (item.dueDate) {
+            metaParts.push((item.type === 'milestone' ? '' : 'Fällig: ') + formatDate(item.dueDate));
+        } else if (item.startDate) {
+            metaParts.push('Start: ' + formatDate(item.startDate));
+        } else if (item.dateLabel) {
+            metaParts.push(item.dateLabel);
+        }
+        if (item.effort) {
+            metaParts.push(item.effort + ' Std.');
+        }
+        if (item.assignees) {
+            metaParts.push(item.assignees);
+        }
+        if (metaParts.length > 0) {
             var meta = document.createElement('small');
-            meta.textContent = [item.dateLabel, item.state].filter(Boolean).join(' · ');
+            meta.className = 'pf-plan-compact-element__meta';
+            meta.textContent = metaParts.join(' · ');
             content.appendChild(meta);
         }
+
         if (leading) li.appendChild(leading);
         li.appendChild(content);
         return li;
@@ -454,7 +620,16 @@ function initializePlanViews() {
             switcher.removeAttribute('open');
         }
         if (!isList) {
-            var phases = collectPhases();
+            var filters = getActiveFilters();
+            var phases = collectPhases().map(function (phase) {
+                return {
+                    title: phase.title,
+                    description: phase.description,
+                    sectionId: phase.sectionId,
+                    moveUrl: phase.moveUrl,
+                    elements: phase.elements.filter(function (item) { return filterItem(item, filters); })
+                };
+            });
             alternativeView.appendChild(view === 'cards' ? renderCards(phases) : view === 'board' ? renderBoard(phases) : renderCalendar(phases));
             enableAlternativeDragAndDrop(alternativeView, view);
         }
@@ -464,6 +639,12 @@ function initializePlanViews() {
     switcher.addEventListener('click', function (event) {
         var button = event.target.closest('[data-plan-view]');
         if (button) showView(button.dataset.planView);
+    });
+    document.addEventListener('projectflow:filters-changed', function () {
+        var current = window.localStorage.getItem(storageKey);
+        if (current && current !== 'list') {
+            showView(current);
+        }
     });
     var savedView;
     try { savedView = window.localStorage.getItem(storageKey); } catch (ignored) { }

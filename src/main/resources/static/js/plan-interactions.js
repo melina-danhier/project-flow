@@ -347,62 +347,102 @@
         }
     });
 
-    // Task Filter setup & handling
-    function applyTaskFilter(filterValue) {
+    // Filters setup & handling (Status + Assignment filter)
+    function applyFilters() {
         const main = planMain();
         if (!main) return;
 
+        const statusSelect = document.getElementById('plan-task-filter-select');
+        const assignSelect = document.getElementById('plan-assignment-filter-select');
+
+        const statusFilter = statusSelect ? statusSelect.value : 'ALL';
+        const assignmentFilter = assignSelect ? assignSelect.value : 'ALL';
+
         try {
-            sessionStorage.setItem(`projectflow:task-filter:${main.dataset.projectId}`, filterValue);
+            sessionStorage.setItem(`projectflow:task-filter:${main.dataset.projectId}`, statusFilter);
+            sessionStorage.setItem(`projectflow:assignment-filter:${main.dataset.projectId}`, assignmentFilter);
         } catch (_e) {}
 
-        const taskElements = main.querySelectorAll('.plan-element[data-element-type="TASK"], .pf-element-item--task');
-        taskElements.forEach(task => {
-            const status = task.dataset.taskStatus || 'OPEN';
-            const completed = task.dataset.taskCompleted === 'true';
+        const elements = main.querySelectorAll('.plan-element');
+        elements.forEach(el => {
+            const type = el.dataset.elementType;
+            if (type === 'TASK') {
+                const status = el.dataset.taskStatus || 'OPEN';
+                const completed = el.dataset.taskCompleted === 'true';
 
-            let visible = true;
-            if (filterValue === 'OPEN') {
-                visible = (status === 'OPEN' && !completed);
-            } else if (filterValue === 'IN_PROGRESS') {
-                visible = (status === 'IN_PROGRESS');
-            } else if (filterValue === 'COMPLETED') {
-                visible = (status === 'COMPLETED' || completed);
-            } else if (filterValue === 'UNCOMPLETED') {
-                visible = (status !== 'COMPLETED' && !completed);
-            } else {
-                visible = true;
+                let matchesStatus = true;
+                if (statusFilter === 'OPEN') {
+                    matchesStatus = (status === 'OPEN' && !completed);
+                } else if (statusFilter === 'IN_PROGRESS') {
+                    matchesStatus = (status === 'IN_PROGRESS');
+                } else if (statusFilter === 'COMPLETED') {
+                    matchesStatus = (status === 'COMPLETED' || completed);
+                } else if (statusFilter === 'UNCOMPLETED') {
+                    matchesStatus = (status !== 'COMPLETED' && !completed);
+                }
+
+                let matchesAssignment = true;
+                if (assignmentFilter === 'MINE') {
+                    matchesAssignment = (el.dataset.assignedMe === 'true');
+                } else if (assignmentFilter === 'UNASSIGNED') {
+                    matchesAssignment = (el.dataset.hasAssignees === 'false');
+                }
+
+                el.style.display = (matchesStatus && matchesAssignment) ? '' : 'none';
+            } else if (type === 'MILESTONE') {
+                const completed = el.dataset.milestoneCompleted === 'true' || el.dataset.taskCompleted === 'true';
+                let matchesStatus = true;
+                if (statusFilter === 'OPEN' || statusFilter === 'UNCOMPLETED') {
+                    matchesStatus = !completed;
+                } else if (statusFilter === 'COMPLETED') {
+                    matchesStatus = completed;
+                } else if (statusFilter === 'IN_PROGRESS') {
+                    matchesStatus = false;
+                }
+                // Assignment filter does not change milestone visibility
+                el.style.display = matchesStatus ? '' : 'none';
             }
-
-            task.style.display = visible ? '' : 'none';
         });
+
+        document.dispatchEvent(new CustomEvent('projectflow:filters-changed', {
+            detail: { statusFilter, assignmentFilter }
+        }));
     }
 
-    function setupTaskFilter() {
-        const filterSelect = document.getElementById('plan-task-filter-select');
+    function setupFilters() {
+        const statusSelect = document.getElementById('plan-task-filter-select');
+        const assignSelect = document.getElementById('plan-assignment-filter-select');
         const main = planMain();
-        if (!filterSelect || !main) return;
+        if (!main) return;
 
-        let savedFilter = 'ALL';
-        try {
-            savedFilter = sessionStorage.getItem(`projectflow:task-filter:${main.dataset.projectId}`) || 'ALL';
-        } catch (_e) {}
+        if (statusSelect) {
+            let saved = 'ALL';
+            try {
+                saved = sessionStorage.getItem(`projectflow:task-filter:${main.dataset.projectId}`) || 'ALL';
+            } catch (_e) {}
+            statusSelect.value = saved;
+            statusSelect.onchange = () => applyFilters();
+        }
 
-        filterSelect.value = savedFilter;
-        applyTaskFilter(savedFilter);
+        if (assignSelect) {
+            let savedAssign = 'ALL';
+            try {
+                savedAssign = sessionStorage.getItem(`projectflow:assignment-filter:${main.dataset.projectId}`) || 'ALL';
+            } catch (_e) {}
+            assignSelect.value = savedAssign;
+            assignSelect.onchange = () => applyFilters();
+        }
 
-        filterSelect.onchange = () => {
-            applyTaskFilter(filterSelect.value);
-        };
+        applyFilters();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         setupPlanModals();
-        setupTaskFilter();
+        setupFilters();
     });
     document.addEventListener('projectflow:plan-updated', () => {
         setupPlanModals();
-        setupTaskFilter();
+        setupFilters();
     });
 
     window.ProjectFlowPlan = { submit: submitFields };

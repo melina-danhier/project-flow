@@ -183,8 +183,12 @@ public class TaskController {
     public String setCompleted(@PathVariable UUID projectId, @PathVariable UUID taskId,
                                @RequestParam(defaultValue = "false") boolean completed,
                                @RequestParam long taskLockVersion,
+                               @RequestParam(required = false) String returnTo,
                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
         taskService.setCompleted(projectId, taskId, completed, taskLockVersion, currentUser.userId());
+        if ("detail".equalsIgnoreCase(returnTo)) {
+            return taskRedirect(projectId, taskId);
+        }
         return "redirect:/projects/" + projectId + "/plan";
     }
 
@@ -192,8 +196,12 @@ public class TaskController {
     public String updateStatus(@PathVariable UUID projectId, @PathVariable UUID taskId,
                                @RequestParam TaskStatus status,
                                @RequestParam long taskLockVersion,
+                               @RequestParam(required = false) String returnTo,
                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
         taskService.updateStatus(projectId, taskId, status, taskLockVersion, currentUser.userId());
+        if ("detail".equalsIgnoreCase(returnTo)) {
+            return taskRedirect(projectId, taskId);
+        }
         return "redirect:/projects/" + projectId + "/plan";
     }
 

@@ -352,9 +352,9 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    border: 1px solid var(--pf-border);
+    border: 1px solid var(--pf-border-strong, #cbd5e1);
     border-radius: var(--pf-radius-lg);
-    background: var(--pf-surface);
+    background: var(--pf-surface-subtle, #f8fafc);
     box-shadow: var(--pf-shadow-sm);
     overflow: hidden;
 }
@@ -394,10 +394,54 @@
 .pf-plan-compact-element {
     display: flex;
     gap: 0.65rem;
+    align-items: flex-start;
     padding: 0.75rem;
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-md);
     background: var(--pf-surface);
+}
+
+.pf-plan-compact-element--milestone {
+    border-left: 3.5px solid var(--pf-purple, #8b5cf6);
+}
+
+.pf-plan-compact-element__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0.2rem;
+    flex: 1;
+}
+
+.pf-plan-compact-element__title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--pf-text-main);
+    text-decoration: none;
+}
+
+.pf-plan-compact-element__title:hover {
+    color: var(--pf-primary);
+}
+
+.pf-plan-compact-element__meta {
+    font-size: 0.76rem;
+    color: var(--pf-text-muted);
+    line-height: 1.35;
+}
+
+.pf-plan-compact-element .pf-status-select {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.75rem;
+    height: auto;
+    border-radius: var(--pf-radius-sm);
+}
+
+.pf-plan-compact-element input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-top: 0.15rem;
+    cursor: pointer;
 }
 
 .pf-compact-drag-handle,
@@ -686,6 +730,20 @@
     gap: 0.85rem;
 }
 
+.pf-plan-control-bar__left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+}
+
+.pf-plan-control-bar__right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
 .pf-sort-control-wrap {
     display: flex;
     align-items: center;
@@ -721,7 +779,8 @@
 }
 
 .pf-plan-view-dropdown .pf-dropdown__menu {
-    min-width: 140px;
+    min-width: 150px;
+    max-width: calc(100vw - 2rem);
 }
 
 /* Widen project actions dropdown to prevent cramped lines */
@@ -811,33 +870,41 @@ details[open] .pf-phase-caret {
     line-height: 1.4;
 }
 
-/* Phase Inline Edit */
+/* Phase Inline Edit (Requirement 7: Row 1 Title, Row 2 Description, Row 3 Actions) */
 .pf-phase-inline-edit {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
     flex: 1;
+    padding: 0.25rem 0;
 }
 
-.pf-phase-inline-inputs {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 1;
-    min-width: 240px;
+.pf-phase-inline-row {
+    width: 100%;
 }
 
-.pf-phase-inline-inputs .pf-input {
-    flex: 1;
-    padding: 0.35rem 0.6rem;
-    font-size: 0.85rem;
+.pf-phase-inline-row--title .pf-phase-edit-title {
+    width: 100%;
+    max-width: 480px;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.pf-phase-inline-row--desc .pf-phase-edit-desc {
+    width: 100%;
+    min-height: 4rem;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    resize: vertical;
 }
 
 .pf-phase-inline-actions {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.5rem;
 }
 
 /* Tasks & Milestones Items */
@@ -1076,5 +1143,51 @@ details[open] .pf-phase-caret {
 .pf-modal-dialog::backdrop {
     background: rgba(15, 23, 42, 0.45);
     backdrop-filter: blur(3px);
+}
+
+/* ==========================================================================
+   Task Detail Grid & Layout (Requirement 8, 9, 10)
+   ========================================================================== */
+.pf-task-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.1fr);
+    gap: 1.5rem;
+    align-items: start;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (max-width: 899px) {
+    .pf-task-detail-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .pf-plan-control-bar {
+        padding: 0.65rem 0.75rem;
+        gap: 0.65rem;
+    }
+    .pf-plan-control-bar__left {
+        width: 100%;
+        gap: 0.65rem;
+    }
+    .pf-plan-control-bar__right {
+        width: 100%;
+        justify-content: flex-end;
+        margin-left: 0;
+    }
+    .pf-sort-control-wrap,
+    .pf-task-filter-wrap {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .pf-sort-control-wrap .pf-select,
+    .pf-task-filter-wrap .pf-select {
+        flex: 1;
+        max-width: 200px;
+    }
 }
 

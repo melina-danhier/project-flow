@@ -850,6 +850,9 @@ class SeparatedPlanUiIntegrationTest {
                 de.melinadanhier.projectflow.plancontainer.project.model.TaskProgressDisplay.STATUS);
         projectRepository.saveAndFlush(project);
         SectionDto phase = createSection(project, owner, "Vorbereitung");
+        var phaseEntity = sectionRepository.findById(phase.getId()).orElseThrow();
+        phaseEntity.setOrigin(ElementOrigin.AI);
+        sectionRepository.saveAndFlush(phaseEntity);
         Task task = createTask(project, owner, phase.getId(), "Unterlagen sammeln");
         task.setDueDate(LocalDate.of(2027, 1, 12));
         task.setStatus(TaskStatus.IN_PROGRESS);
@@ -885,6 +888,11 @@ class SeparatedPlanUiIntegrationTest {
                 .andExpect(content().string(containsString("/js/plan-ordering.js")))
                 .andExpect(content().string(containsString("/js/plan-views.js")))
                 .andReturn().getResponse().getContentAsString();
+
+        mockMvc.perform(get("/projects/{projectId}/milestones/{milestoneId}", project.getId(), milestone.getId())
+                        .session(login(owner.getEmail())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("KI-Vorschlag")));
 
         assertThat(html.indexOf("Freigabe")).isLessThan(html.indexOf("Unterlagen sammeln"));
         assertThat(html).doesNotContain("class=\"pf-plan-section plan-phase plan-section\" open");

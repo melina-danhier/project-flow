@@ -28,4 +28,15 @@ public class MilestoneDetailsDto {
     private boolean editable;
     private long lockVersion;
     private List<SectionDto> availableSections = new ArrayList<>();
+
+    public String getOriginLabel() {
+        if (origin == null) return null;
+        return switch (origin) {
+            case USER -> "Nutzereingabe";
+            case TEMPLATE -> "Vorlage";
+            case TEMPLATE_MODIFIED -> "Vorlage · bearbeitet";
+            case AI -> "KI-Vorschlag";
+            case AI_MODIFIED -> "KI-Vorschlag · bearbeitet";
+        };
+    }
 }

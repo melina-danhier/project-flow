@@ -123,8 +123,12 @@ public class MilestoneController {
     public String setCompleted(@PathVariable UUID projectId, @PathVariable UUID milestoneId,
                                @RequestParam(defaultValue = "false") boolean completed,
                                @RequestParam long milestoneLockVersion,
+                               @RequestParam(required = false) String returnTo,
                                @AuthenticationPrincipal AuthenticatedUser currentUser) {
         milestoneService.setCompleted(projectId, milestoneId, completed, milestoneLockVersion, currentUser.userId());
+        if ("detail".equalsIgnoreCase(returnTo)) {
+            return milestoneRedirect(projectId, milestoneId);
+        }
         return "redirect:/projects/" + projectId + "/plan";
     }
 

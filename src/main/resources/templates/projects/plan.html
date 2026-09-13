@@ -27,11 +27,14 @@
                 </svg>
                 Zur Projektübersicht
             </a>
-            <div class="pf-cluster">
-                <h1 th:text="${plan.project.title}" style="margin: 0;">Projekt</h1>
+            <div class="pf-cluster" style="align-items: center; gap: 0.65rem;">
+                <h1 th:text="${plan.project.title}" style="margin: 0; font-size: 1.4rem;">Projekt</h1>
                 <span class="pf-badge pf-badge--gray" th:if="${plan.project.projectTypeLabel}" th:text="${plan.project.projectTypeLabel}">Kategorie</span>
                 <span class="pf-badge pf-badge--yellow" th:unless="${plan.editable}">Schreibgeschützt</span>
             </div>
+            <p class="pf-project-desc" th:if="${plan.project.description != null and !#strings.trim(plan.project.description).isEmpty()}"
+               th:text="${plan.project.description}"
+               style="margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--pf-text-muted); line-height: 1.45; max-width: 700px;"></p>
         </div>
 
         <div class="pf-page-header__actions">
@@ -70,6 +73,9 @@
                     </button>
 
                     <div th:if="${plan.editable}" class="pf-dropdown__divider"></div>
+                    <div class="pf-dropdown__header" th:if="${plan.editable}">
+                        <span class="pf-dropdown__eyebrow">KI-Funktionen</span>
+                    </div>
                     <a th:if="${plan.editable}" class="pf-dropdown__item" th:href="@{/projects/{projectId}/plan/ai-change(projectId=${plan.project.id})}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
@@ -100,7 +106,6 @@
 
                     <!-- Lifecycle actions (archive, trash, reactivate, delete) -->
                     <th:block th:if="${plan.owner}">
-                        <div class="pf-dropdown__divider"></div>
                         <form th:if="${plan.project.location.name() == 'OVERVIEW'}"
                               th:action="@{/projects/{id}/archive(id=${plan.project.id})}" method="post"
                               data-confirm="Möchtest du dieses Projekt archivieren?"
@@ -167,39 +172,51 @@
 
     <!-- Plan Control Bar: Consistent Sorting Control & Compact View Selector -->
     <div class="pf-plan-control-bar">
-        <!-- Sorting Control -->
-        <div class="pf-sort-control-wrap">
-            <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/plan/sort-mode(projectId=${plan.project.id})}" method="post" id="plan-sort-mode-form" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
-                <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                <label for="plan-sort-mode-select" class="pf-sort-label">Sortierung:</label>
-                <select id="plan-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" onchange="this.form.requestSubmit()">
-                    <option value="DATE" th:selected="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</option>
-                    <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
-                </select>
-                <span class="pf-info-tooltip" title="Nach Datum: Datierte Elemente werden chronologisch einsortiert. Manuell: Elemente können frei verschoben werden." aria-label="Sortierhinweis">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
-                </span>
-            </form>
-            <div th:unless="${plan.editable}" style="display:flex; align-items:center; gap:0.5rem;">
-                <span class="pf-sort-label">Sortierung:</span>
-                <span class="pf-badge pf-badge--gray" th:text="${plan.project.sortMode.name() == 'DATE' ? 'Nach Datum' : 'Manuelle Reihenfolge'}">Nach Datum</span>
+        <div class="pf-plan-control-bar__left">
+            <!-- Sorting Control -->
+            <div class="pf-sort-control-wrap">
+                <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/plan/sort-mode(projectId=${plan.project.id})}" method="post" id="plan-sort-mode-form" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
+                    <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
+                    <label for="plan-sort-mode-select" class="pf-sort-label">Sortierung:</label>
+                    <select id="plan-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" onchange="this.form.requestSubmit()">
+                        <option value="DATE" th:selected="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</option>
+                        <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
+                    </select>
+                    <span class="pf-info-tooltip" title="Nach Datum: Datierte Elemente werden chronologisch einsortiert. Manuell: Elemente können frei verschoben werden." aria-label="Sortierhinweis">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </span>
+                </form>
+                <div th:unless="${plan.editable}" style="display:flex; align-items:center; gap:0.5rem;">
+                    <span class="pf-sort-label">Sortierung:</span>
+                    <span class="pf-badge pf-badge--gray" th:text="${plan.project.sortMode.name() == 'DATE' ? 'Nach Datum' : 'Manuelle Reihenfolge'}">Nach Datum</span>
+                </div>
             </div>
-        </div>
 
-        <!-- Task Filter Control -->
-        <div class="pf-task-filter-wrap">
-            <label for="plan-task-filter-select" class="pf-sort-label">Aufgaben:</label>
-            <select id="plan-task-filter-select" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" aria-label="Aufgaben nach Status filtern">
-                <option value="ALL">Alle</option>
-                <option value="OPEN">Offene</option>
-                <option value="IN_PROGRESS">In Bearbeitung</option>
-                <option value="COMPLETED">Erledigte</option>
-                <option value="UNCOMPLETED">Nicht erledigt</option>
-            </select>
+            <!-- Task Status Filter Control -->
+            <div class="pf-task-filter-wrap">
+                <label for="plan-task-filter-select" class="pf-sort-label">Status:</label>
+                <select id="plan-task-filter-select" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" aria-label="Aufgaben nach Status filtern">
+                    <option value="ALL">Alle Status</option>
+                    <option value="OPEN">Offene</option>
+                    <option value="IN_PROGRESS">In Bearbeitung</option>
+                    <option value="COMPLETED">Erledigte</option>
+                    <option value="UNCOMPLETED">Nicht erledigt</option>
+                </select>
+            </div>
+
+            <!-- Task Assignment Filter Control (Requirement 5) -->
+            <div class="pf-assignment-filter-wrap">
+                <label for="plan-assignment-filter-select" class="pf-sort-label">Zuweisung:</label>
+                <select id="plan-assignment-filter-select" class="pf-select pf-select--sm" style="width:auto; padding:0.3rem 0.65rem; font-size:0.85rem;" aria-label="Aufgaben nach Zuweisung filtern">
+                    <option value="ALL">Alle Aufgaben</option>
+                    <option value="MINE">Meine Aufgaben</option>
+                    <option value="UNASSIGNED">Nicht zugewiesen</option>
+                </select>
+            </div>
         </div>
 
         <!-- View Selection Dropdown -->
@@ -280,13 +297,16 @@
                           method="post" th:hidden="${editingSectionId != section.id}">
                         <input type="hidden" name="lockVersion" th:value="${section.lockVersion}">
                         <input type="hidden" name="sortOrder" th:value="${section.sortOrder}">
-                        <div class="pf-phase-inline-inputs">
+                        <div class="pf-phase-inline-row pf-phase-inline-row--title">
                             <input name="title" th:value="${editingSectionId == section.id ? sectionForm.title : section.title}"
                                    required maxlength="100" class="pf-input pf-phase-edit-title" placeholder="Bereichstitel">
-                            <input name="description" th:value="${editingSectionId == section.id ? sectionForm.description : section.description}"
-                                   maxlength="2000" class="pf-input pf-phase-edit-desc" placeholder="Beschreibung (optional)">
                         </div>
-                        <div class="pf-phase-inline-actions">
+                        <div class="pf-phase-inline-row pf-phase-inline-row--desc">
+                            <textarea name="description" maxlength="2000" class="pf-textarea pf-phase-edit-desc"
+                                      rows="2" placeholder="Beschreibung (optional)"
+                                      th:text="${editingSectionId == section.id ? sectionForm.description : section.description}"></textarea>
+                        </div>
+                        <div class="pf-phase-inline-row pf-phase-inline-actions">
                             <button type="submit" class="pf-btn pf-btn--sm pf-btn--primary">Speichern</button>
                             <button type="button" class="pf-btn pf-btn--sm pf-btn--ghost pf-phase-cancel-btn">Abbrechen</button>
                         </div>
@@ -360,7 +380,7 @@
                 <li th:each="element, elementStat : ${section.elements}"
                     class="pf-element-item plan-element"
                     th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-element-item--milestone' : 'pf-element-item--task'}"
-                    th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-task-status=${element.type.name() == 'TASK' and element.taskStatus != null ? element.taskStatus.name() : (element.taskCompleted ? 'COMPLETED' : 'OPEN')},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id=${section.id},data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : (element.relevantDate != null ? element.relevantDate.toString() : '')},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
+                    th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-task-status=${element.type.name() == 'TASK' and element.taskStatus != null ? element.taskStatus.name() : (element.taskCompleted ? 'COMPLETED' : 'OPEN')},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id=${section.id},data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : (element.relevantDate != null ? element.relevantDate.toString() : '')},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-milestone-completed=${element.type.name() == 'MILESTONE' ? element.milestoneCompleted : null},data-priority=${element.taskPriority != null ? element.taskPriority.name() : ''},data-priority-label=${element.taskPriority != null ? (element.taskPriority.name() == 'HIGH' ? 'Hoch' : (element.taskPriority.name() == 'LOW' ? 'Niedrig' : 'Mittel')) : ''},data-effort=${element.estimatedHours != null ? element.estimatedHours : ''},data-assigned-me=${element.assignedToCurrentUser ? 'true' : 'false'},data-has-assignees=${element.hasAssignees ? 'true' : 'false'},data-assignees=${#strings.listJoin(element.assigneeDisplayNames, ', ')},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
                     
                     <div class="pf-element-item__left">
                         <!-- Element Drag Handle -->
@@ -438,14 +458,36 @@
                     </div>
 
                     <div class="pf-element-item__right">
-                        <!-- Date Badge (Milestones omit "Termin:") -->
-                        <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
-                        
+                        <!-- Priority Badge for Tasks -->
+                        <span th:if="${element.type.name() == 'TASK' and element.taskPriority != null}"
+                              class="pf-badge"
+                              th:classappend="${element.taskPriority.name() == 'HIGH' ? 'pf-badge--red' : (element.taskPriority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
+                              th:text="${element.taskPriority.name() == 'HIGH' ? 'Hoch' : (element.taskPriority.name() == 'LOW' ? 'Niedrig' : 'Mittel')}"></span>
+
+                        <!-- Date Badge: Range if both exist, or single start/due date -->
+                        <th:block th:if="${element.type.name() == 'TASK'}">
+                            <span class="pf-badge pf-badge--outline"
+                                  th:if="${element.startDate != null and element.dueDate != null}"
+                                  th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy') + ' – ' + #temporals.format(element.dueDate, 'dd.MM.yyyy')}"></span>
+                            <span class="pf-badge pf-badge--outline"
+                                  th:if="${element.startDate != null and element.dueDate == null}"
+                                  th:text="${'Start: ' + #temporals.format(element.startDate, 'dd.MM.yyyy')}"></span>
+                            <span class="pf-badge pf-badge--outline"
+                                  th:if="${element.startDate == null and element.dueDate != null}"
+                                  th:text="${'Fällig: ' + #temporals.format(element.dueDate, 'dd.MM.yyyy')}"></span>
+                        </th:block>
+                        <th:block th:if="${element.type.name() == 'MILESTONE'}">
+                            <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
+                        </th:block>
+
+                        <!-- Effort Badge for Tasks -->
+                        <span class="pf-badge pf-badge--gray" th:if="${element.type.name() == 'TASK' and element.estimatedHours != null}"
+                              th:text="${element.estimatedHours + ' Std.'}"></span>
+
                         <!-- Read-only Status Badge -->
                         <span class="pf-badge pf-badge--gray" th:if="${!plan.editable and element.stateLabel != null}" th:text="${element.stateLabel}"></span>
                         
                         <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
-                        <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
 
                         <!-- Element Action Menu (Far-right hamburger) -->
                         <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
@@ -516,7 +558,7 @@
             <li th:each="element, elementStat : ${plan.unsectionedElements}"
                 class="pf-element-item plan-element"
                 th:classappend="${element.type.name() == 'MILESTONE' ? 'pf-element-item--milestone' : 'pf-element-item--task'}"
-                th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-task-status=${element.type.name() == 'TASK' and element.taskStatus != null ? element.taskStatus.name() : (element.taskCompleted ? 'COMPLETED' : 'OPEN')},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id='',data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
+                th:attr="data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type.name()},data-task-status=${element.type.name() == 'TASK' and element.taskStatus != null ? element.taskStatus.name() : (element.taskCompleted ? 'COMPLETED' : 'OPEN')},data-detail-url=${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id : '/projects/' + plan.project.id + '/milestones/' + element.id},data-section-id='',data-date=${element.relevantDate != null ? element.relevantDate.toString() : ''},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : (element.relevantDate != null ? element.relevantDate.toString() : '')},data-task-completed=${element.type.name() == 'TASK' ? element.taskCompleted : null},data-milestone-completed=${element.type.name() == 'MILESTONE' ? element.milestoneCompleted : null},data-priority=${element.taskPriority != null ? element.taskPriority.name() : ''},data-priority-label=${element.taskPriority != null ? (element.taskPriority.name() == 'HIGH' ? 'Hoch' : (element.taskPriority.name() == 'LOW' ? 'Niedrig' : 'Mittel')) : ''},data-effort=${element.estimatedHours != null ? element.estimatedHours : ''},data-assigned-me=${element.assignedToCurrentUser ? 'true' : 'false'},data-has-assignees=${element.hasAssignees ? 'true' : 'false'},data-assignees=${#strings.listJoin(element.assigneeDisplayNames, ', ')},data-lock-version=${element.lockVersion},data-move-url=@{/projects/{projectId}/plan/elements/{elementId}/move(projectId=${plan.project.id},elementId=${element.id})},draggable=${plan.editable}">
                 
                 <div class="pf-element-item__left">
                     <button th:if="${plan.editable}" type="button" class="element-drag-handle pf-drag-handle" title="Element verschieben" aria-label="Element verschieben">
@@ -593,10 +635,36 @@
                 </div>
 
                 <div class="pf-element-item__right">
-                    <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
+                    <!-- Priority Badge for Tasks -->
+                    <span th:if="${element.type.name() == 'TASK' and element.taskPriority != null}"
+                          class="pf-badge"
+                          th:classappend="${element.taskPriority.name() == 'HIGH' ? 'pf-badge--red' : (element.taskPriority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
+                          th:text="${element.taskPriority.name() == 'HIGH' ? 'Hoch' : (element.taskPriority.name() == 'LOW' ? 'Niedrig' : 'Mittel')}"></span>
+
+                    <!-- Date Badge: Range if both exist, or single start/due date -->
+                    <th:block th:if="${element.type.name() == 'TASK'}">
+                        <span class="pf-badge pf-badge--outline"
+                              th:if="${element.startDate != null and element.dueDate != null}"
+                              th:text="${#temporals.format(element.startDate, 'dd.MM.yyyy') + ' – ' + #temporals.format(element.dueDate, 'dd.MM.yyyy')}"></span>
+                        <span class="pf-badge pf-badge--outline"
+                              th:if="${element.startDate != null and element.dueDate == null}"
+                              th:text="${'Start: ' + #temporals.format(element.startDate, 'dd.MM.yyyy')}"></span>
+                        <span class="pf-badge pf-badge--outline"
+                              th:if="${element.startDate == null and element.dueDate != null}"
+                              th:text="${'Fällig: ' + #temporals.format(element.dueDate, 'dd.MM.yyyy')}"></span>
+                    </th:block>
+                    <th:block th:if="${element.type.name() == 'MILESTONE'}">
+                        <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
+                    </th:block>
+
+                    <!-- Effort Badge for Tasks -->
+                    <span class="pf-badge pf-badge--gray" th:if="${element.type.name() == 'TASK' and element.estimatedHours != null}"
+                          th:text="${element.estimatedHours + ' Std.'}"></span>
+
+                    <!-- Read-only Status Badge -->
                     <span class="pf-badge pf-badge--gray" th:if="${!plan.editable and element.stateLabel != null}" th:text="${element.stateLabel}"></span>
+
                     <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
-                    <span class="pf-badge pf-badge--outline" th:if="${element.originLabel}" th:text="${element.originLabel}"></span>
 
                     <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
                         <summary class="pf-card-menu__btn" title="Elementoptionen" aria-label="Elementoptionen">

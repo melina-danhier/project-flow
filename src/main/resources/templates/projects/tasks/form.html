@@ -23,7 +23,7 @@
     <div th:if="${errorMessage}" class="pf-alert pf-alert--error" role="alert" th:text="${errorMessage}"></div>
 
     <div class="pf-card" style="max-width: 860px; margin: 0 auto; padding: 1.5rem;">
-        <form th:action="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/tasks(projectId=${projectId})}"
+        <form id="task-main-form" th:action="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/tasks(projectId=${projectId})}"
               th:object="${taskForm}" method="post">
             <input th:if="${editing}" type="hidden" th:field="*{lockVersion}">
             <input th:if="${editing}" type="hidden" th:field="*{sortOrder}">
@@ -155,13 +155,6 @@
                 </div>
                 <div th:if="${#fields.hasErrors('assigneeIds')}" th:errors="*{assigneeIds}" class="pf-alert pf-alert--error" role="alert"></div>
             </div>
-
-            <!-- Form Actions -->
-            <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                <a th:href="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/plan(projectId=${projectId})}"
-                   class="pf-btn pf-btn--secondary">Abbrechen</a>
-                <button type="submit" class="pf-btn pf-btn--primary" th:text="${editing ? 'Aufgabe speichern' : 'Aufgabe anlegen'}">Speichern</button>
-            </div>
         </form>
 
         <!-- Requirements 7 & 10: Manage dependencies only on edit page, grouped by phase -->
@@ -190,7 +183,12 @@
                     <span th:text="${prerequisite.title}" style="font-weight: 600; font-size: 0.9rem;"></span>
                     <form th:action="@{/projects/{projectId}/tasks/{taskId}/dependencies/{prerequisiteId}/remove(projectId=${projectId},taskId=${taskId},prerequisiteId=${prerequisite.id},returnTo='edit')}"
                           method="post" style="margin: 0;">
-                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary" style="font-size: 0.78rem; padding: 0.25rem 0.6rem;">Entfernen</button>
+                        <button type="submit" class="pf-btn pf-btn--sm pf-btn--danger"
+                                data-confirm="Möchtest du diese Voraussetzung wirklich entfernen?"
+                                data-confirm-title="Voraussetzung entfernen"
+                                data-confirm-btn="Entfernen"
+                                data-confirm-variant="danger"
+                                style="font-size: 0.78rem; padding: 0.25rem 0.6rem;">Entfernen</button>
                     </form>
                 </li>
             </ul>
@@ -211,6 +209,13 @@
                 </div>
                 <button type="submit" class="pf-btn pf-btn--sm pf-btn--secondary">Voraussetzung hinzufügen</button>
             </form>
+        </div>
+
+        <!-- Form Actions (Always at the bottom of the card) -->
+        <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <a th:href="${editing} ? @{/projects/{projectId}/tasks/{taskId}(projectId=${projectId},taskId=${taskId})} : @{/projects/{projectId}/plan(projectId=${projectId})}"
+               class="pf-btn pf-btn--secondary">Abbrechen</a>
+            <button type="submit" form="task-main-form" class="pf-btn pf-btn--primary" th:text="${editing ? 'Aufgabe speichern' : 'Aufgabe anlegen'}">Speichern</button>
         </div>
     </div>
 </main>

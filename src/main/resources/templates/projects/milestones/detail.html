@@ -39,7 +39,7 @@
                         <circle cx="12" cy="19" r="1.5"></circle>
                     </svg>
                 </summary>
-                <div class="pf-dropdown__menu">
+                <div class="pf-dropdown__menu" style="min-width: 220px; width: max-content; max-width: calc(100vw - 2rem);">
                     <a class="pf-dropdown__item"
                        th:href="@{/projects/{projectId}/plan-elements/MILESTONE/{milestoneId}/improve(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -93,6 +93,7 @@
                           th:action="@{/projects/{projectId}/milestones/{milestoneId}/completion(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
                           method="post" style="margin: 0; display: inline-flex; align-items: center;">
                         <input type="hidden" name="milestoneLockVersion" th:value="${milestone.lockVersion}">
+                        <input type="hidden" name="returnTo" value="detail">
                         <select name="completed" class="pf-status-select pf-status-select--milestone"
                                 onchange="this.form.submit()" title="Meilensteinstatus ändern">
                             <option value="false" th:selected="${!milestone.completed}">Offen</option>
@@ -151,6 +152,21 @@
                 <div class="pf-detail-prop__content">
                     <span class="pf-detail-prop__label">Elementtyp</span>
                     <span class="pf-badge pf-badge--purple">Meilenstein</span>
+                </div>
+            </div>
+
+            <!-- Origin (Herkunft) -->
+            <div class="pf-detail-prop" th:if="${milestone.originLabel != null}">
+                <span class="pf-detail-prop__icon" title="Herkunft">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </span>
+                <div class="pf-detail-prop__content">
+                    <span class="pf-detail-prop__label">Herkunft</span>
+                    <span class="pf-badge pf-badge--gray" th:text="${milestone.originLabel}">Manuell</span>
                 </div>
             </div>
 

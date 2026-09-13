@@ -346,7 +346,7 @@ public class ProjectService {
                     dto.setMilestoneCount(elements.milestoneCount(section.getId()));
                     List<PlanElementViewDto> sectionElements = elements
                             .displayInSection(section.getId(), project.getSortMode()).stream()
-                            .map(this::toViewElement)
+                            .map(element -> toViewElement(element, userId))
                             .toList();
                     dto.setElements(sectionElements);
                     return dto;
@@ -354,7 +354,7 @@ public class ProjectService {
                 .toList();
         view.setSections(sections);
         view.setUnsectionedElements(elements.displayInSection(null, project.getSortMode()).stream()
-                .map(this::toViewElement)
+                .map(element -> toViewElement(element, userId))
                 .toList());
         return view;
     }
@@ -651,9 +651,9 @@ public class ProjectService {
         return conversionStartDate.plusDays(relativeDay);
     }
 
-    private PlanElementViewDto toViewElement(PlanElement element) {
+    private PlanElementViewDto toViewElement(PlanElement element, UUID currentUserId) {
         if (element instanceof Task task) {
-            return toViewElement(task);
+            return toViewElement(task, currentUserId);
         }
         if (element instanceof Milestone milestone) {
             return toViewElement(milestone);
@@ -661,14 +661,19 @@ public class ProjectService {
         throw new IllegalStateException("Nicht unterstützter Planelementtyp: " + element.getClass().getName());
     }
 
-    private PlanElementViewDto toViewElement(Task task) {
+    private PlanElementViewDto toViewElement(Task task, UUID currentUserId) {
         PlanElementViewDto dto = baseViewElement(task, PlanElementType.TASK);
         dto.setRelevantDate(task.getDueDate());
         dto.setStartDate(task.getStartDate());
         dto.setDueDate(task.getDueDate());
         dto.setTaskStatus(task.getStatus());
         dto.setTaskPriority(task.getPriority());
+        dto.setEstimatedHours(task.getEstimatedHours());
         dto.setBlocked(TaskDependencyPolicy.isBlocked(task));
+        dto.setHasAssignees(task.getAssignees() != null && !task.getAssignees().isEmpty());
+        boolean assignedToMe = currentUserId != null && task.getAssignees() != null
+                && task.getAssignees().stream().anyMatch(m -> m.getUser() != null && currentUserId.equals(m.getUser().getId()));
+        dto.setAssignedToCurrentUser(assignedToMe);
         dto.setAssigneeDisplayNames(task.getAssignees().stream()
                 .map(member -> member.getUser().getDisplayName()
                         + (member.isActive() ? "" : " (ehemaliges Mitglied)"))
