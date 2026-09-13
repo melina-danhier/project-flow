@@ -1,5 +1,8 @@
 package de.melinadanhier.projectflow.ai;
 
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalError;
+import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
+import de.melinadanhier.projectflow.ai.model.AiOperation;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckResult;
 import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckSeverity;
@@ -110,6 +113,27 @@ class AiPreCheckWorkflowServiceTest {
         assertThat(service().recordResult(workflowId, runId, result)).isTrue();
 
         verify(workflow).recordPreCheckResult("{}", true);
+    }
+
+    @Test
+    void deletedWorkflowIsTreatedAsCancelledAfterProviderCall() {
+        UUID workflowId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+        AiPreCheckResult result = AiPreCheckResult.withoutIssues();
+        AiTechnicalError error = new AiTechnicalError(
+                AiTechnicalErrorCode.PROVIDER_UNAVAILABLE,
+                AiOperation.PRE_CHECK,
+                "Provider nicht erreichbar.",
+                new IllegalStateException("Provider nicht erreichbar."));
+        when(workflowRepository.findByIdForUpdate(workflowId)).thenReturn(Optional.empty());
+
+        var service = service();
+
+        assertThat(service.isActive(workflowId, runId)).isFalse();
+        assertThat(service.recordResult(workflowId, runId, result)).isFalse();
+        assertThat(service.recordRetry(workflowId, runId, error)).isEmpty();
+        assertThat(service.recordFailure(workflowId, runId, error)).isFalse();
+        verifyNoInteractions(workflow, payloadCodec);
     }
 
     private AiPreCheckWorkflowService service() {

@@ -38,9 +38,10 @@ public class AiPreCheckWorkflowService {
 
     @Transactional
     public boolean isActive(UUID workflowId, UUID runId) {
-        AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
-        return workflow.isActiveRun(runId,
-                Instant.now(clock), AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING);
+        return workflowRepository.findByIdForUpdate(workflowId)
+                .map(workflow -> workflow.isActiveRun(runId,
+                        Instant.now(clock), AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING))
+                .orElse(false);
     }
 
     @Transactional(readOnly = true)
@@ -62,7 +63,11 @@ public class AiPreCheckWorkflowService {
 
     @Transactional
     public OptionalInt recordRetry(UUID workflowId, UUID runId, AiTechnicalError error) {
-        AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
+        AiPlanGenerationWorkflow workflow = workflowRepository.findByIdForUpdate(workflowId)
+                .orElse(null);
+        if (workflow == null) {
+            return OptionalInt.empty();
+        }
         if (!workflow.isActiveRun(runId, Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING)) {
             return OptionalInt.empty();
@@ -72,7 +77,11 @@ public class AiPreCheckWorkflowService {
 
     @Transactional
     public boolean recordResult(UUID workflowId, UUID runId, AiPreCheckResult result) {
-        AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
+        AiPlanGenerationWorkflow workflow = workflowRepository.findByIdForUpdate(workflowId)
+                .orElse(null);
+        if (workflow == null) {
+            return false;
+        }
         if (!workflow.isActiveRun(runId, Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING)) {
             return false;
@@ -84,7 +93,11 @@ public class AiPreCheckWorkflowService {
 
     @Transactional
     public boolean recordFailure(UUID workflowId, UUID runId, AiTechnicalError error) {
-        AiPlanGenerationWorkflow workflow = requireForUpdate(workflowId);
+        AiPlanGenerationWorkflow workflow = workflowRepository.findByIdForUpdate(workflowId)
+                .orElse(null);
+        if (workflow == null) {
+            return false;
+        }
         if (!workflow.isActiveRun(runId, Instant.now(clock),
                 AiPlanGenerationWorkflowStatus.PRE_CHECK_RUNNING)) {
             return false;
