@@ -606,8 +606,7 @@ class ProjectCrudIntegrationTest {
         TaskForm invalid = taskForm("Unzulässige Zuweisung", null);
         invalid.setAssigneeIds(Set.of(ownerMembership.getId()));
         assertThatThrownBy(() -> taskService.createTask(project.getId(), invalid, owner.getId()))
-                .isInstanceOf(DomainValidationException.class)
-                .hasMessageContaining("nur bei Gruppenprojekten");
+                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test

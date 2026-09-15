@@ -109,7 +109,7 @@ class StudyTrackingServiceTest {
         when(sessions.findById(id)).thenReturn(Optional.of(study));
 
         service.beginTaskTwo(http);
-        service.trackIfActive(http, StudyEventType.AI_EDIT_STARTED);
+        service.trackIfActive(http, StudyEventType.PLAN_AI_CHANGE_STARTED);
 
         var captor = org.mockito.ArgumentCaptor.forClass(StudyEvent.class);
         verify(events).save(captor.capture());

@@ -86,7 +86,7 @@ public class AiElementImprovementController {
             AiImprovementProposal proposal = improvementService.propose(
                     projectId, elementType, elementId, form, currentUser.userId());
             storeProposal(session, proposal);
-            track(session, StudyEventType.AI_EDIT_STARTED);
+            track(session, StudyEventType.LOCAL_AI_CHANGE_STARTED);
             return reviewRedirect(proposal);
         } catch (AiTechnicalException exception) {
             if (exception instanceof AiOutputValidationException validationException) {
@@ -134,7 +134,7 @@ public class AiElementImprovementController {
         AiImprovementProposal proposal = requireProposal(session, projectId, proposalId);
         improvementService.confirm(proposal, currentUser.userId());
         proposals(session).remove(proposalId);
-        track(session, StudyEventType.AI_EDIT_ADOPTED);
+        track(session, StudyEventType.LOCAL_AI_CHANGE_ADOPTED);
         offerFeedback(session, AiFeedbackContext.AI_EDIT_ADOPTED, proposalId, proposal);
         redirectAttributes.addFlashAttribute("successMessage", "Der KI-Vorschlag wurde übernommen.");
         return redirect(proposal);
@@ -151,7 +151,7 @@ public class AiElementImprovementController {
         AiImprovementProposal proposal = requireProposal(session, projectId, proposalId);
         improvementService.requireImprovementAccess(projectId, currentUser.userId());
         proposals(session).remove(proposalId);
-        track(session, StudyEventType.AI_EDIT_REJECTED);
+        track(session, StudyEventType.LOCAL_AI_CHANGE_REJECTED);
         offerFeedback(session, AiFeedbackContext.AI_EDIT_REJECTED, proposalId, proposal);
         redirectAttributes.addFlashAttribute("successMessage", "Der KI-Vorschlag wurde verworfen.");
         return redirect(proposal);

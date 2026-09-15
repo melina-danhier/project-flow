@@ -223,6 +223,23 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 9. AI assistance -->
+                    <div class="pf-detail-prop" th:if="${task.editable}" style="grid-column: 1 / -1;">
+                        <span class="pf-detail-prop__icon" title="KI-Unterstützung">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                            </svg>
+                        </span>
+                        <div class="pf-detail-prop__content">
+                            <span class="pf-detail-prop__label">KI-Unterstützung</span>
+                            <a class="pf-btn pf-btn--outline pf-btn--sm"
+                               style="margin-top: 0.35rem;"
+                               th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
+                                Aufgabe mit KI anpassen
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
 

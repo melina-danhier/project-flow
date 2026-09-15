@@ -36,9 +36,17 @@
         </div>
 
         <div class="pf-page-header__actions">
+            <a th:if="${plan.editable}"
+               class="pf-btn pf-btn--primary"
+               th:href="@{/projects/{projectId}/plan/ai-change(projectId=${plan.project.id})}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                </svg>
+                <span>Plan mit KI verbessern</span>
+            </a>
             <!-- Consolidated Project Actions Dropdown -->
             <details class="pf-dropdown pf-dropdown--right" id="project-actions-dropdown">
-                <summary class="pf-btn pf-btn--primary pf-dropdown__trigger">
+                <summary class="pf-btn pf-btn--outline pf-dropdown__trigger">
                     <span>Aktionen</span>
                     <svg class="pf-dropdown__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -69,17 +77,6 @@
                         </svg>
                         <span>Bereich hinzufügen</span>
                     </button>
-
-                    <div th:if="${plan.editable}" class="pf-dropdown__divider"></div>
-                    <div class="pf-dropdown__header" th:if="${plan.editable}">
-                        <span class="pf-dropdown__eyebrow">KI-Funktionen</span>
-                    </div>
-                    <a th:if="${plan.editable}" class="pf-dropdown__item" th:href="@{/projects/{projectId}/plan/ai-change(projectId=${plan.project.id})}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                        </svg>
-                        <span>Plan mit KI anpassen</span>
-                    </a>
 
                     <div class="pf-dropdown__divider"></div>
                     <div class="pf-dropdown__header">

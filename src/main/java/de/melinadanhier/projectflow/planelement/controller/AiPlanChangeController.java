@@ -56,7 +56,7 @@ public class AiPlanChangeController {
         if (binding.hasErrors()) { service.requireAccess(projectId, user.userId()); model.addAttribute("projectId", projectId); return "projects/plan-change/form"; }
         try {
             PlanChangeProposal proposal = service.propose(projectId, planChangeForm, user.userId()); store(session, proposal);
-            track(session, StudyEventType.AI_EDIT_STARTED);
+            track(session, StudyEventType.PLAN_AI_CHANGE_STARTED);
             return "redirect:/projects/" + projectId + "/plan/ai-change/" + proposal.proposalId();
         } catch (de.melinadanhier.projectflow.planelement.service.PlanChangeNotApplicableException exception) {
             model.addAttribute("projectId", projectId);
@@ -82,7 +82,7 @@ public class AiPlanChangeController {
     public String discard(@PathVariable UUID projectId, @PathVariable UUID proposalId,
                           @AuthenticationPrincipal AuthenticatedUser user, HttpSession session, RedirectAttributes redirect) {
         service.requireAccess(projectId, user.userId()); require(session, projectId, proposalId); proposals(session).remove(proposalId);
-        track(session, StudyEventType.AI_EDIT_REJECTED);
+        track(session, StudyEventType.PLAN_AI_CHANGE_REJECTED);
         offerFeedback(session, AiFeedbackContext.AI_EDIT_REJECTED, proposalId, projectId);
         redirect.addFlashAttribute("successMessage", "Der KI-Änderungsvorschlag wurde verworfen."); return "redirect:/projects/" + projectId + "/plan";
     }
@@ -101,7 +101,7 @@ public class AiPlanChangeController {
             return conflict(projectId, exception.getMessage(), session, model, response);
         }
         proposals(session).remove(proposalId);
-        track(session, StudyEventType.AI_EDIT_ADOPTED);
+        track(session, StudyEventType.PLAN_AI_CHANGE_ADOPTED);
         offerFeedback(session, AiFeedbackContext.AI_EDIT_ADOPTED, proposalId, projectId);
         redirect.addFlashAttribute("successMessage", "Die KI-Änderungen wurden übernommen.");
         return "redirect:/projects/" + projectId + "/plan";

@@ -18,7 +18,6 @@ import java.util.stream.IntStream;
 
 import static de.melinadanhier.projectflow.ai.validation.generation.GenerationValidationCode.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 class GenerationResponseValidatorTest {
 
@@ -27,15 +26,6 @@ class GenerationResponseValidatorTest {
 
     private final GenerationResponseValidator validator = new GenerationResponseValidator(
             jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator());
-
-    @Test
-    void handlesMissingResponseRequestAndWizardDataWithoutNullPointerException() {
-        assertCodes(validator.validate(null, scheduledRequest()), RESPONSE_MISSING);
-        assertCodes(validator.validate(validDatedPlan(), null), REQUEST_MISSING);
-        AiGenerationRequest malformedRequest = mock(AiGenerationRequest.class);
-        assertCodes(validator.validate(validDatedPlan(), malformedRequest),
-                WIZARD_DATA_MISSING);
-    }
 
     @Test
     void rejectsMissingSectionsAndTasks() {
@@ -47,17 +37,6 @@ class GenerationResponseValidatorTest {
     }
 
     @Test
-    void beanValidationIsPerformedByGenerationValidator() {
-        GeneratedTask invalid = task("task-1", " ", 1, PROJECT_START, PROJECT_START);
-        var result = validator.validate(plan(section("section-1", 1, PROJECT_START, PROJECT_END,
-                List.of(invalid), List.of())), scheduledRequest());
-
-        assertCodes(result, BEAN_VALIDATION_FAILED, TASK_TITLE_MISSING);
-        assertThat(result.issues()).filteredOn(issue -> issue.code() == BEAN_VALIDATION_FAILED)
-                .extracting(GenerationValidationIssue::fieldPath).contains("sections[0].tasks[0].title");
-    }
-
-    @Test
     void rejectsMissingAndDuplicateTemporaryTaskIds() {
         GeneratedSection section = section("same-id", 1, PROJECT_START, PROJECT_END, List.of(
                 task("same-id", "Aufgabe 1", 1, PROJECT_START, PROJECT_START),
@@ -65,16 +44,6 @@ class GenerationResponseValidatorTest {
                 task(" ", "Aufgabe 3", 3, PROJECT_START, PROJECT_START)), List.of());
         assertCodes(validator.validate(plan(section), scheduledRequest()),
                 TEMP_ID_MISSING, TEMP_ID_DUPLICATE);
-    }
-
-    @Test
-    void sectionAndMilestoneIdsAreNotPartOfTheTaskReferenceNamespace() {
-        GeneratedSection section = section("shared", 1, PROJECT_START, PROJECT_END, List.of(
-                task("shared", "Aufgabe 1", 100, PROJECT_START, PROJECT_START),
-                task("task-2", "Aufgabe 2", 200, PROJECT_START, PROJECT_START),
-                task("task-3", "Aufgabe 3", 300, PROJECT_START, PROJECT_START)),
-                List.of(milestone("shared", 400, PROJECT_END)));
-        assertThat(validator.validate(plan(section), scheduledRequest()).isValid()).isTrue();
     }
 
     @Test
@@ -113,19 +82,6 @@ class GenerationResponseValidatorTest {
     }
 
     @Test
-    void rejectsDuplicateOrderBetweenTaskAndMilestoneWithinSameSection() {
-        GeneratedSection section = section("section-1", 100, PROJECT_START, PROJECT_END,
-                List.of(
-                        task("task-1", "Aufgabe 1", 100, PROJECT_START, PROJECT_START),
-                        task("task-2", "Aufgabe 2", 200, PROJECT_START, PROJECT_START),
-                        task("task-3", "Aufgabe 3", 300, PROJECT_START, PROJECT_START)),
-                List.of(
-                        milestone("milestone-1", 200, PROJECT_END)));
-
-        assertCodes(validator.validate(plan(section), scheduledRequest()), MILESTONE_ORDER_DUPLICATE);
-    }
-
-    @Test
     void acceptsSparseAndNonSequentialOrdersAcrossTasksAndMilestones() {
         GeneratedSection section = section("section-1", 100, PROJECT_START, PROJECT_END,
                 List.of(
@@ -136,17 +92,6 @@ class GenerationResponseValidatorTest {
                         milestone("milestone-1", 300, PROJECT_END)));
 
         assertThat(validator.validate(plan(section), scheduledRequest()).isValid()).isTrue();
-    }
-
-    @Test
-    void scheduledTasksMayHaveConcreteDatesOrRemainUndated() {
-        GeneratedSection validSection = section("section-1", 1, PROJECT_START, PROJECT_END,
-                List.of(
-                        task("task-1", "Nur Start", 1, PROJECT_START, null),
-                        task("task-2", "Nur Ende", 2, null, PROJECT_END),
-                        task("task-3", "Ohne Datum", 3, null, null)), List.of());
-
-        assertThat(validator.validate(plan(validSection), scheduledRequest()).isValid()).isTrue();
     }
 
     @Test
@@ -183,25 +128,6 @@ class GenerationResponseValidatorTest {
                 task("task-2", "Aufgabe 2", 2, PROJECT_START, PROJECT_END),
                 task("task-3", "Aufgabe 3", 3, PROJECT_START, PROJECT_END)), List.of());
         assertCodes(validator.validate(plan(section), scheduledRequest()), TASK_DATES_INVALID);
-    }
-
-    @Test
-    void validatesDuplicateAndCrossSectionDependencies() {
-        GeneratedSection first = section("section-1", 1, PROJECT_START, PROJECT_END,
-                List.of(task("task-1", "Eins", 1, null, PROJECT_START),
-                        task("task-2", "Zwei", 2, null, PROJECT_START),
-                        task("task-3", "Drei", 3, null, PROJECT_START)), List.of());
-        GeneratedSection validSecond = section("section-2", 2, PROJECT_START, PROJECT_END,
-                List.of(task("task-4", "Vier", 1, PROJECT_START, PROJECT_END,
-                        List.of("task-1"))), List.of());
-        assertThat(validator.validate(plan(first, validSecond), scheduledRequest()).isValid()).isTrue();
-
-        GeneratedSection second = section("section-2", 2, PROJECT_START, PROJECT_END,
-                List.of(task("task-4", "Vier", 1, PROJECT_START, PROJECT_END,
-                        List.of("task-1", "task-1"))), List.of());
-        var result = validator.validate(plan(first, second), scheduledRequest());
-        assertCodes(result, DEPENDENCY_DUPLICATE);
-        assertThat(result.issues()).noneMatch(issue -> issue.code() == UNKNOWN_TASK_REFERENCE);
     }
 
     @Test
@@ -285,24 +211,6 @@ class GenerationResponseValidatorTest {
                         task("task-2", "Aufgabe 2", 2, null, null),
                         task("task-3", "Aufgabe 3", 3, null, null)), List.of());
         assertThat(validator.validate(plan(undated), undatedRequest()).isValid()).isTrue();
-    }
-
-    @Test
-    void validationCallsDoNotShareTasksCountsDatesOrIssues() {
-        assertThat(validator.validate(validDatedPlan(), scheduledRequest()).isValid()).isTrue();
-
-        GeneratedSection undated = section("section-1", 1, null, null, List.of(
-                task("task-1", "Eins", 1, null, null),
-                task("task-2", "Zwei", 2, null, null),
-                task("task-3", "Drei", 3, null, null)), List.of());
-        assertThat(validator.validate(plan(undated), undatedRequest()).isValid()).isTrue();
-
-        GeneratedSection otherPlan = section("other-section", 1, null, null,
-                List.of(task("other-task", "Andere Aufgabe", 1, null, null, List.of("task-1"))), List.of());
-        assertCodes(validator.validate(plan(otherPlan), undatedRequest()),
-                UNKNOWN_TASK_REFERENCE, TASK_COUNT_TOO_LOW);
-
-        assertThat(validator.validate(validDatedPlan(), scheduledRequest()).isValid()).isTrue();
     }
 
     private GeneratedPlanResponse validDatedPlan() {

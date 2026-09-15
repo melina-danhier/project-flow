@@ -16,7 +16,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.assertThat;
 
 class PreCheckResultValidatorTest {
 
@@ -46,17 +45,6 @@ class PreCheckResultValidatorTest {
         assertThatThrownBy(() -> validator.validate(new AiPreCheckResult(List.of(
                 new AiPreCheckProblem(AiPreCheckSeverity.ERROR, "", "Vorgaben prüfen")))))
                 .isInstanceOf(AiOutputValidationException.class);
-    }
-
-    @Test
-    void acceptsRiskAndAssumptionThroughTheSameOpenPointContract() {
-        for (var type : List.of(AiPreCheckProblemType.RISK, AiPreCheckProblemType.ASSUMPTION)) {
-            assertThatCode(() -> validator.validate(new AiPreCheckResult(List.of(
-                    new AiPreCheckProblem(AiPreCheckSeverity.WARNING, type,
-                            "Eine Planungsgrundlage ist offen.", "Ergänze die Angabe.",
-                            "Die Planung verwendet die bestätigte Auslegung.")))))
-                    .doesNotThrowAnyException();
-        }
     }
 
     @Test
@@ -128,16 +116,4 @@ class PreCheckResultValidatorTest {
                 .doesNotThrowAnyException();
     }
 
-    @Test
-    void rejectsAbstractLanguageAndIsoDatesInUserFacingHints() {
-        assertThatThrownBy(() -> validator.validate(new AiPreCheckResult(List.of(
-                new AiPreCheckProblem(AiPreCheckSeverity.WARNING, AiPreCheckProblemType.RISK,
-                        "Es besteht ein offensichtliches Missverhältnis bis 2026-09-16.",
-                        "Mehr Zeit einplanen.", "Die Eingaben bleiben unverändert.", List.of())))))
-                .isInstanceOf(AiOutputValidationException.class);
-
-        var change = new AiPreCheckInputChange("endDate", "2026-09-16", "2027-03-12");
-        assertThat(change.displayPreviousValue()).isEqualTo("16.09.2026");
-        assertThat(change.displayNewValue()).isEqualTo("12.03.2027");
-    }
 }

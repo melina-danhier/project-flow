@@ -7,7 +7,17 @@ public enum StudyEventType {
     DRAFT_ITEM_EDITED,
     PLAN_REGENERATED,
     PLAN_ADOPTED,
+    LOCAL_AI_CHANGE_STARTED,
+    LOCAL_AI_CHANGE_ADOPTED,
+    LOCAL_AI_CHANGE_REJECTED,
+    PLAN_AI_CHANGE_STARTED,
+    PLAN_AI_CHANGE_ADOPTED,
+    PLAN_AI_CHANGE_REJECTED,
+    // Kept for compatibility with study events recorded before change scopes were separated.
+    @Deprecated
     AI_EDIT_STARTED,
+    @Deprecated
     AI_EDIT_ADOPTED,
+    @Deprecated
     AI_EDIT_REJECTED
 }

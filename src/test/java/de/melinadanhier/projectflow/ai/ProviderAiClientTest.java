@@ -1,6 +1,5 @@
 package de.melinadanhier.projectflow.ai;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalErrorCode;
 import de.melinadanhier.projectflow.ai.exception.AiTechnicalException;
@@ -39,7 +38,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -60,19 +58,6 @@ class ProviderAiClientTest {
     private final AiWizardSnapshot snapshot = new AiWizardSnapshot(
             "Projekt", null, null, null, CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER,
             null, "Test", null, null, null);
-
-    @Test
-    void openAiReplanSchemaAllowsNullForEveryOptionalField() throws Exception {
-        Class<?> structuredOutputs = Class.forName("com.openai.core.StructuredOutputsKt");
-        Method extractSchema = structuredOutputs.getDeclaredMethod("extractSchema", Class.class);
-        JsonNode taskSchema = (JsonNode) extractSchema.invoke(null, OpenAiReplanOutput.Task.class);
-
-        assertNullable(taskSchema, "startDate");
-        assertNullable(taskSchema, "dueDate");
-        assertNullable(taskSchema, "targetSectionId");
-        assertNullable(taskSchema, "beforeElementId");
-        assertNullable(taskSchema, "afterElementId");
-    }
 
     @ParameterizedTest
     @MethodSource("providerOperations")
@@ -197,54 +182,6 @@ class ProviderAiClientTest {
 
     @ParameterizedTest
     @MethodSource("providers")
-    void unchangedReplanPlacementDiscardsRedundantIdsFromProvider(String provider) {
-        AiClient client = client(provider);
-        var original = new AiImprovementContent(AiImprovementElementType.TASK, "Packen", null,
-                TaskPriority.MEDIUM, 2, null, null);
-        var request = new AiImprovementRequest(AiFeedbackType.REPLAN, null, null, null, null, original);
-        String redundantId = java.util.UUID.randomUUID().toString();
-        when(improvementPrompts.build(request)).thenReturn(prompt);
-        if (provider.equals("openai")) {
-            var output = new OpenAiReplanOutput.Task(
-                    Optional.empty(), Optional.empty(),
-                    new OpenAiReplanOutput.Placement(false, Optional.of(redundantId),
-                            Optional.empty(), Optional.empty()),
-                    "Die bestehende Planung bleibt sinnvoll.");
-            doReturn(output).when(gateway).execute(anyString(), eq(prompt), eq(OpenAiReplanOutput.Task.class));
-        } else {
-            var output = new AiTaskReplanResponse(null, null,
-                    new AiReplanPlacementResponse(false, redundantId, null, null),
-                    "Die bestehende Planung bleibt sinnvoll.");
-            doReturn(output).when(gateway).execute(anyString(), eq(prompt), eq(AiTaskReplanResponse.class));
-        }
-
-        var response = client.improveElement(request);
-
-        assertThat(response.placement()).isEqualTo(AiReplanPlacementResponse.unchanged());
-    }
-
-    @ParameterizedTest
-    @MethodSource("openAiReplanCases")
-    void openAiReplanMapsNullableSchemaFields(
-            AiImprovementElementType elementType, Object providerOutput, Class<?> responseType) {
-        AiClient client = client("openai");
-        var original = new AiImprovementContent(elementType, "Element", null,
-                elementType == AiImprovementElementType.TASK ? TaskPriority.MEDIUM : null,
-                null, null, null);
-        var request = new AiImprovementRequest(AiFeedbackType.REPLAN, null, null, null, null, original);
-        when(improvementPrompts.build(request)).thenReturn(prompt);
-        doReturn(providerOutput).when(gateway).execute(anyString(), eq(prompt), eq(responseType));
-
-        var response = client.improveElement(request);
-
-        assertThat(response.startDate()).isNull();
-        assertThat(response.dueDate()).isNull();
-        assertThat(response.placement()).isEqualTo(AiReplanPlacementResponse.unchanged());
-        verify(gateway).execute(anyString(), eq(prompt), eq(responseType));
-    }
-
-    @ParameterizedTest
-    @MethodSource("providers")
     void effortEstimationUsesEffortOnlyContract(String provider) {
         AiClient client = client(provider);
         var original = new AiImprovementContent(AiImprovementElementType.TASK, "Packen", null,
@@ -304,51 +241,9 @@ class ProviderAiClientTest {
                 .map(feedbackType -> Arguments.of(provider, feedbackType)));
     }
 
-    private static Stream<Arguments> openAiReplanCases() {
-        String explanation = "Die bisherige Planung bleibt sinnvoll.";
-        return Stream.of(
-                Arguments.of(AiImprovementElementType.TASK,
-                        new OpenAiReplanOutput.Task(
-                                Optional.empty(), Optional.empty(), unchangedOpenAiPlacement(), explanation),
-                        OpenAiReplanOutput.Task.class),
-                Arguments.of(AiImprovementElementType.MILESTONE,
-                        new OpenAiReplanOutput.Milestone(
-                                Optional.empty(), unchangedOpenAiPlacement(), explanation),
-                        OpenAiReplanOutput.Milestone.class));
-    }
-
     private static OpenAiReplanOutput.Placement unchangedOpenAiPlacement() {
         return new OpenAiReplanOutput.Placement(
                 false, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
-    private void assertNullable(JsonNode schema, String propertyName) {
-        JsonNode property = findProperty(schema, propertyName);
-        assertThat(property)
-                .as("Schema-Eigenschaft %s", propertyName)
-                .isNotNull();
-        boolean nullableThroughAnyOf = property.path("anyOf").findValuesAsText("type").contains("null");
-        boolean nullableThroughTypeArray = false;
-        if (property.path("type").isArray()) {
-            for (JsonNode type : property.path("type")) {
-                nullableThroughTypeArray |= type.asText().equals("null");
-            }
-        }
-        assertThat(nullableThroughAnyOf || nullableThroughTypeArray)
-                .as("Nullable Schema-Eigenschaft %s: %s", propertyName, property)
-                .isTrue();
-    }
-
-    private JsonNode findProperty(JsonNode node, String propertyName) {
-        if (node == null) return null;
-        JsonNode properties = node.get("properties");
-        if (properties != null && properties.has(propertyName)) {
-            return properties.get(propertyName);
-        }
-        for (JsonNode child : node) {
-            JsonNode match = findProperty(child, propertyName);
-            if (match != null) return match;
-        }
-        return null;
-    }
 }

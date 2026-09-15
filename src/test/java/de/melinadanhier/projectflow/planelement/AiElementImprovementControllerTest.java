@@ -8,6 +8,8 @@ import de.melinadanhier.projectflow.planelement.dto.improvement.AiImprovementFor
 import de.melinadanhier.projectflow.planelement.dto.improvement.AiImprovementProposal;
 import de.melinadanhier.projectflow.planelement.service.AiElementImprovementService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
+import de.melinadanhier.projectflow.study.domain.StudyEventType;
+import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.ui.ExtendedModelMap;
@@ -51,7 +53,8 @@ class AiElementImprovementControllerTest {
     @Test
     void proposalPostRedirectsWithProposalIdAndReviewGetLoadsItFromSameSession() {
         AiElementImprovementService service = mock(AiElementImprovementService.class);
-        AiElementImprovementController controller = new AiElementImprovementController(service);
+        StudyTrackingService trackingService = mock(StudyTrackingService.class);
+        AiElementImprovementController controller = new AiElementImprovementController(service, trackingService);
         UUID projectId = UUID.randomUUID();
         UUID elementId = UUID.randomUUID();
         UUID proposalId = UUID.randomUUID();
@@ -79,6 +82,7 @@ class AiElementImprovementControllerTest {
         assertThat(getView).isEqualTo("projects/improvement/review");
         assertThat(reviewModel.get("proposal")).isSameAs(proposal);
         verify(service).requireImprovementAccess(projectId, userId);
+        verify(trackingService).trackIfActive(session, StudyEventType.LOCAL_AI_CHANGE_STARTED);
     }
 
     @Test

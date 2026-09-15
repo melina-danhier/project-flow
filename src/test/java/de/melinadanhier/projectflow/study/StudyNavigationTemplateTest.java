@@ -32,6 +32,8 @@ class StudyNavigationTemplateTest {
                 .contains("Übernimm am Ende einen Projektplan, mit dem du grundsätzlich weiterarbeiten würdest.")
                 .contains("Aufgabe 2 der Nutzerstudie")
                 .contains("Die Freunde, die dir ursprünglich beim Transport helfen wollten")
+                .contains("oben im Plan <strong>„Plan mit KI verbessern“</strong>")
+                .contains("<strong>„Aufgabe mit KI anpassen“</strong>")
                 .contains("<details class=\"pf-study-task__details\">")
                 .doesNotContain("<details class=\"pf-study-task__details\" open>")
                 .contains("@{/study/finish}");
