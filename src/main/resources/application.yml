@@ -19,7 +19,7 @@ server:
 
 projectflow:
   ai:
-    recovery-delay: ${AI_RECOVERY_DELAY:30s}
+    recovery-cron: "${AI_RECOVERY_CRON:0 0/30 * * * *}"
     stale-workflow-timeout: ${AI_STALE_WORKFLOW_TIMEOUT:5m}
     max-run-time: ${PROJECTFLOW_AI_MAX_RUN_TIME:5m}
     provider: ${PROJECTFLOW_AI_PROVIDER:stub}

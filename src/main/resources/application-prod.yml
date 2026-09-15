@@ -16,6 +16,12 @@ spring:
   flyway:
     enabled: true
 
+projectflow:
+  ai:
+    # Startup recovery remains active. Set a cron expression explicitly only if
+    # periodic fallback recovery is required in the production environment.
+    recovery-cron: "${AI_RECOVERY_CRON:-}"
+
 server:
   port: ${PORT:8080}
   address: 0.0.0.0

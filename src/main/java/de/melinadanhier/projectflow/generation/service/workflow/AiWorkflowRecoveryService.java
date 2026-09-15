@@ -6,7 +6,6 @@ import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWo
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,6 @@ public class AiWorkflowRecoveryService {
     private final Clock clock;
     private final AiWorkflowControlService controlService;
 
-    @Scheduled(fixedDelayString = "${projectflow.ai.recovery-delay:30s}")
     @Transactional
     public void recover() {
         // Noch nicht beanspruchte Arbeit wird erneut signalisiert. Bereits laufende Arbeit
