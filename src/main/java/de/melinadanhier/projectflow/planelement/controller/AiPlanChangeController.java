@@ -154,11 +154,52 @@ public class AiPlanChangeController {
         return "redirect:/projects/" + projectId + "/plan";
     }
 
-    private void store(HttpSession session, PlanChangeProposal proposal) { Map<UUID, PlanChangeProposal> values = proposals(session); values.put(proposal.proposalId(), proposal); rememberRequest(session, proposal); while (values.size() > MAX_SESSION_PROPOSALS) values.remove(values.keySet().iterator().next()); }
-    private PlanChangeProposal require(HttpSession session, UUID projectId, UUID proposalId) { PlanChangeProposal result = proposals(session).get(proposalId); if (result == null || !result.projectId().equals(projectId)) throw new ConflictException("Der temporäre KI-Vorschlag ist nicht mehr verfügbar."); return result; }
-    @SuppressWarnings("unchecked") private Map<UUID, PlanChangeProposal> proposals(HttpSession session) { Object current = session.getAttribute(SESSION_PROPOSALS); if (current instanceof Map<?, ?>) return (Map<UUID, PlanChangeProposal>) current; Map<UUID, PlanChangeProposal> created = new LinkedHashMap<>(); session.setAttribute(SESSION_PROPOSALS, created); return created; }
-    @SuppressWarnings("unchecked") private Map<UUID, String> lastRequests(HttpSession session) { Object current = session.getAttribute(SESSION_LAST_REQUESTS); if (current instanceof Map<?, ?>) return (Map<UUID, String>) current; Map<UUID, String> created = new LinkedHashMap<>(); session.setAttribute(SESSION_LAST_REQUESTS, created); return created; }
-    private void rememberRequest(HttpSession session, PlanChangeProposal proposal) { Map<UUID, String> values = lastRequests(session); values.put(proposal.projectId(), proposal.changeRequest()); while (values.size() > MAX_SESSION_PROPOSALS) values.remove(values.keySet().iterator().next()); }
+    private void store(HttpSession session, PlanChangeProposal proposal) {
+        Map<UUID, PlanChangeProposal> values = proposals(session);
+        values.put(proposal.proposalId(), proposal);
+        rememberRequest(session, proposal);
+        while (values.size() > MAX_SESSION_PROPOSALS) {
+            values.remove(values.keySet().iterator().next());
+        }
+    }
+
+    private PlanChangeProposal require(HttpSession session, UUID projectId, UUID proposalId) {
+        PlanChangeProposal result = proposals(session).get(proposalId);
+        if (result == null || !result.projectId().equals(projectId)) {
+            throw new ConflictException("Der temporäre KI-Vorschlag ist nicht mehr verfügbar.");
+        }
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<UUID, PlanChangeProposal> proposals(HttpSession session) {
+        Object current = session.getAttribute(SESSION_PROPOSALS);
+        if (current instanceof Map<?, ?>) {
+            return (Map<UUID, PlanChangeProposal>) current;
+        }
+        Map<UUID, PlanChangeProposal> created = new LinkedHashMap<>();
+        session.setAttribute(SESSION_PROPOSALS, created);
+        return created;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<UUID, String> lastRequests(HttpSession session) {
+        Object current = session.getAttribute(SESSION_LAST_REQUESTS);
+        if (current instanceof Map<?, ?>) {
+            return (Map<UUID, String>) current;
+        }
+        Map<UUID, String> created = new LinkedHashMap<>();
+        session.setAttribute(SESSION_LAST_REQUESTS, created);
+        return created;
+    }
+
+    private void rememberRequest(HttpSession session, PlanChangeProposal proposal) {
+        Map<UUID, String> values = lastRequests(session);
+        values.put(proposal.projectId(), proposal.changeRequest());
+        while (values.size() > MAX_SESSION_PROPOSALS) {
+            values.remove(values.keySet().iterator().next());
+        }
+    }
     private String unavailable(UUID projectId, HttpSession session, Model model, HttpServletResponse response) {
         return conflict(projectId, "Der KI-Vorschlag wurde bereits übernommen oder ist nicht mehr verfügbar.", session, model, response);
     }

@@ -49,6 +49,8 @@ All colors are defined as CSS custom properties in `src/main/resources/static/cs
 | Danger   | `--pf-danger-bg` (`#fef2f2`)  | `--pf-danger-border` (`#fecaca`) | `--pf-danger-text` (`#991b1b`)  | `--pf-danger` (`#ef4444`)  |
 | Purple   | `--pf-purple-bg` (`#f5f3ff`)  | `--pf-purple-border` (`#ddd6fe`) | `--pf-purple-text` (`#5b21b6`)  | `--pf-purple` (`#8b5cf6`)  |
 
+Für Hover-Zustände gefährlicher Aktionen steht zusätzlich `--pf-danger-hover` (`#dc2626`) zur Verfügung.
+
 ---
 
 ## 2. Typography
@@ -123,9 +125,9 @@ Size modifiers:
 | `.pf-btn--icon`  | `40px`     | `0.5rem` (square) |
 
 ```html
-<a class="pf-btn pf-btn--primary pf-btn--lg" href="/register">Get Started →</a>
-<button class="pf-btn pf-btn--secondary">Cancel</button>
-<button class="pf-btn pf-btn--ghost pf-btn--sm">Dismiss</button>
+<a class="pf-btn pf-btn--primary pf-btn--lg" href="/register">Jetzt starten →</a>
+<button class="pf-btn pf-btn--secondary">Abbrechen</button>
+<button class="pf-btn pf-btn--ghost pf-btn--sm">Schließen</button>
 ```
 
 ### Cards
@@ -146,10 +148,10 @@ Sub-elements: `.pf-card__header`, `.pf-card__body`, `.pf-card__footer`
 ```html
 <div class="pf-card pf-card--interactive">
     <div class="pf-card__header">
-        <h3>Card Title</h3>
+        <h3>Titel der Karte</h3>
     </div>
     <div class="pf-card__body">
-        <p>Card content goes here.</p>
+        <p>Inhalt der Karte</p>
     </div>
 </div>
 ```
@@ -186,7 +188,7 @@ Base class: `.pf-alert` (or use `role="alert"` / `role="status"`)
 
 ```html
 <div class="pf-alert pf-alert--info">
-    <span>Informational message here.</span>
+    <span>Hier steht ein hilfreicher Hinweis.</span>
 </div>
 ```
 
@@ -207,14 +209,14 @@ Base class: `.pf-alert` (or use `role="alert"` / `role="status"`)
 ```html
 <div class="pf-form-group">
     <label class="pf-label" for="name">
-        <span>Project Name</span>
+        <span>Projektname</span>
         <span class="pf-required-star">*</span>
     </label>
-    <input id="name" type="text" class="pf-input" placeholder="Enter name..." required>
-    <p class="pf-hint">This will be used as the display name.</p>
+    <input id="name" type="text" class="pf-input" placeholder="Name eingeben ..." required>
+    <p class="pf-hint">Dieser Name wird in der Projektübersicht angezeigt.</p>
 </div>
 
-<!-- Form / Wizard Action Bar: Cancel/Back on LEFT, Submit/Continue on RIGHT -->
+<!-- Formular-/Wizard-Aktionsleiste: Abbrechen/Zurück LINKS, Speichern/Weiter RECHTS -->
 <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--pf-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
     <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
         Assistent abbrechen
@@ -230,12 +232,12 @@ Base class: `.pf-alert` (or use `role="alert"` / `role="status"`)
 ```html
 <div class="pf-page-header">
     <div class="pf-page-header__left">
-        <a class="pf-page-header__back" href="/projects">← Back</a>
-        <h1>Page Title</h1>
-        <p class="pf-page-header__subtitle">Description text</p>
+        <a class="pf-page-header__back" href="/projects">← Zurück</a>
+        <h1>Seitentitel</h1>
+        <p class="pf-page-header__subtitle">Kurze Beschreibung</p>
     </div>
     <div class="pf-page-header__actions">
-        <a class="pf-btn pf-btn--primary" href="/action">Action</a>
+        <a class="pf-btn pf-btn--primary" href="/action">Aktion</a>
     </div>
 </div>
 ```
@@ -250,7 +252,7 @@ Base class: `.pf-alert` (or use `role="alert"` / `role="status"`)
         </div>
         <div class="pf-stat-info">
             <span class="pf-stat-val">42</span>
-            <span class="pf-stat-lbl">Active Tasks</span>
+            <span class="pf-stat-lbl">Offene Aufgaben</span>
         </div>
     </div>
 </div>
@@ -265,9 +267,9 @@ Icon color modifiers: `.pf-stat-icon--green`, `.pf-stat-icon--yellow`, `.pf-stat
     <div class="pf-empty-state__icon">
         <svg><!-- icon --></svg>
     </div>
-    <div class="pf-empty-state__title">No Projects Yet</div>
-    <p class="pf-empty-state__text">Create your first project to get started.</p>
-    <a class="pf-btn pf-btn--primary" href="/projects/new">Create Project</a>
+    <div class="pf-empty-state__title">Noch keine Projekte</div>
+    <p class="pf-empty-state__text">Erstelle dein erstes Projekt.</p>
+    <a class="pf-btn pf-btn--primary" href="/projects/new">Projekt erstellen</a>
 </div>
 ```
 
@@ -303,13 +305,13 @@ Every page follows this structure:
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <th:block th:replace="~{fragments/layout :: head('Page Title')}" />
+    <th:block th:replace="~{fragments/layout :: head('Seitentitel')}" />
 </head>
 <body>
     <th:block th:replace="~{fragments/layout :: site-header}" />
 
     <main>
-        <!-- Page content -->
+        <!-- Seiteninhalt -->
     </main>
 
     <th:block th:replace="~{fragments/layout :: site-footer}" />
@@ -347,8 +349,8 @@ Use `sec:authorize="isAuthenticated()"` and `sec:authorize="!isAuthenticated()"`
 ```html
 <div class="pf-card">
     <dl>
-        <dt>Key</dt><dd>Value</dd>
-        <dt>Key</dt><dd>Value</dd>
+        <dt>Bezeichnung</dt><dd>Wert</dd>
+        <dt>Bezeichnung</dt><dd>Wert</dd>
     </dl>
 </div>
 ```

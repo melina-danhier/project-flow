@@ -22,7 +22,7 @@ Die KI unterstützt die Planung, handelt aber nicht autonom. Generierte Inhalte 
 - separater Entwurfs- und Reviewprozess vor der Übernahme KI-generierter Inhalte
 - Verwaltung und Sortierung von Bereichen, Aufgaben und Meilensteinen
 - Aufgaben mit Terminen, Priorität, Aufwand, Status, Abhängigkeiten und Verantwortlichen
-- einfache Zusammenarbeit über Projektmitglieder und Aufgabenkommentare
+- einfache Zusammenarbeit über Projektmitglieder sowie Aufgaben- und Meilensteinkommentare
 - lokale KI-Verbesserung einzelner Planelemente sowie überprüfbare Änderungen am Gesamtplan
 - Feedback zu KI-Vorschlägen und Unterstützung einer begleitenden Evaluation
 
@@ -46,7 +46,7 @@ Die Anwendung ist fachlich modular aufgebaut. Zentrale Bereiche sind unter ander
 - lokal installiertes Maven
 - PostgreSQL oder Docker mit Docker Compose
 
-Der Maven Wrapper sollte wegen eines bekannten Zertifikatsproblems nicht verwendet werden. Die folgenden Befehle verwenden daher `mvn.cmd`.
+Der Maven Wrapper sollte für die lokale Entwicklung wegen eines bekannten Zertifikatsproblems nicht verwendet werden. Die folgenden Befehle verwenden daher `mvn.cmd`. Der isolierte Docker-Build verwendet den Wrapper weiterhin, um eine reproduzierbare Maven-Version bereitzustellen.
 
 ### Datenbank starten
 
@@ -82,6 +82,8 @@ mvn.cmd spring-boot:run
 ```
 
 Anschließend ist ProjectFlow standardmäßig unter [http://localhost:8080](http://localhost:8080) erreichbar. Für die lokale Entwicklung ist der deterministische KI-Stub voreingestellt; ein externer API-Schlüssel ist daher nicht erforderlich.
+
+Das Docker-Image exponiert ebenfalls Port `8080`. Im Produktionsprofil kann der tatsächliche Anwendungsport weiterhin über die Umgebungsvariable `PORT` gesetzt werden.
 
 ## KI-Provider
 

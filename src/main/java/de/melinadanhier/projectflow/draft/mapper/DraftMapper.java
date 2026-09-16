@@ -17,6 +17,7 @@ public interface DraftMapper {
     @Mapping(target = "categoryLabel", ignore = true)
     @Mapping(target = "owner", ignore = true)
     @Mapping(target = "activeReviewStatus", ignore = true)
+    @Mapping(target = "activeReviewFilter", ignore = true)
     @Mapping(target = "reviewedElementCount", ignore = true)
     @Mapping(target = "totalElementCount", ignore = true)
     @Mapping(target = "totalEstimatedHours", ignore = true)
