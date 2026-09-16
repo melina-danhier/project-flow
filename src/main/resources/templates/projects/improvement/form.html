@@ -25,6 +25,7 @@
             <label for="comment" class="pf-label">Ergänzender Kommentar (optional)</label>
             <textarea id="comment" th:field="*{comment}" maxlength="500" class="pf-textarea"
                       placeholder="z. B. Fachbegriffe vermeiden oder das erwartete Ergebnis klarer nennen"></textarea>
+            <small th:if="${session != null and session.studySessionId != null}" class="pf-hint" style="display:block; margin-top:0.25rem;">Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</small>
             <small>Maximal 500 Zeichen. Der Kommentar wird getrennt vom Feedback-Typ übermittelt.</small>
             <div th:if="${#fields.hasErrors('comment')}" th:errors="*{comment}" class="pf-alert pf-alert--error"></div>
         </div>

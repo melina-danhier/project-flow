@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Nutzerstudie')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main class="pf-page-shell" style="max-width: 760px;">
+    <section class="pf-card">
+        <p class="pf-eyebrow">Nutzerstudie</p>
+        <h1>Teilnahme an der ProjectFlow-Studie</h1>
+        <p>
+            In dieser Studie bearbeitest du zwei vorgegebene, fiktive Projektaufgaben.
+            ProjectFlow speichert dafür eine zufällige interne Studienkennung, Zeitpunkte,
+            den Sitzungsstatus und die für die Auswertung beschriebenen Bedienereignisse.
+        </p>
+        <p>
+            Die interne Kennung wird weder an die Befragungsplattform noch an den KI-Anbieter
+            übertragen. Es wird keine SoSci-Teilnehmerkennung übernommen und kein reguläres
+            Benutzerkonto mit E-Mail-Adresse oder Passwort angelegt.
+        </p>
+        <p>
+            Bitte gib während der Studie keine echten personenbezogenen, vertraulichen oder
+            sensiblen Informationen ein. Verwende ausschließlich die fiktiven Szenariodaten.
+        </p>
+
+        <form th:action="@{/study/start}" th:object="${studyConsentForm}" method="post">
+            <label style="display:flex; gap:.75rem; align-items:flex-start; margin:1.5rem 0;">
+                <input type="checkbox" th:field="*{consent}" style="margin-top:.25rem;">
+                <span>Ich habe die Studieninformationen gelesen und willige in die beschriebene Verarbeitung der Studiendaten ein.</span>
+            </label>
+            <p class="pf-field-error" th:if="${#fields.hasErrors('consent')}" th:errors="*{consent}"></p>
+            <button class="pf-btn pf-btn--primary" type="submit">Studie starten</button>
+        </form>
+    </section>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

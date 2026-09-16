@@ -1,6 +1,10 @@
 package de.melinadanhier.projectflow.study.domain;
 
 public enum StudyEventType {
+    STUDY_STARTED,
+    STUDY_TASK_COMPLETED,
+    STUDY_COMPLETED,
+    STUDY_ABORTED,
     PLAN_GENERATED,
     DRAFT_ITEM_ACCEPTED,
     DRAFT_ITEM_REJECTED,

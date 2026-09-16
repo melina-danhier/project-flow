@@ -179,6 +179,39 @@ class AuthenticationIntegrationTest {
     }
 
     @Test
+    void publicStudyEndpointsAndStaticAssetsPermitAnonymousAccessWhileOtherStudyRoutesRequireAuth() throws Exception {
+        mockMvc.perform(get("/study"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/study/start"));
+
+        mockMvc.perform(get("/study/start"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("study/start"));
+
+        mockMvc.perform(get("/study/continue"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+
+        mockMvc.perform(get("/study/return"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+
+        mockMvc.perform(post("/study/finish").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+
+        mockMvc.perform(post("/study/abort").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+
+        mockMvc.perform(get("/css/app.css"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/js/study-mode.js"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void unknownEmailWrongPasswordAndDisabledUserHaveSameExternalFailure() throws Exception {
         saveUser("wrong-password@example.org", "richtiges-passwort", true);
         saveUser("disabled@example.org", "richtiges-passwort", false);

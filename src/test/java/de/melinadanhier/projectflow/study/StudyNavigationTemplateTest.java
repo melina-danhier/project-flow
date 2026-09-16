@@ -36,7 +36,9 @@ class StudyNavigationTemplateTest {
                 .contains("<strong>„Aufgabe mit KI anpassen“</strong>")
                 .contains("<details class=\"pf-study-task__details\">")
                 .doesNotContain("<details class=\"pf-study-task__details\" open>")
-                .contains("@{/study/finish}");
+                .contains("th:action=\"@{/study/finish}\"")
+                .contains("th:action=\"@{/study/abort}\"")
+                .contains("keine echten personenbezogenen");
         assertThat(layout)
                 .contains("@{/css/study-mode.css}")
                 .contains("@{/js/study-mode.js}");

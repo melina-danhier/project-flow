@@ -15,14 +15,19 @@ public class StudySession {
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "participant_id", nullable = false, length = 64)
-    private String participantId;
+    // Nullable only for legacy rows created before consent was captured explicitly.
+    @Column(name = "consent_given_at")
+    private Instant consentGivenAt;
 
     @Column(name = "started_at", nullable = false)
     private Instant startedAt;
 
     @Column(name = "completed_at")
     private Instant completedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private StudySessionStatus status;
 
     @Column(name = "project_id")
     private UUID projectId;

@@ -61,7 +61,7 @@ class StudyModeRestrictionFilterTest {
                 Arguments.of("GET", "/login", null, null),
                 Arguments.of("POST", "/register", null, null),
                 Arguments.of("POST", "/logout", null, null),
-                Arguments.of("GET", "/study/start", "participant", "andere-person"),
+                Arguments.of("GET", "/study/start", null, null),
                 Arguments.of("POST", "/projects/123/archive", null, null),
                 Arguments.of("POST", "/projects/123/trash", null, null),
                 Arguments.of("POST", "/projects/123/reactivate", null, null),

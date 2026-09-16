@@ -5,6 +5,7 @@
 <div th:if="${errorMessage}" class="pf-alert pf-alert--error" role="alert" th:text="${errorMessage}"></div>
 <form th:action="@{/projects/{id}/plan/ai-change(id=${projectId})}" th:object="${planChangeForm}" method="post"><div class="pf-form-group">
 <label for="changeRequest" class="pf-label">Gewünschte Änderung</label><textarea id="changeRequest" th:field="*{changeRequest}" maxlength="1000" required class="pf-textarea" rows="6" placeholder="z. B. Ergänze eine Aufgabe für die Wohnungsübergabe."></textarea>
+<small th:if="${session != null and session.studySessionId != null}" class="pf-hint" style="display:block; margin-top:0.25rem;">Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</small>
 <div th:if="${#fields.hasErrors('changeRequest')}" th:errors="*{changeRequest}" class="pf-alert pf-alert--error"></div></div>
 <div class="pf-cluster"><button class="pf-btn pf-btn--primary" type="submit">Vorschlag erzeugen</button><a class="pf-btn pf-btn--secondary" th:href="@{/projects/{id}/plan(id=${projectId})}">Abbrechen</a></div></form></div>
 </main><th:block th:replace="~{fragments/layout :: site-footer}" /></body></html>

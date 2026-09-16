@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.study.domain.StudyEvent;
 import de.melinadanhier.projectflow.study.domain.StudyEventType;
 import de.melinadanhier.projectflow.study.domain.StudyPhase;
 import de.melinadanhier.projectflow.study.domain.StudySession;
+import de.melinadanhier.projectflow.study.domain.StudySessionStatus;
 import de.melinadanhier.projectflow.study.repository.StudyEventRepository;
 import de.melinadanhier.projectflow.study.repository.StudySessionRepository;
 import jakarta.servlet.http.HttpSession;
@@ -33,36 +34,46 @@ public class StudyTrackingService {
     private final Clock clock;
 
     @Transactional
-    public void startOrResume(HttpSession httpSession, String participantId) {
-        StudySession studySession = sessionRepository
-                .findFirstByParticipantIdAndCompletedAtIsNullOrderByStartedAtDesc(participantId)
-                .orElseGet(() -> createStudySession(participantId));
-
+    public UUID start(HttpSession httpSession) {
+        if (activeSession(httpSession).isPresent()) {
+            throw new IllegalStateException("Es ist bereits eine Studien-Session aktiv.");
+        }
+        StudySession studySession = createStudySession();
         bindToHttpSession(httpSession, studySession);
-    }
-
-    @Transactional
-    public void resume(HttpSession httpSession, String participantId) {
-        StudySession studySession = sessionRepository
-                .findFirstByParticipantIdAndCompletedAtIsNullOrderByStartedAtDesc(participantId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Keine aktive Studien-Session für diesen Teilnehmer vorhanden."
-                ));
-
-        bindToHttpSession(httpSession, studySession);
+        recordEvent(studySession, StudyEventType.STUDY_STARTED);
+        return studySession.getId();
     }
 
     @Transactional
     public boolean finish(HttpSession httpSession) {
         Optional<StudySession> studySession = activeSession(httpSession);
 
-        studySession.ifPresent(session ->
-                session.setCompletedAt(Instant.now(clock))
-        );
+        studySession.ifPresent(session -> {
+            recordEvent(session, StudyEventType.STUDY_TASK_COMPLETED);
+            recordEvent(session, StudyEventType.STUDY_COMPLETED);
+            session.setCompletedAt(Instant.now(clock));
+            session.setStatus(StudySessionStatus.COMPLETED);
+        });
 
         clearHttpSession(httpSession);
 
         return studySession.isPresent();
+    }
+
+    @Transactional
+    public boolean abort(HttpSession httpSession) {
+        Optional<StudySession> studySession = activeSession(httpSession);
+        studySession.ifPresent(session -> {
+            recordEvent(session, StudyEventType.STUDY_ABORTED);
+            session.setStatus(StudySessionStatus.ABORTED);
+        });
+        clearHttpSession(httpSession);
+        return studySession.isPresent();
+    }
+
+    @Transactional
+    public void completeCurrentTask(HttpSession httpSession) {
+        recordEvent(requireActiveSession(httpSession), StudyEventType.STUDY_TASK_COMPLETED);
     }
 
     @Transactional
@@ -113,12 +124,6 @@ public class StudyTrackingService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<String> activeParticipantId(HttpSession httpSession) {
-        return activeSession(httpSession)
-                .map(StudySession::getParticipantId);
-    }
-
-    @Transactional(readOnly = true)
     public Optional<UUID> activeProjectId(HttpSession httpSession) {
         return activeSession(httpSession)
                 .map(StudySession::getProjectId);
@@ -129,17 +134,20 @@ public class StudyTrackingService {
         return activeSession(httpSession).isPresent();
     }
 
-    private StudySession createStudySession(String participantId) {
+    private StudySession createStudySession() {
         StudySession studySession = new StudySession();
-        studySession.setParticipantId(participantId);
-        studySession.setStartedAt(Instant.now(clock));
+        Instant now = Instant.now(clock);
+        studySession.setConsentGivenAt(now);
+        studySession.setStartedAt(now);
+        studySession.setStatus(StudySessionStatus.ACTIVE);
+        studySession.setCurrentPhase(StudyPhase.TASK_1);
 
         return sessionRepository.save(studySession);
     }
 
     private Optional<StudySession> activeSession(HttpSession httpSession) {
         return findSession(httpSession)
-                .filter(session -> session.getCompletedAt() == null);
+                .filter(session -> session.getStatus() == StudySessionStatus.ACTIVE);
     }
 
     private Optional<StudySession> findSession(HttpSession httpSession) {

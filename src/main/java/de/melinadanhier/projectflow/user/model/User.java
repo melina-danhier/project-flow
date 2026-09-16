@@ -7,7 +7,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
@@ -28,15 +27,12 @@ import java.util.Set;
 @NoArgsConstructor
 public class User extends MutableEntity {
 
-    @Email
-    @NotBlank
     @Size(max = 254)
-    @Column(name = "email", nullable = false, length = 254)
+    @Column(name = "email", length = 254)
     private String email;
 
-    @NotBlank
     @Size(max = 255)
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
     @NotBlank
@@ -46,6 +42,9 @@ public class User extends MutableEntity {
 
     @Column(name = "enabled", nullable = false)
     private boolean enabled = true;
+
+    @Column(name = "study_account", nullable = false)
+    private boolean studyAccount;
 
     @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "user")

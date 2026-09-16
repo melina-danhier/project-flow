@@ -1,86 +1,105 @@
 package de.melinadanhier.projectflow.study.controller;
 
+import de.melinadanhier.projectflow.study.dto.StudyConsentForm;
+import de.melinadanhier.projectflow.study.service.StudyEnrollmentService;
 import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import de.melinadanhier.projectflow.study.service.StudyUserService;
 import de.melinadanhier.projectflow.user.model.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
-@Validated
 @RequiredArgsConstructor
 public class StudyController {
     private final StudyTrackingService trackingService;
     private final StudyUserService studyUserService;
+    private final StudyEnrollmentService enrollmentService;
 
     @Value("${projectflow.study.questionnaire-url:}")
     private String questionnaireUrl;
 
+    @GetMapping("/study")
+    public String studyRedirect() {
+        return "redirect:/study/start";
+    }
+
     @GetMapping("/study/start")
+    public String information(Model model) {
+        model.addAttribute("studyPage", true);
+        if (!model.containsAttribute("studyConsentForm")) {
+            model.addAttribute("studyConsentForm", new StudyConsentForm());
+        }
+        return "study/start";
+    }
+
+    @PostMapping("/study/start")
     public String start(
-            @RequestParam("participant")
-            @Pattern(regexp = "[A-Za-z0-9_-]{1,64}", message = "Ungültiger Studiencode.")
-            String participant,
+            @Valid @ModelAttribute("studyConsentForm") StudyConsentForm form,
+            BindingResult bindingResult,
+            Model model,
             HttpSession session,
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        User studyUser = studyUserService.getOrCreateStudyUser(participant);
-        studyUserService.login(studyUser, request, response);
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("studyPage", true);
+            return "study/start";
+        }
 
-        trackingService.startOrResume(session, participant);
-        trackingService.beginTaskOne(session);
+        User studyUser = enrollmentService.start(session);
+        studyUserService.login(studyUser, request, response);
 
         return "redirect:/projects";
     }
 
     @GetMapping("/study/return")
     public String returnToQuestionnaire(HttpSession session) {
-        String participantId = trackingService.activeParticipantId(session)
-                .orElseThrow(() -> new IllegalStateException("Keine aktive Studien-Session vorhanden."));
-        return questionnaireRedirect(participantId);
+        trackingService.completeCurrentTask(session);
+        return questionnaireRedirect();
     }
 
     @GetMapping("/study/continue")
-    public String continueStudy(
-            @RequestParam("participant")
-            @Pattern(regexp = "[A-Za-z0-9_-]{1,64}", message = "Ungültiger Studiencode.")
-            String participant,
+    public String continueStudy(HttpSession session) {
+        trackingService.activeProjectId(session)
+                .orElseThrow(() -> new IllegalStateException("Kein Studienprojekt vorhanden."));
+        trackingService.beginTaskTwo(session);
+        return "redirect:/projects";
+    }
+
+    @PostMapping("/study/finish")
+    public String finish(
             HttpSession session,
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        User studyUser = studyUserService.getOrCreateStudyUser(participant);
-        studyUserService.login(studyUser, request, response);
-
-        trackingService.resume(session, participant);
-
-        UUID projectId = trackingService.activeProjectId(session)
-                .orElseThrow(() -> new IllegalStateException("Kein Studienprojekt vorhanden."));
-
-        trackingService.beginTaskTwo(session);
-
-        return "redirect:/projects";
+        if (!trackingService.finish(session)) {
+            throw new IllegalStateException("Keine aktive Studien-Session vorhanden.");
+        }
+        studyUserService.logout(request, response);
+        return questionnaireRedirect();
     }
 
-    @GetMapping("/study/finish")
-    public String finish(HttpSession session) {
-        String participantId = trackingService.activeParticipantId(session)
-                .orElseThrow(() -> new IllegalStateException("Keine aktive Studien-Session vorhanden."));
-        trackingService.finish(session);
-        return questionnaireRedirect(participantId);
+    @PostMapping("/study/abort")
+    public String abort(
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        if (!trackingService.abort(session)) {
+            throw new IllegalStateException("Keine aktive Studien-Session vorhanden.");
+        }
+        studyUserService.logout(request, response);
+        return questionnaireRedirect();
     }
 
     @GetMapping("/study/restricted")
@@ -88,16 +107,10 @@ public class StudyController {
         return "study/restricted";
     }
 
-    private String questionnaireRedirect(String participantId) {
+    private String questionnaireRedirect() {
         if (questionnaireUrl == null || questionnaireUrl.isBlank()) {
             throw new IllegalStateException("Die URL der Studienbefragung ist nicht konfiguriert.");
         }
-        String separator = questionnaireUrl.contains("?") ? "&" : "?";
-
-        return "redirect:"
-                + questionnaireUrl
-                + separator
-                + "i="
-                + URLEncoder.encode(participantId, StandardCharsets.UTF_8);
+        return "redirect:" + questionnaireUrl;
     }
 }

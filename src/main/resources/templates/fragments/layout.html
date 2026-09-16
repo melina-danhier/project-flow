@@ -8,9 +8,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#2563eb">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+    <link th:unless="${studyPage == true or (session != null and session.studySessionId != null)}" rel="preconnect" href="https://fonts.googleapis.com">
+    <link th:unless="${studyPage == true or (session != null and session.studySessionId != null)}" rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link th:unless="${studyPage == true or (session != null and session.studySessionId != null)}" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <link th:if="${session != null and session.studySessionId != null}" rel="stylesheet" th:href="@{/css/study-mode.css}">
     <title th:text="${pageTitle} + ' – ProjectFlow'">ProjectFlow</title>
@@ -25,6 +25,7 @@
                 <strong>Szenario</strong>
                 <p>Du ziehst in sechs Wochen in eine Wohnung in einer anderen Stadt. Du organisierst den Umzug selbst und bekommst Unterstützung von Freunden. Dein Ziel ist es, den Umzug möglichst vollständig vorzubereiten und keine wichtigen Aufgaben zu vergessen.</p>
                 <p>Halte dich bei der Bearbeitung an diese Rahmenbedingungen. Angaben, die nicht festgelegt wurden, darfst du selbst sinnvoll und realistisch ergänzen. Verändere dabei keine ausdrücklich genannten Bedingungen.</p>
+                <p>Gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein. Arbeite nur mit dem fiktiven Szenario.</p>
 
                 <strong>Aufgabe</strong>
                 <p>Erstelle mit ProjectFlow einen Projektplan für diesen Umzug. Nutze dabei die angebotene KI-Unterstützung. Prüfe die erzeugten Vorschläge so, wie du es auch bei einem eigenen Projekt tun würdest. Du darfst Vorschläge übernehmen, ändern oder ablehnen.</p>
@@ -58,10 +59,16 @@
             Wenn du die Anpassung des Projektplans abgeschlossen und geprüft hast,
             kehre zur Befragung zurück.
         </p>
-        <a class="pf-btn pf-btn--primary" th:href="@{/study/finish}">
-            Aufgabe 2 abschließen
-        </a>
+        <form th:action="@{/study/finish}" method="post">
+            <button class="pf-btn pf-btn--primary" type="submit">Aufgabe 2 abschließen</button>
+        </form>
     </div>
+    <form th:if="${session != null and session.studySessionId != null}"
+          th:action="@{/study/abort}" method="post"
+          data-confirm="Möchtest du die Studie wirklich abbrechen? Die Sitzung wird als abgebrochen markiert."
+          data-confirm-title="Studie abbrechen" data-confirm-btn="Studie abbrechen" data-confirm-variant="danger">
+        <button class="pf-btn pf-btn--ghost" type="submit">Studie abbrechen</button>
+    </form>
 </th:block>
 
 <!-- Modern Executive Site Header -->

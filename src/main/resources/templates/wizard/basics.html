@@ -42,6 +42,7 @@
                 </label>
                 <div class="pf-form-field">
                     <textarea id="description" class="pf-textarea" th:field="*{description}" maxlength="2000" rows="3" placeholder="Zielsetzung, Notizen oder Hintergrundinformationen..."></textarea>
+                    <small th:if="${session != null and session.studySessionId != null}" class="pf-hint" style="display:block; margin-top:0.25rem;">Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</small>
                     <div th:if="${#fields.hasErrors('description')}" class="pf-alert pf-alert--error" th:errors="*{description}" role="alert"></div>
                 </div>
             </div>

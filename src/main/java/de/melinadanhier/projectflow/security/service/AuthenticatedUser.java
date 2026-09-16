@@ -38,7 +38,7 @@ public record AuthenticatedUser(
 
     @Override
     public String getUsername() {
-        return email;
+        return email == null ? "study:" + userId : email;
     }
 
     @Override

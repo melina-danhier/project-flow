@@ -68,6 +68,7 @@
                               th:required="${question.required}"
                               rows="3"></textarea>
                     <p th:if="${question.helpText != null}" class="pf-hint" th:text="${question.helpText}" style="margin: 0.25rem 0 0;"></p>
+                    <small th:if="${session != null and session.studySessionId != null}" class="pf-hint" style="display:block; margin-top:0.25rem;">Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</small>
                 </div>
             </div>
 
@@ -84,6 +85,7 @@
                               maxlength="2000"
                               rows="3"
                               placeholder="z. B. Besondere Prioritäten, bestimmte Tools oder zeitliche Einschränkungen..."></textarea>
+                    <small th:if="${session != null and session.studySessionId != null}" class="pf-hint" style="display:block; margin-top:0.25rem;">Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</small>
                     <div th:if="${#fields.hasErrors('additionalInformation')}"
                          th:errors="*{additionalInformation}"
                          class="pf-alert pf-alert--error" role="alert"></div>
