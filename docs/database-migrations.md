@@ -1,9 +1,13 @@
 # Datenbankmigrationen
 
 Das PostgreSQL-Schema wird ausschließlich über die versionierten Flyway-Skripte in
-`src/main/resources/db/migration` geändert. Der aktuelle Stand umfasst die
-Migrationen V1 bis V25. Bereits angewendete Migrationen dürfen nicht nachträglich
-verändert werden; Schemaänderungen erhalten eine neue Migration.
+`src/main/resources/db/migration` geändert. Die vor der Evaluation konsolidierte
+Baseline umfasst die Migrationen V1 bis V5. Sie bildet unmittelbar das aktuelle
+Zielschema ab und setzt eine leere Datenbank voraus. Datenbanken mit der früheren
+Historie V1 bis V42 müssen verworfen und neu angelegt werden.
+
+Ab dieser Baseline dürfen angewendete Migrationen nicht nachträglich verändert
+werden; Schemaänderungen erhalten eine neue Migration.
 
 In den Profilen `dev` und `prod` ist Flyway aktiviert und Hibernate validiert das
 resultierende Schema. Vor einer Migration bestehender Daten ist ein geprüftes Backup
@@ -13,14 +17,14 @@ parallel auf derselben Datenbank betrieben werden.
 ## Automatisierte Tests
 
 `mvn.cmd test` verwendet H2 und deaktiviert Flyway. Der optionale
-`DraftPostgresMigrationTest` führt die Migrationen gegen eine ausdrücklich angegebene
+`BaselinePostgresMigrationTest` führt die Migrationen gegen eine ausdrücklich angegebene
 PostgreSQL-Datenbank aus und validiert anschließend das JPA-Schema.
 
 Der Test verändert die angegebene Datenbank. Deshalb darf ausschließlich eine
 wegwerfbare, isolierte Testdatenbank verwendet werden:
 
 ```powershell
-mvn.cmd '-Dtest=DraftPostgresMigrationTest' '-Dprojectflow.test.postgres.url=jdbc:postgresql://127.0.0.1:55432/postgres' '-Dprojectflow.test.postgres.username=projectflow_migration_test' test
+mvn.cmd '-Dtest=BaselinePostgresMigrationTest' '-Dprojectflow.test.postgres.url=jdbc:postgresql://127.0.0.1:55432/postgres' '-Dprojectflow.test.postgres.username=projectflow_migration_test' test
 ```
 
 URL und Benutzer sind lokal anzupassen. Ein erforderliches Passwort kann über die
