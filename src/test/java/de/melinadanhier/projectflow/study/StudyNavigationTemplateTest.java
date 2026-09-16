@@ -38,9 +38,25 @@ class StudyNavigationTemplateTest {
                 .doesNotContain("<details class=\"pf-study-task__details\" open>")
                 .contains("th:action=\"@{/study/finish}\"")
                 .contains("th:action=\"@{/study/abort}\"")
+                .contains("th:action=\"@{/study/task-1/complete}\"")
+                .contains("plan != null and plan.project != null and plan.editable")
                 .contains("keine echten personenbezogenen");
         assertThat(layout)
                 .contains("@{/css/study-mode.css}")
                 .contains("@{/js/study-mode.js}");
+
+        String start = Files.readString(Path.of(
+                "src/main/resources/templates/study/start.html"));
+        assertThat(start)
+                .contains("pf-study-info-details")
+                .contains("Weitere Studien- und Datenschutzinformationen")
+                .contains("ca. 25 Minuten")
+                .contains("melinadanhier@gmail.com");
+
+        String draftReview = Files.readString(Path.of(
+                "src/main/resources/templates/generation/draft-review.html"));
+        assertThat(draftReview)
+                .contains("pf-back-to-top-wrap")
+                .contains("Nach oben");
     }
 }

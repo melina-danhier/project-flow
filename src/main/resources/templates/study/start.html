@@ -25,6 +25,30 @@
             sensiblen Informationen ein. Verwende ausschließlich die fiktiven Szenariodaten.
         </p>
 
+        <details class="pf-study-info-details" style="margin: 1.5rem 0; padding: 1rem 1.25rem; background: var(--pf-surface-subtle, #f8fafc); border-radius: var(--pf-radius-md, 8px); border: 1px solid var(--pf-border, #e2e8f0);">
+            <summary style="font-weight: 600; cursor: pointer; color: var(--pf-primary, #2563eb);">Weitere Studien- und Datenschutzinformationen</summary>
+            <div style="margin-top: 1rem; font-size: 0.92rem; line-height: 1.6; color: var(--pf-text-secondary, #475569);">
+                <p><strong>Zweck der Studie:</strong> Untersuchung der Benutzererfahrung und der Mensch-KI-Interaktion bei der softwaregestützten Projekt- und Ablaufplanung mit ProjectFlow.</p>
+                <p><strong>Dauer:</strong> Die Bearbeitung beider fiktiver Aufgaben in ProjectFlow nimmt insgesamt ca. 25 Minuten in Anspruch.</p>
+                <p><strong>Freiwilligkeit &amp; Abbruch:</strong> Die Teilnahme ist vollkommen freiwillig. Du kannst die Studie jederzeit ohne Angabe von Gründen und ohne Nachteile über den Button „Studie abbrechen“ beenden.</p>
+                <p><strong>Erfasste ProjectFlow-Studiendaten:</strong> Zur wissenschaftlichen Auswertung werden ausschließlich folgende Daten gespeichert:
+                    <ul style="margin: 0.25rem 0 0.5rem 1.25rem; padding: 0;">
+                        <li>Zeitstempel (Start, Phasenübergang, Abschluss),</li>
+                        <li>Sitzungsstatus (aktiv, abgeschlossen, abgebrochen),</li>
+                        <li>Interaktions- und Bedienereignisse (z. B. Plan generiert, Elemente übernommen, geändert oder verworfen),</li>
+                        <li>die im Rahmen des fiktiven Szenarios erstellten Projektdaten.</li>
+                    </ul>
+                </p>
+                <p><strong>Zufällige interne Study-ID:</strong> ProjectFlow erzeugt eine rein zufällige interne Kennung (UUID). Es werden keine Namen, IP-Adressen oder Kontodaten erhoben.</p>
+                <p><strong>Keine Verknüpfung mit SoSci Survey:</strong> Die interne ProjectFlow-Kennung wird weder an SoSci Survey übertragen noch wird eine SoSci-Teilnehmerkennung in ProjectFlow hinterlegt. Beide Systeme sind datenschutzseitig voneinander getrennt.</p>
+                <p><strong>Anonymer SoSci-Fragebogen:</strong> Nach Abschluss der Aufgaben in ProjectFlow wirst du zu einem separaten, standardisierten Fragebogen weitergeleitet, der ebenfalls vollständig anonym ausgefüllt wird.</p>
+                <p><strong>KI-Datenübertragung:</strong> Projektbeschreibungen und Änderungswünsche werden verschlüsselt an die KI-Schnittstelle übermittelt, um Planungsvorschläge zu generieren.</p>
+                <p><strong>Keine echten vertraulichen Daten:</strong> Da Inhalte zur Verarbeitung an den KI-Anbieter übermittelt werden, dürfen keine echten personenbezogenen, vertraulichen oder geschäftskritischen Daten eingegeben werden. Bitte nutze ausschließlich das fiktive Szenario.</p>
+                <p><strong>Löschung &amp; Anonymisierung:</strong> Sämtliche erhobenen Daten dienen ausschließlich wissenschaftlichen Zwecken im Rahmen dieser Forschungsarbeit und werden nach Abschluss der Auswertung vollständig anonymisiert bzw. gelöscht.</p>
+                <p><strong>Kontakt:</strong> Bei Fragen zur Studie erreichst du Melina Danhier unter <a href="mailto:melinadanhier@gmail.com" style="color: var(--pf-primary, #2563eb);">melinadanhier@gmail.com</a>.</p>
+            </div>
+        </details>
+
         <form th:action="@{/study/start}" th:object="${studyConsentForm}" method="post">
             <label style="display:flex; gap:.75rem; align-items:flex-start; margin:1.5rem 0;">
                 <input type="checkbox" th:field="*{consent}" style="margin-top:.25rem;">

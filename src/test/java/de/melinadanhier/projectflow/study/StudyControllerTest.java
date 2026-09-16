@@ -89,11 +89,24 @@ class StudyControllerTest {
     }
 
     @Test
-    void continueUsesOnlyCurrentInternalSession() {
-        when(trackingService.activeProjectId(session)).thenReturn(Optional.of(UUID.randomUUID()));
+    void completeTaskOneRedirectsToPlanWithoutLogout() {
+        UUID projectId = UUID.randomUUID();
+        when(trackingService.completeTaskOne(session)).thenReturn(projectId);
 
-        assertThat(controller.continueStudy(session)).isEqualTo("redirect:/projects");
-        verify(trackingService).beginTaskTwo(session);
+        assertThat(controller.completeTaskOne(session)).isEqualTo("redirect:/projects/" + projectId + "/plan");
+        verify(trackingService).completeTaskOne(session);
+        verifyNoInteractions(studyUserService);
+    }
+
+    @Test
+    void continueUsesOnlyCurrentInternalSession() {
+        UUID projectId = UUID.randomUUID();
+        when(trackingService.activeProjectId(session)).thenReturn(Optional.of(projectId));
+        when(trackingService.canCompleteTaskOne(session)).thenReturn(true);
+        when(trackingService.completeTaskOne(session)).thenReturn(projectId);
+
+        assertThat(controller.continueStudy(session)).isEqualTo("redirect:/projects/" + projectId + "/plan");
+        verify(trackingService).completeTaskOne(session);
         verifyNoInteractions(studyUserService);
     }
 

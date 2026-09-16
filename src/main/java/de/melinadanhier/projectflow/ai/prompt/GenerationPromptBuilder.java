@@ -40,6 +40,10 @@ public class GenerationPromptBuilder {
             - Erzeuge insgesamt mindestens drei Aufgaben.
             - Gib alle im Ausgabeschema definierten Felder zurück. Nutze für nicht belegte optionale
               Werte null statt das Feld wegzulassen.
+            - Formuliere für Aufgaben und Sections bei Bedarf eine prägnante, aussagekräftige Beschreibung
+              (description), wenn sie das Ziel, das konkrete Vorgehen oder wichtige Randbedingungen der Aufgabe
+              erläutert. Vermeide bloße Wiederholungen des Titels. Wenn ein Titel bereits selbsterklärend ist
+              und keine weiteren Details nötig sind, darf description null sein.
             - Vergib für jede Aufgabe einen im gesamten Entwurf eindeutigen, stabilen tempId-Wert.
               Er ist eine Referenz im Entwurf und keine Datenbank-ID. Bei Sections und Meilensteinen
               darf tempId null sein.

@@ -392,10 +392,11 @@ details.draft-section[open] .pf-phase-caret {
     align-items: center;
     justify-content: center;
     color: var(--pf-text-muted);
-    opacity: 0.45;
+    opacity: 0.65;
     margin-right: 0.35rem;
     flex-shrink: 0;
-    pointer-events: none;
+    cursor: grab;
+    pointer-events: auto;
 }
 
 .plan-element[draggable="true"],

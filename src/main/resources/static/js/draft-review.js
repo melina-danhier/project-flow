@@ -40,7 +40,10 @@
     };
 
     const isInteractive = (target) => {
-        return !!target.closest('button, a, input, select, textarea, label, form, details, summary, .pf-phase-inline-edit, .review-actions-wrap, .pf-element-edit-btn');
+        if (target.closest('.pf-drag-handle-visual')) {
+            return false;
+        }
+        return !!target.closest('button, a, input, select, textarea, label, form, .pf-phase-inline-edit, .review-actions-wrap, .pf-element-edit-btn, .pf-dropdown, .pf-card-menu, .pf-phase-toggle-btn');
     };
 
     // 1. Draggable items setup (whole container)

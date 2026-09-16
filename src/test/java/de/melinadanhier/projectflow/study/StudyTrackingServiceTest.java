@@ -10,16 +10,22 @@ import java.time.*;
 import java.util.Optional;
 import java.util.UUID;
 
+import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class StudyTrackingServiceTest {
     private final StudySessionRepository sessions = mock(StudySessionRepository.class);
     private final StudyEventRepository events = mock(StudyEventRepository.class);
+    private final ProjectRepository projectRepository = mock(ProjectRepository.class);
     private final Instant now = Instant.parse("2026-09-10T12:00:00Z");
     private final StudyTrackingService service = new StudyTrackingService(
-            sessions, events, Clock.fixed(now, ZoneOffset.UTC));
+            sessions, events, projectRepository, Clock.fixed(now, ZoneOffset.UTC));
 
     @Test
     void tracksOnlyWhenSessionAttributeResolvesToActiveStudy() {
@@ -145,5 +151,59 @@ class StudyTrackingServiceTest {
         var captor = org.mockito.ArgumentCaptor.forClass(StudyEvent.class);
         verify(events).save(captor.capture());
         assertThat(captor.getValue().getEventType()).isEqualTo(StudyEventType.STUDY_ABORTED);
+    }
+
+    @Test
+    void completeTaskOneTransitionsPhaseToTaskTwoWithoutEndingSession() {
+        UUID id = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setProjectId(projectId);
+        study.setCurrentPhase(StudyPhase.TASK_1);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        Project project = mock(Project.class);
+        when(project.getLocation()).thenReturn(ProjectLocation.OVERVIEW);
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+
+        assertThat(service.canCompleteTaskOne(http)).isTrue();
+        UUID returnedProjectId = service.completeTaskOne(http);
+
+        assertThat(returnedProjectId).isEqualTo(projectId);
+        assertThat(study.getCurrentPhase()).isEqualTo(StudyPhase.TASK_2);
+        assertThat(study.getStatus()).isEqualTo(StudySessionStatus.ACTIVE);
+        assertThat(study.getCompletedAt()).isNull();
+        assertThat(http.getAttribute(StudyTrackingService.PHASE_ATTRIBUTE)).isEqualTo("TASK_2");
+
+        var captor = org.mockito.ArgumentCaptor.forClass(StudyEvent.class);
+        verify(events).save(captor.capture());
+        assertThat(captor.getValue().getEventType()).isEqualTo(StudyEventType.STUDY_TASK_COMPLETED);
+    }
+
+    @Test
+    void completeTaskOneRequiresManageablePlan() {
+        UUID id = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setProjectId(projectId);
+        study.setCurrentPhase(StudyPhase.TASK_1);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        Project draftProject = mock(Project.class);
+        when(draftProject.getLocation()).thenReturn(ProjectLocation.DRAFT);
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(draftProject));
+
+        assertThat(service.canCompleteTaskOne(http)).isFalse();
+        assertThatThrownBy(() -> service.completeTaskOne(http))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Aufgabe 1 kann erst abgeschlossen werden");
     }
 }

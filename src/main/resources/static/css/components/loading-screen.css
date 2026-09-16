@@ -1,8 +1,8 @@
 /* Loading Screen Styles (Modular CSS) */
 
 .pf-loading-container {
-    max-width: 620px;
-    margin: 2.5rem auto;
+    max-width: 540px;
+    margin: 1.25rem auto;
     padding: 0 1rem;
 }
 
@@ -12,42 +12,43 @@
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-lg, 16px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    padding: 2.5rem 2rem;
+    padding: 1.5rem 1.5rem;
     overflow: hidden;
 }
 
 /* Hero Section */
 .pf-loading-hero {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
 }
 
 .pf-loading-icon-wrap {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 1.25rem;
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 0.75rem;
     border-radius: 50%;
     background: #eef2ff;
     color: #4f46e5;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.08);
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.08);
 }
 
 .pf-loading-title {
-    margin: 0 0 0.5rem;
-    font-size: 1.5rem;
+    margin: 0 0 0.35rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--pf-text-main);
+    line-height: 1.3;
 }
 
 .pf-loading-subtitle {
     margin: 0 auto;
-    max-width: 460px;
-    font-size: 0.92rem;
+    max-width: 440px;
+    font-size: 0.88rem;
     color: var(--pf-text-secondary);
-    line-height: 1.5;
+    line-height: 1.45;
 }
 
 /* Progress Stepper */
@@ -55,7 +56,7 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-    margin: 2rem 0;
+    margin: 1.25rem 0;
     text-align: left;
     position: relative;
 }
@@ -63,9 +64,9 @@
 .pf-step {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.75rem;
     position: relative;
-    padding-bottom: 1.5rem;
+    padding-bottom: 1rem;
 }
 
 .pf-step:last-child {
@@ -76,8 +77,8 @@
 .pf-step:not(:last-child)::after {
     content: '';
     position: absolute;
-    left: 17px;
-    top: 36px;
+    left: 15px;
+    top: 32px;
     bottom: 0;
     width: 2px;
     background: var(--pf-border-subtle, #e2e8f0);
@@ -93,14 +94,14 @@
 
 /* Step Node / Badge */
 .pf-step-badge {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     z-index: 1;
     background: #ffffff;
@@ -230,16 +231,16 @@
     gap: 0.5rem;
     font-size: 0.8rem;
     color: var(--pf-text-muted);
-    margin-top: 1rem;
-    padding: 0.35rem 0.75rem;
+    margin-top: 0.75rem;
+    padding: 0.25rem 0.65rem;
     background: var(--pf-surface-subtle, #f8fafc);
     border: 1px solid var(--pf-border-subtle, #e2e8f0);
     border-radius: var(--pf-radius-full, 9999px);
 }
 
 .pf-heartbeat-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: #10b981;
 }
@@ -248,9 +249,9 @@
 .pf-loading-actions {
     display: flex;
     justify-content: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
     flex-wrap: wrap;
-    margin-top: 1.75rem;
-    padding-top: 1.5rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--pf-border-subtle, #f1f5f9);
 }

@@ -33,13 +33,17 @@
                 <p>Es gibt nicht den einen richtigen Projektplan. Bewertet wird nicht deine Planungsleistung, sondern die Unterstützung durch ProjectFlow.</p>
             </div>
         </details>
-        <p class="pf-study-task__return-hint">
-            Wenn du mit der Erstellung und Prüfung des Projektplans fertig bist,
-            kehre zur Befragung zurück.
-        </p>
-        <a class="pf-btn pf-btn--primary" th:href="@{/study/return}">
-            Aufgabe 1 abschließen
-        </a>
+        <th:block th:if="${plan != null and plan.project != null and plan.editable}">
+            <p class="pf-study-task__return-hint">
+                Wenn du mit der Erstellung und Prüfung des Projektplans fertig bist,
+                schließe Aufgabe 1 ab, um mit Aufgabe 2 fortzufahren.
+            </p>
+            <form th:action="@{/study/task-1/complete}" method="post">
+                <button class="pf-btn pf-btn--primary" type="submit">
+                    Aufgabe 1 abschließen
+                </button>
+            </form>
+        </th:block>
     </div>
     <div th:if="${session != null and session.studySessionId != null and session.studyPhase == 'TASK_2'}"
          class="pf-card pf-card--tint pf-study-task">

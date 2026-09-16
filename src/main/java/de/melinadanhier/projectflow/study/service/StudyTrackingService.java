@@ -7,8 +7,10 @@ import de.melinadanhier.projectflow.study.domain.StudySession;
 import de.melinadanhier.projectflow.study.domain.StudySessionStatus;
 import de.melinadanhier.projectflow.study.repository.StudyEventRepository;
 import de.melinadanhier.projectflow.study.repository.StudySessionRepository;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +22,6 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class StudyTrackingService {
 
     public static final String SESSION_ATTRIBUTE = "studySessionId";
@@ -31,7 +32,25 @@ public class StudyTrackingService {
 
     private final StudySessionRepository sessionRepository;
     private final StudyEventRepository eventRepository;
+    private final ProjectRepository projectRepository;
     private final Clock clock;
+
+    @Autowired
+    public StudyTrackingService(StudySessionRepository sessionRepository,
+                                StudyEventRepository eventRepository,
+                                ProjectRepository projectRepository,
+                                Clock clock) {
+        this.sessionRepository = sessionRepository;
+        this.eventRepository = eventRepository;
+        this.projectRepository = projectRepository;
+        this.clock = clock;
+    }
+
+    public StudyTrackingService(StudySessionRepository sessionRepository,
+                                StudyEventRepository eventRepository,
+                                Clock clock) {
+        this(sessionRepository, eventRepository, null, clock);
+    }
 
     @Transactional
     public UUID start(HttpSession httpSession) {
@@ -94,6 +113,39 @@ public class StudyTrackingService {
         }
 
         setPhase(httpSession, studySession, StudyPhase.TASK_2);
+    }
+
+    @Transactional
+    public UUID completeTaskOne(HttpSession httpSession) {
+        StudySession studySession = requireActiveSession(httpSession);
+
+        if (studySession.getCurrentPhase() != StudyPhase.TASK_1) {
+            throw new IllegalStateException("Aufgabe 1 ist nicht die aktive Phase.");
+        }
+        if (studySession.getProjectId() == null) {
+            throw new IllegalStateException("Kein Studienprojekt vorhanden.");
+        }
+        boolean hasManageablePlan = projectRepository == null || projectRepository.findById(studySession.getProjectId())
+                .filter(project -> project.getLocation() != ProjectLocation.DRAFT)
+                .isPresent();
+        if (!hasManageablePlan) {
+            throw new IllegalStateException("Aufgabe 1 kann erst abgeschlossen werden, wenn ein Plan übernommen wurde.");
+        }
+
+        recordEvent(studySession, StudyEventType.STUDY_TASK_COMPLETED);
+        setPhase(httpSession, studySession, StudyPhase.TASK_2);
+        return studySession.getProjectId();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canCompleteTaskOne(HttpSession httpSession) {
+        return activeSession(httpSession)
+                .filter(session -> session.getCurrentPhase() == StudyPhase.TASK_1)
+                .filter(session -> session.getProjectId() != null)
+                .map(session -> projectRepository == null || projectRepository.findById(session.getProjectId())
+                        .filter(project -> project.getLocation() != ProjectLocation.DRAFT)
+                        .isPresent())
+                .orElse(false);
     }
 
     @Transactional

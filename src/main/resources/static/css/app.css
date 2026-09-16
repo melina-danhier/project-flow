@@ -426,20 +426,27 @@ input[type="submit"] {
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
-.pf-btn:hover,
-button:hover,
-input[type="submit"]:hover {
+.pf-btn:hover:not(:disabled),
+button:hover:not(:disabled),
+input[type="submit"]:hover:not(:disabled) {
     background: var(--pf-primary-hover);
     color: #ffffff;
     box-shadow: var(--pf-shadow-md);
     transform: translateY(-1px);
 }
 
-.pf-btn:active,
-button:active,
-input[type="submit"]:active {
+.pf-btn:active:not(:disabled),
+button:active:not(:disabled),
+input[type="submit"]:active:not(:disabled) {
     background: var(--pf-primary-active);
     transform: translateY(0);
+}
+
+.pf-btn:focus-visible,
+button:focus-visible,
+input[type="submit"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
 }
 
 /* Modifiers for Overriding Styles */
@@ -528,11 +535,16 @@ input[type="submit"]:active {
 
 button:disabled,
 .pf-btn:disabled,
-.pf-btn.disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
+.pf-btn.disabled,
+input[type="submit"]:disabled {
+    opacity: 0.6;
+    background: var(--pf-surface-subtle, #f1f5f9) !important;
+    border-color: var(--pf-border, #cbd5e1) !important;
+    color: var(--pf-text-muted, #94a3b8) !important;
+    cursor: not-allowed !important;
     transform: none !important;
     box-shadow: none !important;
+    pointer-events: none;
 }
 
 .pf-btn svg {

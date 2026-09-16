@@ -241,6 +241,17 @@
 
     <p th:if="${draft.sections.isEmpty()}" class="pf-empty-state">Keine Elemente entsprechen dem gewählten Filter.</p>
 
+    <!-- Back to top navigation button -->
+    <div class="pf-back-to-top-wrap" style="display: flex; justify-content: center; margin: 2rem 0 1rem;">
+        <button type="button" class="pf-btn pf-btn--secondary pf-btn--sm" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" aria-label="Nach oben scrollen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="19" x2="12" y2="5"></line>
+                <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+            <span>Nach oben</span>
+        </button>
+    </div>
+
     <!-- Modal Dialog for Plan Regeneration -->
     <dialog id="regenerate-plan-dialog" class="pf-modal pf-dialog" aria-labelledby="regenerate-dialog-title">
         <div class="pf-modal__header">

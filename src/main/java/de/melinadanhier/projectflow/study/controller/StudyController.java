@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -62,18 +63,32 @@ public class StudyController {
         return "redirect:/projects";
     }
 
-    @GetMapping("/study/return")
-    public String returnToQuestionnaire(HttpSession session) {
-        trackingService.completeCurrentTask(session);
-        return questionnaireRedirect();
+    @PostMapping("/study/task-1/complete")
+    public String completeTaskOne(HttpSession session) {
+        UUID projectId = trackingService.completeTaskOne(session);
+        return "redirect:/projects/" + projectId + "/plan";
     }
 
     @GetMapping("/study/continue")
     public String continueStudy(HttpSession session) {
-        trackingService.activeProjectId(session)
+        UUID projectId = trackingService.activeProjectId(session)
                 .orElseThrow(() -> new IllegalStateException("Kein Studienprojekt vorhanden."));
-        trackingService.beginTaskTwo(session);
-        return "redirect:/projects";
+        if (trackingService.canCompleteTaskOne(session)) {
+            trackingService.completeTaskOne(session);
+        } else {
+            trackingService.beginTaskTwo(session);
+        }
+        return "redirect:/projects/" + projectId + "/plan";
+    }
+
+    @GetMapping("/study/return")
+    public String returnToQuestionnaire(HttpSession session) {
+        if (trackingService.canCompleteTaskOne(session)) {
+            UUID projectId = trackingService.completeTaskOne(session);
+            return "redirect:/projects/" + projectId + "/plan";
+        }
+        trackingService.completeCurrentTask(session);
+        return questionnaireRedirect();
     }
 
     @PostMapping("/study/finish")

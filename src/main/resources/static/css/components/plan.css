@@ -727,14 +727,14 @@
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 0.85rem;
+    gap: 1rem;
 }
 
 .pf-plan-control-bar__left {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.85rem;
+    gap: 1.25rem;
 }
 
 .pf-plan-control-bar__right {
@@ -744,8 +744,10 @@
     margin-left: auto;
 }
 
-.pf-sort-control-wrap {
-    display: flex;
+.pf-sort-control-wrap,
+.pf-task-filter-wrap,
+.pf-assignment-filter-wrap {
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
 }
@@ -754,6 +756,18 @@
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--pf-text-secondary);
+    white-space: nowrap;
+    margin: 0;
+    line-height: 1;
+}
+
+.pf-plan-control-bar .pf-select {
+    height: 34px;
+    min-height: 34px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    border-radius: var(--pf-radius-sm);
 }
 
 .pf-info-tooltip {
@@ -803,12 +817,6 @@
     white-space: nowrap;
 }
 
-/* Task Filter Control in Plan Control Bar */
-.pf-task-filter-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
 
 /* Phase Header */
 .pf-phase-header__left {
@@ -1192,12 +1200,14 @@ details[open] .pf-phase-caret {
         margin-left: 0;
     }
     .pf-sort-control-wrap,
-    .pf-task-filter-wrap {
+    .pf-task-filter-wrap,
+    .pf-assignment-filter-wrap {
         width: 100%;
         justify-content: space-between;
     }
     .pf-sort-control-wrap .pf-select,
-    .pf-task-filter-wrap .pf-select {
+    .pf-task-filter-wrap .pf-select,
+    .pf-assignment-filter-wrap .pf-select {
         flex: 1;
         max-width: 200px;
     }

@@ -30,13 +30,13 @@ projectflow:
       api-key: ${OPENAI_API_KEY:}
       pre-check-model: ${OPENAI_PRE_CHECK_MODEL:gpt-5-mini}
       generation-model: ${OPENAI_GENERATION_MODEL:gpt-5-mini}
-      timeout: ${OPENAI_TIMEOUT:60s}
+      timeout: ${OPENAI_TIMEOUT:90s}
       max-output-tokens: ${OPENAI_MAX_OUTPUT_TOKENS:16384}
     gemini:
       api-key: ${GEMINI_API_KEY:}
       pre-check-model: ${GEMINI_PRE_CHECK_MODEL:gemini-2.5-flash}
       generation-model: ${GEMINI_GENERATION_MODEL:gemini-2.5-flash}
-      timeout: ${GEMINI_TIMEOUT:60s}
+      timeout: ${GEMINI_TIMEOUT:90s}
       max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:16384}
 
   study:
