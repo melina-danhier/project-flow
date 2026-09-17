@@ -18,8 +18,7 @@
             </a>
             <div class="pf-cluster">
                 <h1 th:text="${draftElement.title}" style="margin: 0;">Entwurfselement</h1>
-                <span class="pf-badge" th:classappend="${draftElement.type == 'TASK' ? 'pf-badge--blue' : 'pf-badge--purple'}"
-                      th:text="${draftElement.type == 'TASK' ? 'Aufgabe' : 'Meilenstein'}"></span>
+                <span th:if="${draftElement.type == 'MILESTONE'}" class="pf-badge pf-badge--purple">Meilenstein</span>
                 <span class="pf-badge pf-badge--outline" th:text="${draftElement.originLabel}"></span>
                 <span class="pf-badge"
                       th:classappend="${draftElement.reviewStatus.name() == 'ACCEPTED' ? 'pf-badge--green' : (draftElement.reviewStatus.name() == 'REJECTED' ? 'pf-badge--red' : 'pf-badge--yellow')}"

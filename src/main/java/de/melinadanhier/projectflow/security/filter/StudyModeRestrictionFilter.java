@@ -28,9 +28,16 @@ public class StudyModeRestrictionFilter extends OncePerRequestFilter {
         boolean activeStudy = session != null
                 && session.getAttribute(StudyTrackingService.SESSION_ATTRIBUTE) != null;
 
-        if (activeStudy && isBlocked(request, path)) {
-            response.sendRedirect(request.getContextPath() + "/study/restricted");
-            return;
+        if (activeStudy) {
+            boolean tasksCompleted = session.getAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE) != null;
+            if (tasksCompleted && path.startsWith("/projects")) {
+                response.sendRedirect(request.getContextPath() + "/study/completed");
+                return;
+            }
+            if (isBlocked(request, path)) {
+                response.sendRedirect(request.getContextPath() + "/study/restricted");
+                return;
+            }
         }
 
         filterChain.doFilter(request, response);

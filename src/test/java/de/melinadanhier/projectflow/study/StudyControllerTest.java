@@ -95,7 +95,46 @@ class StudyControllerTest {
 
         assertThat(controller.completeTaskOne(session)).isEqualTo("redirect:/projects/" + projectId + "/plan");
         verify(trackingService).completeTaskOne(session);
+        verify(session).setAttribute(StudyTrackingService.SHOW_INTRO_ATTRIBUTE, "TASK_2");
         verifyNoInteractions(studyUserService);
+    }
+
+    @Test
+    void completeTaskTwoRedirectsToCompletedWithoutLogout() {
+        assertThat(controller.completeTaskTwo(session)).isEqualTo("redirect:/study/completed");
+        verify(trackingService).completeTaskTwo(session);
+        verifyNoInteractions(studyUserService);
+    }
+
+    @Test
+    void completedPageRendersViewForActiveSession() {
+        ExtendedModelMap model = new ExtendedModelMap();
+        when(session.getAttribute(StudyTrackingService.SESSION_ATTRIBUTE)).thenReturn(UUID.randomUUID());
+
+        assertThat(controller.completed(session, model)).isEqualTo("study/completed");
+        assertThat(model.get("studyPage")).isEqualTo(true);
+    }
+
+    @Test
+    void dismissIntroRemovesSessionAttribute() {
+        assertThat(controller.dismissIntro(session).getStatusCode().is2xxSuccessful()).isTrue();
+        verify(session).removeAttribute(StudyTrackingService.SHOW_INTRO_ATTRIBUTE);
+    }
+
+    @Test
+    void continueStudyRedirectsToCompletedWhenTasksAreFinished() {
+        when(session.getAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE)).thenReturn(true);
+
+        assertThat(controller.continueStudy(session)).isEqualTo("redirect:/study/completed");
+        verifyNoInteractions(trackingService);
+    }
+
+    @Test
+    void returnToQuestionnaireRedirectsToCompletedWhenTasksAreFinished() {
+        when(session.getAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE)).thenReturn(true);
+
+        assertThat(controller.returnToQuestionnaire(session)).isEqualTo("redirect:/study/completed");
+        verifyNoInteractions(trackingService);
     }
 
     @Test

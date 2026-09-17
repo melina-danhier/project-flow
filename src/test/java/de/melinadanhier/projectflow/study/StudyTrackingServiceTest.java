@@ -206,4 +206,64 @@ class StudyTrackingServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Aufgabe 1 kann erst abgeschlossen werden");
     }
+
+    @Test
+    void completeTaskTwoRecordsEventAndSetsAttribute() {
+        UUID id = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setProjectId(projectId);
+        study.setCurrentPhase(StudyPhase.TASK_2);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        service.completeTaskTwo(http);
+
+        assertThat(http.getAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE)).isEqualTo(true);
+        var captor = org.mockito.ArgumentCaptor.forClass(StudyEvent.class);
+        verify(events).save(captor.capture());
+        assertThat(captor.getValue().getEventType()).isEqualTo(StudyEventType.STUDY_TASK_COMPLETED);
+    }
+
+    @Test
+    void completeTaskTwoFailsWhenNotInTaskTwo() {
+        UUID id = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setCurrentPhase(StudyPhase.TASK_1);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        assertThatThrownBy(() -> service.completeTaskTwo(http))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Aufgabe 2 ist nicht die aktive Phase");
+    }
+
+    @Test
+    void finishRecordsOnlyStudyCompletedWhenTaskTwoAlreadyCompleted() {
+        UUID id = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setCurrentPhase(StudyPhase.TASK_2);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        http.setAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE, true);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        assertThat(service.finish(http)).isTrue();
+
+        assertThat(study.getStatus()).isEqualTo(StudySessionStatus.COMPLETED);
+        assertThat(http.getAttribute(StudyTrackingService.SESSION_ATTRIBUTE)).isNull();
+        assertThat(http.getAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE)).isNull();
+
+        var captor = org.mockito.ArgumentCaptor.forClass(StudyEvent.class);
+        verify(events, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getEventType()).isEqualTo(StudyEventType.STUDY_COMPLETED);
+    }
 }

@@ -22,9 +22,12 @@
         <details class="pf-study-task__details">
             <summary>Aufgabe 1 der Nutzerstudie</summary>
             <div class="pf-study-task__content">
-                <strong>Szenario</strong>
-                <p>Du ziehst in sechs Wochen in eine Wohnung in einer anderen Stadt. Du organisierst den Umzug selbst und bekommst Unterstützung von Freunden. Dein Ziel ist es, den Umzug möglichst vollständig vorzubereiten und keine wichtigen Aufgaben zu vergessen.</p>
-                <p>Halte dich bei der Bearbeitung an diese Rahmenbedingungen. Angaben, die nicht festgelegt wurden, darfst du selbst sinnvoll und realistisch ergänzen. Verändere dabei keine ausdrücklich genannten Bedingungen.</p>
+                <strong>Szenario (Umzug)</strong>
+                <p>Du planst einen Umzug in eine neue Wohnung innerhalb derselben Stadt. Der Umzug soll in etwa zwei Wochen stattfinden.</p>
+                <p>Du wohnst aktuell in einer ungefähr 50 m² großen Wohnung. Einige Möbel müssen für den Transport abgebaut werden. Einen Teil des Verpackungsmaterials hast du bereits, weiteres musst du noch besorgen.</p>
+                <p>Am Umzugstag helfen dir drei Freunde. Für den Transport stehen zwei Autos zur Verfügung. Größere Möbelstücke müssen entsprechend eingeplant werden.</p>
+                <p>In der neuen Wohnung möchtest du möglichst schnell die wichtigsten Dinge nutzbar haben. Gleichzeitig soll der Umzug ohne unnötigen Stress ablaufen und möglichst gut vorbereitet sein.</p>
+                <p>Nutze ProjectFlow, um aus diesen Informationen einen sinnvollen Projektplan zu erstellen. Du kannst bei Bedarf eigene plausible Annahmen ergänzen.</p>
                 <p>Gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein. Arbeite nur mit dem fiktiven Szenario.</p>
 
                 <strong>Aufgabe</strong>
@@ -38,7 +41,11 @@
                 Wenn du mit der Erstellung und Prüfung des Projektplans fertig bist,
                 schließe Aufgabe 1 ab, um mit Aufgabe 2 fortzufahren.
             </p>
-            <form th:action="@{/study/task-1/complete}" method="post">
+            <form th:action="@{/study/task-1/complete}" method="post"
+                  data-confirm="Möchtest du Aufgabe 1 wirklich abschließen und mit Aufgabe 2 fortfahren?"
+                  data-confirm-title="Aufgabe 1 abschließen"
+                  data-confirm-btn="Aufgabe abschließen"
+                  data-confirm-variant="primary">
                 <button class="pf-btn pf-btn--primary" type="submit">
                     Aufgabe 1 abschließen
                 </button>
@@ -61,9 +68,13 @@
         </details>
         <p class="pf-study-task__return-hint">
             Wenn du die Anpassung des Projektplans abgeschlossen und geprüft hast,
-            kehre zur Befragung zurück.
+            schließe Aufgabe 2 ab. Anschließend wirst du zum anonymen Fragebogen weitergeleitet.
         </p>
-        <form th:action="@{/study/finish}" method="post">
+        <form th:action="@{/study/task-2/complete}" method="post"
+              data-confirm="Möchtest du Aufgabe 2 wirklich abschließen? Anschließend wirst du zum Fragebogen weitergeleitet."
+              data-confirm-title="Aufgabe 2 abschließen"
+              data-confirm-btn="Aufgabe abschließen"
+              data-confirm-variant="primary">
             <button class="pf-btn pf-btn--primary" type="submit">Aufgabe 2 abschließen</button>
         </form>
     </div>
@@ -223,6 +234,92 @@
                 if (!dialog) return;
                 dialog.addEventListener('cancel', event => event.preventDefault());
                 if (!dialog.open) dialog.showModal();
+            })();
+        </script>
+    </dialog>
+
+    <!-- Study Task Introduction Modal (Shown once at beginning of phase) -->
+    <dialog th:if="${session != null and session.studySessionId != null and session.showStudyTaskIntro != null}"
+            id="pf-study-task-intro-dialog" class="pf-modal pf-dialog pf-study-task-modal"
+            aria-labelledby="pf-study-intro-title" style="max-width: 620px; width: 92%;">
+        <div class="pf-modal__header" style="border-bottom: 1px solid var(--pf-border); padding-bottom: 0.75rem;">
+            <div class="pf-cluster" style="align-items: center; gap: 0.5rem;">
+                <span class="pf-badge pf-badge--primary" style="font-size: 0.75rem;">Nutzerstudie</span>
+                <h2 id="pf-study-intro-title" class="pf-modal__title" style="margin: 0; font-size: 1.25rem;"
+                    th:text="${session.showStudyTaskIntro == 'TASK_1' ? 'Aufgabe 1: Projektplan erstellen' : 'Aufgabe 2: Plan anpassen'}">Aufgabe</h2>
+            </div>
+        </div>
+        <div class="pf-modal__body" style="padding-top: 1rem;">
+            <div th:if="${session.showStudyTaskIntro == 'TASK_1'}" class="pf-study-intro-content">
+                <strong style="font-size: 0.95rem;">Szenario (Umzug)</strong>
+                <p style="margin: 0.35rem 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Du planst einen Umzug in eine neue Wohnung innerhalb derselben Stadt. Der Umzug soll in etwa zwei Wochen stattfinden.
+                </p>
+                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Du wohnst aktuell in einer ungefähr 50 m² großen Wohnung. Einige Möbel müssen für den Transport abgebaut werden. Einen Teil des Verpackungsmaterials hast du bereits, weiteres musst du noch besorgen.
+                </p>
+                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Am Umzugstag helfen dir drei Freunde. Für den Transport stehen zwei Autos zur Verfügung. Größere Möbelstücke müssen entsprechend eingeplant werden.
+                </p>
+                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    In der neuen Wohnung möchtest du möglichst schnell die wichtigsten Dinge nutzbar haben. Gleichzeitig soll der Umzug ohne unnötigen Stress ablaufen und möglichst gut vorbereitet sein.
+                </p>
+                <p style="margin: 0 0 1rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Nutze ProjectFlow, um aus diesen Informationen einen sinnvollen Projektplan zu erstellen. Du kannst bei Bedarf eigene plausible Annahmen ergänzen.
+                </p>
+
+                <strong style="font-size: 0.95rem;">Aufgabe</strong>
+                <p style="margin: 0.35rem 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Erstelle mit ProjectFlow einen Projektplan für diesen Umzug. Nutze dabei die angebotene KI-Unterstützung. Prüfe die erzeugten Vorschläge so, wie du es auch bei einem eigenen Projekt tun würdest. Du darfst Vorschläge übernehmen, ändern oder ablehnen.
+                </p>
+                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Übernimm am Ende einen Projektplan, mit dem du grundsätzlich weiterarbeiten würdest.
+                </p>
+                <p class="pf-text-muted" style="margin: 0; font-size: 0.82rem;">
+                    Hinweis: Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.
+                </p>
+            </div>
+            <div th:if="${session.showStudyTaskIntro == 'TASK_2'}" class="pf-study-intro-content">
+                <strong style="font-size: 0.95rem;">Geänderte Situation</strong>
+                <p style="margin: 0.35rem 0 1rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Die Freunde, die dir ursprünglich beim Transport helfen wollten, können am geplanten Umzugstag kurzfristig nicht mehr helfen.
+                </p>
+
+                <strong style="font-size: 0.95rem;">Aufgabe</strong>
+                <p style="margin: 0.35rem 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Passe deinen bestehenden Projektplan mithilfe der KI-Unterstützung von ProjectFlow an diese neue Situation an.
+                </p>
+                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Du kannst dafür wahlweise oben im Plan <strong>„Plan mit KI verbessern“</strong> oder bei den betroffenen Aufgaben <strong>„Aufgabe mit KI anpassen“</strong> nutzen.
+                </p>
+                <p style="margin: 0; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
+                    Prüfe den Änderungsvorschlag und entscheide anschließend selbst, ob du ihn übernehmen oder verwerfen möchtest.
+                </p>
+            </div>
+            <div class="pf-modal__actions" style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                <input type="hidden" id="pf-study-intro-csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="button" class="pf-btn pf-btn--primary" id="pf-study-intro-ack-btn" style="min-width: 120px;">Verstanden</button>
+            </div>
+        </div>
+        <script>
+            (() => {
+                const dialog = document.getElementById('pf-study-task-intro-dialog');
+                if (!dialog) return;
+                if (!dialog.open) dialog.showModal();
+                const ackBtn = document.getElementById('pf-study-intro-ack-btn');
+                if (ackBtn) {
+                    ackBtn.addEventListener('click', () => {
+                        dialog.close();
+                        const csrfToken = document.getElementById('pf-study-intro-csrf')?.value;
+                        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
+                        const headers = {};
+                        if (csrfToken) headers[csrfHeader] = csrfToken;
+                        fetch('/study/intro/dismiss', {
+                            method: 'POST',
+                            headers: headers
+                        }).catch(() => {});
+                    });
+                }
             })();
         </script>
     </dialog>

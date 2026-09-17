@@ -28,7 +28,7 @@ class StudyNavigationTemplateTest {
                 .contains("session.studyPhase == 'TASK_1'")
                 .contains("session.studyPhase == 'TASK_2'")
                 .contains("Aufgabe 1 der Nutzerstudie")
-                .contains("Du ziehst in sechs Wochen in eine Wohnung in einer anderen Stadt.")
+                .contains("Du planst einen Umzug in eine neue Wohnung innerhalb derselben Stadt.")
                 .contains("Übernimm am Ende einen Projektplan, mit dem du grundsätzlich weiterarbeiten würdest.")
                 .contains("Aufgabe 2 der Nutzerstudie")
                 .contains("Die Freunde, die dir ursprünglich beim Transport helfen wollten")
@@ -36,10 +36,13 @@ class StudyNavigationTemplateTest {
                 .contains("<strong>„Aufgabe mit KI anpassen“</strong>")
                 .contains("<details class=\"pf-study-task__details\">")
                 .doesNotContain("<details class=\"pf-study-task__details\" open>")
-                .contains("th:action=\"@{/study/finish}\"")
+                .contains("th:action=\"@{/study/task-2/complete}\"")
                 .contains("th:action=\"@{/study/abort}\"")
                 .contains("th:action=\"@{/study/task-1/complete}\"")
                 .contains("plan != null and plan.project != null and plan.editable")
+                .contains("data-confirm=\"Möchtest du Aufgabe 1 wirklich abschließen")
+                .contains("data-confirm=\"Möchtest du Aufgabe 2 wirklich abschließen")
+                .contains("pf-study-task-intro-dialog")
                 .contains("keine echten personenbezogenen");
         assertThat(layout)
                 .contains("@{/css/study-mode.css}")
@@ -52,6 +55,21 @@ class StudyNavigationTemplateTest {
                 .contains("Weitere Studien- und Datenschutzinformationen")
                 .contains("ca. 25 Minuten")
                 .contains("melinadanhier@gmail.com");
+
+        String completed = Files.readString(Path.of(
+                "src/main/resources/templates/study/completed.html"));
+        assertThat(completed)
+                .contains("Aufgaben abgeschlossen")
+                .contains("Die Aufgaben in ProjectFlow sind abgeschlossen. Im nächsten Schritt wirst du zu einem anonymen Fragebogen weitergeleitet.")
+                .contains("Zum Fragebogen")
+                .contains("th:action=\"@{/study/finish}\"");
+
+        String planChangeReview = Files.readString(Path.of(
+                "src/main/resources/templates/projects/plan-change/review.html"));
+        assertThat(planChangeReview)
+                .contains("KI-Änderungen prüfen")
+                .contains("element.typeLabel == 'Meilenstein'")
+                .doesNotContain("th:text=\"${element.typeLabel}\"");
 
         String draftReview = Files.readString(Path.of(
                 "src/main/resources/templates/generation/draft-review.html"));

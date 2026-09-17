@@ -48,6 +48,22 @@ class StudyModeRestrictionFilterTest {
         assertThat(chain.getRequest()).isSameAs(request);
     }
 
+    @org.junit.jupiter.api.Test
+    void redirectsToCompletedWhenTasksAreCompleted() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/projects/123/plan");
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, UUID.randomUUID());
+        session.setAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE, true);
+        request.setSession(session);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/study/completed");
+        assertThat(chain.getRequest()).isNull();
+    }
+
     private MockHttpServletRequest activeStudyRequest(String method, String path) {
         MockHttpServletRequest request = new MockHttpServletRequest(method, path);
         MockHttpSession session = new MockHttpSession();

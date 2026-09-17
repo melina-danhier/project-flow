@@ -26,6 +26,8 @@ public class StudyTrackingService {
 
     public static final String SESSION_ATTRIBUTE = "studySessionId";
     public static final String PHASE_ATTRIBUTE = "studyPhase";
+    public static final String TASKS_COMPLETED_ATTRIBUTE = "studyTasksCompleted";
+    public static final String SHOW_INTRO_ATTRIBUTE = "showStudyTaskIntro";
 
     private static final String TRACKED_GENERATIONS_ATTRIBUTE =
             "studyTrackedGenerationWorkflows";
@@ -68,7 +70,10 @@ public class StudyTrackingService {
         Optional<StudySession> studySession = activeSession(httpSession);
 
         studySession.ifPresent(session -> {
-            recordEvent(session, StudyEventType.STUDY_TASK_COMPLETED);
+            boolean alreadyLoggedTaskTwo = httpSession != null && Boolean.TRUE.equals(httpSession.getAttribute(TASKS_COMPLETED_ATTRIBUTE));
+            if (!alreadyLoggedTaskTwo) {
+                recordEvent(session, StudyEventType.STUDY_TASK_COMPLETED);
+            }
             recordEvent(session, StudyEventType.STUDY_COMPLETED);
             session.setCompletedAt(Instant.now(clock));
             session.setStatus(StudySessionStatus.COMPLETED);
@@ -135,6 +140,20 @@ public class StudyTrackingService {
         recordEvent(studySession, StudyEventType.STUDY_TASK_COMPLETED);
         setPhase(httpSession, studySession, StudyPhase.TASK_2);
         return studySession.getProjectId();
+    }
+
+    @Transactional
+    public void completeTaskTwo(HttpSession httpSession) {
+        StudySession studySession = requireActiveSession(httpSession);
+
+        if (studySession.getCurrentPhase() != StudyPhase.TASK_2) {
+            throw new IllegalStateException("Aufgabe 2 ist nicht die aktive Phase.");
+        }
+
+        recordEvent(studySession, StudyEventType.STUDY_TASK_COMPLETED);
+        if (httpSession != null) {
+            httpSession.setAttribute(TASKS_COMPLETED_ATTRIBUTE, true);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -231,6 +250,8 @@ public class StudyTrackingService {
         httpSession.removeAttribute(SESSION_ATTRIBUTE);
         httpSession.removeAttribute(PHASE_ATTRIBUTE);
         httpSession.removeAttribute(TRACKED_GENERATIONS_ATTRIBUTE);
+        httpSession.removeAttribute(TASKS_COMPLETED_ATTRIBUTE);
+        httpSession.removeAttribute(SHOW_INTRO_ATTRIBUTE);
     }
 
     private void setPhase(

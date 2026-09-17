@@ -1,89 +1,98 @@
 <!DOCTYPE html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('KI-Änderung prüfen')}"></head>
+<head>
+    <th:block th:replace="~{fragments/layout :: head('KI-Änderung prüfen')}" />
+    <link rel="stylesheet" th:href="@{/css/components/plan.css}">
+</head>
 <body>
 <header th:replace="~{fragments/layout :: site-header}"></header>
 
-<main class="pf-page pf-page--narrow">
-    <a th:href="@{/projects/{id}/plan(id=${proposal.projectId})}" class="pf-back-link">
-        ← Zurück zum aktiven Plan
-    </a>
-
-    <div class="pf-card">
-        <span class="pf-badge pf-badge--warning">Temporärer Vorschlag</span>
-        <h1>KI-Änderungen prüfen</h1>
-        <p th:text="${review.summary}"></p>
-        <p class="pf-text-muted">
-            Es werden ausschließlich betroffene Bereiche und tatsächlich vorgeschlagene Felder angezeigt.
-            Die aktiven Plandaten sind noch unverändert.
-        </p>
-        <div th:if="${errorMessage}"
-             class="pf-alert pf-alert--error"
-             role="alert"
-             th:text="${errorMessage}"></div>
+<main class="pf-page pf-plan-change-review">
+    <div class="pf-page-header">
+        <div class="pf-page-header__left">
+            <a th:href="@{/projects/{id}/plan(id=${proposal.projectId})}" class="pf-page-header__back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Zurück zum Plan
+            </a>
+            <div class="pf-cluster" style="align-items: center; gap: 0.75rem;">
+                <h1 style="margin: 0; font-size: 1.5rem;">KI-Änderungen prüfen</h1>
+                <span class="pf-badge pf-badge--yellow">Vorschlag</span>
+            </div>
+            <p style="margin: 0.5rem 0 0; color: var(--pf-text-secondary); font-size: 0.95rem; line-height: 1.5;" th:text="${review.summary}"></p>
+            <p class="pf-text-muted" style="margin: 0.25rem 0 0; font-size: 0.82rem;">
+                Es werden ausschließlich betroffene Bereiche und vorgeschlagene Felder angezeigt. Die aktiven Plandaten sind noch unverändert.
+            </p>
+        </div>
     </div>
 
-    <section th:each="section : ${review.sections}" class="pf-card" style="margin-top: 1rem;">
-        <div class="pf-cluster">
-            <h2 th:text="${section.title}"></h2>
+    <div th:if="${errorMessage}"
+         class="pf-alert pf-alert--error"
+         role="alert"
+         th:text="${errorMessage}"></div>
+
+    <section th:each="section : ${review.sections}" class="pf-card pf-plan-change-section-card">
+        <div class="pf-plan-change-section-header">
+            <h2 style="margin: 0; font-size: 1.15rem;" th:text="${section.title}">Bereich</h2>
             <span th:if="${section.sectionChanged}"
                   class="pf-badge"
-                  th:classappend="${section.operation.name() == 'NEW' ? 'pf-badge--blue' : 'pf-badge--warning'}"
+                  th:classappend="${section.operation.name() == 'NEW' ? 'pf-badge--blue' : 'pf-badge--yellow'}"
                   th:text="${section.operation.name() == 'NEW' ? 'Neu' : 'Geändert'}"></span>
         </div>
 
-        <dl th:if="${section.sectionChanged}">
-            <div th:each="field : ${section.fields}" style="margin-bottom: .75rem;">
-                <dt th:text="${field.label}"></dt>
-                <dd>
-                    <span th:if="${field.before != null}" th:text="${field.before}"></span>
-                    <span th:if="${field.before != null}"> → </span>
-                    <strong th:text="${field.after}"></strong>
-                </dd>
+        <div class="pf-diff-list" th:if="${section.sectionChanged}">
+            <div class="pf-diff-item" th:each="field : ${section.fields}">
+                <span class="pf-diff-label" th:text="${field.label}">Feld</span>
+                <div class="pf-diff-comparison">
+                    <span class="pf-diff-before" th:if="${field.before != null}" th:text="${field.before}"></span>
+                    <span class="pf-diff-arrow" th:if="${field.before != null}" aria-hidden="true">→</span>
+                    <strong class="pf-diff-after" th:text="${field.after}"></strong>
+                </div>
             </div>
-        </dl>
+        </div>
 
-        <article th:each="element : ${section.elements}"
-                 style="border-top: 1px solid var(--pf-border); padding-top: 1rem; margin-top: 1rem;">
-            <div class="pf-cluster">
-                <span class="pf-badge pf-badge--outline" th:text="${element.typeLabel}"></span>
+        <article th:each="element : ${section.elements}" class="pf-plan-change-element">
+            <div class="pf-cluster" style="align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                <span th:if="${element.typeLabel == 'Meilenstein'}" class="pf-badge pf-badge--purple">Meilenstein</span>
                 <span class="pf-badge"
-                      th:classappend="${element.operation.name() == 'NEW' ? 'pf-badge--blue' : 'pf-badge--warning'}"
+                      th:classappend="${element.operation.name() == 'NEW' ? 'pf-badge--blue' : 'pf-badge--yellow'}"
                       th:text="${element.operation.name() == 'NEW' ? 'Neu' : 'Geändert'}"></span>
             </div>
-            <h3 th:text="${element.title}"></h3>
+            <h3 style="margin: 0 0 0.5rem; font-size: 1rem;" th:text="${element.title}">Elementtitel</h3>
 
-            <dl>
-                <div th:each="field : ${element.fields}" style="margin-bottom: .75rem;">
-                    <dt th:text="${field.label}"></dt>
-                    <dd>
-                        <span th:if="${field.before != null}" th:text="${field.before}"></span>
-                        <span th:if="${field.before != null}"> → </span>
-                        <strong th:text="${field.after}"></strong>
-                    </dd>
+            <div class="pf-diff-list">
+                <div class="pf-diff-item" th:each="field : ${element.fields}">
+                    <span class="pf-diff-label" th:text="${field.label}">Feld</span>
+                    <div class="pf-diff-comparison">
+                        <span class="pf-diff-before" th:if="${field.before != null}" th:text="${field.before}"></span>
+                        <span class="pf-diff-arrow" th:if="${field.before != null}" aria-hidden="true">→</span>
+                        <strong class="pf-diff-after" th:text="${field.after}"></strong>
+                    </div>
                 </div>
-            </dl>
+            </div>
             <p th:if="${element.explanation}"
-               class="pf-text-muted"
+               class="pf-diff-explanation"
                th:text="${element.explanation}"></p>
         </article>
     </section>
 
-    <div class="pf-cluster" style="margin-top: 1.5rem;">
+    <div class="pf-cluster" style="margin-top: 1.75rem; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
         <form th:action="@{/projects/{projectId}/plan/ai-change/{proposalId}/confirm(projectId=${proposal.projectId},proposalId=${proposal.proposalId})}"
-              method="post">
+              method="post" style="margin: 0;">
             <button type="submit" class="pf-btn pf-btn--primary">Änderungen übernehmen</button>
         </form>
-        <form th:action="@{/projects/{projectId}/plan/ai-change/{proposalId}/discard(projectId=${proposal.projectId},proposalId=${proposal.proposalId})}"
-              method="post">
-            <button type="submit" class="pf-btn pf-btn--danger">Verwerfen</button>
-        </form>
         <form th:action="@{/projects/{projectId}/plan/ai-change/{proposalId}/regenerate(projectId=${proposal.projectId},proposalId=${proposal.proposalId})}"
-              method="post">
+              method="post" style="margin: 0;">
             <button type="submit" class="pf-btn pf-btn--secondary">Mit gleichem Wunsch neu generieren</button>
         </form>
+        <form th:action="@{/projects/{projectId}/plan/ai-change/{proposalId}/discard(projectId=${proposal.projectId},proposalId=${proposal.proposalId})}"
+              method="post" style="margin: 0;">
+            <button type="submit" class="pf-btn pf-btn--ghost pf-btn--danger">Verwerfen</button>
+        </form>
         <a class="pf-btn pf-btn--ghost"
-           th:href="@{/projects/{id}/plan(id=${proposal.projectId})}">Zurück</a>
+           th:href="@{/projects/{id}/plan(id=${proposal.projectId})}">Zurück zum Plan</a>
     </div>
 </main>
 

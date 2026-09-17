@@ -1227,3 +1227,106 @@ details[open] .pf-phase-caret {
     }
 }
 
+/* ==========================================================================
+   ProjectFlow - AI Plan Change Review Styles
+   ========================================================================== */
+
+.pf-plan-change-review {
+    max-width: 800px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+}
+
+.pf-plan-change-review .pf-page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-plan-change-section-card {
+    margin-bottom: 1.25rem;
+    border-radius: var(--pf-radius-lg);
+}
+
+.pf-plan-change-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--pf-border-light, #f1f5f9);
+}
+
+.pf-plan-change-element {
+    padding: 0.85rem 1rem;
+    margin-top: 0.75rem;
+    background: var(--pf-surface-subtle, #f8fafc);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-md);
+}
+
+.pf-diff-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+.pf-diff-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+}
+
+@media (min-width: 640px) {
+    .pf-diff-item {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 1rem;
+    }
+}
+
+.pf-diff-label {
+    font-weight: 600;
+    min-width: 140px;
+    color: var(--pf-text-secondary);
+    font-size: 0.85rem;
+}
+
+.pf-diff-comparison {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.pf-diff-before {
+    color: var(--pf-text-muted);
+    text-decoration: line-through;
+    background: #f1f5f9;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--pf-radius-xs);
+    font-size: 0.85rem;
+}
+
+.pf-diff-arrow {
+    color: var(--pf-text-muted);
+    font-size: 0.85rem;
+}
+
+.pf-diff-after {
+    color: var(--pf-text-primary);
+    background: #ecfdf5;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--pf-radius-xs);
+    font-size: 0.85rem;
+}
+
+.pf-diff-explanation {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+    color: var(--pf-text-secondary);
+    font-style: italic;
+}
