@@ -91,7 +91,7 @@
 <header class="site-header" id="top">
     <div class="site-header__inner">
         <div class="site-header__left">
-            <a class="brand" th:href="${#authorization.expression('isAuthenticated()') ? '/projects' : '/'}" aria-label="ProjectFlow Startseite">
+            <a class="brand" th:href="${session != null and session.studyTasksCompleted != null ? '/study/completed' : (#authorization.expression('isAuthenticated()') ? '/projects' : '/')}" aria-label="ProjectFlow Startseite">
                 <span class="brand__mark" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
@@ -104,8 +104,9 @@
                     <span class="brand__subtitle" sec:authorize="isAuthenticated()">Workspace</span>
                 </div>
             </a>
-            <!-- Only show project navigation for authenticated users -->
-            <nav sec:authorize="isAuthenticated()" class="site-nav" aria-label="Hauptnavigation">
+            <!-- Only show project navigation for authenticated users if study tasks are not completed -->
+            <nav sec:authorize="isAuthenticated()" class="site-nav" aria-label="Hauptnavigation"
+                 th:if="${session == null or session.studyTasksCompleted == null}">
                 <a th:href="@{/projects}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -189,7 +190,7 @@
     </div>
 </header>
 <div class="pf-study-task-shell"
-     th:if="${session != null and session.studySessionId != null}">
+     th:if="${session != null and session.studySessionId != null and session.studyTasksCompleted == null}">
     <th:block th:replace="~{fragments/layout :: study-return}" />
 </div>
 </th:block>

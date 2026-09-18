@@ -62,6 +62,21 @@ class StudyModeRestrictionFilterTest {
 
         assertThat(response.getRedirectedUrl()).isEqualTo("/study/completed");
         assertThat(chain.getRequest()).isNull();
+
+        // Also verify for /templates and /
+        MockHttpServletRequest templateRequest = new MockHttpServletRequest("GET", "/templates");
+        templateRequest.setSession(session);
+        MockHttpServletResponse templateResponse = new MockHttpServletResponse();
+        filter.doFilter(templateRequest, templateResponse, new MockFilterChain());
+        assertThat(templateResponse.getRedirectedUrl()).isEqualTo("/study/completed");
+
+        MockHttpServletRequest staticRequest = new MockHttpServletRequest("GET", "/css/app.css");
+        staticRequest.setSession(session);
+        MockHttpServletResponse staticResponse = new MockHttpServletResponse();
+        MockFilterChain staticChain = new MockFilterChain();
+        filter.doFilter(staticRequest, staticResponse, staticChain);
+        assertThat(staticResponse.getRedirectedUrl()).isNull();
+        assertThat(staticChain.getRequest()).isSameAs(staticRequest);
     }
 
     private MockHttpServletRequest activeStudyRequest(String method, String path) {
