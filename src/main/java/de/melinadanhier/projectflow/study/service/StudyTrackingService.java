@@ -28,6 +28,16 @@ public class StudyTrackingService {
     public static final String PHASE_ATTRIBUTE = "studyPhase";
     public static final String TASKS_COMPLETED_ATTRIBUTE = "studyTasksCompleted";
     public static final String SHOW_INTRO_ATTRIBUTE = "showStudyTaskIntro";
+    public static final String TASK_TWO_CAN_COMPLETE_ATTRIBUTE = "studyTaskTwoCanComplete";
+
+    public static final Set<StudyEventType> TASK_TWO_COMPLETION_EVENTS = Set.of(
+            StudyEventType.LOCAL_AI_CHANGE_ADOPTED,
+            StudyEventType.LOCAL_AI_CHANGE_REJECTED,
+            StudyEventType.PLAN_AI_CHANGE_ADOPTED,
+            StudyEventType.PLAN_AI_CHANGE_REJECTED,
+            StudyEventType.AI_EDIT_ADOPTED,
+            StudyEventType.AI_EDIT_REJECTED
+    );
 
     private static final String TRACKED_GENERATIONS_ATTRIBUTE =
             "studyTrackedGenerationWorkflows";
@@ -149,11 +159,33 @@ public class StudyTrackingService {
         if (studySession.getCurrentPhase() != StudyPhase.TASK_2) {
             throw new IllegalStateException("Aufgabe 2 ist nicht die aktive Phase.");
         }
+        if (!canCompleteTaskTwo(httpSession)) {
+            throw new IllegalStateException("Aufgabe 2 kann erst abgeschlossen werden, wenn mindestens eine KI-Änderung vorgenommen wurde.");
+        }
 
         recordEvent(studySession, StudyEventType.STUDY_TASK_COMPLETED);
         if (httpSession != null) {
             httpSession.setAttribute(TASKS_COMPLETED_ATTRIBUTE, true);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canCompleteTaskTwo(HttpSession httpSession) {
+        if (httpSession != null && Boolean.TRUE.equals(httpSession.getAttribute(TASK_TWO_CAN_COMPLETE_ATTRIBUTE))) {
+            return true;
+        }
+
+        return activeSession(httpSession)
+                .filter(session -> session.getCurrentPhase() == StudyPhase.TASK_2)
+                .map(session -> {
+                    boolean canComplete = eventRepository != null && eventRepository.existsByStudySessionAndStudyPhaseAndEventTypeIn(
+                            session, StudyPhase.TASK_2, TASK_TWO_COMPLETION_EVENTS);
+                    if (canComplete && httpSession != null) {
+                        httpSession.setAttribute(TASK_TWO_CAN_COMPLETE_ATTRIBUTE, true);
+                    }
+                    return canComplete;
+                })
+                .orElse(false);
     }
 
     @Transactional(readOnly = true)
@@ -177,7 +209,14 @@ public class StudyTrackingService {
     @Transactional
     public void trackIfActive(HttpSession httpSession, StudyEventType type) {
         activeSession(httpSession)
-                .ifPresent(session -> recordEvent(session, type));
+                .ifPresent(session -> {
+                    recordEvent(session, type);
+                    if (session.getCurrentPhase() == StudyPhase.TASK_2 && TASK_TWO_COMPLETION_EVENTS.contains(type)) {
+                        if (httpSession != null) {
+                            httpSession.setAttribute(TASK_TWO_CAN_COMPLETE_ATTRIBUTE, true);
+                        }
+                    }
+                });
     }
 
     @Transactional
@@ -252,6 +291,7 @@ public class StudyTrackingService {
         httpSession.removeAttribute(TRACKED_GENERATIONS_ATTRIBUTE);
         httpSession.removeAttribute(TASKS_COMPLETED_ATTRIBUTE);
         httpSession.removeAttribute(SHOW_INTRO_ATTRIBUTE);
+        httpSession.removeAttribute(TASK_TWO_CAN_COMPLETE_ATTRIBUTE);
     }
 
     private void setPhase(
@@ -267,14 +307,26 @@ public class StudyTrackingService {
             HttpSession httpSession,
             StudySession studySession
     ) {
+        if (httpSession == null) {
+            return;
+        }
+
         StudyPhase phase = studySession.getCurrentPhase();
 
         if (phase == null) {
             httpSession.removeAttribute(PHASE_ATTRIBUTE);
+            httpSession.removeAttribute(TASK_TWO_CAN_COMPLETE_ATTRIBUTE);
             return;
         }
 
         httpSession.setAttribute(PHASE_ATTRIBUTE, phase.name());
+        if (phase == StudyPhase.TASK_2) {
+            boolean canComplete = eventRepository != null && eventRepository.existsByStudySessionAndStudyPhaseAndEventTypeIn(
+                    studySession, StudyPhase.TASK_2, TASK_TWO_COMPLETION_EVENTS);
+            httpSession.setAttribute(TASK_TWO_CAN_COMPLETE_ATTRIBUTE, canComplete);
+        } else {
+            httpSession.removeAttribute(TASK_TWO_CAN_COMPLETE_ATTRIBUTE);
+        }
     }
 
     private void recordEvent(

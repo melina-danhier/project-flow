@@ -23,13 +23,13 @@ class AiActionPlacementTemplateTest {
     }
 
     @Test
-    void taskAiActionRemainsInMenuAndAppearsBelowProperties() throws IOException {
+    void taskAiActionRemainsInMenuAndAppearsInHeaderActions() throws IOException {
         String detail = Files.readString(Path.of(
                 "src/main/resources/templates/projects/tasks/detail.html"));
 
         assertThat(detail).contains("<span>Mit KI verbessern</span>");
         assertThat(detail).contains("Aufgabe mit KI anpassen");
         assertThat(detail.indexOf("Aufgabe mit KI anpassen"))
-                .isGreaterThan(detail.indexOf("<span class=\"pf-detail-prop__label\">Herkunft</span>"));
+                .isLessThan(detail.indexOf("<span class=\"pf-detail-prop__label\">Beschreibung</span>"));
     }
 }

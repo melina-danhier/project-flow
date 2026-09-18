@@ -46,6 +46,27 @@
         return !!target.closest('button, a, input, select, textarea, label, form, .pf-phase-inline-edit, .review-actions-wrap, .pf-element-edit-btn, .pf-dropdown, .pf-card-menu, .pf-phase-toggle-btn');
     };
 
+    let dragNotice = null;
+    function showDragDateNotice(text) {
+        if (!dragNotice) {
+            dragNotice = document.createElement('div');
+            dragNotice.className = 'pf-drag-date-notice';
+            dragNotice.setAttribute('role', 'status');
+            dragNotice.style.cssText = 'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1e293b;color:#f8fafc;padding:0.5rem 1rem;border-radius:6px;font-size:0.85rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;pointer-events:none;transition:opacity 0.15s ease;';
+            document.body.appendChild(dragNotice);
+        }
+        dragNotice.textContent = text;
+        dragNotice.style.opacity = '1';
+        dragNotice.style.display = 'block';
+    }
+
+    function hideDragDateNotice() {
+        if (dragNotice) {
+            dragNotice.style.opacity = '0';
+            setTimeout(() => { if (dragNotice) dragNotice.style.display = 'none'; }, 150);
+        }
+    }
+
     // 1. Draggable items setup (whole container)
     document.querySelectorAll('[draggable="true"]').forEach(item => {
         item.addEventListener('dragstart', event => {
@@ -56,6 +77,9 @@
             event.stopPropagation();
             dragged = item;
             item.classList.add('is-dragging');
+            if (review?.dataset.sortMode === 'DATE' && item.classList.contains('plan-element') && item.dataset.date) {
+                showDragDateNotice('Hinweis: Bei Datumssortierung bestimmt das Datum die Reihenfolge.');
+            }
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', item.dataset.elementId || item.dataset.sectionId || '');
         });
@@ -63,6 +87,7 @@
             item.classList.remove('is-dragging');
             document.querySelectorAll('.drop-target').forEach(target => target.classList.remove('drop-target'));
             removeDropIndicator();
+            hideDragDateNotice();
             dragged = null;
         });
     });
@@ -227,7 +252,7 @@
         if (!card) return;
 
         // Do not navigate if clicking an interactive control
-        if (event.target.closest('button, input, textarea, select, a, label, form, .drag-handle, .review-actions, summary')) {
+        if (event.target.closest('button, input, textarea, select, a, label, form, .drag-handle, .pf-drag-handle-visual, .pf-compact-drag-handle, .review-actions, .review-actions-wrap, .pf-element-edit-btn, summary')) {
             return;
         }
 

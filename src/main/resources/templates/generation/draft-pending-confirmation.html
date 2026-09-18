@@ -15,23 +15,13 @@
                     <line x1="19" y1="12" x2="5" y2="12"></line>
                     <polyline points="12 19 5 12 12 5"></polyline>
                 </svg>
-                Zurück zum Review
+                Zurück zum Entwurf
             </a>
             <h1 th:text="${summary.empty ? 'Vollständig verworfenen Entwurf abschließen' : 'Entwurf jetzt übernehmen?'}" style="margin: 0;">Entwurf übernehmen?</h1>
             <p class="pf-page-header__subtitle" th:if="${!summary.empty}">
                 Aus dem geprüften Entwurf wird jetzt der aktive Plan für „<strong th:text="${summary.projectTitle}">Projekt</strong>" initialisiert.
             </p>
         </div>
-        <form th:action="@{/projects/{projectId}/draft/discard(projectId=${summary.projectId})}" method="post"
-              data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
-              data-confirm-title="KI-Projekterstellung abbrechen?"
-              data-confirm-btn="KI-Erstellung abbrechen"
-              data-confirm-variant="danger"
-              style="margin-top: 1rem;">
-            <input type="hidden" name="draftId" th:value="${summary.draftId}">
-            <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
-            <button type="submit" class="pf-btn pf-btn--ghost">Abbrechen</button>
-        </form>
     </div>
 
     <div class="pf-card" style="max-width: 760px;">
@@ -58,6 +48,7 @@
                       data-confirm="Möchtest du den aktuellen Entwurf vollständig ersetzen und neu generieren?"
                       data-confirm-title="Entwurf neu generieren?"
                       data-confirm-btn="Neu generieren"
+                      data-confirm-cancel="Zurück zum Entwurf"
                       data-confirm-variant="primary"
                       style="margin: 0; width: 100%;">
                     <input type="hidden" name="draftId" th:value="${summary.draftId}">
@@ -72,6 +63,20 @@
                     <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
                     <button type="submit" class="pf-btn pf-btn--secondary">Leeres Projekt erstellen</button>
                 </form>
+                <a th:href="@{/projects/{projectId}/draft/review(projectId=${summary.projectId})}" class="pf-btn pf-btn--secondary">Zurück zum Entwurf</a>
+            </div>
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--pf-border-color, #e2e8f0); display: flex; justify-content: flex-end;">
+                <form th:action="@{/projects/{projectId}/draft/discard(projectId=${summary.projectId})}" method="post"
+                      data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+                      data-confirm-title="KI-Projekterstellung abbrechen?"
+                      data-confirm-btn="KI-Erstellung abbrechen"
+                      data-confirm-cancel="Zurück zum Entwurf"
+                      data-confirm-variant="danger"
+                      style="margin: 0;">
+                    <input type="hidden" name="draftId" th:value="${summary.draftId}">
+                    <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
+                    <button type="submit" class="pf-btn pf-btn--ghost" style="color: var(--pf-danger-text, #dc2626);">KI-Erstellung abbrechen</button>
+                </form>
             </div>
         </div>
 
@@ -85,9 +90,22 @@
                 <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     <button type="submit" class="pf-btn pf-btn--primary pf-btn--lg">Entwurf jetzt übernehmen →</button>
-                    <a th:href="@{/projects/{projectId}/draft/review(projectId=${summary.projectId})}" class="pf-btn pf-btn--secondary">Zurück zum Review</a>
+                    <a th:href="@{/projects/{projectId}/draft/review(projectId=${summary.projectId})}" class="pf-btn pf-btn--secondary">Zurück zum Entwurf</a>
                 </div>
             </form>
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--pf-border-color, #e2e8f0); display: flex; justify-content: flex-end;">
+                <form th:action="@{/projects/{projectId}/draft/discard(projectId=${summary.projectId})}" method="post"
+                      data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+                      data-confirm-title="KI-Projekterstellung abbrechen?"
+                      data-confirm-btn="KI-Erstellung abbrechen"
+                      data-confirm-cancel="Zurück zum Entwurf"
+                      data-confirm-variant="danger"
+                      style="margin: 0;">
+                    <input type="hidden" name="draftId" th:value="${summary.draftId}">
+                    <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
+                    <button type="submit" class="pf-btn pf-btn--ghost" style="color: var(--pf-danger-text, #dc2626);">KI-Erstellung abbrechen</button>
+                </form>
+            </div>
         </div>
     </div>
 </main>

@@ -183,6 +183,16 @@ function initializePlanViews() {
         li.dataset.sectionId = item.sectionId;
         li.dataset.date = item.date;
         li.dataset.moveUrl = item.moveUrl;
+        if (item.href) {
+            li.dataset.detailUrl = item.href;
+            li.style.cursor = 'pointer';
+            li.addEventListener('click', function (event) {
+                if (event.target.closest('button, input, select, textarea, a, .pf-compact-drag-handle, .pf-drag-handle-visual, form')) {
+                    return;
+                }
+                window.location.href = item.href;
+            });
+        }
         if (editable) {
             li.draggable = true;
             var handle = document.createElement('button');

@@ -66,17 +66,19 @@
                 <p>Prüfe den Änderungsvorschlag und entscheide anschließend selbst, ob du ihn übernehmen oder verwerfen möchtest.</p>
             </div>
         </details>
-        <p class="pf-study-task__return-hint">
-            Wenn du die Anpassung des Projektplans abgeschlossen und geprüft hast,
-            schließe Aufgabe 2 ab. Anschließend wirst du zum anonymen Fragebogen weitergeleitet.
-        </p>
-        <form th:action="@{/study/task-2/complete}" method="post"
-              data-confirm="Möchtest du Aufgabe 2 wirklich abschließen? Anschließend wirst du zum Fragebogen weitergeleitet."
-              data-confirm-title="Aufgabe 2 abschließen"
-              data-confirm-btn="Aufgabe abschließen"
-              data-confirm-variant="primary">
-            <button class="pf-btn pf-btn--primary" type="submit">Aufgabe 2 abschließen</button>
-        </form>
+        <th:block th:if="${(studyTaskTwoCanComplete != null and studyTaskTwoCanComplete) or (session != null and session.studyTaskTwoCanComplete == true)}">
+            <p class="pf-study-task__return-hint">
+                Wenn du die Anpassung des Projektplans abgeschlossen und geprüft hast,
+                schließe Aufgabe 2 ab.
+            </p>
+            <form th:action="@{/study/task-2/complete}" method="post"
+                  data-confirm="Möchtest du Aufgabe 2 wirklich abschließen?"
+                  data-confirm-title="Aufgabe 2 abschließen"
+                  data-confirm-btn="Aufgabe abschließen"
+                  data-confirm-variant="primary">
+                <button class="pf-btn pf-btn--primary" type="submit">Aufgabe 2 abschließen</button>
+            </form>
+        </th:block>
     </div>
     <form th:if="${session != null and session.studySessionId != null}"
           th:action="@{/study/abort}" method="post"
@@ -106,7 +108,7 @@
             </a>
             <!-- Only show project navigation for authenticated users if study tasks are not completed -->
             <nav sec:authorize="isAuthenticated()" class="site-nav" aria-label="Hauptnavigation"
-                 th:if="${session == null or session.studyTasksCompleted == null}">
+                 th:if="${(session == null or session.studyTasksCompleted == null) and (studyPage == null or !studyPage)}">
                 <a th:href="@{/projects}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -190,7 +192,7 @@
     </div>
 </header>
 <div class="pf-study-task-shell"
-     th:if="${session != null and session.studySessionId != null and session.studyTasksCompleted == null}">
+     th:if="${session != null and session.studySessionId != null and session.studyTasksCompleted == null and (studyPage == null or !studyPage)}">
     <th:block th:replace="~{fragments/layout :: study-return}" />
 </div>
 </th:block>
@@ -448,9 +450,10 @@
                 const message = trigger.getAttribute('data-confirm');
                 const title = trigger.getAttribute('data-confirm-title');
                 const confirmText = trigger.getAttribute('data-confirm-btn');
+                const cancelText = trigger.getAttribute('data-confirm-cancel');
                 const variant = trigger.getAttribute('data-confirm-variant');
 
-                const ok = await window.pfConfirm({ message, title, confirmText, variant });
+                const ok = await window.pfConfirm({ message, title, confirmText, cancelText, variant });
                 if (ok) {
                     trigger.dataset.pfConfirmed = 'true';
                     if (trigger.tagName === 'BUTTON' && trigger.form) {
@@ -481,9 +484,10 @@
                 const message = form.getAttribute('data-confirm');
                 const title = form.getAttribute('data-confirm-title');
                 const confirmText = form.getAttribute('data-confirm-btn');
+                const cancelText = form.getAttribute('data-confirm-cancel');
                 const variant = form.getAttribute('data-confirm-variant');
 
-                const ok = await window.pfConfirm({ message, title, confirmText, variant });
+                const ok = await window.pfConfirm({ message, title, confirmText, cancelText, variant });
                 if (ok) {
                     form.dataset.pfConfirmed = 'true';
                     form.requestSubmit();

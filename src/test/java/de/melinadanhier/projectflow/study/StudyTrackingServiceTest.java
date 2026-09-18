@@ -218,6 +218,7 @@ class StudyTrackingServiceTest {
         study.setCurrentPhase(StudyPhase.TASK_2);
         MockHttpSession http = new MockHttpSession();
         http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        http.setAttribute(StudyTrackingService.TASK_TWO_CAN_COMPLETE_ATTRIBUTE, true);
         when(sessions.findById(id)).thenReturn(Optional.of(study));
 
         service.completeTaskTwo(http);
@@ -226,6 +227,61 @@ class StudyTrackingServiceTest {
         var captor = org.mockito.ArgumentCaptor.forClass(StudyEvent.class);
         verify(events).save(captor.capture());
         assertThat(captor.getValue().getEventType()).isEqualTo(StudyEventType.STUDY_TASK_COMPLETED);
+    }
+
+    @Test
+    void completeTaskTwoFailsWhenNoAiChangeMadeInTaskTwo() {
+        UUID id = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setProjectId(projectId);
+        study.setCurrentPhase(StudyPhase.TASK_2);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+        when(events.existsByStudySessionAndStudyPhaseAndEventTypeIn(eq(study), eq(StudyPhase.TASK_2), any()))
+                .thenReturn(false);
+
+        assertThat(service.canCompleteTaskTwo(http)).isFalse();
+        assertThatThrownBy(() -> service.completeTaskTwo(http))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Aufgabe 2 kann erst abgeschlossen werden");
+    }
+
+    @Test
+    void trackingAiChangeInTaskTwoEnablesCompletion() {
+        UUID id = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setCurrentPhase(StudyPhase.TASK_2);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        service.trackIfActive(http, StudyEventType.LOCAL_AI_CHANGE_ADOPTED);
+
+        assertThat(http.getAttribute(StudyTrackingService.TASK_TWO_CAN_COMPLETE_ATTRIBUTE)).isEqualTo(true);
+        assertThat(service.canCompleteTaskTwo(http)).isTrue();
+    }
+
+    @Test
+    void canCompleteTaskTwoChecksDatabaseWhenSessionAttributeMissing() {
+        UUID id = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setCurrentPhase(StudyPhase.TASK_2);
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+        when(events.existsByStudySessionAndStudyPhaseAndEventTypeIn(eq(study), eq(StudyPhase.TASK_2), any()))
+                .thenReturn(true);
+
+        assertThat(service.canCompleteTaskTwo(http)).isTrue();
+        assertThat(http.getAttribute(StudyTrackingService.TASK_TWO_CAN_COMPLETE_ATTRIBUTE)).isEqualTo(true);
     }
 
     @Test

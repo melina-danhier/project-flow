@@ -62,6 +62,7 @@
                   data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
                   data-confirm-title="KI-Projekterstellung abbrechen?"
                   data-confirm-btn="KI-Erstellung abbrechen"
+                  data-confirm-cancel="Zurück zum Entwurf"
                   data-confirm-variant="danger">
                 <input type="hidden" name="draftId" th:value="${draft.id}">
                 <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
@@ -88,15 +89,6 @@
                     <option value="REJECTED" th:selected="${draft.activeReviewFilter == 'REJECTED'}">Abgelehnte Elemente</option>
                 </select>
             </form>
-
-            <div class="pf-sorting-info-tooltip" title="Aufgaben und Meilensteine werden nach Datum sortiert angezeigt. Nach dem Verschieben werden datierte Elemente automatisch wieder nach Datum einsortiert.">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                <span class="pf-tooltip-bubble">Aufgaben und Meilensteine werden nach Datum sortiert angezeigt. Nach dem Verschieben werden datierte Elemente automatisch wieder nach Datum einsortiert.</span>
-            </div>
         </div>
 
         <!-- View Selection Dropdown -->

@@ -53,7 +53,9 @@ class StudyNavigationTemplateTest {
         assertThat(start)
                 .contains("pf-study-info-details")
                 .contains("Weitere Studien- und Datenschutzinformationen")
-                .contains("ca. 25 Minuten")
+                .contains("ca. 15–20 Minuten")
+                .contains("ca. 5–10 Minuten")
+                .contains("ca. 20–30 Minuten")
                 .contains("melinadanhier@gmail.com");
 
         String completed = Files.readString(Path.of(

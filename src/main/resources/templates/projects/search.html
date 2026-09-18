@@ -60,7 +60,7 @@
                                 d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z">
                             </path>
                         </svg>
-                        <span>Designs (KI)</span>
+                        <span>KI-Entwürfe</span>
                     </a>
                     <a th:href="@{/projects(location=ARCHIVE)}" class="pf-sidebar-link">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -110,7 +110,7 @@
                                     Aktiv</option>
                                 <option value="DRAFT"
                                     th:selected="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}">
-                                    Designs (KI)</option>
+                                    KI-Entwürfe</option>
                                 <option value="ARCHIVE"
                                     th:selected="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE'}">
                                     Archiv</option>
@@ -155,7 +155,7 @@
                     </div>
                     <div class="pf-empty-state__title">Keine passenden Projekte gefunden</div>
                     <p class="pf-empty-state__text">
-                        Probiere einen anderen Suchbegriff aus oder wechsle den Bereich (Aktiv, Designs, Archiv,
+                        Probiere einen anderen Suchbegriff aus oder wechsle den Bereich (Aktiv, KI-Entwürfe, Archiv,
                         Papierkorb).
                     </p>
                     <a class="pf-btn pf-btn--secondary" th:href="@{/projects}">
