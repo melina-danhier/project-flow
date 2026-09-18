@@ -13,10 +13,6 @@ import java.util.regex.Pattern;
 
 public class StudyModeRestrictionFilter extends OncePerRequestFilter {
 
-    private static final Pattern PROJECT_LIFECYCLE_ACTION = Pattern.compile(
-            "^/projects/[^/]+/(archive|trash|reactivate|delete|pin|unpin)$"
-    );
-
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -51,9 +47,6 @@ public class StudyModeRestrictionFilter extends OncePerRequestFilter {
         if (path.startsWith("/projects/") && path.contains("/members")) {
             return true;
         }
-        if (PROJECT_LIFECYCLE_ACTION.matcher(path).matches() || path.startsWith("/projects/bulk/")) {
-            return true;
-        }
         if (path.startsWith("/projects/new/template")) {
             return true;
         }
@@ -64,10 +57,6 @@ public class StudyModeRestrictionFilter extends OncePerRequestFilter {
                 && "POST".equalsIgnoreCase(request.getMethod())
                 && "TEMPLATE".equals(request.getParameter("creationType"))) {
             return true;
-        }
-        if ("/projects".equals(path) || "/projects/search".equals(path)) {
-            String location = request.getParameter("location");
-            return "ARCHIVE".equals(location) || "TRASH".equals(location);
         }
         return false;
     }

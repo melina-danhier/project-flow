@@ -261,7 +261,7 @@ public class AiGenerationWorkflowService {
         var updatedSnapshot = new de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot(
                 snapshot.title(), snapshot.description(), snapshot.startDate(), snapshot.endDate(),
                 snapshot.collaborationMode(), snapshot.category(), snapshot.subcategory(),
-                snapshot.otherProjectTypeDescription(), snapshot.projectGoal(), snapshot.constraints(),
+                snapshot.projectGoal(), snapshot.constraints(),
                 snapshot.additionalInformation(), snapshot.durationDays(), snapshot.availableWorkingTime(), answers,
                 rejectedElements);
         String serializedSnapshot = payloadCodec.writeSnapshot(updatedSnapshot);

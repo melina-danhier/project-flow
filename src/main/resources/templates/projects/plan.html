@@ -219,10 +219,8 @@
             <details class="pf-dropdown pf-dropdown--right pf-plan-view-dropdown pf-plan-view-switcher" role="group" aria-label="Planansicht auswählen">
                 <summary class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="14" width="7" height="7"></rect>
-                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
                     </svg>
                     <span class="pf-view-current-label">Liste</span>
                     <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -431,7 +429,7 @@
                         <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE' and (!plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX'))}" th:text="${element.milestoneCompleted ? '✓' : '○'}"></span>
                         <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE' and plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}" title="Meilenstein: Markiert ein wichtiges Zwischenziel">◆</span>
 
-                        <!-- Element Title & Description -->
+                        <!-- Element Title -->
                         <div class="pf-element-item__body">
                             <a th:if="${element.type.name() == 'TASK'}"
                                th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
@@ -439,16 +437,6 @@
                             <a th:if="${element.type.name() == 'MILESTONE'}"
                                th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
                                th:text="${element.title}" class="pf-element-item__title"></a>
-                            <small th:if="${element.description}" th:text="${element.description}" class="pf-element-item__desc"></small>
-                            <div th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}" class="pf-assignee-chips">
-                                <span th:each="name : ${element.assigneeDisplayNames}" class="pf-assignee-chip" th:title="${'Zugewiesen an ' + name}">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                        <circle cx="12" cy="7" r="4"></circle>
-                                    </svg>
-                                    <span th:text="${name}">Name</span>
-                                </span>
-                            </div>
                         </div>
                     </div>
 
@@ -475,14 +463,8 @@
                             <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
                         </th:block>
 
-                        <!-- Effort Badge for Tasks -->
-                        <span class="pf-badge pf-badge--gray" th:if="${element.type.name() == 'TASK' and element.estimatedHours != null}"
-                              th:text="${element.estimatedHours + ' Std.'}"></span>
-
                         <!-- Read-only Status Badge -->
                         <span class="pf-badge pf-badge--gray" th:if="${!plan.editable and element.stateLabel != null}" th:text="${element.stateLabel}"></span>
-                        
-                        <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
 
                         <!-- Element Action Menu (Far-right hamburger) -->
                         <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
@@ -616,7 +598,7 @@
                     <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE' and (!plan.editable and (plan.project.taskProgressDisplay == null or plan.project.taskProgressDisplay.name() == 'CHECKBOX'))}" th:text="${element.milestoneCompleted ? '✓' : '○'}"></span>
                     <span class="pf-element-item__icon pf-element-item__icon--milestone" th:if="${element.type.name() == 'MILESTONE' and plan.project.taskProgressDisplay != null and plan.project.taskProgressDisplay.name() == 'STATUS'}" title="Meilenstein: Markiert ein wichtiges Zwischenziel">◆</span>
 
-                    <!-- Element Title & Description -->
+                    <!-- Element Title -->
                     <div class="pf-element-item__body">
                         <a th:if="${element.type.name() == 'TASK'}"
                            th:href="@{/projects/{projectId}/tasks/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
@@ -624,16 +606,6 @@
                         <a th:if="${element.type.name() == 'MILESTONE'}"
                            th:href="@{/projects/{projectId}/milestones/{elementId}(projectId=${plan.project.id},elementId=${element.id})}"
                            th:text="${element.title}" class="pf-element-item__title"></a>
-                        <small th:if="${element.description}" th:text="${element.description}" class="pf-element-item__desc"></small>
-                        <div th:if="${element.type.name() == 'TASK' and !#lists.isEmpty(element.assigneeDisplayNames)}" class="pf-assignee-chips">
-                            <span th:each="name : ${element.assigneeDisplayNames}" class="pf-assignee-chip" th:title="${'Zugewiesen an ' + name}">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                                <span th:text="${name}">Name</span>
-                            </span>
-                        </div>
                     </div>
                 </div>
 
@@ -660,14 +632,8 @@
                         <span class="pf-badge pf-badge--outline" th:if="${element.dateLabel}" th:text="${element.dateLabel}"></span>
                     </th:block>
 
-                    <!-- Effort Badge for Tasks -->
-                    <span class="pf-badge pf-badge--gray" th:if="${element.type.name() == 'TASK' and element.estimatedHours != null}"
-                          th:text="${element.estimatedHours + ' Std.'}"></span>
-
                     <!-- Read-only Status Badge -->
                     <span class="pf-badge pf-badge--gray" th:if="${!plan.editable and element.stateLabel != null}" th:text="${element.stateLabel}"></span>
-
-                    <span class="pf-badge pf-badge--warning" th:if="${element.blocked}">Blockiert</span>
 
                     <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
                         <summary class="pf-card-menu__btn" title="Elementoptionen" aria-label="Elementoptionen">

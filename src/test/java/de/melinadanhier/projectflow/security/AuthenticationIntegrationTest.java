@@ -559,7 +559,6 @@ class AuthenticationIntegrationTest {
                         .with(csrf())
                         .param("title", "Abbrechen")
                         .param("category", "OTHER")
-                        .param("otherProjectTypeDescription", "Privates Vorhaben")
                         .param("collaborationMode", "INDIVIDUAL"))
                 .andExpect(status().is3xxRedirection());
         assertThat(session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE)).isNotNull();
@@ -674,7 +673,7 @@ class AuthenticationIntegrationTest {
                 {"EDUCATION", "MOVING"}, {"OTHER", "THESIS"}, {"EDUCATION", "manipuliert"}}) {
             mockMvc.perform(post("/projects/new").session(session).with(csrf())
                             .param("title", "Nicht übernehmen").param("category", input[0])
-                            .param("subcategory", input[1]).param("otherProjectTypeDescription", "Privates Vorhaben")
+                            .param("subcategory", input[1])
                             .param("collaborationMode", "INDIVIDUAL"))
                     .andExpect(status().isOk())
                     .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "subcategory"))

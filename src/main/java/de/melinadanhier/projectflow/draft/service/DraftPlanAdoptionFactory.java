@@ -29,6 +29,9 @@ public class DraftPlanAdoptionFactory {
             .manual(DraftPlanElement::getSortOrder, DraftPlanElement::getId);
 
     public void adopt(DraftPlan draft, Project project) {
+        if (draft.getSortMode() != null) {
+            project.setSortMode(draft.getSortMode());
+        }
         Map<DraftSection, PlanSection> adoptedSections = new HashMap<>();
         List<DraftSection> includedSections = draft.getSections().stream()
                 .filter(this::included)

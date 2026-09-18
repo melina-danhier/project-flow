@@ -26,8 +26,7 @@ public class ProjectWizardService {
     public static final String SESSION_ATTRIBUTE = ProjectWizardState.class.getName();
 
     public ProjectWizardState saveBasics(ProjectBasicsForm form, UUID userId, HttpSession session) {
-        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
-                form.getOtherProjectTypeDescription());
+        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory());
         ProjectWizardState state = findOwned(userId, session).orElseGet(ProjectWizardState::new);
         boolean classificationChanged = state.getCategory() != form.getCategory()
                 || state.getSubcategory() != form.getSubcategory();
@@ -36,8 +35,6 @@ public class ProjectWizardService {
         state.setDescription(normalizeOptionalText(form.getDescription()));
         state.setCategory(form.getCategory());
         state.setSubcategory(form.getSubcategory());
-        state.setOtherProjectTypeDescription(form.isOtherCategory()
-                ? normalizeOptionalText(form.getOtherProjectTypeDescription()) : null);
         state.setCollaborationMode(form.getCollaborationMode());
         state.setStartDate(form.getStartDate());
         state.setEndDate(form.getEndDate());
@@ -134,7 +131,7 @@ public class ProjectWizardService {
         }
         return new AiWizardSnapshot(
                 state.getTitle(), state.getDescription(), state.getStartDate(), state.getEndDate(),
-                state.getCollaborationMode(), state.getCategory(), state.getSubcategory(), state.getOtherProjectTypeDescription(),
+                state.getCollaborationMode(), state.getCategory(), state.getSubcategory(),
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(),
                 state.getDurationDays(), state.getAvailableWorkingTime(),
                 state.getProjectSpecificAnswers());
@@ -182,7 +179,6 @@ public class ProjectWizardService {
         state.setTitle(snapshot.title());
         state.setDescription(snapshot.description());
         state.setCategory(snapshot.category());
-        state.setOtherProjectTypeDescription(snapshot.otherProjectTypeDescription());
         state.setSubcategory(snapshot.subcategory());
         state.setCollaborationMode(snapshot.collaborationMode());
         state.setCreationType(CreationType.AI);

@@ -7,7 +7,9 @@ import java.util.List;
 public interface ProjectClassification {
     ProjectCategory getCategory();
     ProjectSubCategory getSubcategory();
-    String getOtherProjectTypeDescription();
+    default String getOtherProjectTypeDescription() {
+        return null;
+    }
 
     default List<ProjectSubCategory> getSubcategoryOptions() {
         return ProjectSubCategory.forCategory(getCategory());

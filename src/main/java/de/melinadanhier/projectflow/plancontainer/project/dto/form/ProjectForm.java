@@ -40,9 +40,6 @@ public abstract class ProjectForm implements ProjectClassification, ProjectColla
 
     private ProjectSubCategory subcategory;
 
-    @Size(max = 100, message = "Die Beschreibung darf höchstens 100 Zeichen lang sein.")
-    private String otherProjectTypeDescription;
-
     @NotNull(message = "Bitte wähle Einzel- oder Gruppenprojekt aus.")
     private CollaborationMode collaborationMode;
 

@@ -38,7 +38,7 @@ class StubAiClientTest {
             assertThat(client.generatePlan(datedRequest)).isEqualTo(client.generatePlan(datedRequest));
             properties.setGenerationScenario(StubAiGenerationScenario.WITHOUT_DATES);
             var noDates = new AiGenerationRequest(new AiWizardSnapshot("Projekt", null, null, null,
-                    CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test", null, null, null), List.of());
+                    CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, null, null, null), List.of());
             assertThat(generationValidator.validate(client.generatePlan(noDates), noDates).isValid()).isTrue();
             assertThat(client.generatePlan(noDates)).isEqualTo(client.generatePlan(noDates));
         }
@@ -51,7 +51,7 @@ class StubAiClientTest {
         LocalDate projectEnd = LocalDate.of(2026, 10, 12);
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
                 "Kurzes Projekt", null, projectStart, projectEnd,
-                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null,
                 null, null, null);
 
         var response = client.generatePlan(new AiGenerationRequest(snapshot, List.of()));
@@ -78,7 +78,7 @@ class StubAiClientTest {
         return new AiWizardSnapshot(
                 "Umzug planen", "Wohnungswechsel organisieren",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
-                CollaborationMode.GROUP, ProjectCategory.HOME, ProjectSubCategory.MOVING, null,
+                CollaborationMode.GROUP, ProjectCategory.HOME, ProjectSubCategory.MOVING,
                 "Bis Monatsende umziehen", "Budget 2.000 Euro", "Kartons sind vorhanden");
     }
 }

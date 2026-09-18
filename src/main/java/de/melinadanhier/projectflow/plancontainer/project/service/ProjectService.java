@@ -105,7 +105,6 @@ public class ProjectService {
         if (form.getCategory() == null) {
             form.setCategory(template.getCategory());
             form.setSubcategory(template.getSubcategory());
-            form.setOtherProjectTypeDescription(template.getOtherProjectTypeDescription());
         }
         if (form.getCollaborationMode() == null) {
             form.setCollaborationMode(template.getCollaborationMode() == CollaborationMode.BOTH
@@ -149,8 +148,6 @@ public class ProjectService {
         project.setEndDate(form.getEndDate());
         project.setCategory(form.getCategory());
         project.setSubcategory(form.getSubcategory());
-        project.setOtherProjectTypeDescription(form.isOtherCategory()
-                ? normalizeOptionalText(form.getOtherProjectTypeDescription()) : null);
         project.setCollaborationMode(form.getCollaborationMode());
         project.setCreationType(creationType);
         project.setLocation(ProjectLocation.OVERVIEW);
@@ -377,8 +374,7 @@ public class ProjectService {
         if (form.getCategory() == null) {
             throw new DomainValidationException("Bitte wähle eine Oberkategorie aus.");
         }
-        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
-                form.getOtherProjectTypeDescription());
+        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory());
         validateDateRange(form.getStartDate(), form.getEndDate());
         if (convertToIndividual) {
             taskRepository.findPlanTasks(projectId).forEach(task -> task.getAssignees().clear());
@@ -391,8 +387,6 @@ public class ProjectService {
         project.setCollaborationMode(form.getCollaborationMode());
         project.setCategory(form.getCategory());
         project.setSubcategory(form.getSubcategory());
-        project.setOtherProjectTypeDescription(form.isOtherCategory()
-                ? normalizeOptionalText(form.getOtherProjectTypeDescription()) : null);
         project.setTitle(form.getTitle().trim());
         project.setDescription(form.getDescription());
         project.setStartDate(form.getStartDate());
@@ -555,8 +549,7 @@ public class ProjectService {
     }
 
     private void validateGeneralProjectData(ProjectCreateForm form) {
-        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory(),
-                form.getOtherProjectTypeDescription());
+        ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory());
         validateDateRange(form.getStartDate(), form.getEndDate());
         if (form.getCategory() == null) {
             throw new DomainValidationException("Bitte wähle eine Oberkategorie aus.");

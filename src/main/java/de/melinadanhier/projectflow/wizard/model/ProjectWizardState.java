@@ -31,8 +31,6 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
     private String title;
     private String description;
     private ProjectCategory category = ProjectCategory.OTHER;
-    private String otherProjectTypeDescription;
-
     private ProjectSubCategory subcategory;
     private CollaborationMode collaborationMode;
     private CreationType creationType;
@@ -63,7 +61,6 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
         form.setTitle(title);
         form.setDescription(description);
         form.setCategory(category);
-        form.setOtherProjectTypeDescription(otherProjectTypeDescription);
         form.setSubcategory(subcategory);
         form.setCollaborationMode(collaborationMode);
         form.setCreationType(creationType);

@@ -27,16 +27,7 @@
         </select>
         <div th:if="${#fields.hasErrors('subcategory')}" class="pf-alert pf-alert--error" th:errors="*{subcategory}" role="alert"></div>
     </div>
-    <div id="other-project-type-fields" th:hidden="*{!otherCategory}" class="pf-form-group">
-        <label for="otherProjectTypeDescription" class="pf-label">
-            <span>Was für ein Projekt ist es?</span>
-            <span class="pf-hint" style="font-weight: normal;">(optional)</span>
-        </label>
-        <input id="otherProjectTypeDescription" class="pf-input" th:field="*{otherProjectTypeDescription}" maxlength="100"
-               placeholder="z. B. privater Flohmarkt" th:disabled="*{!otherCategory}">
-        <div th:if="${#fields.hasErrors('otherProjectTypeDescription')}" class="pf-alert pf-alert--error"
-             th:errors="*{otherProjectTypeDescription}" role="alert"></div>
-    </div>
+
     <template id="subcategory-options">
         <option th:each="option : *{allSubcategories}"
                 th:value="${option.name()}" th:attr="data-category=${option.category.name()}"

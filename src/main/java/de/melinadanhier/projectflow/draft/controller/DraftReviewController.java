@@ -96,6 +96,15 @@ public class DraftReviewController {
         return reviewRedirect(projectId);
     }
 
+    @PostMapping("/projects/{projectId}/draft/sort-mode")
+    public String updateSortMode(@PathVariable UUID projectId,
+                                 @RequestParam de.melinadanhier.projectflow.plancontainer.model.SortMode sortMode,
+                                 @RequestParam long lockVersion,
+                                 @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        draftReviewService.updateSortMode(projectId, currentUser.userId(), sortMode, lockVersion);
+        return reviewRedirect(projectId);
+    }
+
     private String reviewRedirect(UUID projectId) {
         return "redirect:/projects/" + projectId + "/draft/review";
     }

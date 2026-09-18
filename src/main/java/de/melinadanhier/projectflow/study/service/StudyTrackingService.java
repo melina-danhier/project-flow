@@ -202,7 +202,7 @@ public class StudyTrackingService {
     @Transactional
     public void assignProjectIfActive(HttpSession httpSession, UUID projectId) {
         activeSession(httpSession)
-                .filter(session -> session.getProjectId() == null)
+                .filter(session -> session.getProjectId() == null || (projectRepository != null && !projectRepository.existsById(session.getProjectId())))
                 .ifPresent(session -> session.setProjectId(projectId));
     }
 

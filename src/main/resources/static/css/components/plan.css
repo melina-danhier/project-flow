@@ -474,8 +474,8 @@
     outline-offset: -2px;
 }
 
-.pf-calendar__task[draggable="true"] {
-    cursor: grab;
+.pf-calendar__task {
+    cursor: pointer;
 }
 
 .pf-plan-compact-element+.pf-plan-compact-element {
@@ -1177,11 +1177,30 @@ details[open] .pf-phase-caret {
     margin: 0 auto;
 }
 
+.pf-task-header-actions--desktop {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pf-task-header-actions--mobile {
+    display: none;
+}
+
 @media (max-width: 899px) {
     .pf-task-detail-grid {
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .pf-task-header-actions--desktop {
+        display: none !important;
+    }
+    .pf-task-header-actions--mobile {
+        display: block !important;
     }
 }
 
@@ -1213,14 +1232,10 @@ details[open] .pf-phase-caret {
     }
 
     /* Mobile Plan Card Simplification */
-    .plan-element .pf-element-item__right .pf-badge--gray,
-    .plan-element .pf-element-item__right .pf-badge--red,
-    .plan-element .pf-element-item__right .pf-badge--yellow,
-    .plan-element .pf-element-item__right .pf-badge--warning {
-        display: none;
-    }
     .plan-element .pf-element-item__right {
         gap: 0.35rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
     }
     .plan-element {
         padding: 0.65rem 0.75rem;

@@ -304,12 +304,6 @@ function initializePlanViews() {
         } else if (item.dateLabel) {
             metaParts.push(item.dateLabel);
         }
-        if (item.effort) {
-            metaParts.push(item.effort + ' Std.');
-        }
-        if (item.assignees) {
-            metaParts.push(item.assignees);
-        }
         if (metaParts.length > 0) {
             var meta = document.createElement('small');
             meta.className = 'pf-plan-compact-element__meta';
@@ -618,10 +612,19 @@ function initializePlanViews() {
             button.classList.toggle('is-active', active);
             button.setAttribute('aria-pressed', String(active));
         });
-        var currentLabel = switcher.querySelector('.pf-view-current-label');
-        if (currentLabel) {
-            var activeBtn = switcher.querySelector('[data-plan-view="' + view + '"]');
-            if (activeBtn) {
+        var activeBtn = switcher.querySelector('[data-plan-view="' + view + '"]');
+        var summary = switcher.querySelector('summary');
+        if (summary && activeBtn) {
+            var activeSvg = activeBtn.querySelector('svg');
+            var triggerSvg = summary.querySelector('svg:not(.pf-dropdown__chevron)');
+            if (activeSvg && triggerSvg) {
+                triggerSvg.innerHTML = activeSvg.innerHTML;
+                if (activeSvg.getAttribute('viewBox')) {
+                    triggerSvg.setAttribute('viewBox', activeSvg.getAttribute('viewBox'));
+                }
+            }
+            var currentLabel = summary.querySelector('.pf-view-current-label');
+            if (currentLabel) {
                 var span = activeBtn.querySelector('span');
                 currentLabel.textContent = span ? span.textContent.trim() : activeBtn.textContent.trim();
             }

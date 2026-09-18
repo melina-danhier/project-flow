@@ -181,7 +181,6 @@ class ProjectSecurityIntegrationTest {
         form.setSubcategory(ProjectSubCategory.MOVING);
         for (ProjectCategory category : java.util.List.of(ProjectCategory.EDUCATION, ProjectCategory.OTHER)) {
             form.setCategory(category);
-            form.setOtherProjectTypeDescription("Besonderes Vorhaben");
             assertThatThrownBy(() -> projectService.createProject(form, owner.getId()))
                     .isInstanceOf(DomainValidationException.class).hasMessageContaining("Unterkategorie");
         }

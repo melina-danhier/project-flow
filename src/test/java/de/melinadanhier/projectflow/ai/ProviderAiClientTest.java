@@ -57,7 +57,7 @@ class ProviderAiClientTest {
     private final AiPrompt prompt = new AiPrompt("v1", "instructions", "confirmed data");
     private final AiWizardSnapshot snapshot = new AiWizardSnapshot(
             "Projekt", null, null, null, CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER,
-            null, "Test", null, null, null);
+            null, null, null, null);
 
     @ParameterizedTest
     @MethodSource("providerOperations")

@@ -18,7 +18,6 @@ public record AiWizardSnapshot(
         CollaborationMode collaborationMode,
         ProjectCategory category,
         ProjectSubCategory subcategory,
-        String otherProjectTypeDescription,
         String projectGoal,
         String constraints,
         String additionalInformation,
@@ -42,12 +41,12 @@ public record AiWizardSnapshot(
     public AiWizardSnapshot(
             String title, String description, LocalDate startDate, LocalDate endDate,
             CollaborationMode collaborationMode, ProjectCategory category, ProjectSubCategory subcategory,
-            String otherProjectTypeDescription, String projectGoal, String constraints,
+            String projectGoal, String constraints,
             String additionalInformation, Integer durationDays, String availableWorkingTime,
             Map<String, String> projectSpecificAnswers
     ) {
         this(title, description, startDate, endDate, collaborationMode, category, subcategory,
-                otherProjectTypeDescription, projectGoal, constraints, additionalInformation,
+                projectGoal, constraints, additionalInformation,
                 durationDays, availableWorkingTime, projectSpecificAnswers, List.of());
     }
 
@@ -59,12 +58,11 @@ public record AiWizardSnapshot(
             CollaborationMode collaborationMode,
             ProjectCategory category,
             ProjectSubCategory subcategory,
-            String otherProjectTypeDescription,
             String projectGoal,
             String constraints,
             String additionalInformation
     ) {
-        this(title, description, startDate, endDate, collaborationMode, category, subcategory, otherProjectTypeDescription,
+        this(title, description, startDate, endDate, collaborationMode, category, subcategory,
                 projectGoal, constraints, additionalInformation, null, null,
                 Map.of(), List.of());
     }
@@ -72,11 +70,11 @@ public record AiWizardSnapshot(
     public AiWizardSnapshot(
             String title, String description, LocalDate startDate, LocalDate endDate,
             CollaborationMode collaborationMode, ProjectCategory category, ProjectSubCategory subcategory,
-            String otherProjectTypeDescription, String projectGoal, String constraints,
+            String projectGoal, String constraints,
             String additionalInformation, Integer durationDays, String availableWorkingTime
     ) {
         this(title, description, startDate, endDate, collaborationMode, category, subcategory,
-                otherProjectTypeDescription, projectGoal, constraints, additionalInformation,
+                projectGoal, constraints, additionalInformation,
                 durationDays, availableWorkingTime, Map.of(), List.of());
     }
 

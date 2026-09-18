@@ -178,7 +178,6 @@ class AiWorkflowIntegrationTest {
             assertThat(project.getStartDate()).isEqualTo(snapshot.startDate());
             assertThat(project.getEndDate()).isEqualTo(snapshot.endDate());
             assertThat(project.getCategory()).isEqualTo(snapshot.category());
-            assertThat(project.getOtherProjectTypeDescription()).isEqualTo(snapshot.otherProjectTypeDescription());
             assertThat(project.getSubcategory()).isEqualTo(snapshot.subcategory());
             assertThat(project.getCollaborationMode()).isEqualTo(snapshot.collaborationMode());
             assertThat(project.getCreationType()).isEqualTo(CreationType.AI);
@@ -255,7 +254,7 @@ class AiWorkflowIntegrationTest {
         User owner = saveUser("ai-rollback@example.org");
         AiWizardSnapshot invalid = new AiWizardSnapshot(
                 "Rollback", "x".repeat(2001), LocalDate.now(), LocalDate.now(),
-                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null,
                 "Nur Snapshot", null, null);
         long projectsBefore = projectRepository.count();
         long membersBefore = projectMemberRepository.count();
@@ -450,7 +449,7 @@ class AiWorkflowIntegrationTest {
                 LocalDate.of(2026, 9, 21),
                 CollaborationMode.GROUP,
                 ProjectCategory.HOME,
-                ProjectSubCategory.MOVING, null,
+                ProjectSubCategory.MOVING,
                 "Bis zum Monatsende umziehen",
                 "Budget 2.000 Euro",
                 "Kartons sind vorhanden",

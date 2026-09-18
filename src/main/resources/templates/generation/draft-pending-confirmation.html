@@ -67,15 +67,15 @@
             </div>
             <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--pf-border-color, #e2e8f0); display: flex; justify-content: flex-end;">
                 <form th:action="@{/projects/{projectId}/draft/discard(projectId=${summary.projectId})}" method="post"
-                      data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
-                      data-confirm-title="KI-Projekterstellung abbrechen?"
-                      data-confirm-btn="KI-Erstellung abbrechen"
+                      data-confirm="Möchtest du diesen KI-Entwurf wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
+                      data-confirm-title="Entwurf löschen?"
+                      data-confirm-btn="Entwurf löschen"
                       data-confirm-cancel="Zurück zum Entwurf"
                       data-confirm-variant="danger"
                       style="margin: 0;">
                     <input type="hidden" name="draftId" th:value="${summary.draftId}">
                     <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
-                    <button type="submit" class="pf-btn pf-btn--ghost" style="color: var(--pf-danger-text, #dc2626);">KI-Erstellung abbrechen</button>
+                    <button type="submit" class="pf-btn pf-btn--ghost" style="color: var(--pf-danger-text, #dc2626);">Entwurf löschen</button>
                 </form>
             </div>
         </div>
@@ -95,15 +95,15 @@
             </form>
             <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--pf-border-color, #e2e8f0); display: flex; justify-content: flex-end;">
                 <form th:action="@{/projects/{projectId}/draft/discard(projectId=${summary.projectId})}" method="post"
-                      data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
-                      data-confirm-title="KI-Projekterstellung abbrechen?"
-                      data-confirm-btn="KI-Erstellung abbrechen"
+                      data-confirm="Möchtest du diesen KI-Entwurf wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
+                      data-confirm-title="Entwurf löschen?"
+                      data-confirm-btn="Entwurf löschen"
                       data-confirm-cancel="Zurück zum Entwurf"
                       data-confirm-variant="danger"
                       style="margin: 0;">
                     <input type="hidden" name="draftId" th:value="${summary.draftId}">
                     <input type="hidden" name="lockVersion" th:value="${summary.lockVersion}">
-                    <button type="submit" class="pf-btn pf-btn--ghost" style="color: var(--pf-danger-text, #dc2626);">KI-Erstellung abbrechen</button>
+                    <button type="submit" class="pf-btn pf-btn--ghost" style="color: var(--pf-danger-text, #dc2626);">Entwurf löschen</button>
                 </form>
             </div>
         </div>

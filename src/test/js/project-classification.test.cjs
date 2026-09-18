@@ -21,7 +21,7 @@ test('dependent dropdown preserves valid selections, clears old categories and d
     };
     const nodes = {
         category, subcategory,
-        'subcategory-fields': {}, 'other-project-type-fields': {}, otherProjectTypeDescription: {},
+        'subcategory-fields': {},
         'subcategory-options': { content: { querySelectorAll: () => [
             new Option('Abschlussarbeit', 'THESIS', 'EDUCATION'),
             new Option('Lernplan', 'LEARNING_PLAN', 'EDUCATION'),
@@ -43,10 +43,8 @@ test('dependent dropdown preserves valid selections, clears old categories and d
     assert.equal(subcategory.value, '');
     assert.equal(subcategory.disabled, true);
     assert.equal(nodes['subcategory-fields'].hidden, true);
-    assert.equal(nodes.otherProjectTypeDescription.required, true);
     category.value = 'EDUCATION';
     category.change();
     assert.equal(subcategory.value, '');
     assert.equal(subcategory.disabled, false);
-    assert.equal(nodes.otherProjectTypeDescription.disabled, true);
 });

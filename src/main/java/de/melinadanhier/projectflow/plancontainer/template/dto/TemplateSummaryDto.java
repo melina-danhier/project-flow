@@ -19,8 +19,6 @@ public class TemplateSummaryDto implements ProjectClassification {
     private String title;
     private String description;
     private ProjectCategory category;
-    private String otherProjectTypeDescription;
-
     private ProjectSubCategory subcategory;
     private Integer recommendedDurationDays;
     private CollaborationMode collaborationMode;

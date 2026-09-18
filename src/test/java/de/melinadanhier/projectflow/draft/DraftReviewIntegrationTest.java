@@ -663,6 +663,36 @@ class DraftReviewIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void draftSortModeCanBeUpdatedAndAppliesToReview() throws Exception {
+        Fixture f = fixture(null, null);
+        DraftReviewDto current = review(f);
+        mvc.perform(post(f.url() + "/sort-mode")
+                        .param("sortMode", "DATE")
+                        .param("lockVersion", String.valueOf(current.getLockVersion()))
+                        .with(user(f.owner())).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(f.reviewUrl()));
+
+        DraftReviewDto updated = review(f);
+        assertThat(updated.getSortMode()).isEqualTo(de.melinadanhier.projectflow.plancontainer.model.SortMode.DATE);
+    }
+
+    @Test
+    void discardDraftDeletesDraftAndFlashesMessage() throws Exception {
+        Fixture f = fixture(null, null);
+        DraftReviewDto current = review(f);
+        mvc.perform(post(f.url() + "/discard")
+                        .param("draftId", current.getId().toString())
+                        .param("lockVersion", String.valueOf(current.getLockVersion()))
+                        .with(user(f.owner())).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects"))
+                .andExpect(flash().attribute("successMessage", "Der Entwurf wurde gelöscht."));
+
+        assertThat(drafts.findByProjectId(f.projectId())).isEmpty();
+    }
+
     private Fixture fixture(String firstAssumption, String secondAssumption) {
         return new TransactionTemplate(transactionManager).execute(status -> {
             User owner = new User();

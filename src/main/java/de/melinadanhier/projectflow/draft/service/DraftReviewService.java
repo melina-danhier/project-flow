@@ -99,7 +99,8 @@ public class DraftReviewService {
                     for (int position = 0; position < manualOrder.size(); position++) {
                         manualPositions.put(manualOrder.get(position).getId(), position);
                     }
-                    dto.setElements(PlanOrdering.display(manualOrder, draft.getProject().getSortMode(), this::date).stream()
+                    var sortMode = draft.getSortMode() != null ? draft.getSortMode() : draft.getProject().getSortMode();
+                    dto.setElements(PlanOrdering.display(manualOrder, sortMode, this::date).stream()
                             .filter(element -> matches(element, reviewFilter))
                             .map(element -> {
                                 var elementDto = draftMapper.toDto(element);
@@ -122,7 +123,8 @@ public class DraftReviewService {
         for (int position = 0; position < unsectioned.size(); position++) {
             unsectionedPositions.put(unsectioned.get(position).getId(), position);
         }
-        review.setUnsectionedElements(PlanOrdering.display(unsectioned, draft.getProject().getSortMode(), this::date).stream()
+        var unsectionedSortMode = draft.getSortMode() != null ? draft.getSortMode() : draft.getProject().getSortMode();
+        review.setUnsectionedElements(PlanOrdering.display(unsectioned, unsectionedSortMode, this::date).stream()
                 .filter(element -> matches(element, reviewFilter))
                 .map(element -> {
                     var dto = draftMapper.toDto(element);
@@ -295,6 +297,18 @@ public class DraftReviewService {
         order.remove(moved);
         PlanOrdering.place(order, moved, form.getTargetPosition(),
                 DraftSection::getSortOrder, DraftSection::setSortOrder);
+    }
+
+    @Transactional
+    public void updateSortMode(UUID projectId, UUID userId, de.melinadanhier.projectflow.plancontainer.model.SortMode sortMode, long lockVersion) {
+        if (sortMode == null) {
+            throw new DomainValidationException("Bitte wähle einen Sortiermodus aus.");
+        }
+        DraftPlan draft = editable(projectId, userId, lockVersion);
+        draft.setSortMode(sortMode);
+        if (draft.getProject() != null) {
+            draft.getProject().setSortMode(sortMode);
+        }
     }
 
     @Transactional

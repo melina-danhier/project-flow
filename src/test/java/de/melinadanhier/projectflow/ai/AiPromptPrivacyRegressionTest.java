@@ -124,7 +124,6 @@ class AiPromptPrivacyRegressionTest {
                 CollaborationMode.INDIVIDUAL,
                 ProjectCategory.OTHER,
                 null,
-                "Privatumzug",
                 "Umzug organisieren",
                 null,
                 null

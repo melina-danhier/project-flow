@@ -40,7 +40,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
               and (
                    lower(project.title) like lower(concat('%', :query, '%'))
                 or lower(coalesce(project.description, '')) like lower(concat('%', :query, '%'))
-                or lower(coalesce(project.otherProjectTypeDescription, '')) like lower(concat('%', :query, '%'))
                 or (:hasCategories = true and project.category in :categories)
                 or (:hasSubcategories = true and project.subcategory in :subcategories)
               )

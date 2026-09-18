@@ -596,7 +596,7 @@ class AiPreCheckWizardIntegrationTest {
         return new AiWizardSnapshot(
                 "Umzug planen", "Wohnungswechsel organisieren",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
-                CollaborationMode.INDIVIDUAL, ProjectCategory.HOME, ProjectSubCategory.MOVING, null,
+                CollaborationMode.INDIVIDUAL, ProjectCategory.HOME, ProjectSubCategory.MOVING,
                 "Rechtzeitig umziehen", "Budget 2.000 Euro", "Kartons vorhanden",
                 21, "Etwa 8 Stunden pro Woche");
     }

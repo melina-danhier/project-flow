@@ -23,13 +23,16 @@ class AiActionPlacementTemplateTest {
     }
 
     @Test
-    void taskAiActionRemainsInMenuAndAppearsInHeaderActions() throws IOException {
+    void taskAiActionPlacementMatchesDesktopAndMobile() throws IOException {
         String detail = Files.readString(Path.of(
                 "src/main/resources/templates/projects/tasks/detail.html"));
 
-        assertThat(detail).contains("<span>Mit KI verbessern</span>");
-        assertThat(detail).contains("Aufgabe mit KI anpassen");
-        assertThat(detail.indexOf("Aufgabe mit KI anpassen"))
+        assertThat(detail).contains("pf-task-header-actions--desktop");
+        assertThat(detail).contains("pf-task-header-actions--mobile");
+        assertThat(detail).contains("Mit KI anpassen");
+        assertThat(detail).contains("<span>Löschen</span>");
+        assertThat(detail).contains("pf-task-prerequisites-section");
+        assertThat(detail.indexOf("Mit KI anpassen"))
                 .isLessThan(detail.indexOf("<span class=\"pf-detail-prop__label\">Beschreibung</span>"));
     }
 }

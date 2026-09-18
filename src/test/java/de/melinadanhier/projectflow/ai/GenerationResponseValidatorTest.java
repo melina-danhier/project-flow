@@ -267,7 +267,7 @@ class GenerationResponseValidatorTest {
     private AiGenerationRequest request(LocalDate start, LocalDate end) {
         return new AiGenerationRequest(new AiWizardSnapshot(
                 "Projekt", null, start, end,
-                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null,
                 null, null, null, null, null), List.of());
     }
 

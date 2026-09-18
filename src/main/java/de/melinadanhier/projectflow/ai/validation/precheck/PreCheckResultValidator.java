@@ -69,7 +69,7 @@ public class PreCheckResultValidator {
     }
 
     private boolean isSupportedInputField(String field) {
-        return field != null && (List.of("title", "description", "startDate", "endDate", "otherProjectTypeDescription",
+        return field != null && (List.of("title", "description", "startDate", "endDate",
                         "projectGoal", "constraints", "additionalInformation", "durationDays",
                         "availableWorkingTime").contains(field)
                 || field.startsWith("projectSpecificAnswers."));

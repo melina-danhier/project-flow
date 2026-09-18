@@ -246,7 +246,7 @@ class AiPlanGenerationServiceTest {
     private AiWizardSnapshot snapshot() {
         return new AiWizardSnapshot(
                 "Projekt", null, null, null,
-                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Test",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null,
                 null, null, null);
     }
 }

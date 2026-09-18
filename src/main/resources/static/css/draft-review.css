@@ -395,20 +395,33 @@ details.draft-section[open] .pf-phase-caret {
     opacity: 0.65;
     margin-right: 0.35rem;
     flex-shrink: 0;
-    cursor: grab;
+    cursor: grab !important;
     pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+}
+
+.pf-drag-handle-visual:hover {
+    color: var(--pf-primary);
+    opacity: 1;
+}
+
+.pf-drag-handle-visual:active {
+    cursor: grabbing !important;
 }
 
 .plan-element[draggable="true"],
 .draft-section[draggable="true"] {
-    cursor: grab;
+    cursor: default;
 }
 
-.plan-element[draggable="true"]:active,
-.draft-section[draggable="true"]:active,
+.plan-element[data-detail-url] {
+    cursor: pointer !important;
+}
+
 .plan-element.is-dragging,
 .draft-section.is-dragging {
-    cursor: grabbing;
+    cursor: grabbing !important;
 }
 
 .is-dragging {

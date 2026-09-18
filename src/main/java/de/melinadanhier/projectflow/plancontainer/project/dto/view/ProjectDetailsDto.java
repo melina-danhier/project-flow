@@ -30,8 +30,6 @@ public class ProjectDetailsDto implements ProjectClassification, ProjectCollabor
     private LocalDate startDate;
     private LocalDate endDate;
     private ProjectCategory category;
-    private String otherProjectTypeDescription;
-
     private ProjectSubCategory subcategory;
     private CollaborationMode collaborationMode;
 

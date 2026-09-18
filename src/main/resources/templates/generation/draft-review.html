@@ -59,14 +59,14 @@
                     class="pf-btn pf-btn--secondary pf-btn--sm" id="open-regenerate-modal-btn">Plan neu generieren</button>
             <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
                   th:action="@{/projects/{projectId}/draft/discard(projectId=${draft.projectId})}" method="post"
-                  data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
-                  data-confirm-title="KI-Projekterstellung abbrechen?"
-                  data-confirm-btn="KI-Erstellung abbrechen"
+                  data-confirm="Möchtest du diesen KI-Entwurf wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
+                  data-confirm-title="Entwurf löschen?"
+                  data-confirm-btn="Entwurf löschen"
                   data-confirm-cancel="Zurück zum Entwurf"
                   data-confirm-variant="danger">
                 <input type="hidden" name="draftId" th:value="${draft.id}">
                 <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
-                <button class="pf-btn pf-btn--ghost pf-btn--sm" type="submit">Abbrechen</button>
+                <button class="pf-btn pf-btn--ghost pf-btn--sm" type="submit">Entwurf löschen</button>
             </form>
         </div>
         <input type="hidden" id="draft-lock-version" name="lockVersion" th:value="${draft.lockVersion}">
@@ -76,9 +76,9 @@
     <!-- Flash Messages (dismissible) -->
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
-    <!-- Toolbar: Filter bar + Sorting tooltip + View switcher -->
+    <!-- Toolbar: Filter bar + Sorting control + View switcher -->
     <div class="pf-plan-toolbar">
-        <div class="pf-plan-toolbar__left">
+        <div class="pf-plan-toolbar__left" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <form class="pf-review-filter-form" method="get" th:action="@{/projects/{projectId}/draft/review(projectId=${draft.projectId})}">
                 <label for="review-status-filter" class="pf-filter-label">Filter:</label>
                 <select id="review-status-filter" name="reviewStatus" class="pf-select pf-select--sm" onchange="this.form.submit()">
@@ -89,6 +89,25 @@
                     <option value="REJECTED" th:selected="${draft.activeReviewFilter == 'REJECTED'}">Abgelehnte Elemente</option>
                 </select>
             </form>
+
+            <!-- Sorting Control -->
+            <div class="pf-sort-control-wrap" th:if="${draft.owner and draft.status.name() != 'APPLIED'}">
+                <form th:action="@{/projects/{projectId}/draft/sort-mode(projectId=${draft.projectId})}" method="post" id="draft-sort-mode-form" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
+                    <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+                    <label for="draft-sort-mode-select" class="pf-sort-label">Sortierung:</label>
+                    <select id="draft-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; font-size:0.85rem;" onchange="this.form.requestSubmit()">
+                        <option value="DATE" th:selected="${draft.sortMode != null and draft.sortMode.name() == 'DATE'}">Nach Datum</option>
+                        <option value="MANUAL" th:selected="${draft.sortMode != null and draft.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
+                    </select>
+                    <span class="pf-info-tooltip" title="Nach Datum: Datierte Elemente werden chronologisch einsortiert. Manuell: Elemente können frei verschoben werden." aria-label="Sortierhinweis">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </span>
+                </form>
+            </div>
         </div>
 
         <!-- View Selection Dropdown -->
@@ -96,10 +115,8 @@
             <details class="pf-dropdown pf-dropdown--right pf-plan-view-dropdown pf-plan-view-switcher" role="group" aria-label="Entwurfsansicht auswählen">
                 <summary class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="14" width="7" height="7"></rect>
-                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
                     </svg>
                     <span class="pf-view-current-label">Liste</span>
                     <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

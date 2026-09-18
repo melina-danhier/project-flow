@@ -29,8 +29,6 @@ public class TemplateDetailsDto implements ProjectClassification {
     private StructureMode structureMode;
     private SortMode sortMode;
     private ProjectCategory category;
-    private String otherProjectTypeDescription;
-
     private ProjectSubCategory subcategory;
     private Integer recommendedDurationDays;
     private CollaborationMode collaborationMode;

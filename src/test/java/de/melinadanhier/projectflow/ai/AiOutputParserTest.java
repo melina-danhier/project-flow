@@ -134,7 +134,7 @@ class AiOutputParserTest {
     void workflowPayloadsRoundTripAndLegacyJsonStringsRemainReadable() {
         AiWizardSnapshot snapshot = new AiWizardSnapshot(
                 "Testprojekt", "Beschreibung", null, null,
-                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null, "Sonstiges",
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null,
                 "Ziel", null, null);
         var preCheckResult = parsePreCheck(problemJson("WARNING", "Knapp"));
 

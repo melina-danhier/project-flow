@@ -89,7 +89,6 @@ public class ProjectController {
         form.setDescription(project.getDescription());
         form.setCategory(project.getCategory());
         form.setSubcategory(project.getSubcategory());
-        form.setOtherProjectTypeDescription(project.getOtherProjectTypeDescription());
         form.setCollaborationMode(project.getCollaborationMode());
         form.setStartDate(project.getStartDate());
         form.setEndDate(project.getEndDate());

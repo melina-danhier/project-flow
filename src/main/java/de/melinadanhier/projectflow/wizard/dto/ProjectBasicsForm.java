@@ -36,9 +36,6 @@ public class ProjectBasicsForm implements ProjectClassification {
 
     private ProjectSubCategory subcategory;
 
-    @Size(max = 100, message = "Die Beschreibung darf höchstens 100 Zeichen lang sein.")
-    private String otherProjectTypeDescription;
-
     @NotNull(message = "Bitte wähle Einzel- oder Gruppenprojekt aus.")
     private CollaborationMode collaborationMode = CollaborationMode.INDIVIDUAL;
 
@@ -109,7 +106,6 @@ public class ProjectBasicsForm implements ProjectClassification {
         form.setTitle(state.getTitle());
         form.setDescription(state.getDescription());
         form.setCategory(state.getCategory() == null ? ProjectCategory.OTHER : state.getCategory());
-        form.setOtherProjectTypeDescription(state.getOtherProjectTypeDescription());
         form.setSubcategory(state.getSubcategory());
         form.setCollaborationMode(state.getCollaborationMode() == null ? CollaborationMode.INDIVIDUAL : state.getCollaborationMode());
         form.setStartDate(state.getStartDate());

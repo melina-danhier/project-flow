@@ -62,7 +62,6 @@ public class AiWorkflowInitializationService {
         project.setStartDate(snapshot.startDate());
         project.setEndDate(snapshot.endDate());
         project.setCategory(snapshot.category());
-        project.setOtherProjectTypeDescription(snapshot.otherProjectTypeDescription());
         project.setSubcategory(snapshot.subcategory());
         project.setCollaborationMode(snapshot.collaborationMode());
         project.setCreationType(CreationType.AI);
@@ -97,8 +96,7 @@ public class AiWorkflowInitializationService {
         if (snapshot == null) {
             throw new DomainValidationException("Die bestätigten Projektdaten fehlen.");
         }
-        ProjectClassificationValidator.requireValid(snapshot.category(), snapshot.subcategory(),
-                snapshot.otherProjectTypeDescription());
+        ProjectClassificationValidator.requireValid(snapshot.category(), snapshot.subcategory());
         if (snapshot.title() == null || snapshot.title().isBlank() || snapshot.title().length() > 100) {
             throw new DomainValidationException("Die bestätigten Projektdaten enthalten keinen gültigen Titel.");
         }

@@ -159,7 +159,6 @@ public class AiPreCheckReviewService {
                 parseDate(changes, "startDate", snapshot.startDate()),
                 parseDate(changes, "endDate", snapshot.endDate()),
                 snapshot.collaborationMode(), snapshot.category(), snapshot.subcategory(),
-                changes.getOrDefault("otherProjectTypeDescription", snapshot.otherProjectTypeDescription()),
                 changes.getOrDefault("projectGoal", snapshot.projectGoal()),
                 changes.getOrDefault("constraints", snapshot.constraints()),
                 changes.getOrDefault("additionalInformation", snapshot.additionalInformation()),
@@ -203,7 +202,6 @@ public class AiPreCheckReviewService {
             case "description" -> snapshot.description();
             case "startDate" -> snapshot.startDate();
             case "endDate" -> snapshot.endDate();
-            case "otherProjectTypeDescription" -> snapshot.otherProjectTypeDescription();
             case "projectGoal" -> snapshot.projectGoal();
             case "constraints" -> snapshot.constraints();
             case "additionalInformation" -> snapshot.additionalInformation();
@@ -226,7 +224,7 @@ public class AiPreCheckReviewService {
         return new AiWizardSnapshot(
                 snapshot.title(), snapshot.description(), snapshot.startDate(), snapshot.endDate(),
                 snapshot.collaborationMode(), snapshot.category(), snapshot.subcategory(),
-                snapshot.otherProjectTypeDescription(), snapshot.projectGoal(), snapshot.constraints(),
+                snapshot.projectGoal(), snapshot.constraints(),
                 snapshot.additionalInformation(), snapshot.durationDays(), snapshot.availableWorkingTime(), answers);
     }
 

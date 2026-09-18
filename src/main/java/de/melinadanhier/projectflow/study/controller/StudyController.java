@@ -17,16 +17,35 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@RequiredArgsConstructor
 public class StudyController {
     private final StudyTrackingService trackingService;
     private final StudyUserService studyUserService;
     private final StudyEnrollmentService enrollmentService;
+    private final ProjectRepository projectRepository;
+
+    @Autowired
+    public StudyController(StudyTrackingService trackingService,
+                           StudyUserService studyUserService,
+                           StudyEnrollmentService enrollmentService,
+                           @Autowired(required = false) ProjectRepository projectRepository) {
+        this.trackingService = trackingService;
+        this.studyUserService = studyUserService;
+        this.enrollmentService = enrollmentService;
+        this.projectRepository = projectRepository;
+    }
+
+    public StudyController(StudyTrackingService trackingService,
+                           StudyUserService studyUserService,
+                           StudyEnrollmentService enrollmentService) {
+        this(trackingService, studyUserService, enrollmentService, null);
+    }
 
     @Value("${projectflow.study.questionnaire-url:}")
     private String questionnaireUrl;
@@ -102,14 +121,24 @@ public class StudyController {
         if (session != null && session.getAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE) != null) {
             return "redirect:/study/completed";
         }
-        UUID projectId = trackingService.activeProjectId(session)
-                .orElseThrow(() -> new IllegalStateException("Kein Studienprojekt vorhanden."));
-        if (trackingService.canCompleteTaskOne(session)) {
-            trackingService.completeTaskOne(session);
-        } else {
-            trackingService.beginTaskTwo(session);
+        var optProjectId = trackingService.activeProjectId(session);
+        if (optProjectId.isEmpty()) {
+            return "redirect:/projects";
         }
-        return "redirect:/projects/" + projectId + "/plan";
+        UUID projectId = optProjectId.get();
+        if (projectRepository != null && !projectRepository.existsById(projectId)) {
+            return "redirect:/projects";
+        }
+        try {
+            if (trackingService.canCompleteTaskOne(session)) {
+                trackingService.completeTaskOne(session);
+            } else {
+                trackingService.beginTaskTwo(session);
+            }
+            return "redirect:/projects/" + projectId + "/plan";
+        } catch (Exception ex) {
+            return "redirect:/projects";
+        }
     }
 
     @GetMapping("/study/return")
@@ -118,8 +147,12 @@ public class StudyController {
             return "redirect:/study/completed";
         }
         if (trackingService.canCompleteTaskOne(session)) {
-            UUID projectId = trackingService.completeTaskOne(session);
-            return "redirect:/projects/" + projectId + "/plan";
+            try {
+                UUID projectId = trackingService.completeTaskOne(session);
+                return "redirect:/projects/" + projectId + "/plan";
+            } catch (Exception ex) {
+                return "redirect:/projects";
+            }
         }
         trackingService.completeCurrentTask(session);
         return questionnaireRedirect();

@@ -62,7 +62,7 @@ public class PreCheckPromptBuilder {
             - Jede Änderung enthält field, previousValue und newValue. previousValue entspricht exakt dem
               bestätigten Wizard-Wert; bei einem nicht angegebenen Wert lautet es „nicht angegeben“.
               newValue ist neu, konkret und direkt anwendbar.
-            - Zulässige Felder: title, description, startDate, endDate, otherProjectTypeDescription,
+            - Zulässige Felder: title, description, startDate, endDate,
               projectGoal, constraints, additionalInformation, durationDays, availableWorkingTime sowie
               projectSpecificAnswers.<Schlüssel>. durationDays ist eine positive ganze Zahl. Änderungen der
               Arbeitszeit enthalten eine konkrete Stundenangabe. Eine Umfangsreduzierung benennt vollständig,

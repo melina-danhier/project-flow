@@ -90,16 +90,18 @@ public class DraftApplicationController {
         return "redirect:/projects/new/ai/status/" + workflowId;
     }
 
-    @PostMapping("/projects/{projectId}/draft/discard")
+    @PostMapping({"/projects/{projectId}/draft/discard", "/projects/{projectId}/draft/delete"})
     public String discard(@PathVariable UUID projectId,
                           @RequestParam UUID draftId,
                           @RequestParam long lockVersion,
                           @AuthenticationPrincipal AuthenticatedUser currentUser,
+                          RedirectAttributes redirectAttributes,
                           HttpSession session) {
         draftApplicationService.discard(projectId, draftId, currentUser.userId(), lockVersion);
         projectService.deleteDraftProjectPermanently(projectId, currentUser.userId());
         wizardService.clearOwned(currentUser.userId(), session);
         offerFeedback(session, AiFeedbackContext.DRAFT_DELETED, draftId, "/projects");
+        redirectAttributes.addFlashAttribute("successMessage", "Der Entwurf wurde gelöscht.");
         return "redirect:/projects";
     }
 

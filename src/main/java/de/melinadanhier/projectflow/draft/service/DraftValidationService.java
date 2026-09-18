@@ -73,7 +73,7 @@ public class DraftValidationService {
                 .map(workflow -> payloadCodec.readSnapshot(workflow.getConfirmedSnapshot()))
                 .orElseGet(() -> new AiWizardSnapshot(project.getTitle(), project.getDescription(),
                         project.getStartDate(), project.getEndDate(), project.getCollaborationMode(),
-                        project.getCategory(), project.getSubcategory(), project.getOtherProjectTypeDescription(), null, null, null));
+                        project.getCategory(), project.getSubcategory(), null, null, null));
         var validationSections = new java.util.ArrayList<GeneratedSection>();
         Set<DraftPlanElement> included = new HashSet<>(includedElements);
         includedSections.stream().map(section -> validationSection(

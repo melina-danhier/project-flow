@@ -37,8 +37,11 @@ class StudyModeRestrictionFilterTest {
 
     @ParameterizedTest
     @MethodSource("allowedRequests")
-    void keepsRelevantStudyFunctionsAvailable(String method, String path) throws Exception {
+    void keepsRelevantStudyFunctionsAvailable(String method, String path, String parameter, String value) throws Exception {
         MockHttpServletRequest request = activeStudyRequest(method, path);
+        if (parameter != null) {
+            request.addParameter(parameter, value);
+        }
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 
@@ -93,15 +96,8 @@ class StudyModeRestrictionFilterTest {
                 Arguments.of("POST", "/register", null, null),
                 Arguments.of("POST", "/logout", null, null),
                 Arguments.of("GET", "/study/start", null, null),
-                Arguments.of("POST", "/projects/123/archive", null, null),
-                Arguments.of("POST", "/projects/123/trash", null, null),
-                Arguments.of("POST", "/projects/123/reactivate", null, null),
-                Arguments.of("POST", "/projects/123/delete", null, null),
-                Arguments.of("POST", "/projects/bulk/delete", null, null),
                 Arguments.of("GET", "/projects/123/members", null, null),
                 Arguments.of("POST", "/projects/123/members/456/remove", null, null),
-                Arguments.of("GET", "/projects", "location", "TRASH"),
-                Arguments.of("GET", "/projects/search", "location", "ARCHIVE"),
                 Arguments.of("GET", "/projects/new", "templateId", UUID.randomUUID().toString()),
                 Arguments.of("GET", "/projects/new/template", null, null),
                 Arguments.of("POST", "/projects/new/template/123", null, null),
@@ -111,18 +107,25 @@ class StudyModeRestrictionFilterTest {
 
     private static Stream<Arguments> allowedRequests() {
         return Stream.of(
-                Arguments.of("GET", "/projects"),
-                Arguments.of("GET", "/projects/search"),
-                Arguments.of("GET", "/projects/new"),
-                Arguments.of("POST", "/projects/new/method"),
-                Arguments.of("GET", "/projects/new/ai/details"),
-                Arguments.of("GET", "/status/123"),
-                Arguments.of("GET", "/projects/123/draft/review"),
-                Arguments.of("GET", "/projects/123/plan"),
-                Arguments.of("GET", "/projects/123/tasks/456"),
-                Arguments.of("GET", "/projects/123/plan/ai-change"),
-                Arguments.of("GET", "/projects/123/plan-elements/TASK/456/improve"),
-                Arguments.of("GET", "/study/return")
+                Arguments.of("GET", "/projects", null, null),
+                Arguments.of("GET", "/projects/search", null, null),
+                Arguments.of("GET", "/projects/new", null, null),
+                Arguments.of("POST", "/projects/new/method", null, null),
+                Arguments.of("GET", "/projects/new/ai/details", null, null),
+                Arguments.of("GET", "/status/123", null, null),
+                Arguments.of("GET", "/projects/123/draft/review", null, null),
+                Arguments.of("GET", "/projects/123/plan", null, null),
+                Arguments.of("GET", "/projects/123/tasks/456", null, null),
+                Arguments.of("GET", "/projects/123/plan/ai-change", null, null),
+                Arguments.of("GET", "/projects/123/plan-elements/TASK/456/improve", null, null),
+                Arguments.of("GET", "/study/return", null, null),
+                Arguments.of("POST", "/projects/123/archive", null, null),
+                Arguments.of("POST", "/projects/123/trash", null, null),
+                Arguments.of("POST", "/projects/123/reactivate", null, null),
+                Arguments.of("POST", "/projects/123/delete", null, null),
+                Arguments.of("POST", "/projects/bulk/delete", null, null),
+                Arguments.of("GET", "/projects", "location", "TRASH"),
+                Arguments.of("GET", "/projects/search", "location", "ARCHIVE")
         );
     }
 }

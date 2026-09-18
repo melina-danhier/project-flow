@@ -17,8 +17,7 @@ public class ProjectClassificationValidator
         if (value == null) {
             return true;
         }
-        var errors = errors(value.getCategory(), value.getSubcategory(),
-                value.getOtherProjectTypeDescription());
+        var errors = errors(value.getCategory(), value.getSubcategory());
         if (!errors.isEmpty()) {
             context.disableDefaultConstraintViolation();
             errors.forEach((field, message) -> context.buildConstraintViolationWithTemplate(message)
@@ -27,22 +26,22 @@ public class ProjectClassificationValidator
         return errors.isEmpty();
     }
 
-    public static void requireValid(ProjectCategory category, ProjectSubCategory subcategory,
-                                    String otherDescription) {
-        var errors = errors(category, subcategory, otherDescription);
+    public static void requireValid(ProjectCategory category, ProjectSubCategory subcategory) {
+        var errors = errors(category, subcategory);
         if (!errors.isEmpty()) {
             throw new DomainValidationException(errors.values().iterator().next());
         }
     }
 
-    private static Map<String, String> errors(ProjectCategory category, ProjectSubCategory subcategory,
-                                               String otherDescription) {
+    public static void requireValid(ProjectCategory category, ProjectSubCategory subcategory,
+                                    String otherDescription) {
+        requireValid(category, subcategory);
+    }
+
+    private static Map<String, String> errors(ProjectCategory category, ProjectSubCategory subcategory) {
         Map<String, String> errors = new LinkedHashMap<>();
         if (!ProjectSubCategory.isValidFor(category, subcategory)) {
             errors.put("subcategory", "Bitte wähle eine Unterkategorie der gewählten Oberkategorie oder keine Unterkategorie.");
-        }
-        if (otherDescription != null && otherDescription.length() > 100) {
-            errors.put("otherProjectTypeDescription", "Die Beschreibung darf höchstens 100 Zeichen lang sein.");
         }
         return errors;
     }

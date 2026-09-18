@@ -1327,6 +1327,45 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
    ========================================================================== */
 
 @media (max-width: 650px) {
+    main {
+        width: calc(100% - 1.25rem);
+        margin: 1.25rem auto 2.5rem;
+    }
+
+    h1 {
+        font-size: 1.45rem;
+        line-height: 1.25;
+        margin-bottom: 0.5rem;
+    }
+
+    h2 {
+        font-size: 1.2rem;
+        margin-top: 1.25rem;
+        margin-bottom: 0.65rem;
+    }
+
+    h3 {
+        font-size: 1.02rem;
+    }
+
+    .pf-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .pf-page-header__actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .pf-card {
+        padding: 1rem;
+    }
+
     .site-header__inner {
         height: 64px;
     }
@@ -1347,6 +1386,16 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
 
     .site-footer__bottom {
         margin-left: 0;
+    }
+
+    .pf-dropdown__menu {
+        max-width: calc(100vw - 2rem);
+    }
+
+    .pf-dropdown__item {
+        padding: 0.6rem 0.85rem;
+        font-size: 0.88rem;
+        min-height: 38px;
     }
 }
 
@@ -1529,19 +1578,59 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     align-items: center;
     justify-content: center;
     color: var(--pf-text-muted);
-    opacity: 0.45;
+    opacity: 0.6;
     margin-right: 0.35rem;
     flex-shrink: 0;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: grab !important;
+    touch-action: none;
+    user-select: none;
+}
+
+.pf-drag-handle-visual:hover {
+    color: var(--pf-primary);
+    opacity: 1;
 }
 
 [draggable="true"] {
-    cursor: grab;
+    cursor: default;
 }
 
-[draggable="true"]:active,
-.is-dragging {
-    cursor: grabbing;
+/* Ensure clickable element cards have normal pointer cursor */
+.plan-element[data-detail-url],
+.pf-element-item[data-detail-url],
+.pf-plan-compact-element[data-detail-url] {
+    cursor: pointer !important;
+}
+
+/* Grab cursor exclusively on drag handles */
+.pf-drag-handle,
+.pf-drag-handle-visual,
+.element-drag-handle,
+.pf-compact-drag-handle,
+.pf-compact-phase-drag-handle,
+.drag-handle,
+.pf-phase-drag-handle,
+.pf-section-drag-handle {
+    cursor: grab !important;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.pf-drag-handle:active,
+.pf-drag-handle-visual:active,
+.element-drag-handle:active,
+.pf-compact-drag-handle:active,
+.pf-compact-phase-drag-handle:active,
+.drag-handle:active,
+.pf-phase-drag-handle:active,
+.pf-section-drag-handle:active {
+    cursor: grabbing !important;
+}
+
+.is-dragging,
+.is-dragging * {
+    cursor: grabbing !important;
 }
 
 .pf-select--sm {

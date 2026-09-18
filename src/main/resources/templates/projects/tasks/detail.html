@@ -21,31 +21,44 @@
         </div>
 
         <div class="pf-page-header__actions" th:if="${task.editable}">
-            <a class="pf-btn pf-btn--outline pf-btn--sm"
-               th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                </svg>
-                <span>Aufgabe mit KI anpassen</span>
-            </a>
-            <!-- Right-Aligned Overflow Menu for Secondary Actions -->
-            <details class="pf-dropdown pf-dropdown--right">
-                <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Weitere Aktionen" aria-label="Weitere Aktionen">
+            <!-- Desktop: Visible Buttons side-by-side (NO extra dropdown menu) -->
+            <div class="pf-task-header-actions--desktop">
+                <a class="pf-btn pf-btn--outline pf-btn--sm"
+                   th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                    </svg>
+                    <span>Mit KI anpassen</span>
+                </a>
+                <form th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post" style="margin: 0;">
+                    <button type="submit" class="pf-btn pf-btn--danger-outline pf-btn--sm" onclick="return confirm('Möchtest du diese Aufgabe wirklich löschen?');">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        <span>Löschen</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Mobile: Compact Menu ONLY (No separate buttons) -->
+            <details class="pf-dropdown pf-dropdown--right pf-task-header-actions--mobile">
+                <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Aktionen" aria-label="Aktionen">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="1.5"></circle>
                         <circle cx="12" cy="5" r="1.5"></circle>
                         <circle cx="12" cy="19" r="1.5"></circle>
                     </svg>
                 </summary>
-                <div class="pf-dropdown__menu" style="min-width: 220px; width: max-content; max-width: calc(100vw - 2rem); white-space: nowrap;">
+                <div class="pf-dropdown__menu" style="min-width: 180px; width: max-content; max-width: calc(100vw - 2rem); white-space: nowrap;">
                     <a class="pf-dropdown__item" th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
                         </svg>
-                        <span>Mit KI verbessern</span>
+                        <span>Mit KI anpassen</span>
                     </a>
                     <form th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post" style="margin: 0;">
-                        <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
+                        <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger" onclick="return confirm('Möchtest du diese Aufgabe wirklich löschen?');">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -231,43 +244,41 @@
                         </div>
                     </div>
 
-                </div>
-            </div>
+                    <!-- 6. Prerequisites Section (Integrated as last section) -->
+                    <div class="pf-task-prerequisites-section" style="grid-column: 1 / -1; margin-top: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--pf-border);">
+                        <span class="pf-detail-prop__label" style="margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; color: var(--pf-text-secondary); text-transform: uppercase; letter-spacing: 0.04em;">Voraussetzungen</span>
 
-            <!-- 6. Prerequisites Card -->
-            <div class="pf-card" style="padding: 1.25rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                    <h3 style="margin: 0; font-size: 1.05rem;">Voraussetzungen</h3>
-                </div>
-
-                <div th:if="${task.blocked}" class="pf-alert pf-alert--warning" role="status" style="margin-bottom: 0.75rem;">
-                    <span>Diese Aufgabe wartet noch auf:</span>
-                    <ul style="margin: 0.35rem 0 0 1.25rem;">
-                        <li th:each="prerequisite : ${task.openPrerequisites}" th:text="${prerequisite.title}"></li>
-                    </ul>
-                </div>
-
-                <div th:unless="${#lists.isEmpty(task.temporalDependencyWarnings)}"
-                     class="pf-alert pf-alert--warning" role="status" style="display: block; margin-bottom: 0.75rem;">
-                    <strong>Hinweis zur zeitlichen Reihenfolge</strong>
-                    <ul style="margin: 0.35rem 0 0 1.25rem;">
-                        <li th:each="warning : ${task.temporalDependencyWarnings}" th:text="${warning}"></li>
-                    </ul>
-                    <small style="display: block; margin-top: 0.25rem;">Die Planung bleibt trotzdem speicherbar.</small>
-                </div>
-
-                <p th:if="${#lists.isEmpty(task.predecessors)}" style="color: var(--pf-text-muted); font-size: 0.88rem; margin: 0;">
-                    Keine Voraussetzungen definiert.
-                </p>
-
-                <ul th:unless="${#lists.isEmpty(task.predecessors)}" class="pf-element-list" style="margin: 0;">
-                    <li th:each="prerequisite : ${task.predecessors}" class="pf-element-item" style="padding: 0.5rem 0.75rem;">
-                        <div class="pf-element-item__body">
-                            <a th:href="@{/projects/{projectId}/tasks/{taskId}(projectId=${task.planContainerId},taskId=${prerequisite.id})}"
-                               th:text="${prerequisite.title}" style="font-weight: 600; text-decoration: none; color: var(--pf-text-main);"></a>
+                        <div th:if="${task.blocked}" class="pf-alert pf-alert--warning" role="status" style="margin-bottom: 0.75rem;">
+                            <span>Diese Aufgabe wartet noch auf:</span>
+                            <ul style="margin: 0.35rem 0 0 1.25rem;">
+                                <li th:each="prerequisite : ${task.openPrerequisites}" th:text="${prerequisite.title}"></li>
+                            </ul>
                         </div>
-                    </li>
-                </ul>
+
+                        <div th:unless="${#lists.isEmpty(task.temporalDependencyWarnings)}"
+                             class="pf-alert pf-alert--warning" role="status" style="display: block; margin-bottom: 0.75rem;">
+                            <strong>Hinweis zur zeitlichen Reihenfolge</strong>
+                            <ul style="margin: 0.35rem 0 0 1.25rem;">
+                                <li th:each="warning : ${task.temporalDependencyWarnings}" th:text="${warning}"></li>
+                            </ul>
+                            <small style="display: block; margin-top: 0.25rem;">Die Planung bleibt trotzdem speicherbar.</small>
+                        </div>
+
+                        <p th:if="${#lists.isEmpty(task.predecessors)}" style="color: var(--pf-text-muted); font-size: 0.88rem; margin: 0;">
+                            Keine Voraussetzungen definiert.
+                        </p>
+
+                        <ul th:unless="${#lists.isEmpty(task.predecessors)}" class="pf-element-list" style="margin: 0;">
+                            <li th:each="prerequisite : ${task.predecessors}" class="pf-element-item" style="padding: 0.5rem 0.75rem;">
+                                <div class="pf-element-item__body">
+                                    <a th:href="@{/projects/{projectId}/tasks/{taskId}(projectId=${task.planContainerId},taskId=${prerequisite.id})}"
+                                       th:text="${prerequisite.title}" style="font-weight: 600; text-decoration: none; color: var(--pf-text-main);"></a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
             </div>
         </div>
 

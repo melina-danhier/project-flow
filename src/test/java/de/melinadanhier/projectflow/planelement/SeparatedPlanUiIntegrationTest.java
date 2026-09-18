@@ -396,7 +396,7 @@ class SeparatedPlanUiIntegrationTest {
 
         mockMvc.perform(get("/projects/{projectId}/plan", project.getId()).session(session))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Blockiert")));
+                .andExpect(content().string(not(containsString("Blockiert"))));
 
         mockMvc.perform(get("/projects/{projectId}/tasks/{taskId}/edit", project.getId(), successor.getId())
                         .session(session))

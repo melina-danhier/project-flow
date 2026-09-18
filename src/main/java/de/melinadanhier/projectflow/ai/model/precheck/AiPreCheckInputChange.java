@@ -20,7 +20,6 @@ public record AiPreCheckInputChange(
             case "description" -> "Beschreibung";
             case "startDate" -> "Startdatum";
             case "endDate" -> "Enddatum";
-            case "otherProjectTypeDescription" -> "Projektart";
             case "projectGoal" -> "Projektziel / Themenumfang";
             case "constraints" -> "Einschränkungen";
             case "additionalInformation" -> "Zusätzliche Angaben";

@@ -67,10 +67,19 @@
         }
     }
 
-    // 1. Draggable items setup (whole container)
+    // 1. Draggable items setup (drag handle initiates drag)
+    const handleSelector = '.pf-drag-handle, .pf-drag-handle-visual, .element-drag-handle, .pf-compact-drag-handle, .pf-compact-phase-drag-handle, .drag-handle, .pf-phase-drag-handle, .pf-section-drag-handle';
     document.querySelectorAll('[draggable="true"]').forEach(item => {
+        item.querySelectorAll(handleSelector).forEach(handle => {
+            handle.addEventListener('pointerdown', () => { item.dataset.dragArmed = 'true'; });
+        });
         item.addEventListener('dragstart', event => {
             if (isInteractive(event.target)) {
+                event.preventDefault();
+                return;
+            }
+            const isHandle = !!event.target.closest(handleSelector) || item.dataset.dragArmed === 'true';
+            if (!isHandle) {
                 event.preventDefault();
                 return;
             }
@@ -84,11 +93,15 @@
             event.dataTransfer.setData('text/plain', item.dataset.elementId || item.dataset.sectionId || '');
         });
         item.addEventListener('dragend', () => {
+            delete item.dataset.dragArmed;
             item.classList.remove('is-dragging');
             document.querySelectorAll('.drop-target').forEach(target => target.classList.remove('drop-target'));
             removeDropIndicator();
             hideDragDateNotice();
             dragged = null;
+        });
+        item.addEventListener('pointerup', () => {
+            delete item.dataset.dragArmed;
         });
     });
 
