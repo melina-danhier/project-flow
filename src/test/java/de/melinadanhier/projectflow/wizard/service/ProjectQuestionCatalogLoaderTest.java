@@ -31,7 +31,7 @@ class ProjectQuestionCatalogLoaderTest {
         assertThat(questions.getFirst().key()).isEqualTo("availableTime");
         assertThat(questions.getFirst().label()).contains("Wie viel Zeit");
         assertThat(questions.getLast().key()).isEqualTo("constraints");
-        assertThat(questions.getLast().label()).contains("besondere");
+        assertThat(questions.getLast().label()).contains("zusätzlich");
     }
 
     @Test
@@ -125,6 +125,48 @@ class ProjectQuestionCatalogLoaderTest {
                 .contains("technicalExperience", "goalAndScope")
                 .doesNotContain("techGoal")
                 .doesNotHaveDuplicates();
+    }
+
+    @Test
+    @DisplayName("Universelle Veranstaltungsfrage passt auch zu Online-Aktionen")
+    void universalEventQuestionIncludesParticipationAndReach() {
+        List<ProjectQuestion> questions = loader.questionsFor(
+                ProjectCategory.EVENT, ProjectSubCategory.FUNDRAISING_EVENT);
+
+        assertThat(questions).filteredOn(question -> question.key().equals("expectedParticipants"))
+                .singleElement()
+                .extracting(ProjectQuestion::label)
+                .asString()
+                .contains("teilnehmen", "erreicht");
+    }
+
+    @Test
+    @DisplayName("Präsentationsfragen trennen Vorgaben und gewünschte Bestandteile")
+    void presentationQuestionsDoNotRepeatHandout() {
+        List<ProjectQuestion> questions = loader.questionsFor(
+                ProjectCategory.EDUCATION, ProjectSubCategory.PRESENTATION_OR_REPORT);
+
+        ProjectQuestion requirements = questions.stream()
+                .filter(question -> question.key().equals("contentRequirements"))
+                .findFirst().orElseThrow();
+        ProjectQuestion deliverables = questions.stream()
+                .filter(question -> question.key().equals("desiredDeliverables"))
+                .findFirst().orElseThrow();
+
+        assertThat(requirements.placeholder()).doesNotContainIgnoringCase("Handout");
+        assertThat(deliverables.placeholder()).containsIgnoringCase("Handout");
+    }
+
+    @Test
+    @DisplayName("Fragetexte vermeiden unnötige Fachbegriffe")
+    void questionLabelsAvoidUnexplainedJargon() {
+        List<String> labels = java.util.Arrays.stream(ProjectSubCategory.values())
+                .flatMap(subcategory -> loader.questionsFor(subcategory.getCategory(), subcategory).stream())
+                .map(ProjectQuestion::label)
+                .toList();
+
+        assertThat(labels).allSatisfy(label -> assertThat(label)
+                .doesNotContain("Methodik", "Codebasis", "technische Abhängigkeiten"));
     }
 
     @Test

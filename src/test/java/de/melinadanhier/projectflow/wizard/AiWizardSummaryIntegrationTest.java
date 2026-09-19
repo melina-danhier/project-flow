@@ -170,7 +170,7 @@ class AiWizardSummaryIntegrationTest {
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Wie viel Zeit kannst du ungefähr für das Projekt aufbringen?")))
-                .andExpect(content().string(containsString("Was soll die Software können und wie umfangreich wird sie?")))
+                .andExpect(content().string(containsString("Welche Funktionen soll die Software haben?")))
                 .andExpect(content().string(containsString("Welche Technologien oder Programmiersprachen sind festgelegt?")))
                 .andExpect(content().string(not(containsString("Welche Räume oder Flächen sind betroffen?"))));
     }

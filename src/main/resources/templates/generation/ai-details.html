@@ -37,7 +37,7 @@
             <!-- Available working time (always first) -->
             <div class="pf-form-row">
                 <label for="availableWorkingTime" class="pf-label">
-                    <span>Wie viel Zeit kannst du ungefähr für das Projekt aufbringen?</span>
+                    <span th:text="${availableTimeQuestion.label}"></span>
                     <span class="pf-hint">(optional)</span>
                 </label>
                 <div class="pf-form-field">
@@ -46,7 +46,7 @@
                            type="text"
                            th:field="*{availableWorkingTime}"
                            maxlength="1000"
-                           placeholder="z. B. etwa 3 Stunden pro Woche, hauptsächlich am Wochenende oder insgesamt rund 20 Stunden">
+                           th:placeholder="${availableTimeQuestion.placeholder}">
                     <div th:if="${#fields.hasErrors('availableWorkingTime')}"
                          th:errors="*{availableWorkingTime}"
                          class="pf-alert pf-alert--error" role="alert"></div>
@@ -73,7 +73,7 @@
             <!-- Constraints / wishes (always last) -->
             <div class="pf-form-row">
                 <label for="additionalInformation" class="pf-label">
-                    <span>Welche besonderen Wünsche, Vorgaben oder Einschränkungen sollen berücksichtigt werden?</span>
+                    <span th:text="${finalConstraintsQuestion.label}"></span>
                     <span class="pf-hint">(optional)</span>
                 </label>
                 <div class="pf-form-field">
@@ -82,7 +82,7 @@
                               th:field="*{additionalInformation}"
                               maxlength="2000"
                               rows="3"
-                              placeholder="z. B. begrenztes Budget, feste Termine, vorhandene Materialien oder bestimmte Wünsche"></textarea>
+                              th:placeholder="${finalConstraintsQuestion.placeholder}"></textarea>
                     <small th:if="${session != null and session.studySessionId != null}" class="pf-hint" style="display:block; margin-top:0.25rem;">Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</small>
                     <div th:if="${#fields.hasErrors('additionalInformation')}"
                          th:errors="*{additionalInformation}"

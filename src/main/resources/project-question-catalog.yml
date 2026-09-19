@@ -18,8 +18,8 @@ common:
 
   finalConstraints:
     key: constraints
-    label: "Welche besonderen Wünsche, Vorgaben oder Einschränkungen sollen berücksichtigt werden?"
-    placeholder: "z. B. feste Termine, vorhandene Materialien oder bestimmte Wünsche"
+    label: "Was sollten wir zusätzlich noch berücksichtigen?"
+    placeholder: "z. B. ein begrenztes Budget, feste Termine oder vorhandene Materialien"
 
 categories:
 
@@ -39,7 +39,7 @@ categories:
             placeholder: "z. B. Studierende im Seminar, Schulklasse oder Prüfungskommission"
           - key: contentRequirements
             label: "Gibt es inhaltliche oder formale Vorgaben?"
-            placeholder: "z. B. mindestens 15 Minuten, bestimmte Gliederung, Handout erforderlich"
+            placeholder: "z. B. mindestens 15 Minuten, eine feste Gliederung oder bestimmte Quellen"
           - key: desiredDeliverables
             label: "Welche Bestandteile soll das Ergebnis umfassen?"
             placeholder: "z. B. Folien, Handout, Notizen für den Vortrag"
@@ -95,8 +95,8 @@ categories:
             label: "Wie weit bist du bisher mit deiner Arbeit?"
             placeholder: "z. B. Exposé ist eingereicht, Literaturrecherche läuft"
           - key: methodology
-            label: "Welche Methodik oder praktischen Bestandteile sind geplant?"
-            placeholder: "z. B. quantitative Befragung, Prototyp-Entwicklung oder Literaturanalyse"
+            label: "Wie möchtest du vorgehen und welche praktischen Teile sind geplant?"
+            placeholder: "z. B. eine Umfrage durchführen, einen Prototyp entwickeln oder Literatur auswerten"
           - key: formalRequirements
             label: "Welche formalen Vorgaben gibt es?"
             placeholder: "z. B. 60–80 Seiten, IEEE-Stil, Abgabe bis Ende des Semesters"
@@ -114,13 +114,13 @@ categories:
     questions:
       - key: technicalExperience
         label: "Wie viel technische Erfahrung bringst du mit?"
-        placeholder: "z. B. Grundkenntnisse, einschlägige Erfahrung oder kompletter Einsteiger"
+        placeholder: "z. B. keine Vorerfahrung, Grundkenntnisse oder praktische Erfahrung"
 
     subcategories:
       SOFTWARE_PROJECT:
         questions:
           - key: goalAndScope
-            label: "Was soll die Software können und wie umfangreich wird sie?"
+            label: "Welche Funktionen soll die Software haben?"
             placeholder: "z. B. eine Verwaltung für Rezepte mit Suchfunktion und Einkaufsliste"
           - key: requirements
             label: "Gibt es bereits Anforderungen oder eine Aufgabenstellung?"
@@ -129,8 +129,8 @@ categories:
             label: "Welche Technologien oder Programmiersprachen sind festgelegt?"
             placeholder: "z. B. Java mit Spring Boot, React im Frontend"
           - key: currentState
-            label: "Gibt es bereits vorhandenen Code oder eine Codebasis?"
-            placeholder: "z. B. leeres Projekt angelegt, oder bestehende Codebasis vorhanden"
+            label: "Gibt es schon Programmcode oder eine bestehende Anwendung?"
+            placeholder: "z. B. noch nichts vorhanden oder ein vorhandenes Projekt soll weiterentwickelt werden"
 
       WEB_OR_MOBILE_APP:
         questions:
@@ -142,7 +142,7 @@ categories:
             placeholder: "z. B. Registrierung, Gruppenerstellung, Chat und Terminplanung"
           - key: technicalRequirements
             label: "Gibt es technische Vorgaben?"
-            placeholder: "z. B. muss auf iOS und Android laufen, REST-API als Backend"
+            placeholder: "z. B. soll auf iPhone und Android laufen oder mit einem vorhandenen Server zusammenarbeiten"
 
       EXTEND_EXISTING_APPLICATION:
         questions:
@@ -156,13 +156,13 @@ categories:
             label: "Welche Teile der Anwendung sind betroffen?"
             placeholder: "z. B. Backend-Service, Datenbank und eine neue Seite im Frontend"
           - key: technicalDependencies
-            label: "Gibt es technische Abhängigkeiten oder Einschränkungen?"
-            placeholder: "z. B. bestehende Bibliothek für PDF-Erzeugung muss verwendet werden"
+            label: "Musst du vorhandene Technik oder bestimmte Vorgaben berücksichtigen?"
+            placeholder: "z. B. eine vorhandene PDF-Funktion muss weiterverwendet werden"
 
       WEBSITE:
         questions:
           - key: goalAndAudience
-            label: "Für wen ist die Website und was soll sie bewirken?"
+            label: "Für wen ist die Website gedacht?"
             placeholder: "z. B. eine Portfolio-Website, um potenzielle Arbeitgeber anzusprechen"
           - key: pagesAndContent
             label: "Welche Seiten oder Inhalte soll die Website haben?"
@@ -184,10 +184,10 @@ categories:
             placeholder: "z. B. Kunden, Bestellungen, Produkte und Lieferanten"
           - key: technicalRequirements
             label: "Gibt es technische Vorgaben?"
-            placeholder: "z. B. muss mit MySQL laufen, ER-Diagramm wird erwartet"
+            placeholder: "z. B. ein bestimmtes Datenbanksystem ist vorgegeben oder eine Skizze der Datenstruktur wird erwartet"
           - key: currentState
             label: "Gibt es schon eine vorhandene Datenbank oder einen Entwurf?"
-            placeholder: "z. B. noch nichts vorhanden oder ein erstes ER-Diagramm existiert"
+            placeholder: "z. B. noch nichts vorhanden oder eine erste Skizze der Datenstruktur existiert"
 
       HARDWARE_OR_RASPBERRY_PI_PROJECT:
         questions:
@@ -210,8 +210,8 @@ categories:
   EVENT:
     questions:
       - key: expectedParticipants
-        label: "Wie viele Personen, Gruppen oder Teams werden ungefähr teilnehmen?"
-        placeholder: "z. B. ca. 30 Gäste, 8 Teams oder bis zu 100 Besucher"
+        label: "Wie viele Menschen sollen teilnehmen oder erreicht werden?"
+        placeholder: "z. B. 30 Gäste, 8 Teams oder etwa 500 Personen bei einer Online-Aktion"
 
     subcategories:
       PRIVATE_CELEBRATION:
@@ -221,7 +221,7 @@ categories:
             placeholder: "z. B. 30. Geburtstag, Hochzeit oder Einweihungsparty"
           - key: venue
             label: "Wo soll die Feier stattfinden?"
-            placeholder: "z. B. zu Hause, in einem Restaurants oder ein Ort muss noch gefunden werden"
+            placeholder: "z. B. zu Hause, in einem Restaurant oder an einem Ort, der noch gefunden werden muss"
           - key: budget
             label: "Hast du ein ungefähres Budget?"
             placeholder: "z. B. ca. 500 € für Essen, Deko und Getränke"
@@ -269,7 +269,7 @@ categories:
             placeholder: "z. B. Stück ist gewählt, Proben beginnen nächste Woche"
           - key: venueTechnology
             label: "Welcher Raum und welche Technik stehen zur Verfügung?"
-            placeholder: "z. B. Aula mit Bühne, eigene PA-Anlage vorhanden"
+            placeholder: "z. B. Aula mit Bühne, Lautsprechern und Mikrofonen"
 
       FLEA_MARKET_OR_SALES_EVENT:
         questions:
@@ -360,7 +360,7 @@ categories:
             label: "Machst du es selbst oder beauftragst du Handwerker?"
             placeholder: "z. B. Streichen selbst, Fliesen vom Fliesenleger"
           - key: budgetMaterials
-            label: "Hast du ein Budget oder sind Materialien schon vorhanden?"
+            label: "Welches Budget und welche Materialien stehen zur Verfügung?"
             placeholder: "z. B. ca. 2.000 €, Farbe ist schon gekauft"
 
       DECLUTTERING_OR_HOUSEHOLD_ORGANIZATION:
@@ -428,8 +428,8 @@ categories:
             label: "Worum geht es und an wen richtet sich der Podcast?"
             placeholder: "z. B. True-Crime-Podcast für junge Erwachsene"
           - key: format
-            label: "Ist es ein einzelnes Projekt oder eine laufende Serie?"
-            placeholder: "z. B. Serie mit wöchentlichen Folgen, einmaliges Special"
+            label: "Wie soll der Podcast aufgebaut sein?"
+            placeholder: "z. B. Interview, Gesprächsrunde, Erzählformat oder Solo-Folge"
           - key: scope
             label: "Wie viele Folgen oder wie lang soll der Podcast werden?"
             placeholder: "z. B. 10 Folgen à 30 Minuten"
@@ -489,7 +489,7 @@ categories:
             placeholder: "z. B. Songs sind geschrieben, Aufnahmen stehen noch aus"
           - key: availableTechnology
             label: "Welche Technik steht zur Verfügung?"
-            placeholder: "z. B. Home-Studio mit Audio-Interface und DAW"
+            placeholder: "z. B. Home-Studio mit Mikrofon, Audio-Interface und Aufnahmeprogramm"
 
       EXHIBITION:
         questions:
@@ -519,7 +519,7 @@ categories:
             placeholder: "z. B. 3 Beiträge pro Woche über 2 Monate"
           - key: currentProgress
             label: "Wie weit bist du bisher?"
-            placeholder: "z. B. Kanal existiert schon, Content-Plan fehlt noch"
+            placeholder: "z. B. Kanal existiert schon, ein Plan für die Beiträge fehlt noch"
 
       BOARD_GAME_OR_CREATIVE_PROTOTYPE:
         questions:

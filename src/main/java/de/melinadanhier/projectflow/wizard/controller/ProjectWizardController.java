@@ -18,6 +18,7 @@ import de.melinadanhier.projectflow.wizard.dto.AiProjectDetailsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectBasicsForm;
 import de.melinadanhier.projectflow.wizard.dto.ProjectCreationMethodForm;
 import de.melinadanhier.projectflow.wizard.model.ProjectWizardState;
+import de.melinadanhier.projectflow.wizard.service.ProjectQuestionCatalogLoader;
 import de.melinadanhier.projectflow.wizard.service.ProjectWizardService;
 import de.melinadanhier.projectflow.wizard.service.AiProjectQuestionCatalog;
 import jakarta.servlet.http.HttpSession;
@@ -47,6 +48,7 @@ public class ProjectWizardController {
     private final AiPreCheckReviewService aiPreCheckReviewService;
     private final AiWorkflowControlService aiWorkflowControlService;
     private final StudyTrackingService studyTrackingService;
+    private final ProjectQuestionCatalogLoader questionCatalog;
 
     @GetMapping("/projects/new")
     public String basics(
@@ -308,9 +310,7 @@ public class ProjectWizardController {
     ) {
         ProjectWizardState state = wizardService.requireOwnedFor(
                 CreationType.AI, currentUser.userId(), session);
-        model.addAttribute("wizardState", state);
-        model.addAttribute("questions", AiProjectQuestionCatalog.questionsFor(
-                state.getCategory(), state.getSubcategory()));
+        populateAiDetailsModel(model, state);
         model.addAttribute("aiProjectDetailsForm", AiProjectDetailsForm.from(state));
         return "generation/ai-details";
     }
@@ -351,12 +351,19 @@ public class ProjectWizardController {
             }
         });
         if (bindingResult.hasErrors()) {
-            model.addAttribute("wizardState", state);
-            model.addAttribute("questions", questions);
+            populateAiDetailsModel(model, state);
             return "generation/ai-details";
         }
         wizardService.saveAiDetails(form, currentUser.userId(), session);
         return "redirect:/projects/new/ai/summary";
+    }
+
+    private void populateAiDetailsModel(Model model, ProjectWizardState state) {
+        model.addAttribute("wizardState", state);
+        model.addAttribute("questions", AiProjectQuestionCatalog.questionsFor(
+                state.getCategory(), state.getSubcategory()));
+        model.addAttribute("availableTimeQuestion", questionCatalog.getAvailableTime());
+        model.addAttribute("finalConstraintsQuestion", questionCatalog.getFinalConstraints());
     }
 
     @GetMapping("/projects/new/ai/summary")

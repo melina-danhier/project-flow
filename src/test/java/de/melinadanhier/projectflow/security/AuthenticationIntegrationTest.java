@@ -397,7 +397,11 @@ class AuthenticationIntegrationTest {
         mockMvc.perform(get("/projects/new/ai/details").session(ownerSession))
                 .andExpect(status().isOk())
                 .andExpect(view().name("generation/ai-details"))
-                .andExpect(content().string(containsString("MVC KI-Projekt")));
+                .andExpect(content().string(containsString("MVC KI-Projekt")))
+                .andExpect(content().string(containsString(
+                        "z. B. etwa 3 Stunden pro Woche oder nur am Wochenende")))
+                .andExpect(content().string(containsString(
+                        "Was sollten wir zusätzlich noch berücksichtigen?")));
         mockMvc.perform(get("/projects/new").session(ownerSession))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("value=\"2026-09-01\"")))
