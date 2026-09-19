@@ -37,7 +37,7 @@
 
         <div class="pf-page-header__actions">
             <a th:if="${plan.editable}"
-               class="pf-btn pf-btn--primary"
+               class="pf-btn pf-btn--primary pf-btn--plan-ai-desktop"
                th:href="@{/projects/{projectId}/plan/ai-change(projectId=${plan.project.id})}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
@@ -53,6 +53,14 @@
                     </svg>
                 </summary>
                 <div class="pf-dropdown__menu">
+                    <!-- Mobile only: Plan mit KI verbessern inside dropdown -->
+                    <a th:if="${plan.editable}" class="pf-dropdown__item pf-dropdown__item--mobile-ai" th:href="@{/projects/{projectId}/plan/ai-change(projectId=${plan.project.id})}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                        </svg>
+                        <span>Plan mit KI verbessern</span>
+                    </a>
+                    <div th:if="${plan.editable}" class="pf-dropdown__divider pf-dropdown__divider--mobile-ai"></div>
                     <div class="pf-dropdown__header" th:if="${plan.editable}">
                         <span class="pf-dropdown__eyebrow">Hinzufügen</span>
                     </div>

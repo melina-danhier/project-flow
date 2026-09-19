@@ -12,9 +12,21 @@
         <!-- Page Header with Primary Action -->
         <div class="pf-page-header">
             <div class="pf-page-header__left">
-                <h1 style="margin: 0;"
-                    th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Projektarchiv' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Papierkorb' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Projektentwürfe (KI)' : 'Meine Projekte'))}">
-                    Meine Projekte</h1>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <button type="button" class="pf-btn pf-btn--outline pf-btn--sm pf-sidebar-toggle-btn"
+                            id="pf-sidebar-toggle-btn" aria-expanded="false" aria-controls="pf-projects-sidebar"
+                            aria-label="Projektbereiche anzeigen">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                        <span>Ansichten</span>
+                    </button>
+                    <h1 style="margin: 0;"
+                        th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Projektarchiv' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Papierkorb' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Projektentwürfe (KI)' : 'Meine Projekte'))}">
+                        Meine Projekte</h1>
+                </div>
                 <p class="pf-page-header__subtitle"
                     th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Hier findest du deine abgeschlossenen und archivierten Projekte.' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Verwalte gelöschte Projekte oder stelle sie wieder her.' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Prüfe und überarbeite deine durch KI generierten Projektentwürfe.' : 'Hier siehst du deine aktiven und zugewiesenen Projekte auf einen Blick.'))}">
                     Hier siehst du deine aktiven und zugewiesenen Projekte auf einen Blick.</p>
@@ -35,7 +47,7 @@
         <!-- Layout Container: Left Vertical Sidebar + Main Content -->
         <div class="pf-projects-layout">
             <!-- Vertical Left Sidebar -->
-            <aside class="pf-projects-sidebar">
+            <aside class="pf-projects-sidebar" id="pf-projects-sidebar">
                 <nav class="pf-sidebar-nav" aria-label="Projektbereiche">
                     <!-- Search Button linking to dedicated Search Page -->
                     <a th:href="@{/projects/search}" class="pf-sidebar-link" aria-label="Projekte durchsuchen">
@@ -436,6 +448,15 @@
                         divider.style.display = (pinnedVisible && regularVisible) ? '' : 'none';
                     }
                 }
+            }
+
+            const sidebarToggleBtn = document.getElementById('pf-sidebar-toggle-btn');
+            const sidebar = document.getElementById('pf-projects-sidebar');
+            if (sidebarToggleBtn && sidebar) {
+                sidebarToggleBtn.addEventListener('click', () => {
+                    const isOpen = sidebar.classList.toggle('is-open');
+                    sidebarToggleBtn.setAttribute('aria-expanded', String(isOpen));
+                });
             }
 
             updateSelectionState();

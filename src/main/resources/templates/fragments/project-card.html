@@ -245,12 +245,16 @@
             </div>
         </div>
 
-        <!-- Bottom: Progress Bar with Tasks Count Detail -->
-        <div class="pf-project-card__bottom">
+        <!-- Bottom: Progress Bar with Tasks Count Detail (Hidden in Archive and Trash) -->
+        <div class="pf-project-card__bottom"
+             th:if="${selectedLocation == null or (selectedLocation.name() != 'ARCHIVE' and selectedLocation.name() != 'TRASH')}">
             <div class="pf-project-card__progress-info">
                 <span class="pf-project-card__progress-tasks"
-                    th:text="${(project.completedTasks != null ? project.completedTasks : 0) + '/' + (project.totalTasks != null ? project.totalTasks : 0) + ' Aufgaben'}">0/0
-                    Aufgaben</span>
+                    th:if="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}"
+                    th:text="${(project.completedTasks != null ? project.completedTasks : 0) + '/' + (project.totalTasks != null ? project.totalTasks : 0) + ' Elemente geprüft'}">0/0 Elemente geprüft</span>
+                <span class="pf-project-card__progress-tasks"
+                    th:unless="${selectedLocation != null and selectedLocation.name() == 'DRAFT'}"
+                    th:text="${(project.completedTasks != null ? project.completedTasks : 0) + '/' + (project.totalTasks != null ? project.totalTasks : 0) + ' Aufgaben'}">0/0 Aufgaben</span>
                 <span th:text="${(project.progress != null ? project.progress : 0) + '%'}">0%</span>
             </div>
             <div class="pf-project-card__progress-bar" role="progressbar"

@@ -258,7 +258,25 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<ProjectSummaryDto> findDraftProjects(UUID userId) {
-        return toSummaries(projectRepository.findAllDraftsAccessibleByUserId(userId), userId);
+        List<ProjectSummaryDto> summaries = toSummaries(projectRepository.findAllDraftsAccessibleByUserId(userId), userId);
+        summaries.forEach(summary -> {
+            draftRepository.findByProjectId(summary.getId()).ifPresent(draft -> {
+                long totalElements = draft.getSections().size() + draft.getElements().size();
+                long reviewedElements = java.util.stream.Stream.concat(
+                                draft.getSections().stream().map(de.melinadanhier.projectflow.draft.model.DraftSection::getReviewStatus),
+                                draft.getElements().stream().map(de.melinadanhier.projectflow.draft.model.DraftPlanElement::getReviewStatus))
+                        .filter(status -> status != de.melinadanhier.projectflow.draft.model.DraftReviewStatus.PENDING)
+                        .count();
+                summary.setTotalTasks(totalElements);
+                summary.setCompletedTasks(reviewedElements);
+                if (totalElements > 0) {
+                    summary.setProgress((int) Math.round(reviewedElements * 100.0 / totalElements));
+                } else {
+                    summary.setProgress(0);
+                }
+            });
+        });
+        return summaries;
     }
 
     @Transactional(readOnly = true)

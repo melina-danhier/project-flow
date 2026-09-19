@@ -213,14 +213,25 @@
                         formnovalidate aria-label="Feedback schließen">×</button>
             </div>
             <p id="ai-feedback-description">Deine Rückmeldung hilft uns, die KI-Unterstützung zu verbessern.</p>
-            <fieldset>
+            <fieldset class="pf-feedback-dialog__fieldset">
                 <legend>Bewertung</legend>
-                <div class="pf-feedback-dialog__ratings">
-                    <label><input type="radio" name="rating" value="1" required> Sehr unzufrieden</label>
+                <div class="pf-feedback-dialog__ratings pf-feedback-ratings--desktop">
+                    <label><input type="radio" name="rating" value="1"> Sehr unzufrieden</label>
                     <label><input type="radio" name="rating" value="2"> Unzufrieden</label>
                     <label><input type="radio" name="rating" value="3"> Neutral</label>
                     <label><input type="radio" name="rating" value="4"> Zufrieden</label>
                     <label><input type="radio" name="rating" value="5"> Sehr zufrieden</label>
+                </div>
+                <div class="pf-feedback-ratings--mobile">
+                    <select id="ai-feedback-rating-select" class="pf-select" aria-label="Bewertung auswählen"
+                            onchange="const val = this.value; const radio = document.querySelector('.pf-feedback-dialog__ratings input[value=&quot;' + val + '&quot;]'); if (radio) { radio.checked = true; }">
+                        <option value="" disabled selected>Bewertung auswählen...</option>
+                        <option value="1">1 – Sehr unzufrieden</option>
+                        <option value="2">2 – Unzufrieden</option>
+                        <option value="3">3 – Neutral</option>
+                        <option value="4">4 – Zufrieden</option>
+                        <option value="5">5 – Sehr zufrieden</option>
+                    </select>
                 </div>
             </fieldset>
             <label for="ai-feedback-comment">Möchtest du kurz angeben, warum? <span class="pf-hint">(optional)</span></label>

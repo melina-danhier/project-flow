@@ -77,26 +77,45 @@
     align-items: stretch;
     margin-top: 1.5rem;
     min-height: calc(100vh - 280px);
+.pf-sidebar-toggle-btn {
+    display: none;
 }
 
 @media (max-width: 860px) {
+    .pf-sidebar-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
     .pf-projects-layout {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 1.25rem;
         min-height: auto;
+    }
+
+    .pf-projects-sidebar {
+        display: none;
+        border-bottom: 1px solid var(--pf-border);
+        padding-bottom: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .pf-projects-sidebar.is-open {
+        display: flex;
+        animation: pfDropdownIn 0.2s ease;
+    }
+
+    .pf-sidebar-nav {
+        position: static;
+        flex-direction: column;
+        gap: 0.35rem;
     }
 }
 
 .pf-projects-sidebar {
     display: flex;
     flex-direction: column;
-}
-
-@media (max-width: 860px) {
-    .pf-projects-sidebar {
-        border-bottom: 1px solid var(--pf-border);
-        padding-bottom: 1.25rem;
-    }
 }
 
 .pf-sidebar-nav {
@@ -112,15 +131,6 @@
     padding: 0.75rem;
     margin: 0;
     width: 100%;
-}
-
-@media (max-width: 860px) {
-    .pf-sidebar-nav {
-        position: static;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
 }
 
 .pf-sidebar-link {

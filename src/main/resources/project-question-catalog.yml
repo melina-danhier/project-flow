@@ -1,0 +1,819 @@
+# ============================================================================
+# ProjectFlow – AI Project Question Catalog
+# ============================================================================
+# Structure:
+#   common.availableTime   → always shown FIRST
+#   common.finalConstraints → always shown LAST
+#   categories.<ENUM_NAME>.questions → per main category
+#   categories.<ENUM_NAME>.subcategories.<ENUM_NAME>.questions → per subcategory
+# ============================================================================
+
+common:
+  availableTime:
+    key: availableTime
+    label: "Wie viel Zeit kannst du ungefähr für das Projekt aufbringen?"
+    placeholder: "z. B. etwa 3 Stunden pro Woche, hauptsächlich am Wochenende oder insgesamt rund 20 Stunden"
+
+  finalConstraints:
+    key: constraints
+    label: "Welche besonderen Wünsche, Vorgaben oder Einschränkungen sollen berücksichtigt werden?"
+    placeholder: "z. B. begrenztes Budget, feste Termine, vorhandene Materialien oder bestimmte Wünsche"
+
+categories:
+
+  # =========================================================================
+  # EDUCATION – Bildung und Studium
+  # =========================================================================
+  EDUCATION:
+    questions:
+      - key: educationGoal
+        label: "Was möchtest du mit dem Projekt erreichen?"
+        placeholder: "z. B. eine Prüfung bestehen, ein Thema verständlich präsentieren oder eine Arbeit fertigstellen"
+
+    subcategories:
+      PRESENTATION_OR_REPORT:
+        questions:
+          - key: topic
+            label: "Was ist das Thema der Präsentation oder des Referats?"
+            placeholder: "z. B. Künstliche Intelligenz im Bildungsbereich"
+          - key: targetAudience
+            label: "Vor wem wird die Präsentation gehalten?"
+            placeholder: "z. B. Studierende im Seminar, Schulklasse oder Prüfungskommission"
+          - key: contentRequirements
+            label: "Gibt es inhaltliche oder formale Vorgaben?"
+            placeholder: "z. B. mindestens 15 Minuten, bestimmte Gliederung, Handout erforderlich"
+          - key: desiredDeliverables
+            label: "Welche Bestandteile soll das Ergebnis umfassen?"
+            placeholder: "z. B. Folien, Handout, Notizen für den Vortrag"
+
+      EXAM_PREPARATION:
+        questions:
+          - key: examSubject
+            label: "Für welche Prüfung oder welches Fach lernst du?"
+            placeholder: "z. B. Mathematik-Klausur, Staatsexamen oder Sprachzertifikat B2"
+          - key: examTopics
+            label: "Welche Themen oder Stoffgebiete umfasst die Prüfung?"
+            placeholder: "z. B. Analysis, Lineare Algebra und Stochastik"
+          - key: currentKnowledge
+            label: "Wie schätzt du deinen bisherigen Wissensstand ein?"
+            placeholder: "z. B. Grundlagen sind bekannt, aber einige Themen muss ich noch vertiefen"
+          - key: examDate
+            label: "Wann findet die Prüfung statt?"
+            placeholder: "z. B. in 6 Wochen, am 15. März"
+
+      LEARNING_PLAN:
+        questions:
+          - key: learningGoal
+            label: "Was möchtest du lernen oder besser verstehen?"
+            placeholder: "z. B. Python-Grundlagen, Gitarre spielen oder Buchführung"
+          - key: learningTopics
+            label: "Welche Themen oder Bereiche umfasst dein Lernziel?"
+            placeholder: "z. B. Variablen, Schleifen, Funktionen und Datenstrukturen"
+          - key: currentKnowledge
+            label: "Was weißt du bereits über das Thema?"
+            placeholder: "z. B. kompletter Anfänger oder Grundlagen sind schon vorhanden"
+          - key: focusAreas
+            label: "Gibt es besondere Schwerpunkte, auf die du dich konzentrieren möchtest?"
+            placeholder: "z. B. praktische Übungen, Theorie oder bestimmte Teilgebiete"
+
+      TERM_PAPER:
+        questions:
+          - key: paperTopic
+            label: "Was ist das Thema oder die Fragestellung deiner Arbeit?"
+            placeholder: "z. B. Auswirkungen sozialer Medien auf das Kaufverhalten"
+          - key: paperRequirements
+            label: "Welche formalen oder inhaltlichen Vorgaben gibt es?"
+            placeholder: "z. B. 15–20 Seiten, APA-Zitation, mindestens 10 Quellen"
+          - key: currentProgress
+            label: "Wie weit bist du bisher mit der Arbeit?"
+            placeholder: "z. B. Thema gerade erst gewählt, Gliederung steht schon"
+
+      THESIS:
+        questions:
+          - key: researchQuestion
+            label: "Was ist das Thema oder die Forschungsfrage?"
+            placeholder: "z. B. Einfluss von Gamification auf die Lernmotivation"
+          - key: currentProgress
+            label: "Wie weit bist du bisher mit deiner Arbeit?"
+            placeholder: "z. B. Exposé ist eingereicht, Literaturrecherche läuft"
+          - key: methodology
+            label: "Welche Methodik oder praktischen Bestandteile sind geplant?"
+            placeholder: "z. B. quantitative Befragung, Prototyp-Entwicklung oder Literaturanalyse"
+          - key: formalRequirements
+            label: "Welche formalen Vorgaben gibt es?"
+            placeholder: "z. B. 60–80 Seiten, IEEE-Stil, Abgabe bis Ende des Semesters"
+
+      STUDY_EVENT:
+        questions:
+          - key: eventGoalFormat
+            label: "Was ist das Ziel und Format der Veranstaltung?"
+            placeholder: "z. B. studentisches Symposium mit Vorträgen und Poster-Session"
+          - key: audienceSize
+            label: "Wer soll teilnehmen und wie viele Personen erwartest du?"
+            placeholder: "z. B. ca. 50 Studierende und Dozierende"
+          - key: venueTechnology
+            label: "Welcher Ort und welche Technik stehen zur Verfügung?"
+            placeholder: "z. B. Hörsaal der Universität mit Beamer und Mikrofon"
+
+  # =========================================================================
+  # SOFTWARE_TECHNOLOGY – Software und Technik
+  # =========================================================================
+  SOFTWARE_TECHNOLOGY:
+    questions:
+      - key: techGoal
+        label: "Was soll das Ergebnis des Projekts sein?"
+        placeholder: "z. B. eine funktionsfähige App, ein automatisiertes Skript oder ein Prototyp"
+      - key: technicalExperience
+        label: "Wie viel technische Erfahrung bringst du mit?"
+        placeholder: "z. B. Grundkenntnisse in Python, Erfahrung mit Webentwicklung oder kompletter Einsteiger"
+
+    subcategories:
+      SOFTWARE_PROJECT:
+        questions:
+          - key: goalAndScope
+            label: "Was soll die Software können und wie umfangreich wird sie?"
+            placeholder: "z. B. eine Verwaltung für Rezepte mit Suchfunktion und Einkaufsliste"
+          - key: requirements
+            label: "Gibt es bereits Anforderungen oder eine Aufgabenstellung?"
+            placeholder: "z. B. muss als Webanwendung laufen, Daten in einer Datenbank speichern"
+          - key: technologies
+            label: "Welche Technologien oder Programmiersprachen sind festgelegt?"
+            placeholder: "z. B. Java mit Spring Boot, React im Frontend"
+          - key: currentState
+            label: "Gibt es bereits vorhandenen Code oder eine Codebasis?"
+            placeholder: "z. B. leeres Projekt angelegt, oder bestehende Codebasis vorhanden"
+
+      WEB_OR_MOBILE_APP:
+        questions:
+          - key: usageScenario
+            label: "Wer wird die App nutzen und wofür?"
+            placeholder: "z. B. Studierende zur Lerngruppen-Koordination"
+          - key: coreFeatures
+            label: "Welche Funktionen soll die App haben?"
+            placeholder: "z. B. Registrierung, Gruppenerstellung, Chat und Terminplanung"
+          - key: technicalRequirements
+            label: "Gibt es technische Vorgaben?"
+            placeholder: "z. B. muss auf iOS und Android laufen, REST-API als Backend"
+
+      EXTEND_EXISTING_APPLICATION:
+        questions:
+          - key: currentState
+            label: "Was kann die bestehende Anwendung aktuell?"
+            placeholder: "z. B. eine Spring-Boot-App mit Benutzeranmeldung und Projektverwaltung"
+          - key: desiredExtension
+            label: "Was soll hinzugefügt oder geändert werden?"
+            placeholder: "z. B. eine Export-Funktion für Berichte im PDF-Format"
+          - key: affectedComponents
+            label: "Welche Teile der Anwendung sind betroffen?"
+            placeholder: "z. B. Backend-Service, Datenbank und eine neue Seite im Frontend"
+          - key: technicalDependencies
+            label: "Gibt es technische Abhängigkeiten oder Einschränkungen?"
+            placeholder: "z. B. bestehende Bibliothek für PDF-Erzeugung muss verwendet werden"
+
+      WEBSITE:
+        questions:
+          - key: goalAndAudience
+            label: "Für wen ist die Website und was soll sie bewirken?"
+            placeholder: "z. B. eine Portfolio-Website, um potenzielle Arbeitgeber anzusprechen"
+          - key: pagesAndContent
+            label: "Welche Seiten oder Inhalte soll die Website haben?"
+            placeholder: "z. B. Startseite, Über mich, Projekte, Kontaktformular"
+          - key: currentState
+            label: "Gibt es bereits eine Website oder einen Entwurf?"
+            placeholder: "z. B. noch nichts vorhanden, oder eine alte WordPress-Seite existiert"
+          - key: designAndTechnicalRequirements
+            label: "Hast du gestalterische oder technische Wünsche?"
+            placeholder: "z. B. modernes Design, responsiv, eigene Domain vorhanden"
+
+      DATABASE_PROJECT:
+        questions:
+          - key: purposeAndRequirements
+            label: "Wofür wird die Datenbank benötigt?"
+            placeholder: "z. B. Verwaltung von Kundendaten für ein Hochschulprojekt"
+          - key: dataEntities
+            label: "Welche Daten sollen gespeichert werden?"
+            placeholder: "z. B. Kunden, Bestellungen, Produkte und Lieferanten"
+          - key: technicalRequirements
+            label: "Gibt es technische Vorgaben?"
+            placeholder: "z. B. muss mit MySQL laufen, ER-Diagramm wird erwartet"
+          - key: currentState
+            label: "Gibt es schon eine vorhandene Datenbank oder einen Entwurf?"
+            placeholder: "z. B. noch nichts vorhanden oder ein erstes ER-Diagramm existiert"
+
+      HARDWARE_OR_RASPBERRY_PI_PROJECT:
+        questions:
+          - key: useCase
+            label: "Was soll das Projekt tun oder ermöglichen?"
+            placeholder: "z. B. eine Wetterstation mit Raspberry Pi, die Temperatur und Luftfeuchtigkeit misst"
+          - key: requiredComponents
+            label: "Welche Bauteile hast du bereits oder werden benötigt?"
+            placeholder: "z. B. Raspberry Pi 4, DHT22-Sensor, Breadboard und Kabel vorhanden"
+
+  # =========================================================================
+  # EVENT – Veranstaltung
+  # =========================================================================
+  EVENT:
+    questions:
+      - key: eventGoal
+        label: "Was ist der Anlass oder das Ziel der Veranstaltung?"
+        placeholder: "z. B. eine Geburtstagsfeier, ein Workshop oder ein Vereinsfest"
+      - key: expectedGuests
+        label: "Wie viele Personen werden ungefähr teilnehmen?"
+        placeholder: "z. B. ca. 30 Gäste, bis zu 100 Besucher"
+
+    subcategories:
+      PRIVATE_CELEBRATION:
+        questions:
+          - key: occasion
+            label: "Was wird gefeiert?"
+            placeholder: "z. B. 30. Geburtstag, Hochzeit oder Einweihungsparty"
+          - key: guestCount
+            label: "Wie viele Gäste erwartest du?"
+            placeholder: "z. B. ca. 25 Personen"
+          - key: venue
+            label: "Wo soll die Feier stattfinden?"
+            placeholder: "z. B. zu Hause, in einem Restaurants oder ein Ort muss noch gefunden werden"
+          - key: budget
+            label: "Hast du ein ungefähres Budget?"
+            placeholder: "z. B. ca. 500 € für Essen, Deko und Getränke"
+
+      WORKSHOP_TRAINING_OR_INFORMATION_EVENT:
+        questions:
+          - key: targetAudience
+            label: "An wen richtet sich die Veranstaltung?"
+            placeholder: "z. B. neue Mitarbeiter, Vereinsmitglieder oder interessierte Eltern"
+          - key: learningGoal
+            label: "Was sollen die Teilnehmer am Ende wissen oder können?"
+            placeholder: "z. B. Grundlagen der Ersten Hilfe, Umgang mit einem neuen Tool"
+          - key: topics
+            label: "Welche Themen oder Inhalte werden behandelt?"
+            placeholder: "z. B. Reanimation, stabile Seitenlage und Wundversorgung"
+          - key: venueTechnology
+            label: "Welcher Raum und welche Technik stehen zur Verfügung?"
+            placeholder: "z. B. Seminarraum mit Beamer, Flipchart und WLAN"
+
+      CLUB_OR_COMMUNITY_EVENT:
+        questions:
+          - key: eventType
+            label: "Was für eine Veranstaltung planst du?"
+            placeholder: "z. B. Sommerfest des Sportvereins, Tag der offenen Tür"
+          - key: participants
+            label: "Wer nimmt teil und wie viele Personen erwartest du?"
+            placeholder: "z. B. Vereinsmitglieder und Familien, ca. 80 Personen"
+          - key: venue
+            label: "Wo soll die Veranstaltung stattfinden?"
+            placeholder: "z. B. auf dem Vereinsgelände, im Gemeindehaus"
+          - key: permits
+            label: "Gibt es organisatorische Vorgaben oder Genehmigungen?"
+            placeholder: "z. B. Genehmigung der Gemeinde nötig, Ausschankerlaubnis"
+
+      CONCERT_OR_PERFORMANCE:
+        questions:
+          - key: program
+            label: "Was wird aufgeführt oder gespielt?"
+            placeholder: "z. B. Schultheater-Aufführung, Bandkonzert, Chorauftritt"
+          - key: contributors
+            label: "Wer wirkt mit?"
+            placeholder: "z. B. 12 Schauspieler, 5 Bandmitglieder, Techniker"
+          - key: currentProgress
+            label: "Wie weit sind die Vorbereitungen?"
+            placeholder: "z. B. Stück ist gewählt, Proben beginnen nächste Woche"
+          - key: venueTechnology
+            label: "Welcher Raum und welche Technik stehen zur Verfügung?"
+            placeholder: "z. B. Aula mit Bühne, eigene PA-Anlage vorhanden"
+
+      FLEA_MARKET_OR_SALES_EVENT:
+        questions:
+          - key: typeAndScope
+            label: "Was für ein Verkauf ist geplant?"
+            placeholder: "z. B. Flohmarktstand auf dem Wochenmarkt, Kuchenverkauf beim Schulfest"
+          - key: goods
+            label: "Was soll verkauft werden?"
+            placeholder: "z. B. Kleidung, Bücher und Spielzeug oder selbstgebackene Kuchen"
+          - key: venue
+            label: "Wo findet der Verkauf statt?"
+            placeholder: "z. B. eigener Stand auf dem Stadtflohmarkt, Tisch im Schulfoyer"
+
+      FUNDRAISING_EVENT:
+        questions:
+          - key: fundraisingGoal
+            label: "Wofür werden die Spenden gesammelt?"
+            placeholder: "z. B. neue Trikots für die Jugendmannschaft, Schulprojekt in Kenia"
+          - key: targetAudience
+            label: "Wen möchtest du ansprechen?"
+            placeholder: "z. B. Nachbarschaft, Eltern der Schüler, lokale Unternehmen"
+          - key: campaignFormat
+            label: "In welcher Form soll die Aktion stattfinden?"
+            placeholder: "z. B. Spendenlauf, Online-Crowdfunding oder Benefizkonzert"
+          - key: organizationalRequirements
+            label: "Gibt es organisatorische Vorgaben?"
+            placeholder: "z. B. Gemeinnützigkeit erforderlich, Spendenquittungen ausstellen"
+
+      TOURNAMENT_OR_COMPETITION:
+        questions:
+          - key: competitionType
+            label: "Was für ein Wettbewerb oder Turnier wird organisiert?"
+            placeholder: "z. B. Fußballturnier, Schachmeisterschaft, Quiz-Abend"
+          - key: participantCount
+            label: "Wie viele Teilnehmer oder Teams werden erwartet?"
+            placeholder: "z. B. 8 Mannschaften mit je 6 Spielern"
+          - key: rules
+            label: "Welche Regeln oder welcher Modus soll gelten?"
+            placeholder: "z. B. Gruppenphase mit anschließendem K.-o.-System"
+          - key: venueEquipment
+            label: "Welcher Ort und welche Ausstattung stehen zur Verfügung?"
+            placeholder: "z. B. Sporthalle mit zwei Feldern, Schiedsrichter vorhanden"
+
+  # =========================================================================
+  # HOME – Haushalt und Wohnen
+  # =========================================================================
+  HOME:
+    questions:
+      - key: homeGoal
+        label: "Was möchtest du in deinem Zuhause verändern oder erreichen?"
+        placeholder: "z. B. die Wohnung besser organisieren, einen Raum renovieren oder umziehen"
+
+    subcategories:
+      MOVING:
+        questions:
+          - key: movingSituation
+            label: "Wohin ziehst du und wie weit ist der Umzug?"
+            placeholder: "z. B. von einer 50-m²-Wohnung in eine 70-m²-Wohnung in derselben Stadt"
+          - key: householdScope
+            label: "Wie viel Hausrat muss umgezogen werden?"
+            placeholder: "z. B. komplette Einrichtung mit Waschmaschine und großem Kleiderschrank"
+          - key: externalHelp
+            label: "Planst du ein Umzugsunternehmen oder helfen Freunde?"
+            placeholder: "z. B. drei Freunde helfen am Umzugstag, kein Unternehmen"
+          - key: transportOptions
+            label: "Welche Transportmöglichkeiten stehen zur Verfügung?"
+            placeholder: "z. B. zwei Autos, ein Transporter wird noch gemietet"
+
+      RENOVATION_OR_HOME_PROJECT:
+        questions:
+          - key: affectedRooms
+            label: "Welche Räume oder Flächen sind betroffen?"
+            placeholder: "z. B. Badezimmer, Wohnzimmer oder der Flur"
+          - key: plannedWork
+            label: "Was genau soll gemacht werden?"
+            placeholder: "z. B. Wände streichen, neuen Boden verlegen, Fliesen erneuern"
+          - key: executionMode
+            label: "Machst du es selbst oder beauftragst du Handwerker?"
+            placeholder: "z. B. Streichen selbst, Fliesen vom Fliesenleger"
+          - key: budgetMaterials
+            label: "Hast du ein Budget oder sind Materialien schon vorhanden?"
+            placeholder: "z. B. ca. 2.000 €, Farbe ist schon gekauft"
+
+      DECLUTTERING_OR_HOUSEHOLD_ORGANIZATION:
+        questions:
+          - key: affectedAreas
+            label: "Welche Bereiche möchtest du ausmisten oder besser organisieren?"
+            placeholder: "z. B. Keller, Kleiderschrank, Küche oder die gesamte Wohnung"
+          - key: scope
+            label: "Wie umfangreich ist das Vorhaben?"
+            placeholder: "z. B. ein Wochenende für den Keller, mehrere Wochen für die ganze Wohnung"
+          - key: disposalOptions
+            label: "Was passiert mit den aussortierten Dingen?"
+            placeholder: "z. B. Sperrmüll, Flohmarkt, Spende an Sozialkaufhaus"
+          - key: sortingCriteria
+            label: "Was soll auf jeden Fall behalten oder aussortiert werden?"
+            placeholder: "z. B. alle Bücher behalten, Kleidung, die seit einem Jahr nicht getragen wurde, aussortieren"
+
+      GARDEN_PROJECT:
+        questions:
+          - key: gardenGoal
+            label: "Was möchtest du im Garten verändern oder anlegen?"
+            placeholder: "z. B. ein Gemüsebeet anlegen, die Terrasse neu gestalten"
+          - key: gardenScope
+            label: "Wie groß ist die Fläche oder der Bereich?"
+            placeholder: "z. B. ca. 20 m² Beet, kleiner Balkon oder ganzer Vorgarten"
+          - key: materialsPlants
+            label: "Welche Materialien oder Pflanzen hast du bereits?"
+            placeholder: "z. B. Erde und Samen vorhanden, Werkzeug muss noch besorgt werden"
+          - key: seasonalConstraints
+            label: "Gibt es saisonale Einschränkungen?"
+            placeholder: "z. B. Aussaat muss bis April erfolgen, Projekt im Herbst geplant"
+
+  # =========================================================================
+  # CREATIVE – Kreatives
+  # =========================================================================
+  CREATIVE:
+    questions:
+      - key: creativeGoal
+        label: "Was möchtest du kreativ umsetzen?"
+        placeholder: "z. B. ein Buch schreiben, einen Film drehen oder eine Ausstellung planen"
+
+    subcategories:
+      WRITING_PROJECT:
+        questions:
+          - key: typeGenre
+            label: "Was für ein Schreibprojekt ist es?"
+            placeholder: "z. B. ein Fantasy-Roman, eine Kurzgeschichtensammlung oder ein Sachbuch"
+          - key: desiredOutcome
+            label: "Was soll am Ende herauskommen?"
+            placeholder: "z. B. fertiges Manuskript, veröffentlichtes E-Book oder Blogartikel-Serie"
+          - key: scope
+            label: "Wie umfangreich soll das Ergebnis werden?"
+            placeholder: "z. B. ca. 200 Seiten, 10 Kurzgeschichten oder 20 Blogartikel"
+          - key: targetAudience
+            label: "An wen richtet sich das Werk?"
+            placeholder: "z. B. junge Erwachsene, Fachpublikum oder eigener Blog"
+          - key: currentProgress
+            label: "Wie weit bist du bisher?"
+            placeholder: "z. B. Idee und Grobstruktur stehen, erste Kapitel geschrieben"
+
+      PODCAST:
+        questions:
+          - key: topicAudience
+            label: "Worum geht es und an wen richtet sich der Podcast?"
+            placeholder: "z. B. True-Crime-Podcast für junge Erwachsene"
+          - key: format
+            label: "Ist es ein einzelnes Projekt oder eine laufende Serie?"
+            placeholder: "z. B. Serie mit wöchentlichen Folgen, einmaliges Special"
+          - key: scope
+            label: "Wie viele Folgen oder wie lang soll der Podcast werden?"
+            placeholder: "z. B. 10 Folgen à 30 Minuten"
+          - key: availableTechnology
+            label: "Welche Aufnahmetechnik hast du?"
+            placeholder: "z. B. USB-Mikrofon und Laptop vorhanden, Schnittsoftware fehlt"
+          - key: currentProgress
+            label: "Wie weit bist du bisher?"
+            placeholder: "z. B. Konzept steht, Intro-Musik fehlt noch"
+
+      VIDEO_OR_SHORT_FILM_PROJECT:
+        questions:
+          - key: ideaGoal
+            label: "Worum geht es in dem Video oder Film?"
+            placeholder: "z. B. Dokumentarfilm über lokale Imker, YouTube-Tutorial-Serie"
+          - key: contributors
+            label: "Wer ist an der Produktion beteiligt?"
+            placeholder: "z. B. zwei Freunde als Darsteller, ich mache Kamera und Schnitt"
+          - key: scope
+            label: "Wie lang oder umfangreich soll das Ergebnis werden?"
+            placeholder: "z. B. ca. 15 Minuten, 5 kurze Clips für Social Media"
+          - key: availableTechnology
+            label: "Welche Ausrüstung steht zur Verfügung?"
+            placeholder: "z. B. Smartphone mit guter Kamera, Stativ und ein Ringlicht"
+          - key: currentProgress
+            label: "Wie weit bist du bisher?"
+            placeholder: "z. B. Idee vorhanden, Drehbuch muss noch geschrieben werden"
+
+      PHOTO_OR_GRAPHIC_PROJECT:
+        questions:
+          - key: goalStyle
+            label: "Was möchtest du fotografisch oder grafisch umsetzen?"
+            placeholder: "z. B. Portraitserie, Produktfotos für einen Onlineshop, Poster-Design"
+          - key: subjects
+            label: "Was soll abgebildet oder gestaltet werden?"
+            placeholder: "z. B. Personen, Landschaften, Logos oder Social-Media-Grafiken"
+          - key: scope
+            label: "Wie umfangreich ist das Projekt?"
+            placeholder: "z. B. 20 bearbeitete Fotos, 5 Designvorlagen"
+          - key: availableResources
+            label: "Welche Technik oder Materialien hast du?"
+            placeholder: "z. B. Spiegelreflexkamera vorhanden, Photoshop-Lizenz aktiv"
+
+      MUSIC_PROJECT:
+        questions:
+          - key: musicType
+            label: "Was für ein Musikprojekt ist es?"
+            placeholder: "z. B. eigenes Album aufnehmen, Stück für Schulchor arrangieren"
+          - key: desiredOutcome
+            label: "Was soll am Ende entstehen?"
+            placeholder: "z. B. fertig produzierte EP mit 5 Songs, Notenblätter für das Ensemble"
+          - key: contributors
+            label: "Wer arbeitet mit?"
+            placeholder: "z. B. drei Bandmitglieder und ein Tontechniker"
+          - key: currentProgress
+            label: "Wie weit bist du bisher?"
+            placeholder: "z. B. Songs sind geschrieben, Aufnahmen stehen noch aus"
+          - key: availableTechnology
+            label: "Welche Technik steht zur Verfügung?"
+            placeholder: "z. B. Home-Studio mit Audio-Interface und DAW"
+
+      EXHIBITION:
+        questions:
+          - key: goalAudience
+            label: "Was ist das Thema und wer soll die Ausstellung besuchen?"
+            placeholder: "z. B. Fotoausstellung zum Thema Stadtleben für die Öffentlichkeit"
+          - key: exhibits
+            label: "Was soll ausgestellt werden?"
+            placeholder: "z. B. 30 gerahmte Fotos, 5 Skulpturen und interaktive Stationen"
+          - key: venue
+            label: "Wo soll die Ausstellung stattfinden?"
+            placeholder: "z. B. Galerie in der Innenstadt, Gemeindehaus oder Uni-Foyer"
+          - key: currentProgress
+            label: "Wie weit sind die Vorbereitungen?"
+            placeholder: "z. B. Werke sind fertig, Ort muss noch organisiert werden"
+
+      BLOG_OR_SOCIAL_MEDIA_CAMPAIGN:
+        questions:
+          - key: goalAudience
+            label: "Was soll erreicht werden und wen möchtest du ansprechen?"
+            placeholder: "z. B. mehr Reichweite für einen Reiseblog, Follower für einen neuen Kanal"
+          - key: channels
+            label: "Welche Kanäle oder Plattformen möchtest du nutzen?"
+            placeholder: "z. B. Instagram und Blog, TikTok und YouTube"
+          - key: contentScope
+            label: "Wie viele Beiträge oder welche Inhalte sind geplant?"
+            placeholder: "z. B. 3 Beiträge pro Woche über 2 Monate"
+          - key: currentProgress
+            label: "Wie weit bist du bisher?"
+            placeholder: "z. B. Kanal existiert schon, Content-Plan fehlt noch"
+
+      BOARD_GAME_OR_CREATIVE_PROTOTYPE:
+        questions:
+          - key: ideaGoal
+            label: "Was für ein Spiel oder Prototyp soll entstehen?"
+            placeholder: "z. B. ein kooperatives Brettspiel für 2–4 Spieler, ein Kartenspiel-Prototyp"
+          - key: targetAudience
+            label: "Für wen ist es gedacht?"
+            placeholder: "z. B. Familien mit Kindern ab 8 Jahren"
+          - key: prototypeScope
+            label: "Wie weit soll der Prototyp reichen?"
+            placeholder: "z. B. spielbarer Prototyp mit allen Grundmechaniken"
+          - key: currentProgress
+            label: "Wie weit bist du bisher?"
+            placeholder: "z. B. Regeln stehen, Spielmaterial muss noch gebastelt werden"
+          - key: availableMaterials
+            label: "Welche Materialien hast du?"
+            placeholder: "z. B. Pappe, Drucker, Bastelmaterial vorhanden"
+
+  # =========================================================================
+  # CAREER – Beruf und Karriere
+  # =========================================================================
+  CAREER:
+    questions:
+      - key: careerGoal
+        label: "Was möchtest du beruflich erreichen?"
+        placeholder: "z. B. einen neuen Job finden, mich weiterbilden oder ein Portfolio erstellen"
+
+    subcategories:
+      JOB_SEARCH_AND_APPLICATION:
+        questions:
+          - key: targetRoles
+            label: "Welche Art von Stelle suchst du?"
+            placeholder: "z. B. Junior-Softwareentwickler, Trainee im Marketing"
+          - key: industryFocus
+            label: "In welcher Branche oder welchem Bereich möchtest du arbeiten?"
+            placeholder: "z. B. IT-Branche, Bildungswesen, Gesundheitssektor"
+          - key: availableDocuments
+            label: "Welche Bewerbungsunterlagen hast du schon?"
+            placeholder: "z. B. Lebenslauf ist aktuell, Anschreiben fehlt noch"
+          - key: applicationGoal
+            label: "Wie viele Bewerbungen planst du oder was ist dein Bewerbungsziel?"
+            placeholder: "z. B. 10 Bewerbungen in den nächsten 4 Wochen"
+
+      CREATE_PORTFOLIO:
+        questions:
+          - key: portfolioGoal
+            label: "Wofür brauchst du das Portfolio und wer soll es sehen?"
+            placeholder: "z. B. für Bewerbungen als Grafikdesigner bei Agenturen"
+          - key: availableContent
+            label: "Welche Arbeiten oder Projekte kannst du zeigen?"
+            placeholder: "z. B. 5 abgeschlossene Webdesign-Projekte und diverse Illustrationen"
+          - key: desiredComponents
+            label: "Was soll das Portfolio enthalten?"
+            placeholder: "z. B. Projektbeschreibungen, Screenshots, Prozessdokumentation"
+          - key: requirements
+            label: "Hast du gestalterische oder technische Wünsche?"
+            placeholder: "z. B. als Website mit eigenem Design oder als PDF-Mappe"
+
+      TRAINING_OR_CERTIFICATION:
+        questions:
+          - key: qualificationGoal
+            label: "Welche Qualifikation oder welches Zertifikat möchtest du erreichen?"
+            placeholder: "z. B. AWS Cloud Practitioner, Projektmanagement-Zertifikat (IPMA)"
+          - key: currentKnowledge
+            label: "Was weißt du bereits über das Thema?"
+            placeholder: "z. B. Grundlagen durch Berufserfahrung vorhanden"
+          - key: contentScope
+            label: "Welche Inhalte umfasst die Weiterbildung?"
+            placeholder: "z. B. Cloud-Grundlagen, Architekturen, Sicherheit und Kostenmanagement"
+          - key: examDeadline
+            label: "Gibt es eine Prüfung oder einen Termin?"
+            placeholder: "z. B. Prüfung im November, Online-Test jederzeit möglich"
+
+      PROCESS_IMPROVEMENT:
+        questions:
+          - key: currentProcess
+            label: "Welchen Prozess möchtest du verbessern?"
+            placeholder: "z. B. die wöchentliche Teamabstimmung, das Onboarding neuer Kunden"
+          - key: problem
+            label: "Was läuft aktuell nicht gut?"
+            placeholder: "z. B. Meetings dauern zu lang und haben kein klares Ergebnis"
+          - key: targetState
+            label: "Was soll sich verbessern?"
+            placeholder: "z. B. kürzere Meetings mit klaren Entscheidungen und Aufgaben"
+
+      PRODUCT_OR_BUSINESS_IDEA:
+        questions:
+          - key: idea
+            label: "Was ist die Idee?"
+            placeholder: "z. B. eine App für nachbarschaftliche Hilfe bei Alltagsaufgaben"
+          - key: targetAudience
+            label: "Wer ist die Zielgruppe?"
+            placeholder: "z. B. Senioren und junge Familien in städtischen Wohngebieten"
+          - key: projectOutcome
+            label: "Was soll als Ergebnis dieses Projekts entstehen?"
+            placeholder: "z. B. ein validiertes Konzept mit Businessplan und Prototyp"
+          - key: currentProgress
+            label: "Wie weit bist du bisher?"
+            placeholder: "z. B. Grundidee steht, erste Gespräche mit potenziellen Nutzern geführt"
+
+      ONBOARDING_PLAN:
+        questions:
+          - key: onboardingGoal
+            label: "Was soll die neue Person nach der Einarbeitung können?"
+            placeholder: "z. B. selbstständig Kundenanfragen bearbeiten und das CRM-System nutzen"
+          - key: roleAndTopics
+            label: "Welche Rolle und welche Themen sind relevant?"
+            placeholder: "z. B. Kundenberatung, interne Abläufe, Produktkatalog"
+          - key: currentSituation
+            label: "Gibt es schon Einarbeitungsunterlagen?"
+            placeholder: "z. B. veraltetes Handbuch vorhanden, praktische Einweisung fehlt"
+          - key: availableResources
+            label: "Wer kann bei der Einarbeitung unterstützen?"
+            placeholder: "z. B. Teamleiter für fachliche Fragen, IT für technische Einrichtung"
+
+      PROFESSIONAL_PRESENTATION:
+        questions:
+          - key: topicOutcome
+            label: "Worum geht es in der Präsentation?"
+            placeholder: "z. B. Quartalsbericht für die Geschäftsleitung, Produktvorstellung für Kunden"
+          - key: targetAudience
+            label: "Vor wem wird präsentiert?"
+            placeholder: "z. B. Vorstand, Kunden oder Kolleginnen und Kollegen"
+          - key: contentRequirements
+            label: "Gibt es inhaltliche Vorgaben?"
+            placeholder: "z. B. muss Umsatzzahlen und Marktanalyse enthalten"
+          - key: desiredDeliverables
+            label: "Welche Bestandteile soll das Ergebnis umfassen?"
+            placeholder: "z. B. PowerPoint-Folien und ein Handout"
+
+  # =========================================================================
+  # HEALTH_PERSONAL_DEVELOPMENT – Gesundheit und persönliche Entwicklung
+  # =========================================================================
+  HEALTH_PERSONAL_DEVELOPMENT:
+    questions:
+      - key: personalGoal
+        label: "Was möchtest du für dich persönlich verändern oder erreichen?"
+        placeholder: "z. B. regelmäßig Sport treiben, eine neue Gewohnheit aufbauen oder gesünder essen"
+
+    subcategories:
+      FITNESS_OR_RUNNING_GOAL:
+        questions:
+          - key: fitnessGoal
+            label: "Was ist dein konkretes Fitness- oder Laufziel?"
+            placeholder: "z. B. einen 10-km-Lauf in unter 50 Minuten schaffen, 3× pro Woche trainieren"
+          - key: currentLevel
+            label: "Wie ist dein aktueller Fitnessstand?"
+            placeholder: "z. B. gelegentliches Joggen, ca. 5 km in 35 Minuten"
+
+      HABIT_OR_PERSONAL_CHALLENGE:
+        questions:
+          - key: desiredChange
+            label: "Welche Gewohnheit möchtest du aufbauen oder verändern?"
+            placeholder: "z. B. jeden Morgen 15 Minuten meditieren, weniger Süßigkeiten essen"
+          - key: currentSituation
+            label: "Wie sieht dein Alltag aktuell in diesem Bereich aus?"
+            placeholder: "z. B. aktuell keine feste Morgenroutine, abends oft Snacks"
+          - key: dailyConditions
+            label: "Welche Alltagsbedingungen beeinflussen dein Vorhaben?"
+            placeholder: "z. B. früh aufstehen nötig wegen Arbeit, Kinder zu Hause"
+
+      COMPETITION_PREPARATION:
+        questions:
+          - key: competitionGoal
+            label: "Auf welchen Wettkampf bereitest du dich vor?"
+            placeholder: "z. B. Halbmarathon im Oktober, regionale Schwimmmeisterschaft"
+          - key: currentLevel
+            label: "Wie ist dein aktueller Trainingsstand?"
+            placeholder: "z. B. laufe regelmäßig 15 km, Bestzeit 10 km bei 48 Minuten"
+          - key: trainingResources
+            label: "Welche Trainingsmöglichkeiten hast du?"
+            placeholder: "z. B. Zugang zum Fitnessstudio, Laufstrecke in der Nähe"
+
+      NUTRITION_PROJECT:
+        questions:
+          - key: nutritionGoal
+            label: "Was möchtest du bei deiner Ernährung verändern?"
+            placeholder: "z. B. Mahlzeiten besser vorplanen, weniger Fertiggerichte, mehr Gemüse"
+          - key: currentSituation
+            label: "Wie isst du aktuell?"
+            placeholder: "z. B. oft spontan und unregelmäßig, mittags in der Kantine"
+          - key: dailyConditions
+            label: "Welche Alltagsbedingungen sind relevant?"
+            placeholder: "z. B. wenig Zeit zum Kochen unter der Woche, Partner isst mit"
+
+      DIGITAL_DETOX_OR_DAILY_LIFE_CHANGE:
+        questions:
+          - key: screenGoal
+            label: "Welche Bildschirm- oder Mediennutzung möchtest du reduzieren?"
+            placeholder: "z. B. weniger Social-Media-Zeit, abends kein Handy mehr im Bett"
+          - key: currentUsage
+            label: "Wie sieht deine aktuelle Nutzung aus?"
+            placeholder: "z. B. ca. 4 Stunden Handyzeit pro Tag, ständig erreichbar"
+          - key: affectedAreas
+            label: "Welche Lebensbereiche sind betroffen?"
+            placeholder: "z. B. Schlafqualität, Konzentration bei der Arbeit, Familienzeit"
+          - key: dailyConditions
+            label: "Welche Alltagsbedingungen spielen eine Rolle?"
+            placeholder: "z. B. beruflich auf Smartphone angewiesen, Partner nutzt ebenfalls viel Medien"
+
+  # =========================================================================
+  # TRAVEL – Reise
+  # =========================================================================
+  TRAVEL:
+    questions:
+      - key: travelGoal
+        label: "Was für eine Reise planst du?"
+        placeholder: "z. B. zweiwöchiger Urlaub in Italien, Wochenendtrip nach Wien"
+
+    subcategories:
+      TRIP_OR_VACATION:
+        questions:
+          - key: destination
+            label: "Wohin soll die Reise gehen?"
+            placeholder: "z. B. Südfrankreich, japanische Küste oder Mallorca"
+          - key: budget
+            label: "Hast du ein ungefähres Budget?"
+            placeholder: "z. B. ca. 1.500 € pro Person für 2 Wochen"
+          - key: transport
+            label: "Wie kommst du hin?"
+            placeholder: "z. B. Flug, eigenes Auto oder Bahn"
+          - key: accommodation
+            label: "Wo möchtest du übernachten?"
+            placeholder: "z. B. Hotel, Ferienwohnung oder noch offen"
+          - key: activities
+            label: "Was möchtest du dort unternehmen?"
+            placeholder: "z. B. Strand, Wandern, Städte besichtigen"
+
+      ROAD_TRIP:
+        questions:
+          - key: routeDestinations
+            label: "Welche Route oder welche Ziele hast du im Kopf?"
+            placeholder: "z. B. München → Salzburg → Wien → Budapest"
+          - key: budget
+            label: "Hast du ein ungefähres Budget?"
+            placeholder: "z. B. ca. 2.000 € für Sprit, Unterkünfte und Essen"
+          - key: transport
+            label: "Mit welchem Fahrzeug fährst du?"
+            placeholder: "z. B. eigenes Auto, Mietwagen oder Campervan"
+          - key: accommodation
+            label: "Wo möchtest du unterwegs übernachten?"
+            placeholder: "z. B. Hotels, Campingplätze oder spontan entscheiden"
+          - key: activities
+            label: "Welche Stopps oder Aktivitäten sind geplant?"
+            placeholder: "z. B. Wanderung am Chiemsee, Stadtbummel in Wien"
+
+      CAMPING_TRIP:
+        questions:
+          - key: destination
+            label: "Wohin soll die Campingreise gehen?"
+            placeholder: "z. B. Campingplatz am Bodensee, Wildcamping in Schweden"
+          - key: budget
+            label: "Hast du ein ungefähres Budget?"
+            placeholder: "z. B. ca. 500 € für Stellplätze, Essen und Anfahrt"
+          - key: transport
+            label: "Wie reist du an?"
+            placeholder: "z. B. eigenes Auto mit Dachzelt, Bulli"
+          - key: campingEquipment
+            label: "Welche Campingausrüstung hast du?"
+            placeholder: "z. B. Zelt und Schlafsäcke vorhanden, Campingkocher fehlt"
+          - key: activities
+            label: "Was möchtest du dort unternehmen?"
+            placeholder: "z. B. Wandern, Kanufahren, Lagerfeuer"
+
+      FESTIVAL_OR_CONCERT_TRIP:
+        questions:
+          - key: eventDestination
+            label: "Welches Festival oder Konzert besuchst du und wo?"
+            placeholder: "z. B. Rock am Ring, Konzert in Berlin, Wacken Open Air"
+          - key: budget
+            label: "Hast du ein ungefähres Budget?"
+            placeholder: "z. B. ca. 400 € für Ticket, Anfahrt und Verpflegung"
+          - key: transport
+            label: "Wie kommst du hin?"
+            placeholder: "z. B. Zug, Mitfahrgelegenheit oder eigenes Auto"
+          - key: accommodation
+            label: "Wo übernachtest du?"
+            placeholder: "z. B. Festivalcamping, Hotel in der Nähe oder bei Freunden"
+          - key: tickets
+            label: "Hast du schon Tickets oder musst du noch welche besorgen?"
+            placeholder: "z. B. Tickets gekauft, Camping-Upgrade fehlt noch"
+
+      BICYCLE_TOUR:
+        questions:
+          - key: routeDestinations
+            label: "Welche Strecke oder welche Ziele planst du?"
+            placeholder: "z. B. Elberadweg von Dresden nach Hamburg, Tagestour um den See"
+          - key: tourScope
+            label: "Wie lang und wie viele Tage soll die Tour dauern?"
+            placeholder: "z. B. ca. 300 km in 5 Tagen mit Tagesetappen von ca. 60 km"
+          - key: availableEquipment
+            label: "Welche Ausrüstung hast du?"
+            placeholder: "z. B. Trekkingrad vorhanden, Packtaschen müssen noch besorgt werden"
+          - key: accommodation
+            label: "Wo übernachtest du unterwegs?"
+            placeholder: "z. B. Pensionen am Weg, Zelt dabei oder Jugendherbergen"

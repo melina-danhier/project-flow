@@ -817,6 +817,37 @@
     white-space: nowrap;
 }
 
+.pf-btn--plan-ai-desktop {
+    display: inline-flex;
+}
+
+.pf-dropdown__item--mobile-ai,
+.pf-dropdown__divider--mobile-ai {
+    display: none !important;
+}
+
+/* Detail Page Title Row (Tasks & Milestones: Action menu never slips below title) */
+.pf-detail-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.pf-detail-title {
+    margin: 0;
+    font-size: 1.4rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+    flex: 1;
+}
+
+.pf-detail-title-row .pf-task-header-actions--mobile {
+    flex-shrink: 0;
+}
 
 /* Phase Header */
 .pf-phase-header__left {
@@ -825,6 +856,7 @@
     gap: 0.6rem;
     flex: 1;
     min-width: 0;
+    flex-wrap: nowrap;
 }
 
 .pf-phase-header__right {
@@ -1202,9 +1234,17 @@ details[open] .pf-phase-caret {
     .pf-task-header-actions--mobile {
         display: block !important;
     }
-}
 
-@media (max-width: 640px) {
+    .pf-btn--plan-ai-desktop {
+        display: none !important;
+    }
+    .pf-dropdown__item--mobile-ai {
+        display: flex !important;
+    }
+    .pf-dropdown__divider--mobile-ai {
+        display: block !important;
+    }
+
     .pf-plan-control-bar {
         padding: 0.65rem 0.75rem;
         gap: 0.65rem;
@@ -1231,14 +1271,65 @@ details[open] .pf-phase-caret {
         max-width: 200px;
     }
 
-    /* Mobile Plan Card Simplification */
-    .plan-element .pf-element-item__right {
-        gap: 0.35rem;
-        flex-wrap: wrap;
-        justify-content: flex-end;
+    /* Phase Header: [▾] [Drag] Bereichstitel on single line */
+    .pf-plan-section__header {
+        flex-wrap: nowrap;
+        gap: 0.5rem;
     }
-    .plan-element {
+    .pf-phase-header__left {
+        flex-wrap: nowrap;
+        min-width: 0;
+        flex: 1;
+    }
+    .pf-phase-display-wrap {
+        min-width: 0;
+        flex: 1;
+    }
+    .pf-phase-title {
+        word-break: break-word;
+        overflow-wrap: break-word;
+        font-size: 0.98rem;
+    }
+
+    /* Requirement 3: Hide x Aufgaben / y Meilensteine on mobile */
+    .pf-phase-header__right .pf-badge--blue,
+    .pf-phase-header__right .pf-badge--purple {
+        display: none !important;
+    }
+
+    /* Requirement 3: Show properties under title, not beside it */
+    .pf-element-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
         padding: 0.65rem 0.75rem;
+    }
+    .pf-element-item__left {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+    .pf-element-item__body {
+        flex: 1;
+        min-width: 0;
+    }
+    .pf-element-item__title {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+    .plan-element .pf-element-item__right {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        width: 100%;
+        justify-content: flex-start;
+        padding-left: 2rem;
+    }
+    .plan-element .pf-element-item__right .pf-item-menu {
+        margin-left: auto;
     }
 }
 

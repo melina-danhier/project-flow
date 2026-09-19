@@ -12,7 +12,7 @@
         <div class="pf-page-header__left">
             <h1 style="margin: 0;">Projekt erstellen</h1>
             <p class="pf-page-header__subtitle">
-                Zusätzliche Detailfragen für die KI-Planung von „<strong th:text="${wizardState.title}">Projekt</strong>“.
+                Zusätzliche Detailfragen für die KI-Planung von „<strong th:text="${wizardState.title}">Projekt</strong>".
             </p>
         </div>
     </div>
@@ -34,10 +34,10 @@
             <div th:if="${#fields.hasAnyErrors()}" th:each="error : ${#fields.allErrors()}"
                  class="pf-alert pf-alert--error" th:text="${error}" role="alert"></div>
 
-            <!-- Available working time -->
+            <!-- Available working time (always first) -->
             <div class="pf-form-row">
                 <label for="availableWorkingTime" class="pf-label">
-                    <span>Wie viel Arbeitszeit kannst du ungefähr für das Projekt aufbringen?</span>
+                    <span>Wie viel Zeit kannst du ungefähr für das Projekt aufbringen?</span>
                     <span class="pf-hint">(optional)</span>
                 </label>
                 <div class="pf-form-field">
@@ -46,36 +46,34 @@
                            type="text"
                            th:field="*{availableWorkingTime}"
                            maxlength="1000"
-                           placeholder="z. B. ca. 5 Stunden pro Woche oder nur am Wochenende">
+                           placeholder="z. B. etwa 3 Stunden pro Woche, hauptsächlich am Wochenende oder insgesamt rund 20 Stunden">
                     <div th:if="${#fields.hasErrors('availableWorkingTime')}"
                          th:errors="*{availableWorkingTime}"
                          class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
             </div>
 
-            <!-- Dynamic category-specific questions -->
+            <!-- Dynamic category-specific questions from YAML catalog -->
             <div th:each="question : ${questions}" class="pf-form-row">
                 <label th:for="|answer-${question.key}|" class="pf-label">
                     <span th:text="${question.label}">Frage</span>
-                    <span th:if="${!question.required}" class="pf-hint">(optional)</span>
-                    <span th:if="${question.required}" class="pf-required-star" aria-hidden="true">*</span>
+                    <span class="pf-hint">(optional)</span>
                 </label>
                 <div class="pf-form-field">
                     <textarea th:id="|answer-${question.key}|"
                               class="pf-textarea"
                               th:field="*{answers[__${question.key}__]}"
                               th:maxlength="${question.maxLength}"
-                              th:required="${question.required}"
+                              th:placeholder="${question.helpText}"
                               rows="3"></textarea>
-                    <p th:if="${question.helpText != null}" class="pf-hint" th:text="${question.helpText}" style="margin: 0.25rem 0 0;"></p>
                     <small th:if="${session != null and session.studySessionId != null}" class="pf-hint" style="display:block; margin-top:0.25rem;">Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</small>
                 </div>
             </div>
 
-            <!-- Additional wishes and constraints -->
+            <!-- Constraints / wishes (always last) -->
             <div class="pf-form-row">
                 <label for="additionalInformation" class="pf-label">
-                    <span>Besondere Wünsche & Einschränkungen</span>
+                    <span>Welche besonderen Wünsche, Vorgaben oder Einschränkungen sollen berücksichtigt werden?</span>
                     <span class="pf-hint">(optional)</span>
                 </label>
                 <div class="pf-form-field">
@@ -84,7 +82,7 @@
                               th:field="*{additionalInformation}"
                               maxlength="2000"
                               rows="3"
-                              placeholder="z. B. Besondere Prioritäten, bestimmte Tools oder zeitliche Einschränkungen..."></textarea>
+                              placeholder="z. B. begrenztes Budget, feste Termine, vorhandene Materialien oder bestimmte Wünsche"></textarea>
                     <small th:if="${session != null and session.studySessionId != null}" class="pf-hint" style="display:block; margin-top:0.25rem;">Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</small>
                     <div th:if="${#fields.hasErrors('additionalInformation')}"
                          th:errors="*{additionalInformation}"

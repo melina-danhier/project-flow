@@ -17,7 +17,36 @@
                 </svg>
                 Zum Projektplan
             </a>
-            <h1 th:text="${task.title}" style="margin: 0;">Aufgabe</h1>
+            <div class="pf-detail-title-row">
+                <h1 th:text="${task.title}" class="pf-detail-title" style="margin: 0;">Aufgabe</h1>
+                <!-- Mobile: Compact Menu directly next to title (never slips below) -->
+                <details th:if="${task.editable}" class="pf-dropdown pf-dropdown--right pf-task-header-actions--mobile">
+                    <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Aktionen" aria-label="Aktionen">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="1.5"></circle>
+                            <circle cx="12" cy="5" r="1.5"></circle>
+                            <circle cx="12" cy="19" r="1.5"></circle>
+                        </svg>
+                    </summary>
+                    <div class="pf-dropdown__menu" style="min-width: 180px; width: max-content; max-width: calc(100vw - 2rem); white-space: nowrap;">
+                        <a class="pf-dropdown__item" th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                            </svg>
+                            <span>Mit KI anpassen</span>
+                        </a>
+                        <form th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post" style="margin: 0;">
+                            <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger" onclick="return confirm('Möchtest du diese Aufgabe wirklich löschen?');">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                                <span>Löschen</span>
+                            </button>
+                        </form>
+                    </div>
+                </details>
+            </div>
         </div>
 
         <div class="pf-page-header__actions" th:if="${task.editable}">
@@ -40,34 +69,6 @@
                     </button>
                 </form>
             </div>
-
-            <!-- Mobile: Compact Menu ONLY (No separate buttons) -->
-            <details class="pf-dropdown pf-dropdown--right pf-task-header-actions--mobile">
-                <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Aktionen" aria-label="Aktionen">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="1.5"></circle>
-                        <circle cx="12" cy="5" r="1.5"></circle>
-                        <circle cx="12" cy="19" r="1.5"></circle>
-                    </svg>
-                </summary>
-                <div class="pf-dropdown__menu" style="min-width: 180px; width: max-content; max-width: calc(100vw - 2rem); white-space: nowrap;">
-                    <a class="pf-dropdown__item" th:href="@{/projects/{projectId}/plan-elements/TASK/{taskId}/improve(projectId=${task.planContainerId},taskId=${task.id})}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                        </svg>
-                        <span>Mit KI anpassen</span>
-                    </a>
-                    <form th:action="@{/projects/{projectId}/tasks/{taskId}/delete(projectId=${task.planContainerId},taskId=${task.id})}" method="post" style="margin: 0;">
-                        <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger" onclick="return confirm('Möchtest du diese Aufgabe wirklich löschen?');">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                            <span>Löschen</span>
-                        </button>
-                    </form>
-                </div>
-            </details>
         </div>
     </div>
 

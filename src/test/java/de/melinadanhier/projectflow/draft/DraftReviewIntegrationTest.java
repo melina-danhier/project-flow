@@ -95,6 +95,57 @@ class DraftReviewIntegrationTest {
     }
 
     @Test
+    void draftProgressCountsSectionsTasksAndMilestonesInDraftOverview() throws Exception {
+        Fixture f = new TransactionTemplate(transactionManager).execute(status -> {
+            User owner = new User();
+            owner.setEmail(UUID.randomUUID() + "@example.org");
+            owner.setDisplayName("Progress Test Owner");
+            owner.setPasswordHash("test-hash");
+            owner.setEnabled(true);
+            users.saveAndFlush(owner);
+
+            Project project = new Project();
+            project.setTitle("Entwurfsfortschritt-Projekt");
+            project.setCreationType(CreationType.AI);
+            project.setLocation(ProjectLocation.DRAFT);
+            ProjectMember membership = new ProjectMember();
+            membership.setUser(owner);
+            membership.setRole(ProjectMemberRole.OWNER);
+            membership.setActive(true);
+            project.addMembership(membership);
+            projects.saveAndFlush(project);
+
+            List<GeneratedTask> tasks = List.of(
+                    new GeneratedTask("task-1", "Aufgabe 1", null, null, null, null, 1),
+                    new GeneratedTask("task-2", "Aufgabe 2", null, null, null, null, 2)
+            );
+            List<GeneratedMilestone> milestones = List.of(
+                    new GeneratedMilestone("ms-1", "Meilenstein 1", null, 1)
+            );
+            var contents = generatedPlanMapper.map(new GeneratedPlanResponse(List.of(
+                    new GeneratedSection("sec-1", "Bereich 1", null, 1, tasks, milestones)
+            )));
+            DraftPlan draft = new DraftPlan();
+            project.attachDraft(draft);
+            draft.setStatus(DraftPlanStatus.READY_FOR_REVIEW);
+            contents.sections().forEach(draft::addSection);
+            contents.elements().forEach(draft::addElement);
+
+            // 1 section + 2 tasks + 1 milestone = 4 total elements
+            // Mark 1 section accepted, 1 task accepted -> 2 reviewed elements
+            contents.sections().getFirst().setReviewStatus(DraftReviewStatus.ACCEPTED);
+            contents.elements().getFirst().setReviewStatus(DraftReviewStatus.ACCEPTED);
+
+            drafts.saveAndFlush(draft);
+            return new Fixture(project.getId(), new AuthenticatedUser(owner.getId(), owner.getEmail(), owner.getPasswordHash(), true));
+        });
+
+        mvc.perform(get("/projects/drafts").with(user(f.owner())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("2/4 Elemente geprüft")));
+    }
+
+    @Test
     void planPageRedirectsOwnerBackToDraftReviewWhileProjectIsStillADraft() throws Exception {
         Fixture draft = fixture(null, null);
         AuthenticatedUser outsider = fixture(null, null).owner();

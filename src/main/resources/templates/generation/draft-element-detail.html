@@ -76,21 +76,6 @@
                         </div>
                     </div>
 
-                    <!-- 2. Status / Review Status -->
-                    <div class="pf-detail-prop">
-                        <span class="pf-detail-prop__icon" title="Review-Status">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                        </span>
-                        <div class="pf-detail-prop__content">
-                            <span class="pf-detail-prop__label">Review-Status</span>
-                            <span class="pf-badge"
-                                  th:classappend="${draftElement.reviewStatus.name() == 'ACCEPTED' ? 'pf-badge--green' : (draftElement.reviewStatus.name() == 'REJECTED' ? 'pf-badge--red' : 'pf-badge--yellow')}"
-                                  th:text="${draftElement.reviewStatus.name() == 'PENDING' ? 'Offen' : (draftElement.reviewStatus.name() == 'ACCEPTED' ? 'Übernommen' : 'Verworfen')}"></span>
-                        </div>
-                    </div>
 
                     <!-- 3. Priority (if TASK) -->
                     <div class="pf-detail-prop" th:if="${draftElement.type == 'TASK'}">
@@ -229,6 +214,23 @@
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         <span>Abgelehnt</span>
                     </button>
+                </form>
+            </div>
+
+            <!-- Mobile: Review Selection Dropdown -->
+            <div class="review-actions--mobile" style="margin-top: 0.5rem;">
+                <form method="post" id="draft-element-mobile-review-form">
+                    <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+                    <input type="hidden" name="detail" value="true">
+                    <select class="pf-select pf-select--sm" aria-label="Review-Status wählen"
+                            onchange="this.form.action = this.value; this.form.submit();">
+                        <option th:value="@{/projects/{projectId}/draft/elements/{elementId}/reset(projectId=${draft.projectId},elementId=${draftElement.id})}"
+                                th:selected="${draftElement.reviewStatus.name() == 'PENDING'}">○ Offen</option>
+                        <option th:value="@{/projects/{projectId}/draft/elements/{elementId}/accept(projectId=${draft.projectId},elementId=${draftElement.id})}"
+                                th:selected="${draftElement.reviewStatus.name() == 'ACCEPTED'}">✓ Übernehmen</option>
+                        <option th:value="@{/projects/{projectId}/draft/elements/{elementId}/reject(projectId=${draft.projectId},elementId=${draftElement.id})}"
+                                th:selected="${draftElement.reviewStatus.name() == 'REJECTED'}">✕ Ablehnen</option>
+                    </select>
                 </form>
             </div>
         </div>

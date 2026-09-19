@@ -159,20 +159,20 @@ class AiWizardSummaryIntegrationTest {
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Wie viel Arbeitszeit kannst du ungefähr für das Projekt aufbringen?")))
-                .andExpect(content().string(containsString("Betroffene Räume oder Fläche")))
-                .andExpect(content().string(containsString("Konkret geplante Arbeiten")))
-                .andExpect(content().string(not(containsString("Festgelegte Technologien"))));
+                .andExpect(content().string(containsString("Wie viel Zeit kannst du ungefähr für das Projekt aufbringen?")))
+                .andExpect(content().string(containsString("Welche Räume oder Flächen sind betroffen?")))
+                .andExpect(content().string(containsString("Was genau soll gemacht werden?")))
+                .andExpect(content().string(not(containsString("Welche Technologien oder Programmiersprachen"))));
 
         request.state().setCategory(ProjectCategory.SOFTWARE_TECHNOLOGY);
         request.state().setSubcategory(ProjectSubCategory.SOFTWARE_PROJECT);
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Wie viel Arbeitszeit kannst du ungefähr für das Projekt aufbringen?")))
-                .andExpect(content().string(containsString("Ziel und Funktionsumfang")))
-                .andExpect(content().string(containsString("Festgelegte Technologien")))
-                .andExpect(content().string(not(containsString("Betroffene Räume oder Fläche"))));
+                .andExpect(content().string(containsString("Wie viel Zeit kannst du ungefähr für das Projekt aufbringen?")))
+                .andExpect(content().string(containsString("Was soll die Software können und wie umfangreich wird sie?")))
+                .andExpect(content().string(containsString("Welche Technologien oder Programmiersprachen sind festgelegt?")))
+                .andExpect(content().string(not(containsString("Welche Räume oder Flächen sind betroffen?"))));
     }
 
     @Test

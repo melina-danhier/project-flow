@@ -16,52 +16,63 @@
                 </svg>
                 Zum Projektplan
             </a>
-            <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
-                <h1 th:text="${milestone.title}" style="margin: 0;">Meilenstein</h1>
-                <span class="pf-badge pf-badge--purple" title="Ein Meilenstein markiert einen wichtigen Zwischen- oder Zielpunkt im Projekt." style="cursor: help;">Meilenstein</span>
+            <div class="pf-detail-title-row">
+                <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; flex: 1; min-width: 0;">
+                    <h1 th:text="${milestone.title}" class="pf-detail-title" style="margin: 0;">Meilenstein</h1>
+                    <span class="pf-badge pf-badge--purple" title="Ein Meilenstein markiert einen wichtigen Zwischen- oder Zielpunkt im Projekt." style="cursor: help;">Meilenstein</span>
+                </div>
+                <!-- Mobile: Compact Menu directly next to title (never slips below) -->
+                <details th:if="${milestone.editable}" class="pf-dropdown pf-dropdown--right pf-task-header-actions--mobile">
+                    <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Aktionen" aria-label="Aktionen">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="1.5"></circle>
+                            <circle cx="12" cy="5" r="1.5"></circle>
+                            <circle cx="12" cy="19" r="1.5"></circle>
+                        </svg>
+                    </summary>
+                    <div class="pf-dropdown__menu" style="min-width: 180px; width: max-content; max-width: calc(100vw - 2rem); white-space: nowrap;">
+                        <a class="pf-dropdown__item"
+                           th:href="@{/projects/{projectId}/plan-elements/MILESTONE/{milestoneId}/improve(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                            </svg>
+                            <span>Mit KI verbessern</span>
+                        </a>
+                        <form th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
+                              method="post" style="margin: 0;">
+                            <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger" onclick="return confirm('Möchtest du diesen Meilenstein wirklich löschen?');">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                                <span>Löschen</span>
+                            </button>
+                        </form>
+                    </div>
+                </details>
             </div>
         </div>
 
         <div class="pf-page-header__actions" th:if="${milestone.editable}">
-            <!-- Direct Edit Button (Requirement 6 & 13) -->
-            <a class="pf-btn pf-btn--primary"
-               th:href="@{/projects/{projectId}/milestones/{milestoneId}/edit(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                Meilenstein bearbeiten
-            </a>
-
-            <!-- Overflow Menu for Secondary Actions (Requirement 5 & 13) -->
-            <details class="pf-dropdown pf-dropdown--right">
-                <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Weitere Aktionen" aria-label="Weitere Aktionen">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="1.5"></circle>
-                        <circle cx="12" cy="5" r="1.5"></circle>
-                        <circle cx="12" cy="19" r="1.5"></circle>
+            <!-- Desktop: Visible Buttons side-by-side (NO extra dropdown menu) -->
+            <div class="pf-task-header-actions--desktop">
+                <a class="pf-btn pf-btn--outline pf-btn--sm"
+                   th:href="@{/projects/{projectId}/plan-elements/MILESTONE/{milestoneId}/improve(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
                     </svg>
-                </summary>
-                <div class="pf-dropdown__menu" style="min-width: 220px; width: max-content; max-width: calc(100vw - 2rem);">
-                    <a class="pf-dropdown__item"
-                       th:href="@{/projects/{projectId}/plan-elements/MILESTONE/{milestoneId}/improve(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
+                    <span>Mit KI anpassen</span>
+                </a>
+                <form th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}" method="post" style="margin: 0;">
+                    <button type="submit" class="pf-btn pf-btn--danger-outline pf-btn--sm" onclick="return confirm('Möchtest du diesen Meilenstein wirklich löschen?');">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
-                        <span>Mit KI verbessern</span>
-                    </a>
-                    <form th:action="@{/projects/{projectId}/milestones/{milestoneId}/delete(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}"
-                          method="post" style="margin: 0;">
-                        <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                            <span>Löschen</span>
-                        </button>
-                    </form>
-                </div>
-            </details>
+                        <span>Löschen</span>
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -81,7 +92,7 @@
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
-                        Bearbeiten
+                        Meilenstein bearbeiten
                     </a>
                 </div>
 

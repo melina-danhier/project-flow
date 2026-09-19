@@ -1378,18 +1378,33 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
         display: none;
     }
 
+    .site-footer {
+        padding: 0.75rem 0;
+        font-size: 0.8rem;
+    }
+
     .site-footer__content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .site-footer__brand {
+        gap: 0.5rem;
+    }
+
+    .site-footer__slogan {
+        display: none;
     }
 
     .site-footer__bottom {
+        font-size: 0.75rem;
         margin-left: 0;
     }
 
     .pf-dropdown__menu {
-        max-width: calc(100vw - 2rem);
+        max-width: calc(100vw - 1.5rem);
     }
 
     .pf-dropdown__item {
@@ -1458,6 +1473,7 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     display: block;
 }
 
+.pf-dropdown--right .pf-dropdown__menu,
 .pf-dropdown__menu--right {
     left: auto;
     right: 0;
@@ -1782,3 +1798,122 @@ dialog.pf-confirm-dialog::backdrop {
     border-radius: var(--pf-radius-md, 8px);
     cursor: pointer;
 }
+
+/* ==========================================================================
+   Global AI Feedback Dialog & Mobile Form Optimization
+   ========================================================================== */
+
+.pf-feedback-dialog {
+    width: min(540px, calc(100vw - 1.5rem));
+    max-width: calc(100vw - 1.5rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    padding: 1.5rem;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-lg, 16px);
+    background: var(--pf-surface, #ffffff);
+    color: var(--pf-text-main);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    margin: auto;
+}
+
+.pf-feedback-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(2px);
+}
+
+.pf-feedback-dialog__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.pf-feedback-dialog__close {
+    border: 0;
+    background: transparent;
+    color: var(--pf-text-muted);
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--pf-radius-sm);
+}
+
+.pf-feedback-dialog__close:hover {
+    color: var(--pf-text-main);
+    background: var(--pf-surface-subtle);
+}
+
+.pf-feedback-dialog__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.pf-feedback-ratings--desktop {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.pf-feedback-ratings--desktop label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.pf-feedback-ratings--mobile {
+    display: none;
+    margin-top: 0.5rem;
+}
+
+.pf-feedback-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+    .pf-feedback-dialog {
+        padding: 1rem;
+        max-height: calc(100dvh - 1.5rem);
+    }
+    .pf-feedback-ratings--desktop {
+        display: none !important;
+    }
+    .pf-feedback-ratings--mobile {
+        display: block !important;
+    }
+    .pf-feedback-dialog__actions {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+    }
+    .pf-feedback-dialog__actions .pf-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Mobile Form Compact Layout */
+    .pf-form-group {
+        margin-bottom: 0.75rem;
+    }
+    .pf-form-group .pf-label {
+        font-size: 0.82rem;
+        margin-bottom: 0.25rem;
+    }
+    .pf-form-actions {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+    }
+    .pf-form-actions .pf-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+

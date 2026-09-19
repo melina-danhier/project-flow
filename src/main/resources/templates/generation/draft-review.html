@@ -22,7 +22,18 @@
             </a>
             <div class="pf-cluster" style="align-items: center; gap: 0.75rem;">
                 <h1 th:text="${draft.projectTitle}" style="margin: 0;">Projekttitel</h1>
-                <span class="pf-badge pf-badge--purple">KI-Entwurf</span>
+                <div class="pf-draft-badge-wrap" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <span class="pf-badge pf-badge--purple">KI-Entwurf</span>
+                    <span class="pf-info-tooltip pf-draft-review-info-icon"
+                          title="Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest."
+                          aria-label="Hinweis zum KI-Entwurf">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </span>
+                </div>
             </div>
             <p class="pf-draft-review-hint" style="margin: 0.35rem 0 0.5rem; font-size: 0.85rem; color: var(--pf-text-muted); max-width: 680px; line-height: 1.45;">
                 Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest.
@@ -50,24 +61,62 @@
                 <strong th:text="${draft.reviewedElementCount + ' / ' + draft.totalElementCount + ' geprüft'}">0 / 0 geprüft</strong>
             </span>
 
-            <!-- Draft Review Actions -->
-            <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
-                  th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
-                <button type="submit" class="pf-btn pf-btn--primary pf-btn--sm">Entwurf übernehmen</button>
-            </form>
-            <button th:if="${draft.owner and draft.status.name() != 'APPLIED'}" type="button"
-                    class="pf-btn pf-btn--secondary pf-btn--sm" id="open-regenerate-modal-btn">Plan neu generieren</button>
-            <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
-                  th:action="@{/projects/{projectId}/draft/discard(projectId=${draft.projectId})}" method="post"
-                  data-confirm="Möchtest du diesen KI-Entwurf wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
-                  data-confirm-title="Entwurf löschen?"
-                  data-confirm-btn="Entwurf löschen"
-                  data-confirm-cancel="Zurück zum Entwurf"
-                  data-confirm-variant="danger">
-                <input type="hidden" name="draftId" th:value="${draft.id}">
-                <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
-                <button class="pf-btn pf-btn--ghost pf-btn--sm" type="submit">Entwurf löschen</button>
-            </form>
+            <!-- Draft Review Actions (Desktop) -->
+            <div class="pf-draft-header-actions--desktop">
+                <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
+                      th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
+                    <button type="submit" class="pf-btn pf-btn--primary pf-btn--sm">Entwurf übernehmen</button>
+                </form>
+                <button th:if="${draft.owner and draft.status.name() != 'APPLIED'}" type="button"
+                        class="pf-btn pf-btn--secondary pf-btn--sm" id="open-regenerate-modal-btn">Plan neu generieren</button>
+                <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
+                      th:action="@{/projects/{projectId}/draft/discard(projectId=${draft.projectId})}" method="post"
+                      data-confirm="Möchtest du diesen KI-Entwurf wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
+                      data-confirm-title="Entwurf löschen?"
+                      data-confirm-btn="Entwurf löschen"
+                      data-confirm-cancel="Zurück zum Entwurf"
+                      data-confirm-variant="danger">
+                    <input type="hidden" name="draftId" th:value="${draft.id}">
+                    <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+                    <button class="pf-btn pf-btn--ghost pf-btn--sm" type="submit">Entwurf löschen</button>
+                </form>
+            </div>
+
+            <!-- Mobile: Action Menu Dropdown -->
+            <details th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-dropdown pf-dropdown--right pf-draft-header-actions--mobile">
+                <summary class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger">
+                    <span>Aktionen</span>
+                    <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </summary>
+                <div class="pf-dropdown__menu">
+                    <form th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post" style="margin:0;">
+                        <button type="submit" class="pf-dropdown__item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <span>Entwurf übernehmen</span>
+                        </button>
+                    </form>
+                    <button type="button" class="pf-dropdown__item" onclick="document.getElementById('regenerate-plan-dialog')?.showModal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+                        <span>Plan neu generieren</span>
+                    </button>
+                    <div class="pf-dropdown__divider"></div>
+                    <form th:action="@{/projects/{projectId}/draft/discard(projectId=${draft.projectId})}" method="post"
+                          data-confirm="Möchtest du diesen KI-Entwurf wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
+                          data-confirm-title="Entwurf löschen?"
+                          data-confirm-btn="Entwurf löschen"
+                          data-confirm-cancel="Zurück zum Entwurf"
+                          data-confirm-variant="danger" style="margin:0;">
+                        <input type="hidden" name="draftId" th:value="${draft.id}">
+                        <input type="hidden" name="lockVersion" th:value="${draft.lockVersion}">
+                        <button type="submit" class="pf-dropdown__item pf-dropdown__item--danger">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            <span>Entwurf löschen</span>
+                        </button>
+                    </form>
+                </div>
+            </details>
         </div>
         <input type="hidden" id="draft-lock-version" name="lockVersion" th:value="${draft.lockVersion}">
         <input type="hidden" id="draft-csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
