@@ -20,6 +20,17 @@ class AiPlanChangeResponseValidatorTest {
     private final AiPlanChangeResponseValidator validator = new AiPlanChangeResponseValidator();
 
     @Test void acceptsNewTaskInExistingSection() { assertValid(response(List.of(), List.of(newTask(S1)), List.of())); }
+    @Test void appliesTechnicalMediumDefaultWhenNewTaskPriorityHasNoFactualBasis() {
+        var task = new AiTaskChange(AiPlanChangeOperation.NEW, null, S1,
+                List.of("title"), "Neutrale neue Aufgabe", null, null, null,
+                null, null, place(), null);
+
+        AiPlanChangeResponse normalized = validator.validate(response(List.of(), List.of(task), List.of()), plan(),
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
+
+        assertThat(normalized.tasks().getFirst().priority()).isEqualTo(TaskPriority.MEDIUM);
+        assertThat(normalized.tasks().getFirst().changedFields()).contains("title", "priority");
+    }
     @Test void derivesAllPopulatedFieldsForNewTaskWhenModelUnderReportsChangedFields() {
         var task = new AiTaskChange(AiPlanChangeOperation.NEW, null, S2,
                 List.of("title", "priority"), "Fahrzeugreservierung prüfen", "Reservierung bestätigen.",

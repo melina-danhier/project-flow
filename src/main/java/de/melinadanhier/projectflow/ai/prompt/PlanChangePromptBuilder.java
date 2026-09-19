@@ -28,6 +28,9 @@ public class PlanChangePromptBuilder {
                 Entscheidung, kein technischer Fehler.
                 Schlage ausschließlich die für den Änderungswunsch notwendigen Änderungen am vorhandenen Plan vor.
                 Gib einen Diff und niemals einen vollständigen Ersatzplan zurück. Keine Löschungen. Erfinde keine IDs.
+                Erfinde keine Personen, Zuständigkeiten, Fähigkeiten, Verfügbarkeiten oder Ressourcen. Weise Aufgaben
+                oder Rollen nicht aufgrund von Geschlecht, Alter, Herkunft, Familienrolle oder anderen persönlichen
+                Merkmalen zu, sofern der Nutzer keinen sachlichen Bezug nennt.
                 Interpretiere den Änderungswunsch ausschließlich als Kombination der unterstützten Operationen
                 ADD, MODIFY, MOVE und REPLAN. ADD erzeugt neue Sections, Tasks oder Milestones. MODIFY ändert nur
                 die im Schema freigegebenen fachlichen Felder. MOVE ändert nur Section-Zuordnung oder relative
@@ -67,7 +70,9 @@ public class PlanChangePromptBuilder {
                 startDate, dueDate, section, position; Milestones title, description, dueDate, section, position.
                 Verwende für Positionen nur before/after-Referenzen, niemals sortOrder. Referenzen müssen im Zielcontainer
                 liegen. Completion-State, Status, Zuständigkeiten, Abhängigkeiten und technische Felder bleiben unverändert.
-                Neue Elemente müssen mindestens Titel und Ziel-Section angeben; neue Tasks außerdem priority.
+                Neue Elemente müssen mindestens Titel und Ziel-Section angeben. priority ist bei neuen Tasks optional:
+                Setze sie nur mit fachlicher Grundlage, sonst null. Die Anwendung verwendet dann den technischen
+                Standardwert MEDIUM, ohne daraus eine inhaltliche Aussage abzuleiten.
                 Bewahre den übrigen Plan. summary und optionale explanations sind kurz, nutzerbezogen und enthalten
                 keine internen Gedankengänge, IDs oder technischen Feldnamen.
 

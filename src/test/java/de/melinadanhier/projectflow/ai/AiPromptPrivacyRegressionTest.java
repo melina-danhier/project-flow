@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,6 +93,41 @@ class AiPromptPrivacyRegressionTest {
         assertNoSensitiveData(prompt);
     }
 
+    @Test
+    void allAiPromptsContainConciseNeutralityGuardrails() {
+        AiWizardSnapshot snapshot = createSnapshot();
+        assertNeutralityGuardrail(new PreCheckPromptBuilder(objectMapper)
+                .build(new AiPreCheckRequest(snapshot)));
+        assertNeutralityGuardrail(new GenerationPromptBuilder(objectMapper)
+                .build(new AiGenerationRequest(snapshot, List.of())));
+        assertNeutralityGuardrail(new ImprovementPromptBuilder(objectMapper).build(new AiImprovementRequest(
+                AiFeedbackType.EXPAND, null,
+                new AiImprovementProjectContext("Projekt", null, null, null),
+                new AiImprovementContent(AiImprovementElementType.TASK,
+                        "Aufgabe", null, null, null, null, null))));
+        assertNeutralityGuardrail(new PlanChangePromptBuilder(objectMapper).build(new AiPlanChangeRequest(
+                "Ergänze eine Aufgabe.", new AiImprovementProjectContext("Projekt", null, null, null),
+                new AiImprovementPlanContext(List.of()))));
+    }
+
+    @Test
+    void generationPromptPreservesConfirmedInputWithoutAddingPersonalAttributes() {
+        AiWizardSnapshot snapshot = new AiWizardSnapshot(
+                "Gruppenpräsentation", "Gemeinsam vorbereiten", null, null,
+                CollaborationMode.GROUP, ProjectCategory.EDUCATION, null,
+                null, null, "Rollen sind noch nicht festgelegt", null, "Drei Stunden pro Woche",
+                Map.of("targetAudience", "Studierende im Seminar"));
+
+        String payload = new GenerationPromptBuilder(objectMapper)
+                .build(new AiGenerationRequest(snapshot, List.of())).confirmedUserData();
+
+        assertThat(payload)
+                .contains("Rollen sind noch nicht festgelegt", "Drei Stunden pro Woche",
+                        "Studierende im Seminar")
+                .doesNotContain("gender", "Geschlecht", "age", "Alter", "ethnicity", "Herkunft",
+                        "familyRole", "Familienrolle");
+    }
+
     /**
      * Prüft, dass weder systemInstructions noch confirmedUserData einen der
      * sensitiven Identifikatoren enthalten.
@@ -114,6 +150,12 @@ class AiPromptPrivacyRegressionTest {
         assertThat(fullPayload)
                 .as("Prompt darf keine SoSci-ID enthalten")
                 .doesNotContain(SOSCI_ID);
+    }
+
+    private void assertNeutralityGuardrail(AiPrompt prompt) {
+        assertThat(prompt.systemInstructions())
+                .contains("Geschlecht", "Alter", "Herkunft", "Familienrolle")
+                .containsAnyOf("bestätigten Angaben", "sachlichen Bezug");
     }
 
     private AiWizardSnapshot createSnapshot() {

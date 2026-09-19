@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.ai.exception.AiOutputValidationException;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementElementType;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementPlanContext;
 import de.melinadanhier.projectflow.ai.model.planchange.*;
+import de.melinadanhier.projectflow.planelement.model.TaskPriority;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -102,15 +103,16 @@ public class AiPlanChangeResponseValidator {
                         change.explanation());
             }
             LinkedHashSet<String> fields = new LinkedHashSet<>(safe(change.changedFields()));
+            TaskPriority priority = change.priority() == null ? TaskPriority.MEDIUM : change.priority();
             addIf(fields, "title", !blank(change.title())); addIf(fields, "description", change.description() != null);
-            addIf(fields, "priority", change.priority() != null); addIf(fields, "estimatedHours", change.estimatedHours() != null);
+            addIf(fields, "priority", true); addIf(fields, "estimatedHours", change.estimatedHours() != null);
             addIf(fields, "startDate", change.startDate() != null); addIf(fields, "dueDate", change.dueDate() != null);
             addIf(fields, "section", !blank(change.targetSectionId()));
             boolean positionDeclared = fields.contains("position") && change.placement() != null
                     && exactlyOne(change.placement().beforeElementId(), change.placement().afterElementId());
             if (!positionDeclared) fields.remove("position");
             return new AiTaskChange(change.operation(), null, change.targetSectionId(),
-                    List.copyOf(fields), change.title(), change.description(), change.priority(), change.estimatedHours(),
+                    List.copyOf(fields), change.title(), change.description(), priority, change.estimatedHours(),
                     change.startDate(), change.dueDate(),
                     positionDeclared ? normalizePlacement(change.placement()) : new AiRelativePlacement(null, null),
                     change.explanation());
@@ -207,8 +209,8 @@ public class AiPlanChangeResponseValidator {
         dates(change.startDate(), change.dueDate(), start, end, path, issues);
         if (change.operation() == AiPlanChangeOperation.NEW) {
             target(change.targetSectionId(), sections, newSections, path, issues);
-            if (!blank(change.existingTaskId()) || change.priority() == null)
-                issues.add("PLAN_CHANGE_NEW_TASK | " + path + " | Neue Aufgabe hat ID oder keine Priorität.");
+            if (!blank(change.existingTaskId()))
+                issues.add("PLAN_CHANGE_NEW_TASK | " + path + " | Neue Aufgabe darf keine bestehende ID haben.");
             if (!safe(change.changedFields()).containsAll(List.of("title", "priority")))
                 issues.add("PLAN_CHANGE_NEW_TASK | " + path + " | Pflichtfelder fehlen in changedFields.");
         } else {

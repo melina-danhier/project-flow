@@ -23,6 +23,8 @@ public class ImprovementPromptBuilder {
             Aktion konkretisieren, aber niemals ihre Feldfreigabe erweitern. Gib ausschließlich die im jeweiligen
             Ausgabeschema enthaltenen Felder zurück. Der übrige Kontext ist nur lesend und darf nicht verändert
             werden. Erfinde keine Personen, Zuständigkeiten, Abhängigkeiten oder Projektinformationen.
+            Leite Rollen, Fähigkeiten, Verfügbarkeit oder Ressourcen nicht aus Geschlecht, Alter, Herkunft,
+            Familienrolle oder anderen persönlichen Merkmalen ab, sofern der Nutzer keinen sachlichen Bezug nennt.
             Titel dürfen höchstens 100 Zeichen, Beschreibungen höchstens 2000 Zeichen lang sein.
             """;
 

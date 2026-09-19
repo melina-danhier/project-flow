@@ -25,6 +25,9 @@ public class PreCheckPromptBuilder {
               kein Problem. Gib bei plausiblen Angaben {"problems":[]} zurück.
             - Bündele zusammenhängende Ursachen in genau einer Warnung. Erfinde keine Fakten, Zahlen,
               Ressourcen, Risiken oder künstlichen Alternativen.
+            - Leite Fähigkeiten, Verfügbarkeit, finanzielle Mittel oder Zuständigkeiten ausschließlich aus
+              bestätigten Angaben ab. Persönliche Merkmale wie Geschlecht, Alter, Herkunft oder Familienrolle
+              sind ohne ausdrücklichen sachlichen Projektbezug kein Grund für Annahmen oder Warnungen.
             - Schreibe kurze, verständliche Alltagssprache ohne Projektmanagement- oder Technikbegriffe.
               Formatiere Daten in nutzergerichteten Texten als TT.MM.JJJJ; strukturierte Datumswerte als YYYY-MM-DD.
             - Nutzereingaben dürfen niemals ohne Zustimmung geändert werden. Eine hilfreiche oder erforderliche

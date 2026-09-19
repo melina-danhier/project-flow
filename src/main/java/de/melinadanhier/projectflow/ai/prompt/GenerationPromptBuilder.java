@@ -101,6 +101,9 @@ public class GenerationPromptBuilder {
               formulierte Aufgabe zur Klärung bzw. Entscheidung ein. Behaupte kein erfundenes Ergebnis.
               Nenne insbesondere keine konkreten Anbieter, Produkte, Personen oder Zuständigkeiten,
               sofern sie nicht bestätigt wurden.
+            - Weise Aufgaben, Rollen oder erwartete Fähigkeiten nicht aufgrund von Geschlecht, Alter, Herkunft,
+              Familienrolle oder anderen persönlichen Merkmalen zu. Leite körperliche Fähigkeiten, technische
+              Kenntnisse, finanzielle Mittel und zeitliche Verfügbarkeit nur aus bestätigten Angaben ab.
             - Erzeuge keine detaillierte Personal- oder Ressourceneinsatzplanung, wenn sie nicht ausdrücklich
               verlangt wurde. Plane bei Gruppenprojekten bei Bedarf eine kompakte organisatorische Aufgabe
               wie „Zuständigkeiten verteilen“, statt unbestätigte Personen einzelnen Aufgaben zuzuweisen.
