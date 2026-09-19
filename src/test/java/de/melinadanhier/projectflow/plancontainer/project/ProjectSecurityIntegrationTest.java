@@ -682,6 +682,7 @@ class ProjectSecurityIntegrationTest {
         var form = new ProjectUpdateForm();
         form.setTitle("Projekt aktualisiert");
         form.setCategory(ProjectCategory.EDUCATION);
+        form.setSubcategory(ProjectSubCategory.THESIS);
         form.setCollaborationMode(mode);
         form.setLockVersion(lockVersion);
         return form;

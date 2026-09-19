@@ -461,7 +461,7 @@ class DraftReviewIntegrationTest {
                 .andExpect(content().string(not(containsString("Schema-Version"))));
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
-                projects.findById(f.projectId()).orElseThrow().setSubcategory(null));
+                projects.findById(f.projectId()).orElseThrow().setSubcategory(ProjectSubCategory.OTHER_HOME));
         mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(content().string(containsString("Haushalt und Wohnen")));
     }

@@ -5,6 +5,7 @@ import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementContent;
 import de.melinadanhier.projectflow.ai.model.improvement.AiImprovementElementType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMemberRole;
@@ -579,6 +580,7 @@ class SeparatedPlanUiIntegrationTest {
         var project = saveProject("Solo", owner);
         project.setCollaborationMode(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.INDIVIDUAL);
         project.setCategory(ProjectCategory.EDUCATION);
+        project.setSubcategory(ProjectSubCategory.OTHER_EDUCATION);
         projectRepository.saveAndFlush(project);
         var task = createTask(project, owner, null, "Meine Aufgabe");
         var membership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), owner.getId()).orElseThrow();
@@ -615,11 +617,13 @@ class SeparatedPlanUiIntegrationTest {
                         org.hamcrest.Matchers.hasProperty("collaborationMode",
                                 org.hamcrest.Matchers.is(de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode.INDIVIDUAL))));
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(session).with(csrf())
-                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION").param("collaborationMode", "BOTH")
+                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION")
+                        .param("subcategory", "OTHER_EDUCATION").param("collaborationMode", "BOTH")
                         .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(model().attributeHasFieldErrors("projectForm", "projectCollaborationModeValid"));
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(session).with(csrf())
-                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION").param("collaborationMode", "GROUP")
+                        .param("title", "Jetzt gemeinsam").param("category", "EDUCATION")
+                        .param("subcategory", "OTHER_EDUCATION").param("collaborationMode", "GROUP")
                         .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().is3xxRedirection());
         mockMvc.perform(get("/projects/{id}/members", project.getId()).session(session)).andExpect(status().isOk());
@@ -633,6 +637,7 @@ class SeparatedPlanUiIntegrationTest {
         var member = saveUser("convert-ui-member@example.org");
         var project = saveProject("Gemeinsames Projekt", owner);
         project.setCategory(ProjectCategory.EDUCATION);
+        project.setSubcategory(ProjectSubCategory.OTHER_EDUCATION);
         projectRepository.saveAndFlush(project);
         var ownerSession = login(owner.getEmail());
         var memberSession = login(member.getEmail());
@@ -644,11 +649,13 @@ class SeparatedPlanUiIntegrationTest {
         long projectVersion = projectRepository.findById(project.getId()).orElseThrow().getLockVersion();
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(memberSession).with(csrf())
                         .param("title", "Solo").param("category", "EDUCATION")
+                        .param("subcategory", "OTHER_EDUCATION")
                         .param("collaborationMode", "INDIVIDUAL").param("confirmIndividualConversion", "true")
                         .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(ownerSession).with(csrf())
-                        .param("title", "Solo").param("category", "EDUCATION").param("collaborationMode", "INDIVIDUAL")
+                        .param("title", "Solo").param("category", "EDUCATION")
+                        .param("subcategory", "OTHER_EDUCATION").param("collaborationMode", "INDIVIDUAL")
                         .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().isOk()).andExpect(view().name("projects/edit"))
                 .andExpect(model().attributeHasErrors("projectForm"))
@@ -660,6 +667,7 @@ class SeparatedPlanUiIntegrationTest {
 
         mockMvc.perform(post("/projects/{id}/edit", project.getId()).session(ownerSession).with(csrf())
                         .param("title", "Solo").param("category", "EDUCATION")
+                        .param("subcategory", "OTHER_EDUCATION")
                         .param("collaborationMode", "INDIVIDUAL").param("confirmIndividualConversion", "true")
                         .param("lockVersion", String.valueOf(projectVersion)))
                 .andExpect(status().is3xxRedirection());
@@ -678,6 +686,7 @@ class SeparatedPlanUiIntegrationTest {
         User owner = saveUser("required-version-owner@example.org");
         Project project = saveProject("Versionsschutz", owner);
         project.setCategory(ProjectCategory.EDUCATION);
+        project.setSubcategory(ProjectSubCategory.OTHER_EDUCATION);
         projectRepository.saveAndFlush(project);
         MockHttpSession session = login(owner.getEmail());
 

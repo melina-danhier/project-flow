@@ -4,7 +4,7 @@ const { readFileSync } = require('node:fs');
 const { runInNewContext } = require('node:vm');
 const { resolve } = require('node:path');
 
-test('dependent dropdown preserves valid selections, clears old categories and disables OTHER', () => {
+test('dependent dropdown requires concrete selections and hides categories without options', () => {
     class Option {
         constructor(label, value, category) {
             this.label = label;
@@ -33,6 +33,9 @@ test('dependent dropdown preserves valid selections, clears old categories and d
     });
     assert.equal(subcategory.value, 'THESIS');
     assert.deepEqual(subcategory.options.map(option => option.value), ['', 'THESIS', 'LEARNING_PLAN']);
+    assert.equal(subcategory.options[0].label, 'Bitte auswählen');
+    assert.equal(subcategory.options[0].disabled, true);
+    assert.equal(subcategory.required, true);
     category.value = 'HOME';
     category.change();
     assert.equal(subcategory.value, '');
@@ -42,6 +45,7 @@ test('dependent dropdown preserves valid selections, clears old categories and d
     category.change();
     assert.equal(subcategory.value, '');
     assert.equal(subcategory.disabled, true);
+    assert.equal(subcategory.required, false);
     assert.equal(nodes['subcategory-fields'].hidden, true);
     category.value = 'EDUCATION';
     category.change();

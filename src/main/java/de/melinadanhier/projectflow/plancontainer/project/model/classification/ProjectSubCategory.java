@@ -75,7 +75,11 @@ public enum ProjectSubCategory {
     }
 
     public static boolean isValidFor(ProjectCategory category, ProjectSubCategory subcategory) {
-        return subcategory == null || subcategory.category == category;
+        boolean categoryHasSubcategories = !forCategory(category).isEmpty();
+        if (!categoryHasSubcategories) {
+            return subcategory == null;
+        }
+        return subcategory != null && subcategory.category == category;
     }
 
     public boolean isOther() {

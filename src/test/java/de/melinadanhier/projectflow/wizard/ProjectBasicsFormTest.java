@@ -35,12 +35,13 @@ class ProjectBasicsFormTest {
     }
 
     @Test
-    void normalCategoryAllowsAnOptionalSubcategory() {
+    void normalCategoryRequiresASubcategory() {
         ProjectBasicsForm withoutSubcategory = validForm();
+        withoutSubcategory.setSubcategory(null);
         ProjectBasicsForm withSubcategory = validForm();
         withSubcategory.setSubcategory(ProjectSubCategory.THESIS);
 
-        assertThat(validator.validate(withoutSubcategory)).isEmpty();
+        assertThat(violatedProperties(withoutSubcategory)).contains("subcategory");
         assertThat(validator.validate(withSubcategory)).isEmpty();
     }
 
@@ -54,6 +55,7 @@ class ProjectBasicsFormTest {
 
         ProjectBasicsForm other = validForm();
         other.setCategory(ProjectCategory.OTHER);
+        other.setSubcategory(null);
         other.setDescription("   ");
         assertThat(validator.validate(other)).isEmpty();
     }
@@ -332,16 +334,18 @@ class ProjectBasicsFormTest {
                 .isInstanceOf(de.melinadanhier.projectflow.common.exception.DomainValidationException.class);
         assertThat(service.requireOwned(userId, session).getSubcategory()).isEqualTo(ProjectSubCategory.THESIS);
 
-        changed.setSubcategory(null);
+        changed.setSubcategory(ProjectSubCategory.OTHER_HOME);
         service.saveBasics(changed, userId, session);
         assertThat(service.requireOwned(userId, session).getCategory()).isEqualTo(ProjectCategory.HOME);
-        assertThat(ProjectBasicsForm.from(service.requireOwned(userId, session)).getSubcategory()).isNull();
+        assertThat(ProjectBasicsForm.from(service.requireOwned(userId, session)).getSubcategory())
+                .isEqualTo(ProjectSubCategory.OTHER_HOME);
     }
 
     private ProjectBasicsForm validForm() {
         ProjectBasicsForm form = new ProjectBasicsForm();
         form.setTitle("Testprojekt");
         form.setCategory(ProjectCategory.EDUCATION);
+        form.setSubcategory(ProjectSubCategory.THESIS);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         return form;
     }

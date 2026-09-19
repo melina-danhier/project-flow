@@ -4,32 +4,30 @@
 # Structure:
 #   common.availableTime   → always shown FIRST
 #   common.finalConstraints → always shown LAST
-#   categories.<ENUM_NAME>.questions → per main category
+#   categories.<ENUM_NAME>.questions → questions relevant to every subcategory
 #   categories.<ENUM_NAME>.subcategories.<ENUM_NAME>.questions → per subcategory
+# Category questions must not repeat a subcategory question. Questions that only
+# apply when no concrete subcategory fits belong to the matching OTHER_* entry.
 # ============================================================================
 
 common:
   availableTime:
     key: availableTime
     label: "Wie viel Zeit kannst du ungefähr für das Projekt aufbringen?"
-    placeholder: "z. B. etwa 3 Stunden pro Woche, hauptsächlich am Wochenende oder insgesamt rund 20 Stunden"
+    placeholder: "z. B. etwa 3 Stunden pro Woche oder nur am Wochenende"
 
   finalConstraints:
     key: constraints
     label: "Welche besonderen Wünsche, Vorgaben oder Einschränkungen sollen berücksichtigt werden?"
-    placeholder: "z. B. begrenztes Budget, feste Termine, vorhandene Materialien oder bestimmte Wünsche"
+    placeholder: "z. B. feste Termine, vorhandene Materialien oder bestimmte Wünsche"
 
 categories:
 
   # =========================================================================
   # EDUCATION – Bildung und Studium
   # =========================================================================
-  EDUCATION:
-    questions:
-      - key: educationGoal
-        label: "Was möchtest du mit dem Projekt erreichen?"
-        placeholder: "z. B. eine Prüfung bestehen, ein Thema verständlich präsentieren oder eine Arbeit fertigstellen"
 
+  EDUCATION:
     subcategories:
       PRESENTATION_OR_REPORT:
         questions:
@@ -103,29 +101,20 @@ categories:
             label: "Welche formalen Vorgaben gibt es?"
             placeholder: "z. B. 60–80 Seiten, IEEE-Stil, Abgabe bis Ende des Semesters"
 
-      STUDY_EVENT:
+      OTHER_EDUCATION:
         questions:
-          - key: eventGoalFormat
-            label: "Was ist das Ziel und Format der Veranstaltung?"
-            placeholder: "z. B. studentisches Symposium mit Vorträgen und Poster-Session"
-          - key: audienceSize
-            label: "Wer soll teilnehmen und wie viele Personen erwartest du?"
-            placeholder: "z. B. ca. 50 Studierende und Dozierende"
-          - key: venueTechnology
-            label: "Welcher Ort und welche Technik stehen zur Verfügung?"
-            placeholder: "z. B. Hörsaal der Universität mit Beamer und Mikrofon"
+          - key: educationGoal
+            label: "Was möchtest du erreichen?"
+            placeholder: "z. B. ein neues Bildungsthema erschließen oder ein Studienvorhaben abschließen"
 
   # =========================================================================
   # SOFTWARE_TECHNOLOGY – Software und Technik
   # =========================================================================
   SOFTWARE_TECHNOLOGY:
     questions:
-      - key: techGoal
-        label: "Was soll das Ergebnis des Projekts sein?"
-        placeholder: "z. B. eine funktionsfähige App, ein automatisiertes Skript oder ein Prototyp"
       - key: technicalExperience
         label: "Wie viel technische Erfahrung bringst du mit?"
-        placeholder: "z. B. Grundkenntnisse in Python, Erfahrung mit Webentwicklung oder kompletter Einsteiger"
+        placeholder: "z. B. Grundkenntnisse, einschlägige Erfahrung oder kompletter Einsteiger"
 
     subcategories:
       SOFTWARE_PROJECT:
@@ -209,17 +198,20 @@ categories:
             label: "Welche Bauteile hast du bereits oder werden benötigt?"
             placeholder: "z. B. Raspberry Pi 4, DHT22-Sensor, Breadboard und Kabel vorhanden"
 
+      OTHER_SOFTWARE_AND_TECHNOLOGY:
+        questions:
+          - key: techGoal
+            label: "Was soll das Ergebnis des Projekts sein?"
+            placeholder: "z. B. ein technischer Prototyp, ein automatisiertes Skript oder eine andere technische Lösung"
+
   # =========================================================================
   # EVENT – Veranstaltung
   # =========================================================================
   EVENT:
     questions:
-      - key: eventGoal
-        label: "Was ist der Anlass oder das Ziel der Veranstaltung?"
-        placeholder: "z. B. eine Geburtstagsfeier, ein Workshop oder ein Vereinsfest"
-      - key: expectedGuests
-        label: "Wie viele Personen werden ungefähr teilnehmen?"
-        placeholder: "z. B. ca. 30 Gäste, bis zu 100 Besucher"
+      - key: expectedParticipants
+        label: "Wie viele Personen, Gruppen oder Teams werden ungefähr teilnehmen?"
+        placeholder: "z. B. ca. 30 Gäste, 8 Teams oder bis zu 100 Besucher"
 
     subcategories:
       PRIVATE_CELEBRATION:
@@ -227,9 +219,6 @@ categories:
           - key: occasion
             label: "Was wird gefeiert?"
             placeholder: "z. B. 30. Geburtstag, Hochzeit oder Einweihungsparty"
-          - key: guestCount
-            label: "Wie viele Gäste erwartest du?"
-            placeholder: "z. B. ca. 25 Personen"
           - key: venue
             label: "Wo soll die Feier stattfinden?"
             placeholder: "z. B. zu Hause, in einem Restaurants oder ein Ort muss noch gefunden werden"
@@ -258,8 +247,8 @@ categories:
             label: "Was für eine Veranstaltung planst du?"
             placeholder: "z. B. Sommerfest des Sportvereins, Tag der offenen Tür"
           - key: participants
-            label: "Wer nimmt teil und wie viele Personen erwartest du?"
-            placeholder: "z. B. Vereinsmitglieder und Familien, ca. 80 Personen"
+            label: "Wer nimmt teil?"
+            placeholder: "z. B. Vereinsmitglieder und ihre Familien"
           - key: venue
             label: "Wo soll die Veranstaltung stattfinden?"
             placeholder: "z. B. auf dem Vereinsgelände, im Gemeindehaus"
@@ -314,9 +303,6 @@ categories:
           - key: competitionType
             label: "Was für ein Wettbewerb oder Turnier wird organisiert?"
             placeholder: "z. B. Fußballturnier, Schachmeisterschaft, Quiz-Abend"
-          - key: participantCount
-            label: "Wie viele Teilnehmer oder Teams werden erwartet?"
-            placeholder: "z. B. 8 Mannschaften mit je 6 Spielern"
           - key: rules
             label: "Welche Regeln oder welcher Modus soll gelten?"
             placeholder: "z. B. Gruppenphase mit anschließendem K.-o.-System"
@@ -324,15 +310,28 @@ categories:
             label: "Welcher Ort und welche Ausstattung stehen zur Verfügung?"
             placeholder: "z. B. Sporthalle mit zwei Feldern, Schiedsrichter vorhanden"
 
+      STUDY_EVENT:
+        questions:
+          - key: eventGoalFormat
+            label: "Was ist das Ziel und Format der Veranstaltung?"
+            placeholder: "z. B. studentisches Symposium mit Vorträgen und Poster-Session"
+          - key: audienceSize
+            label: "Wer soll teilnehmen?"
+            placeholder: "z. B. Studierende, Dozierende oder externes Fachpublikum"
+          - key: venueTechnology
+            label: "Welcher Ort und welche Technik stehen zur Verfügung?"
+            placeholder: "z. B. Hörsaal der Universität mit Beamer und Mikrofon"
+
+      OTHER_EVENT:
+        questions:
+          - key: eventGoal
+            label: "Was ist der Anlass oder das Ziel der Veranstaltung?"
+            placeholder: "z. B. ein Treffen, eine Informationsveranstaltung oder ein anderes Veranstaltungsformat"
+
   # =========================================================================
   # HOME – Haushalt und Wohnen
   # =========================================================================
   HOME:
-    questions:
-      - key: homeGoal
-        label: "Was möchtest du in deinem Zuhause verändern oder erreichen?"
-        placeholder: "z. B. die Wohnung besser organisieren, einen Raum renovieren oder umziehen"
-
     subcategories:
       MOVING:
         questions:
@@ -394,15 +393,16 @@ categories:
             label: "Gibt es saisonale Einschränkungen?"
             placeholder: "z. B. Aussaat muss bis April erfolgen, Projekt im Herbst geplant"
 
+      OTHER_HOME:
+        questions:
+          - key: homeGoal
+            label: "Was möchtest du in deinem Zuhause verändern oder erreichen?"
+            placeholder: "z. B. einen Bereich neu gestalten oder den Haushalt anders organisieren"
+
   # =========================================================================
   # CREATIVE – Kreatives
   # =========================================================================
   CREATIVE:
-    questions:
-      - key: creativeGoal
-        label: "Was möchtest du kreativ umsetzen?"
-        placeholder: "z. B. ein Buch schreiben, einen Film drehen oder eine Ausstellung planen"
-
     subcategories:
       WRITING_PROJECT:
         questions:
@@ -539,15 +539,16 @@ categories:
             label: "Welche Materialien hast du?"
             placeholder: "z. B. Pappe, Drucker, Bastelmaterial vorhanden"
 
+      OTHER_CREATIVE_PROJECT:
+        questions:
+          - key: creativeGoal
+            label: "Was möchtest du kreativ umsetzen?"
+            placeholder: "z. B. ein künstlerisches Werk oder ein anderes kreatives Format entwickeln"
+
   # =========================================================================
   # CAREER – Beruf und Karriere
   # =========================================================================
   CAREER:
-    questions:
-      - key: careerGoal
-        label: "Was möchtest du beruflich erreichen?"
-        placeholder: "z. B. einen neuen Job finden, mich weiterbilden oder ein Portfolio erstellen"
-
     subcategories:
       JOB_SEARCH_AND_APPLICATION:
         questions:
@@ -651,15 +652,16 @@ categories:
             label: "Welche Bestandteile soll das Ergebnis umfassen?"
             placeholder: "z. B. PowerPoint-Folien und ein Handout"
 
+      OTHER_CAREER:
+        questions:
+          - key: careerGoal
+            label: "Was möchtest du beruflich erreichen?"
+            placeholder: "z. B. dich beruflich neu orientieren oder ein anderes Karriereziel verfolgen"
+
   # =========================================================================
   # HEALTH_PERSONAL_DEVELOPMENT – Gesundheit und persönliche Entwicklung
   # =========================================================================
   HEALTH_PERSONAL_DEVELOPMENT:
-    questions:
-      - key: personalGoal
-        label: "Was möchtest du für dich persönlich verändern oder erreichen?"
-        placeholder: "z. B. regelmäßig Sport treiben, eine neue Gewohnheit aufbauen oder gesünder essen"
-
     subcategories:
       FITNESS_OR_RUNNING_GOAL:
         questions:
@@ -721,15 +723,16 @@ categories:
             label: "Welche Alltagsbedingungen spielen eine Rolle?"
             placeholder: "z. B. beruflich auf Smartphone angewiesen, Partner nutzt ebenfalls viel Medien"
 
+      OTHER_HEALTH_AND_PERSONAL_DEVELOPMENT:
+        questions:
+          - key: personalGoal
+            label: "Was möchtest du für dich persönlich verändern oder erreichen?"
+            placeholder: "z. B. dein Wohlbefinden verbessern oder dich in einem anderen Bereich weiterentwickeln"
+
   # =========================================================================
   # TRAVEL – Reise
   # =========================================================================
   TRAVEL:
-    questions:
-      - key: travelGoal
-        label: "Was für eine Reise planst du?"
-        placeholder: "z. B. zweiwöchiger Urlaub in Italien, Wochenendtrip nach Wien"
-
     subcategories:
       TRIP_OR_VACATION:
         questions:
@@ -817,3 +820,9 @@ categories:
           - key: accommodation
             label: "Wo übernachtest du unterwegs?"
             placeholder: "z. B. Pensionen am Weg, Zelt dabei oder Jugendherbergen"
+
+      OTHER_TRAVEL:
+        questions:
+          - key: travelGoal
+            label: "Was für eine Reise planst du?"
+            placeholder: "z. B. eine besondere Rundreise oder einen Ausflug, der in keine andere Auswahl passt"

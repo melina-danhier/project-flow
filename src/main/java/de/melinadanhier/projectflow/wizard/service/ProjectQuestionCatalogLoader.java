@@ -78,6 +78,10 @@ public class ProjectQuestionCatalogLoader {
                                 log.warn("Unknown ProjectSubCategory in YAML: {}", subName);
                                 continue;
                             }
+                            if (sub.getCategory() != category) {
+                                log.warn("ProjectSubCategory {} is listed below the wrong category {}", subName, catName);
+                                continue;
+                            }
                             Map<String, Object> subData = (Map<String, Object>) subEntry.getValue();
                             List<Map<String, Object>> subQuestions = (List<Map<String, Object>>) subData.get("questions");
                             if (subQuestions != null) {
@@ -123,11 +127,10 @@ public class ProjectQuestionCatalogLoader {
     public List<ProjectQuestion> dynamicQuestionsFor(ProjectCategory category, ProjectSubCategory subcategory) {
         List<ProjectQuestion> result = new ArrayList<>();
 
-        if (category != null && category != ProjectCategory.OTHER) {
+        if (category != null) {
             result.addAll(categoryQuestions.getOrDefault(category, List.of()));
 
-            if (subcategory != null && !subcategory.isOther()
-                    && subcategory.getCategory() == category) {
+            if (subcategory != null && subcategory.getCategory() == category) {
                 result.addAll(subcategoryQuestions.getOrDefault(subcategory, List.of()));
             }
         }

@@ -4,6 +4,7 @@ import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectCreate
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectForm;
 import de.melinadanhier.projectflow.plancontainer.project.dto.form.ProjectUpdateForm;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
+import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import jakarta.validation.ConstraintViolation;
@@ -49,7 +50,9 @@ class ProjectFormTest {
         ProjectCreateForm createForm = validCreateForm();
         ProjectUpdateForm updateForm = validUpdateForm();
         createForm.setCategory(ProjectCategory.OTHER);
+        createForm.setSubcategory(null);
         updateForm.setCategory(ProjectCategory.OTHER);
+        updateForm.setSubcategory(null);
 
         assertThat(new ProjectCreateForm().getCategory()).isEqualTo(ProjectCategory.OTHER);
         assertThat(validator.validate(createForm)).isEmpty();
@@ -60,6 +63,7 @@ class ProjectFormTest {
         ProjectCreateForm form = new ProjectCreateForm();
         form.setTitle("Neues Projekt");
         form.setCategory(ProjectCategory.EDUCATION);
+        form.setSubcategory(ProjectSubCategory.THESIS);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         form.setCreationType(CreationType.EMPTY);
         return form;
@@ -69,6 +73,7 @@ class ProjectFormTest {
         ProjectUpdateForm form = new ProjectUpdateForm();
         form.setTitle("Bestehendes Projekt");
         form.setCategory(ProjectCategory.EDUCATION);
+        form.setSubcategory(ProjectSubCategory.THESIS);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
         return form;
     }

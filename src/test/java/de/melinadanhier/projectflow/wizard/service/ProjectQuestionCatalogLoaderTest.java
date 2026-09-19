@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,18 +35,19 @@ class ProjectQuestionCatalogLoaderTest {
     }
 
     @Test
-    @DisplayName("Oberkategorie + konkrete Unterkategorie: enthält Kategorie- und Unterkategorie-Fragen")
+    @DisplayName("Konkrete Unterkategorie enthält keine Auffangfrage der Oberkategorie")
     void categoryWithConcreteSubcategoryIncludesBoth() {
         List<ProjectQuestion> questions = loader.questionsFor(
                 ProjectCategory.EDUCATION, ProjectSubCategory.PRESENTATION_OR_REPORT);
 
         List<String> keys = questions.stream().map(ProjectQuestion::key).toList();
-        assertThat(keys).contains("availableTime", "educationGoal", "topic", "constraints");
+        assertThat(keys).contains("availableTime", "topic", "constraints");
+        assertThat(keys).doesNotContain("educationGoal");
     }
 
     @Test
-    @DisplayName("Oberkategorie + OTHER: enthält nur Kategorie-Fragen, keine Unterkategorie-Fragen")
-    void categoryWithOtherSubcategoryExcludesSubcategoryQuestions() {
+    @DisplayName("Sonstige Unterkategorie enthält ihre Auffangfragen")
+    void categoryWithOtherSubcategoryIncludesFallbackQuestions() {
         List<ProjectQuestion> questions = loader.questionsFor(
                 ProjectCategory.EDUCATION, ProjectSubCategory.OTHER_EDUCATION);
 
@@ -55,13 +57,13 @@ class ProjectQuestionCatalogLoaderTest {
     }
 
     @Test
-    @DisplayName("Oberkategorie ohne Unterkategorie: enthält nur Kategorie-Fragen")
-    void categoryWithoutSubcategoryExcludesSubcategoryQuestions() {
+    @DisplayName("Fehlende erforderliche Unterkategorie liefert keine Auffangfragen")
+    void categoryWithoutSubcategoryExcludesFallbackQuestions() {
         List<ProjectQuestion> questions = loader.questionsFor(
                 ProjectCategory.EDUCATION, null);
 
         List<String> keys = questions.stream().map(ProjectQuestion::key).toList();
-        assertThat(keys).contains("availableTime", "educationGoal", "constraints");
+        assertThat(keys).containsExactly("availableTime", "constraints");
         assertThat(keys).doesNotContain("topic", "examSubject", "learningGoal");
     }
 
@@ -109,6 +111,32 @@ class ProjectQuestionCatalogLoaderTest {
 
         List<String> keys = dynamic.stream().map(ProjectQuestion::key).toList();
         assertThat(keys).doesNotContain("availableTime", "constraints");
-        assertThat(keys).contains("educationGoal", "topic");
+        assertThat(keys).contains("topic");
+        assertThat(keys).doesNotContain("educationGoal");
+    }
+
+    @Test
+    @DisplayName("Universelle Oberkategorie-Frage wird genau einmal mit jeder Unterkategorie kombiniert")
+    void universalCategoryQuestionIsIncludedWithoutDuplication() {
+        List<ProjectQuestion> questions = loader.questionsFor(
+                ProjectCategory.SOFTWARE_TECHNOLOGY, ProjectSubCategory.SOFTWARE_PROJECT);
+
+        assertThat(questions).extracting(ProjectQuestion::key)
+                .contains("technicalExperience", "goalAndScope")
+                .doesNotContain("techGoal")
+                .doesNotHaveDuplicates();
+    }
+
+    @Test
+    @DisplayName("Keine auswählbare Unterkategorie erzeugt doppelte Frageschlüssel")
+    void everySubcategoryHasUniqueQuestionKeys() {
+        for (ProjectSubCategory subcategory : ProjectSubCategory.values()) {
+            List<String> keys = loader.questionsFor(subcategory.getCategory(), subcategory).stream()
+                    .map(ProjectQuestion::key)
+                    .toList();
+            assertThat(new HashSet<>(keys))
+                    .as("Fragen für %s", subcategory)
+                    .hasSameSizeAs(keys);
+        }
     }
 }
