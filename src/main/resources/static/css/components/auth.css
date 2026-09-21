@@ -36,3 +36,9 @@
     font-size: 0.88rem;
     color: var(--pf-text-muted);
 }
+
+@media (max-width: 640px) {
+    .pf-auth-container {
+        margin-top: 0;
+    }
+}
