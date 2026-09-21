@@ -547,6 +547,44 @@ input[type="submit"]:disabled {
     pointer-events: none;
 }
 
+/* Loading / submitting state for buttons to prevent duplicate actions */
+.pf-btn.is-loading,
+button.is-loading,
+input[type="submit"].is-loading {
+    opacity: 0.75 !important;
+    cursor: wait !important;
+    pointer-events: none !important;
+}
+
+.pf-btn--primary.is-loading:disabled {
+    background: var(--pf-primary) !important;
+    border-color: var(--pf-primary) !important;
+    color: #ffffff !important;
+    opacity: 0.75 !important;
+}
+
+.pf-btn--danger.is-loading:disabled {
+    background: var(--pf-danger) !important;
+    border-color: var(--pf-danger) !important;
+    color: #ffffff !important;
+    opacity: 0.75 !important;
+}
+
+.pf-btn--secondary.is-loading:disabled,
+.pf-btn--outline.is-loading:disabled {
+    background: var(--pf-surface, #ffffff) !important;
+    border-color: var(--pf-border) !important;
+    color: var(--pf-text-secondary) !important;
+    opacity: 0.75 !important;
+}
+
+.pf-btn--ghost.is-loading:disabled {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--pf-text-secondary) !important;
+    opacity: 0.75 !important;
+}
+
 .pf-btn svg {
     width: 16px;
     height: 16px;
@@ -942,9 +980,49 @@ select:hover:not(:disabled),
 
 select option,
 .pf-select option {
-    background-color: #ffffff;
-    color: var(--pf-text-main);
-    padding: 0.5rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 500;
+    line-height: 1.5;
+    background-color: var(--pf-surface, #ffffff);
+    color: var(--pf-text-main, #0f172a);
+    padding: 0.6rem 0.95rem;
+}
+
+select option:checked,
+.pf-select option:checked {
+    background-color: var(--pf-primary-soft, #eff6ff);
+    color: var(--pf-primary, #2563eb);
+    font-weight: 600;
+}
+
+select option:hover,
+.pf-select option:hover {
+    background-color: var(--pf-surface-subtle, #f1f5f9);
+    color: var(--pf-text-main, #0f172a);
+}
+
+select option:disabled,
+.pf-select option:disabled {
+    color: var(--pf-text-muted, #94a3b8);
+    background-color: var(--pf-surface-subtle, #f8fafc);
+}
+
+select optgroup,
+.pf-select optgroup {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pf-text-secondary, #475569);
+    background-color: var(--pf-surface-subtle, #f1f5f9);
+    padding: 0.45rem 0.75rem;
+}
+
+.pf-select--sm option {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.65rem;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
@@ -1379,8 +1457,9 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     }
 
     .site-footer {
-        padding: 0.75rem 0;
-        font-size: 0.8rem;
+        padding: 0.5rem 0;
+        margin-top: 1.5rem;
+        font-size: 0.75rem;
     }
 
     .site-footer__content {
@@ -1391,7 +1470,16 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     }
 
     .site-footer__brand {
-        gap: 0.5rem;
+        gap: 0.4rem;
+    }
+
+    .site-footer__brand .brand__mark {
+        width: 22px !important;
+        height: 22px !important;
+    }
+
+    .site-footer__brand span {
+        font-size: 0.88rem !important;
     }
 
     .site-footer__slogan {
@@ -1399,7 +1487,7 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     }
 
     .site-footer__bottom {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         margin-left: 0;
     }
 
@@ -1441,12 +1529,16 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
 }
 
 .pf-dropdown__chevron {
-    transition: transform 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     opacity: 0.6;
 }
 
 .pf-dropdown[open] .pf-dropdown__chevron {
     transform: rotate(180deg);
+}
+
+.pf-dropdown.is-closing .pf-dropdown__chevron {
+    transform: rotate(0deg) !important;
 }
 
 .pf-dropdown__menu {
@@ -1457,13 +1549,15 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     background: var(--pf-surface, #ffffff);
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-md);
-    box-shadow: var(--pf-shadow-lg);
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
     padding: 0.5rem;
     z-index: 1000;
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
-    animation: pfDropdownIn 0.15s ease-out;
+    transform-origin: top left;
+    animation: pfDropdownIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
 }
 
 .pf-dropdown__menu > form {
@@ -1477,6 +1571,19 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
 .pf-dropdown__menu--right {
     left: auto;
     right: 0;
+    transform-origin: top right;
+}
+
+.pf-dropdown--left .pf-dropdown__menu,
+.pf-dropdown__menu--left {
+    left: 0;
+    right: auto;
+    transform-origin: top left;
+}
+
+.pf-dropdown.is-closing .pf-dropdown__menu {
+    animation: pfDropdownOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    pointer-events: none;
 }
 
 .site-header__account-dropdown .pf-dropdown__menu {
@@ -1490,14 +1597,24 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
 }
 
 @keyframes pfDropdownIn {
-    from {
+    0% {
         opacity: 0;
-        transform: translateY(-4px);
+        transform: translateY(-14px) scale(0.94);
     }
-
-    to {
+    100% {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes pfDropdownOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.94);
     }
 }
 
@@ -1880,40 +1997,214 @@ dialog.pf-confirm-dialog::backdrop {
 }
 
 @media (max-width: 640px) {
+    /* Task 14: Mobile Compact AI Feedback Dialog */
     .pf-feedback-dialog {
-        padding: 1rem;
+        padding: 0.85rem;
         max-height: calc(100dvh - 1.5rem);
+        border-radius: var(--pf-radius-md);
+    }
+    .pf-feedback-dialog__header {
+        margin-bottom: 0.35rem;
+        gap: 0.5rem;
+    }
+    .pf-feedback-dialog__header h2 {
+        font-size: 1.05rem;
+        line-height: 1.25;
+        margin: 0;
+    }
+    .pf-feedback-dialog__header .pf-eyebrow {
+        font-size: 0.72rem;
+        margin-bottom: 0.2rem;
+    }
+    #ai-feedback-description {
+        font-size: 0.8rem;
+        margin: 0.25rem 0 0.45rem;
+        line-height: 1.35;
+    }
+    .pf-feedback-dialog__fieldset {
+        margin: 0 0 0.45rem;
+        padding: 0;
+        border: none;
+    }
+    .pf-feedback-dialog__fieldset legend {
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
     }
     .pf-feedback-ratings--desktop {
         display: none !important;
     }
     .pf-feedback-ratings--mobile {
         display: block !important;
+        margin-top: 0.25rem;
+    }
+    .pf-feedback-dialog__form {
+        gap: 0.55rem;
+    }
+    .pf-feedback-dialog textarea {
+        min-height: 54px;
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
     }
     .pf-feedback-dialog__actions {
         flex-direction: column-reverse;
-        gap: 0.5rem;
+        gap: 0.4rem;
+        margin-top: 0.35rem;
     }
     .pf-feedback-dialog__actions .pf-btn {
         width: 100%;
         justify-content: center;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.88rem;
     }
 
-    /* Mobile Form Compact Layout */
+    /* Task 13, 18, 20: Mobile Compact Form & Card Layout */
+    .pf-detail-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.45rem !important;
+        padding-top: 0.35rem !important;
+        border-top: 1px solid var(--pf-border) !important;
+    }
     .pf-form-group {
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.55rem;
     }
     .pf-form-group .pf-label {
-        font-size: 0.82rem;
-        margin-bottom: 0.25rem;
+        font-size: 0.8rem;
+        margin-bottom: 0.2rem;
+    }
+    .pf-input,
+    .pf-select,
+    .pf-textarea {
+        font-size: 0.88rem;
+        padding: 0.45rem 0.65rem;
+    }
+    .pf-card {
+        padding: 0.85rem;
     }
     .pf-form-actions {
+        margin-top: 1rem;
+        padding-top: 0.75rem;
         flex-direction: column-reverse;
         gap: 0.5rem;
     }
     .pf-form-actions .pf-btn {
         width: 100%;
         justify-content: center;
+    }
+
+    /* Task 21: Mobile General Polish - Typography & UI Elements */
+    h1 {
+        font-size: 1.35rem;
+    }
+    h2 {
+        font-size: 1.15rem;
+    }
+    h3 {
+        font-size: 1rem;
+    }
+    .pf-page-header {
+        margin-bottom: 0.85rem;
+        padding-bottom: 0.75rem;
+    }
+    .pf-page-header h1 {
+        font-size: 1.25rem;
+    }
+    .pf-btn {
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+    }
+    .pf-btn--sm {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.8rem;
+    }
+    .pf-badge {
+        font-size: 0.72rem;
+        padding: 0.15rem 0.45rem;
+    }
+}
+
+/* ==========================================================================
+   Task 22: Accessible Global Tooltips (Hover + Mobile Tap/Click)
+   ========================================================================== */
+
+.pf-info-tooltip,
+[data-tooltip] {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.pf-tooltip-popover {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 0.45rem 0.7rem;
+    border-radius: var(--pf-radius-sm, 6px);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.35;
+    white-space: normal;
+    width: max-content;
+    max-width: min(280px, calc(100vw - 2rem));
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+}
+
+.pf-tooltip-popover::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .pf-info-tooltip:hover > .pf-tooltip-popover,
+    [data-tooltip]:hover > .pf-tooltip-popover {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(-2px);
+    }
+}
+
+.pf-tooltip-active > .pf-tooltip-popover {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateX(-50%) translateY(-2px) !important;
+    pointer-events: auto !important;
+}
+
+/* Task 3 & 20: Task & Milestone Details Header Actions (Desktop vs Mobile) */
+.pf-task-header-actions--desktop {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pf-task-header-actions--mobile,
+.pf-detail-title-row .pf-task-header-actions--mobile {
+    display: none !important;
+}
+
+@media (max-width: 640px) {
+    .pf-task-header-actions--desktop {
+        display: none !important;
+    }
+    .pf-task-header-actions--mobile,
+    .pf-detail-title-row .pf-task-header-actions--mobile {
+        display: inline-block !important;
     }
 }
 

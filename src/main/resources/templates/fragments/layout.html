@@ -235,7 +235,7 @@
                 </div>
             </fieldset>
             <label for="ai-feedback-comment">Möchtest du kurz angeben, warum? <span class="pf-hint">(optional)</span></label>
-            <textarea id="ai-feedback-comment" name="comment" maxlength="2000" rows="4" class="pf-textarea"></textarea>
+            <textarea id="ai-feedback-comment" name="comment" maxlength="2000" rows="3" class="pf-textarea" placeholder="Optionales Feedback..."></textarea>
             <div class="pf-feedback-dialog__actions">
                 <button class="pf-btn pf-btn--primary" type="submit">Feedback senden</button>
                 <button class="pf-btn pf-btn--ghost" type="submit" th:formaction="@{/ai-feedback/skip}"
@@ -416,7 +416,11 @@
                         resolve(result);
                     };
 
-                    const onConfirm = () => finish(true);
+                    const onConfirm = () => {
+                        confirmBtn.disabled = true;
+                        confirmBtn.classList.add('is-loading');
+                        finish(true);
+                    };
                     const onCancel = () => finish(false);
                     const onNativeCancel = (e) => {
                         e.preventDefault();
@@ -436,13 +440,75 @@
                 });
             };
 
-            // Global close for dropdowns when clicking outside
+            // Global Smooth Dropdown Animation & Management
+            window.closePfDropdown = function(details) {
+                if (!details || !details.hasAttribute('open') || details.classList.contains('is-closing')) return;
+
+                const menu = details.querySelector('.pf-dropdown__menu');
+                if (!menu) {
+                    details.removeAttribute('open');
+                    return;
+                }
+
+                details.classList.add('is-closing');
+                let isDone = false;
+
+                const finish = () => {
+                    if (isDone) return;
+                    isDone = true;
+                    details.removeAttribute('open');
+                    details.classList.remove('is-closing');
+                    menu.removeEventListener('animationend', finish);
+                };
+
+                menu.addEventListener('animationend', finish, { once: true });
+                setTimeout(finish, 210);
+            };
+
+            // Global dropdown toggle & click-outside listener (Capture phase)
             document.addEventListener('click', (e) => {
+                const summary = e.target.closest('details.pf-dropdown > summary');
+                if (summary) {
+                    const details = summary.closest('details.pf-dropdown');
+                    if (details) {
+                        if (details.classList.contains('is-closing')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            details.classList.remove('is-closing');
+                            return;
+                        }
+                        if (details.hasAttribute('open')) {
+                            // Already open: intercept click in capture phase to animate closing
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.closePfDropdown(details);
+                            return;
+                        }
+                        // About to open: close any other open dropdowns smoothly
+                        document.querySelectorAll('details.pf-dropdown[open]').forEach(other => {
+                            if (other !== details) {
+                                window.closePfDropdown(other);
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                // Smoothly close dropdowns when clicking outside
                 document.querySelectorAll('details.pf-dropdown[open]').forEach(details => {
                     if (!details.contains(e.target)) {
-                        details.removeAttribute('open');
+                        window.closePfDropdown(details);
                     }
                 });
+            }, true);
+
+            // Escape key closes open dropdowns smoothly
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' || e.key === 'Esc') {
+                    document.querySelectorAll('details.pf-dropdown[open]').forEach(details => {
+                        window.closePfDropdown(details);
+                    });
+                }
             });
 
             // Global interception of clicks on elements with data-confirm
@@ -504,6 +570,108 @@
                     form.requestSubmit();
                 }
             }, true);
+
+            // ── Prevent duplicate submissions and disable submit buttons after click ──
+            // 1. Capture phase click blocker: drop rapid repeated clicks on submit buttons if form is already submitting
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('button, input[type="submit"]');
+                if (!btn) return;
+                const form = btn.form;
+                if (form && form.dataset.submitting === 'true') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+            }, true);
+
+            // 2. Submit listener (bubbling phase): runs only when form is valid and about to submit
+            document.addEventListener('submit', (e) => {
+                const form = e.target;
+                if (!(form instanceof HTMLFormElement)) return;
+
+                // If event was cancelled (e.g. by confirmation dialog in capture phase), do nothing
+                if (e.defaultPrevented) return;
+
+                // Prevent duplicate form submissions
+                if (form.dataset.submitting === 'true') {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return;
+                }
+
+                form.dataset.submitting = 'true';
+
+                // Disable submit buttons in the next tick so the submission payload completes
+                // and submitter button name/value are properly included in the request
+                setTimeout(() => {
+                    const submitButtons = form.querySelectorAll('button[type="submit"], input[type="submit"], button:not([type])');
+                    submitButtons.forEach(btn => {
+                        btn.disabled = true;
+                        btn.setAttribute('aria-disabled', 'true');
+                        btn.classList.add('is-loading');
+                    });
+                }, 0);
+            }, false);
+
+            // 3. Re-enable buttons if HTML5 form validation fails on an input
+            document.addEventListener('invalid', (e) => {
+                const form = e.target.form;
+                if (form) {
+                    delete form.dataset.submitting;
+                    form.querySelectorAll('button[type="submit"], input[type="submit"], button:not([type])').forEach(btn => {
+                        btn.disabled = false;
+                        btn.removeAttribute('aria-disabled');
+                        btn.classList.remove('is-loading');
+                    });
+                }
+            }, true);
+
+            // 4. Re-enable buttons on pageshow (e.g. back/forward navigation from bfcache)
+            window.addEventListener('pageshow', () => {
+                document.querySelectorAll('form[data-submitting]').forEach(form => delete form.dataset.submitting);
+                document.querySelectorAll('button.is-loading, input.is-loading').forEach(btn => {
+                    btn.disabled = false;
+                    btn.removeAttribute('aria-disabled');
+                    btn.classList.remove('is-loading');
+                });
+            });
+
+            // 5. Re-enable buttons when AJAX plan updates complete or fail
+            document.addEventListener('projectflow:plan-updated', () => {
+                document.querySelectorAll('form[data-submitting]').forEach(form => delete form.dataset.submitting);
+                document.querySelectorAll('button.is-loading, input.is-loading').forEach(btn => {
+                    btn.disabled = false;
+                    btn.removeAttribute('aria-disabled');
+                    btn.classList.remove('is-loading');
+                });
+            });
+
+            // 6. Universal Tooltip Tap / Click Toggle (Task 22)
+            document.addEventListener('click', (e) => {
+                const trigger = e.target.closest('.pf-info-tooltip, [data-tooltip]');
+
+                // Close other active tooltips
+                document.querySelectorAll('.pf-tooltip-active').forEach(el => {
+                    if (el !== trigger) el.classList.remove('pf-tooltip-active');
+                });
+
+                if (!trigger) return;
+
+                // Ensure popover element exists inside trigger
+                let popover = trigger.querySelector(':scope > .pf-tooltip-popover');
+                if (!popover) {
+                    const text = trigger.getAttribute('data-tooltip') || trigger.getAttribute('title') || trigger.getAttribute('aria-label');
+                    if (!text) return;
+                    trigger.removeAttribute('title');
+                    popover = document.createElement('div');
+                    popover.className = 'pf-tooltip-popover';
+                    popover.setAttribute('role', 'tooltip');
+                    popover.textContent = text;
+                    trigger.appendChild(popover);
+                }
+
+                trigger.classList.toggle('pf-tooltip-active');
+            });
         })();
     </script>
 

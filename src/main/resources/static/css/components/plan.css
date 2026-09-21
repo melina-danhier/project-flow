@@ -714,10 +714,18 @@
    Project View Redesign - Control Bar, Phase Header & Elements
    ========================================================================== */
 
-/* Control Bar */
-.pf-plan-control-bar {
+/* Control Bar & Collapsible Wrapper (Task 16) */
+.pf-plan-control-collapse {
     margin-top: 1.25rem;
     margin-bottom: 1.25rem;
+}
+.pf-plan-control-collapse > summary.pf-plan-control-collapse-summary {
+    display: none;
+}
+
+.pf-plan-control-bar {
+    margin-top: 0;
+    margin-bottom: 0;
     padding: 0.65rem 1rem;
     background: #ffffff;
     border: 1px solid var(--pf-border);
@@ -826,6 +834,18 @@
     display: none !important;
 }
 
+/* Origin Badge (Task 15) */
+.pf-origin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    padding: 0.22rem 0.65rem;
+}
+.pf-origin-icon {
+    flex-shrink: 0;
+}
+
 /* Detail Page Title Row (Tasks & Milestones: Action menu never slips below title) */
 .pf-detail-title-row {
     display: flex;
@@ -846,6 +866,7 @@
 }
 
 .pf-detail-title-row .pf-task-header-actions--mobile {
+    display: none !important;
     flex-shrink: 0;
 }
 
@@ -1051,6 +1072,20 @@ details[open] .pf-phase-caret {
     outline-offset: 1px;
 }
 
+.pf-status-select option {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    background-color: #ffffff;
+    color: var(--pf-text-main);
+    padding: 0.4rem 0.75rem;
+}
+
+.pf-status-select option:checked {
+    background-color: var(--pf-primary-soft);
+    color: var(--pf-primary);
+}
+
 /* Item Action Menus */
 .pf-item-menu .pf-card-menu__btn {
     width: 26px;
@@ -1079,10 +1114,16 @@ details[open] .pf-phase-caret {
    Task & Milestone Detail / Edit Properties & Assignee Cards
    ========================================================================== */
 
+.pf-detail-props-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.7rem 1rem;
+}
+
 .pf-detail-prop {
     display: flex;
     align-items: flex-start;
-    gap: 0.65rem;
+    gap: 0.5rem;
 }
 
 .pf-detail-prop__icon {
@@ -1090,7 +1131,7 @@ details[open] .pf-phase-caret {
     align-items: center;
     justify-content: center;
     color: var(--pf-text-muted);
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
     flex-shrink: 0;
 }
 
@@ -1101,18 +1142,19 @@ details[open] .pf-phase-caret {
 
 .pf-detail-prop__label {
     display: block;
-    font-size: 0.76rem;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: var(--pf-text-muted);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
 }
 
 .pf-detail-prop__value {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     color: var(--pf-text-main);
     font-weight: 500;
+    line-height: 1.35;
 }
 
 /* Assignee Selection Grid & Cards (Requirement 12) */
@@ -1216,7 +1258,7 @@ details[open] .pf-phase-caret {
 }
 
 .pf-task-header-actions--mobile {
-    display: none;
+    display: none !important;
 }
 
 @media (max-width: 899px) {
@@ -1231,8 +1273,30 @@ details[open] .pf-phase-caret {
     .pf-task-header-actions--desktop {
         display: none !important;
     }
-    .pf-task-header-actions--mobile {
-        display: block !important;
+    .pf-task-header-actions--mobile,
+    .pf-detail-title-row .pf-task-header-actions--mobile {
+        display: inline-block !important;
+    }
+
+    .pf-task-detail-grid {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+
+    .pf-task-detail-grid .pf-card,
+    .pf-task-detail-grid .pf-stack {
+        width: 100% !important;
+    }
+
+    .pf-task-detail-grid .pf-card {
+        padding: 0.85rem !important;
+    }
+
+    .pf-detail-props-grid {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
     }
 
     .pf-btn--plan-ai-desktop {
@@ -1245,13 +1309,57 @@ details[open] .pf-phase-caret {
         display: block !important;
     }
 
-    .pf-plan-control-bar {
+    /* Mobile: Project Actions dropdown left aligned */
+    #project-actions-dropdown.pf-dropdown--left .pf-dropdown__menu {
+        left: 0 !important;
+        right: auto !important;
+        max-width: calc(100vw - 2rem) !important;
+    }
+
+    /* Task 15: Mobile shows only origin icon with tooltip */
+    .pf-origin-badge .pf-origin-text {
+        display: none !important;
+    }
+    .pf-origin-badge {
+        padding: 0.15rem 0.4rem !important;
+    }
+
+    /* Task 16: Collapsible Plan Control Bar on Mobile */
+    .pf-plan-control-collapse {
+        margin-bottom: 0.85rem;
+    }
+    .pf-plan-control-collapse > summary.pf-plan-control-collapse-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 0.55rem 0.85rem;
+        cursor: pointer;
+        user-select: none;
+        list-style: none;
+        border: 1px solid var(--pf-border);
+        border-radius: var(--pf-radius-md);
+        background: #ffffff;
+        box-shadow: var(--pf-shadow-xs);
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--pf-text-secondary);
+    }
+    .pf-plan-control-collapse > summary::-webkit-details-marker {
+        display: none;
+    }
+    .pf-plan-control-collapse .pf-plan-control-bar {
+        margin-top: 0.5rem;
         padding: 0.65rem 0.75rem;
         gap: 0.65rem;
+        flex-direction: column;
+        align-items: stretch;
     }
     .pf-plan-control-bar__left {
         width: 100%;
         gap: 0.65rem;
+        flex-direction: column;
+        align-items: stretch;
     }
     .pf-plan-control-bar__right {
         width: 100%;
@@ -1297,12 +1405,13 @@ details[open] .pf-phase-caret {
         display: none !important;
     }
 
-    /* Requirement 3: Show properties under title, not beside it */
+    /* Requirement 3 & Task 19: Consistently position menu in top-right corner; properties below title */
     .pf-element-item {
+        position: relative;
         flex-direction: column;
         align-items: stretch;
         gap: 0.5rem;
-        padding: 0.65rem 0.75rem;
+        padding: 0.65rem 2.75rem 0.65rem 0.75rem !important;
     }
     .pf-element-item__left {
         width: 100%;
@@ -1327,9 +1436,21 @@ details[open] .pf-phase-caret {
         width: 100%;
         justify-content: flex-start;
         padding-left: 2rem;
+        padding-right: 0;
     }
-    .plan-element .pf-element-item__right .pf-item-menu {
-        margin-left: auto;
+    .plan-element .pf-item-menu {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        margin-left: 0 !important;
+        z-index: 10;
+    }
+    .pf-item-menu .pf-dropdown__menu,
+    .pf-phase-menu .pf-dropdown__menu {
+        right: 0 !important;
+        left: auto !important;
+        max-width: min(300px, calc(100vw - 1.5rem)) !important;
+        z-index: 100 !important;
     }
 }
 

@@ -42,8 +42,15 @@
 
     const setBusy = (form, busy) => {
         form.setAttribute('aria-busy', String(busy));
-        form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(control => {
+        if (!busy) {
+            delete form.dataset.submitting;
+        }
+        form.querySelectorAll('button[type="submit"], input[type="submit"], button:not([type])').forEach(control => {
             control.disabled = busy;
+            if (!busy) {
+                control.removeAttribute('aria-disabled');
+                control.classList.remove('is-loading');
+            }
         });
     };
 
@@ -143,7 +150,11 @@
     document.addEventListener('click', event => {
         document.querySelectorAll('details.pf-dropdown[open]').forEach(dropdown => {
             if (!dropdown.contains(event.target)) {
-                dropdown.removeAttribute('open');
+                if (window.closePfDropdown) {
+                    window.closePfDropdown(dropdown);
+                } else {
+                    dropdown.removeAttribute('open');
+                }
             }
         });
     });
@@ -152,7 +163,6 @@
     document.addEventListener('click', event => {
         const phaseMenuOrEdit = event.target.closest('.pf-phase-menu, .pf-phase-inline-edit');
         if (phaseMenuOrEdit) {
-            event.stopPropagation();
             return;
         }
 
@@ -181,7 +191,10 @@
             event.stopPropagation();
             const section = editBtn.closest('details.plan-section');
             const menu = editBtn.closest('details.pf-phase-menu');
-            if (menu) menu.removeAttribute('open');
+            if (menu) {
+                if (window.closePfDropdown) window.closePfDropdown(menu);
+                else menu.removeAttribute('open');
+            }
             if (section) {
                 const displayWrap = section.querySelector('.pf-phase-display-wrap');
                 const editForm = section.querySelector('.pf-phase-inline-edit');
@@ -223,7 +236,10 @@
         if (openNewSectionBtn && newSectionDialog) {
             openNewSectionBtn.onclick = () => {
                 const actionsDropdown = document.getElementById('project-actions-dropdown');
-                if (actionsDropdown) actionsDropdown.removeAttribute('open');
+                if (actionsDropdown) {
+                    if (window.closePfDropdown) window.closePfDropdown(actionsDropdown);
+                    else actionsDropdown.removeAttribute('open');
+                }
                 newSectionDialog.showModal();
                 newSectionDialog.querySelector('#new-section-title')?.focus();
             };
@@ -298,7 +314,10 @@
                 event.preventDefault();
                 event.stopPropagation();
                 const menu = moveBtn.closest('details.pf-item-menu, details.pf-dropdown');
-                if (menu) menu.removeAttribute('open');
+                if (menu) {
+                    if (window.closePfDropdown) window.closePfDropdown(menu);
+                    else menu.removeAttribute('open');
+                }
 
                 const title = moveBtn.dataset.elementTitle || 'Element';
                 const moveUrl = moveBtn.dataset.moveUrl;
@@ -337,7 +356,10 @@
                 event.preventDefault();
                 event.stopPropagation();
                 const menu = deleteBtn.closest('details.pf-phase-menu');
-                if (menu) menu.removeAttribute('open');
+                if (menu) {
+                    if (window.closePfDropdown) window.closePfDropdown(menu);
+                    else menu.removeAttribute('open');
+                }
 
                 const sectionId = deleteBtn.dataset.sectionId;
                 const sectionTitle = deleteBtn.dataset.sectionTitle || 'Bereich';
@@ -387,13 +409,24 @@
         }
     }
 
-    // Make whole card clickable to navigate to task / milestone detail page
+    // Task 1: Make whole element card clickable to navigate to task / milestone detail page
     document.addEventListener('click', event => {
-        const card = event.target.closest('.pf-element-item[data-detail-url], .plan-element[data-detail-url]');
+        const card = event.target.closest('.plan-element[data-detail-url], .pf-element-item[data-detail-url]');
         if (!card) return;
 
-        // Do not navigate if clicking an interactive control
-        if (event.target.closest('button, input, textarea, select, a, label, form, .pf-drag-handle, .element-drag-handle, .pf-drag-handle-visual, .pf-card-menu, details, summary, .open-move-dialog-btn')) {
+        // If user is selecting text, do not navigate
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim().length > 0) {
+            return;
+        }
+
+        // Check if the click target is or is inside an interactive control within this card
+        const interactive = event.target.closest(
+            'a, button, input, select, textarea, label, summary, form, ' +
+            '.element-drag-handle, .pf-drag-handle-visual, .pf-drag-handle, .drag-handle, ' +
+            '.pf-dropdown, .pf-item-menu, .pf-card-menu, .element-move-btn, .open-move-dialog-btn'
+        );
+        if (interactive && card.contains(interactive)) {
             return;
         }
 
@@ -504,13 +537,38 @@
         applyFilters();
     }
 
+
+    const setupMobileCollapses = () => {
+        if (window.innerWidth <= 640) {
+            document.querySelectorAll('.pf-plan-control-collapse[open]').forEach(el => el.removeAttribute('open'));
+        }
+    };
+
+    const updateProjectActionsDropdownClass = () => {
+        const dropdown = document.getElementById('project-actions-dropdown');
+        if (!dropdown) return;
+        if (window.innerWidth <= 640) {
+            dropdown.classList.remove('pf-dropdown--right');
+            dropdown.classList.add('pf-dropdown--left');
+        } else {
+            dropdown.classList.remove('pf-dropdown--left');
+            dropdown.classList.add('pf-dropdown--right');
+        }
+    };
+
+    window.addEventListener('resize', updateProjectActionsDropdownClass);
+
     document.addEventListener('DOMContentLoaded', () => {
         setupPlanModals();
         setupFilters();
+        setupMobileCollapses();
+        updateProjectActionsDropdownClass();
     });
     document.addEventListener('projectflow:plan-updated', () => {
         setupPlanModals();
         setupFilters();
+        setupMobileCollapses();
+        updateProjectActionsDropdownClass();
     });
 
     window.ProjectFlowPlan = { submit: submitFields };

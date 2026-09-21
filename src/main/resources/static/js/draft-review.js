@@ -318,4 +318,9 @@
         }
     }, { capture: true });
 
+    // 9. Auto-collapse toolbar on mobile devices (Task 11)
+    if (window.innerWidth <= 640) {
+        document.querySelectorAll('.pf-toolbar-collapse[open]').forEach(el => el.removeAttribute('open'));
+    }
+
 })();

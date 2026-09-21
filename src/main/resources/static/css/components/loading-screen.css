@@ -269,45 +269,59 @@
         margin-bottom: 1rem;
     }
     .pf-loading-icon-wrap {
-        width: 38px;
-        height: 38px;
-        margin-bottom: 0.5rem;
+        width: 34px;
+        height: 34px;
+        margin-bottom: 0.4rem;
+    }
+    .pf-loading-icon-wrap svg {
+        width: 18px;
+        height: 18px;
     }
     .pf-loading-title {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
     .pf-loading-subtitle {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
     }
     .pf-stepper {
-        margin: 1rem 0;
+        margin: 0.85rem 0;
     }
     .pf-step {
-        padding-bottom: 0.75rem;
-        gap: 0.6rem;
+        padding-bottom: 0.65rem;
+        gap: 0.5rem;
     }
     .pf-step-badge {
-        width: 28px;
-        height: 28px;
-        font-size: 0.75rem;
+        width: 26px;
+        height: 26px;
+        font-size: 0.72rem;
+    }
+    .pf-step-badge .pf-spinner-svg {
+        width: 15px;
+        height: 15px;
     }
     .pf-step:not(:last-child)::after {
-        left: 13px;
-        top: 28px;
+        left: 12px;
+        top: 26px;
     }
-    .pf-step-title {
-        font-size: 0.85rem;
+    .pf-step-name {
+        font-size: 0.82rem;
     }
     .pf-step-desc {
-        font-size: 0.78rem;
+        font-size: 0.75rem;
+    }
+    .pf-loading-heartbeat {
+        font-size: 0.76rem;
+        padding: 0.25rem 0.6rem;
     }
     .pf-loading-actions {
         flex-direction: column-reverse;
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
     .pf-loading-actions .pf-btn {
         width: 100%;
         justify-content: center;
+        font-size: 0.85rem;
+        padding: 0.45rem 0.75rem;
     }
 }
 

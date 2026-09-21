@@ -339,7 +339,7 @@ categories:
             label: "Wohin ziehst du und wie weit ist der Umzug?"
             placeholder: "z. B. von einer 50-m²-Wohnung in eine 70-m²-Wohnung in derselben Stadt"
           - key: householdScope
-            label: "Wie viel Hausrat muss umgezogen werden?"
+            label: "Wie viele Möbel und Gegenstände müssen umgezogen werden?"
             placeholder: "z. B. komplette Einrichtung mit Waschmaschine und großem Kleiderschrank"
           - key: externalHelp
             label: "Planst du ein Umzugsunternehmen oder helfen Freunde?"

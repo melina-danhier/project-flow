@@ -21,20 +21,20 @@
                 </svg>
             </div>
 
-            <h1 th:if="${workflow.preCheckRun and workflow.processing}" class="pf-loading-title">Deine Projektangaben werden geprüft</h1>
-            <h1 th:if="${!workflow.preCheckRun and workflow.processing}" class="pf-loading-title">Dein Projektplan wird erstellt</h1>
+            <h1 th:if="${workflow.preCheckRun and workflow.processing}" class="pf-loading-title">Projektangaben werden geprüft</h1>
+            <h1 th:if="${!workflow.preCheckRun and workflow.processing}" class="pf-loading-title">Projektplan wird erstellt</h1>
             
-            <h1 th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}" class="pf-loading-title" style="color: var(--pf-success);">Der Planentwurf wurde erfolgreich erstellt!</h1>
-            <h1 th:if="${workflow.status.name() == 'GENERATION_FAILED' or workflow.status.name() == 'TECHNICAL_FAILURE'}" class="pf-loading-title" style="color: var(--pf-danger);">Der Vorgang konnte nicht abgeschlossen werden</h1>
+            <h1 th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}" class="pf-loading-title" style="color: var(--pf-success);">Planentwurf ist fertig!</h1>
+            <h1 th:if="${workflow.status.name() == 'GENERATION_FAILED' or workflow.status.name() == 'TECHNICAL_FAILURE'}" class="pf-loading-title" style="color: var(--pf-danger);">Vorgang fehlgeschlagen</h1>
 
             <p th:if="${workflow.processing and workflow.preCheckRun}" class="pf-loading-subtitle">
-                Die KI analysiert deine Eingaben und bereitet die Planerstellung vor.
+                Deine Angaben werden geprüft und vorbereitet.
             </p>
             <p th:if="${workflow.processing and !workflow.preCheckRun}" class="pf-loading-subtitle">
-                Die KI erstellt strukturierte Phasen, Meilensteine und Aufgaben für dein Projekt.
+                Phasen, Meilensteine und Aufgaben werden erstellt.
             </p>
             <p th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}" class="pf-loading-subtitle">
-                Die Generierung ist abgeschlossen. Der Entwurf bleibt getrennt vom aktiven Projekt und kann jetzt überprüft werden.
+                Der Planentwurf kann jetzt überprüft werden.
             </p>
         </div>
 
@@ -55,12 +55,12 @@
                 </div>
                 <div class="pf-step-content">
                     <div class="pf-step-header">
-                        <h3 class="pf-step-name">1. Projektangaben prüfen</h3>
+                        <h3 class="pf-step-name">1. Angaben prüfen</h3>
                         <span th:if="${!workflow.preCheckRun and workflow.status.name() != 'TECHNICAL_FAILURE'}" class="pf-step-status-tag pf-step-status-tag--completed">Abgeschlossen</span>
                         <span th:if="${workflow.processing and workflow.preCheckRun}" class="pf-step-status-tag pf-step-status-tag--active">Aktiv</span>
                         <span th:if="${workflow.status.name() == 'TECHNICAL_FAILURE' and (workflow.errorOperation?.name() == 'PRE_CHECK' or workflow.preCheckRun)}" class="pf-step-status-tag pf-step-status-tag--failed">Fehler</span>
                     </div>
-                    <p class="pf-step-desc">Projektangaben werden auf Konsistenz und Machbarkeit geprüft.</p>
+                    <p class="pf-step-desc">Prüfung auf Vollständigkeit und Machbarkeit.</p>
                 </div>
             </div>
 
@@ -79,12 +79,12 @@
                 </div>
                 <div class="pf-step-content">
                     <div class="pf-step-header">
-                        <h3 class="pf-step-name">2. Projektplan erstellen</h3>
+                        <h3 class="pf-step-name">2. Plan erstellen</h3>
                         <span th:if="${workflow.status.name() == 'GENERATION_COMPLETED'}" class="pf-step-status-tag pf-step-status-tag--completed">Abgeschlossen</span>
                         <span th:if="${workflow.processing and !workflow.preCheckRun}" class="pf-step-status-tag pf-step-status-tag--active">Aktiv</span>
                         <span th:if="${workflow.status.name() == 'GENERATION_FAILED' or (workflow.status.name() == 'TECHNICAL_FAILURE' and (workflow.errorOperation?.name() == 'PLAN_GENERATION' or !workflow.preCheckRun))}" class="pf-step-status-tag pf-step-status-tag--failed">Fehler</span>
                     </div>
-                    <p class="pf-step-desc">Projektphasen, Meilensteine und Aufgaben werden generiert.</p>
+                    <p class="pf-step-desc">Generierung von Phasen, Meilensteinen und Aufgaben.</p>
                 </div>
             </div>
         </div>
@@ -93,7 +93,7 @@
         <div style="text-align: center;">
             <div th:if="${workflow.processing}" class="pf-loading-heartbeat">
                 <span class="pf-heartbeat-dot" aria-hidden="true"></span>
-                <span>Vorgang aktiv · Automatische Aktualisierung</span>
+                <span>Wird automatisch aktualisiert</span>
             </div>
         </div>
 

@@ -125,8 +125,20 @@
     <!-- Flash Messages (dismissible) -->
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
-    <!-- Toolbar: Filter bar + Sorting control + View switcher -->
-    <div class="pf-plan-toolbar">
+    <!-- Toolbar: Filter bar + Sorting control + View switcher (Collapsible on mobile) -->
+    <details class="pf-toolbar-collapse" open>
+        <summary class="pf-toolbar-collapse-summary pf-btn pf-btn--sm pf-btn--outline">
+            <span class="pf-cluster" style="gap: 0.5rem; align-items: center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                <span>Filter & Ansicht</span>
+            </span>
+            <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </summary>
+        <div class="pf-plan-toolbar">
         <div class="pf-plan-toolbar__left" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <form class="pf-review-filter-form" method="get" th:action="@{/projects/{projectId}/draft/review(projectId=${draft.projectId})}">
                 <label for="review-status-filter" class="pf-filter-label">Filter:</label>
@@ -193,6 +205,7 @@
             </details>
         </div>
     </div>
+    </details>
 
     <!-- Alternative View Container (Cards, Board, Calendar) -->
     <div id="plan-alternative-view" class="pf-plan-alternative-view" hidden aria-live="polite"></div>

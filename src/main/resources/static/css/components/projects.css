@@ -77,6 +77,8 @@
     align-items: stretch;
     margin-top: 1.5rem;
     min-height: calc(100vh - 280px);
+}
+
 .pf-sidebar-toggle-btn {
     display: none;
 }

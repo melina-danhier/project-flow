@@ -630,7 +630,8 @@ function initializePlanViews() {
             }
         }
         if (switcher.tagName === 'DETAILS' && switcher.hasAttribute('open')) {
-            switcher.removeAttribute('open');
+            if (window.closePfDropdown) window.closePfDropdown(switcher);
+            else switcher.removeAttribute('open');
         }
         if (!isList) {
             var filters = getActiveFilters();

@@ -40,13 +40,12 @@
                     <span th:text="${availableTimeQuestion.label}"></span>
                     <span class="pf-hint">(optional)</span>
                 </label>
-                <div class="pf-form-field">
-                    <input id="availableWorkingTime"
-                           class="pf-input"
-                           type="text"
-                           th:field="*{availableWorkingTime}"
-                           maxlength="1000"
-                           th:placeholder="${availableTimeQuestion.placeholder}">
+                    <textarea id="availableWorkingTime"
+                              class="pf-textarea"
+                              rows="3"
+                              th:field="*{availableWorkingTime}"
+                              maxlength="1000"
+                              th:placeholder="${availableTimeQuestion.placeholder != null ? availableTimeQuestion.placeholder : 'z. B. etwa 3 Stunden pro Woche, hauptsächlich am Wochenende oder insgesamt rund 20 Stunden'}"></textarea>
                     <div th:if="${#fields.hasErrors('availableWorkingTime')}"
                          th:errors="*{availableWorkingTime}"
                          class="pf-alert pf-alert--error" role="alert"></div>

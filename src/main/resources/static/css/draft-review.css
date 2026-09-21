@@ -27,7 +27,14 @@ main[data-sort-mode] {
     margin: 0;
 }
 
-/* Plan Toolbar */
+/* Plan Toolbar & Collapsible Wrapper (Task 11) */
+.pf-toolbar-collapse {
+    margin-bottom: 1.25rem;
+}
+.pf-toolbar-collapse > summary.pf-toolbar-collapse-summary {
+    display: none;
+}
+
 .pf-plan-toolbar {
     display: flex;
     align-items: center;
@@ -584,23 +591,95 @@ details.draft-section[open] .pf-phase-caret {
     .pf-draft-review-hint {
         display: none !important;
     }
-    .details.draft-section summary.pf-plan-section__header {
+    /* Task 11: Collapsible Draft Toolbar on Mobile */
+    .pf-toolbar-collapse {
+        margin-bottom: 0.85rem;
+    }
+    .pf-toolbar-collapse > summary.pf-toolbar-collapse-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 0.55rem 0.85rem;
+        cursor: pointer;
+        user-select: none;
+        list-style: none;
+        border: 1px solid var(--pf-border);
+        border-radius: var(--pf-radius-md);
+        background: #ffffff;
+        box-shadow: var(--pf-shadow-xs);
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--pf-text-secondary);
+    }
+    .pf-toolbar-collapse > summary::-webkit-details-marker {
+        display: none;
+    }
+    .pf-toolbar-collapse .pf-plan-toolbar {
+        margin-top: 0.5rem;
+        margin-bottom: 0;
+        padding: 0.65rem 0.75rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+    }
+    .pf-toolbar-collapse .pf-plan-toolbar__left {
         flex-direction: column;
         align-items: stretch;
         gap: 0.5rem;
     }
+    .pf-toolbar-collapse .pf-review-filter-form,
+    .pf-toolbar-collapse .pf-sort-control-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+    .pf-toolbar-collapse .pf-plan-view-wrap {
+        width: 100%;
+    }
+    .pf-toolbar-collapse .pf-plan-view-dropdown,
+    .pf-toolbar-collapse .pf-plan-view-dropdown summary {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* Task 12: Section Header - title on same line as caret/drag; actions below title */
+    details.draft-section summary.pf-plan-section__header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        padding: 0.65rem 0.75rem;
+    }
     .pf-phase-header__left {
         width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         flex-wrap: nowrap;
         min-width: 0;
     }
     .pf-phase-display-wrap {
         min-width: 0;
         flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
     }
     .pf-phase-title {
+        font-size: 0.98rem;
         word-break: break-word;
         overflow-wrap: break-word;
+    }
+    .pf-phase-header__right {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        padding-left: 2.25rem;
     }
     .plan-element {
         flex-direction: column;

@@ -46,6 +46,11 @@
             </a>
             <!-- Consolidated Project Actions Dropdown -->
             <details class="pf-dropdown pf-dropdown--right" id="project-actions-dropdown">
+                <script>
+                    if (window.innerWidth <= 640) {
+                        document.currentScript.parentElement.classList.replace('pf-dropdown--right', 'pf-dropdown--left');
+                    }
+                </script>
                 <summary class="pf-btn pf-btn--outline pf-dropdown__trigger">
                     <span>Aktionen</span>
                     <svg class="pf-dropdown__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -173,8 +178,20 @@
     <!-- Flash Messages -->
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
-    <!-- Plan Control Bar: Consistent Sorting Control & Compact View Selector -->
-    <div class="pf-plan-control-bar">
+    <!-- Plan Control Bar: Consistent Sorting Control & Compact View Selector (Collapsible on mobile) -->
+    <details class="pf-plan-control-collapse" open>
+        <summary class="pf-plan-control-collapse-summary pf-btn pf-btn--sm pf-btn--outline">
+            <span class="pf-cluster" style="gap: 0.5rem; align-items: center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                <span>Filter & Ansicht</span>
+            </span>
+            <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </summary>
+        <div class="pf-plan-control-bar">
         <div class="pf-plan-control-bar__left">
             <!-- Sorting Control -->
             <div class="pf-sort-control-wrap">
@@ -256,6 +273,7 @@
             </details>
         </div>
     </div>
+    </details>
 
     <!-- Alternative View Container (Cards, Board, Calendar) -->
     <div id="plan-alternative-view" class="pf-plan-alternative-view" hidden aria-live="polite"></div>
@@ -317,8 +335,14 @@
                 <!-- Phase Header Right: Counts and Hamburger Menu -->
                 <div class="pf-phase-header__right">
                     <span class="pf-badge pf-badge--blue" th:text="${section.taskCount + ' Aufgaben'}">0 Aufgaben</span>
-                    <span class="pf-badge pf-badge--purple" th:text="${section.milestoneCount + ' Meilensteine'}">0 Meilensteine</span>
-                    <span class="pf-badge pf-badge--outline" th:if="${section.originLabel}" th:text="${section.originLabel}"></span>
+                    <!-- Section Origin Badge (Task 15) -->
+                    <span class="pf-badge pf-badge--outline pf-origin-badge" th:if="${section.originLabel}"
+                          th:title="${section.originLabel}" th:attr="data-tooltip=${section.originLabel},aria-label=${section.originLabel}">
+                        <svg class="pf-origin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                        </svg>
+                        <span class="pf-origin-text" th:text="${section.originLabel}"></span>
+                    </span>
 
                     <!-- Phase Overflow Menu (Right-Aligned Hamburger) -->
                     <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-phase-menu">
@@ -473,6 +497,15 @@
 
                         <!-- Read-only Status Badge -->
                         <span class="pf-badge pf-badge--gray" th:if="${!plan.editable and element.stateLabel != null}" th:text="${element.stateLabel}"></span>
+
+                        <!-- Element Origin Badge (Task 15) -->
+                        <span class="pf-badge pf-badge--outline pf-origin-badge" th:if="${element.originLabel != null}"
+                              th:title="${element.originLabel}" th:attr="data-tooltip=${element.originLabel},aria-label=${element.originLabel}">
+                            <svg class="pf-origin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                            </svg>
+                            <span class="pf-origin-text" th:text="${element.originLabel}"></span>
+                        </span>
 
                         <!-- Element Action Menu (Far-right hamburger) -->
                         <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">

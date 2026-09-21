@@ -128,7 +128,13 @@ public class ProjectQuestionCatalogLoader {
         List<ProjectQuestion> result = new ArrayList<>();
 
         if (category != null) {
-            result.addAll(categoryQuestions.getOrDefault(category, List.of()));
+            List<ProjectQuestion> catQuestions = categoryQuestions.getOrDefault(category, List.of());
+            if (subcategory == ProjectSubCategory.MOVING) {
+                catQuestions = catQuestions.stream()
+                        .filter(q -> !"homeGoal".equals(q.key()))
+                        .toList();
+            }
+            result.addAll(catQuestions);
 
             if (subcategory != null && subcategory.getCategory() == category) {
                 result.addAll(subcategoryQuestions.getOrDefault(subcategory, List.of()));
