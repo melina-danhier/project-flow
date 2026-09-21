@@ -2127,6 +2127,12 @@ dialog.pf-confirm-dialog::backdrop {
    Task 22: Accessible Global Tooltips (Hover + Mobile Tap/Click)
    ========================================================================== */
 
+.pf-sort-label-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 .pf-info-tooltip,
 [data-tooltip] {
     position: relative;
@@ -2211,6 +2217,9 @@ dialog.pf-confirm-dialog::backdrop {
 /* ── Mobile Views Drawer & Navbar Controls ── */
 .site-header__views-toggle {
     display: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent;
 }
 
 .pf-drawer-overlay {
@@ -2257,9 +2266,10 @@ body.pf-drawer-open {
 }
 
 .pf-views-drawer__header {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 1.1rem 1.25rem;
     border-bottom: 1px solid var(--pf-border);
     background: var(--pf-surface-subtle, #f8fafc);
@@ -2270,6 +2280,8 @@ body.pf-drawer-open {
 }
 
 .pf-views-drawer__close {
+    position: absolute;
+    right: 0.85rem;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -2314,22 +2326,25 @@ body.pf-drawer-open {
     .site-header__views-toggle {
         display: inline-flex !important;
         align-items: center;
-        gap: 0.35rem;
-        padding: 0.35rem 0.55rem;
-        font-size: 0.82rem;
-        font-weight: 600;
+        justify-content: center;
+        padding: 0.4rem;
         border-radius: var(--pf-radius-md);
         color: var(--pf-text-main);
-        background: transparent;
-        border: 1px solid var(--pf-border);
-        margin-right: 0.35rem;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none;
+        margin-right: 0.25rem;
         flex-shrink: 0;
         cursor: pointer;
         transition: var(--pf-transition);
     }
 
-    .site-header__views-toggle:hover {
-        background: var(--pf-surface-hover, #f1f5f9);
+    .site-header__views-toggle:hover,
+    .site-header__views-toggle:active {
+        background: var(--pf-surface-hover, #f1f5f9) !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
     /* In mobile view, User icon should be there instead of the name which is taking more space */
@@ -2346,6 +2361,21 @@ body.pf-drawer-open {
 
     .site-header__left {
         gap: 0.35rem;
+    }
+
+    /* Center logo icon and text when views toggle is present on mobile navbar */
+    .site-header--has-views-toggle .site-header__inner {
+        position: relative;
+    }
+
+    .site-header--has-views-toggle .brand,
+    .site-header:has(.site-header__views-toggle) .brand {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        margin: 0;
+        white-space: nowrap;
+        pointer-events: auto;
     }
 }
 

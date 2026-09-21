@@ -197,21 +197,32 @@
             <div class="pf-sort-control-wrap">
                 <form th:if="${plan.editable}" th:action="@{/projects/{projectId}/plan/sort-mode(projectId=${plan.project.id})}" method="post" id="plan-sort-mode-form" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
                     <input type="hidden" name="projectLockVersion" th:value="${plan.project.lockVersion}">
-                    <label for="plan-sort-mode-select" class="pf-sort-label">Sortierung:</label>
+                    <div class="pf-sort-label-wrap">
+                        <label for="plan-sort-mode-select" class="pf-sort-label">Sortierung:</label>
+                        <span class="pf-info-tooltip" title="Nach Datum: Datierte Elemente werden chronologisch einsortiert. Manuell: Elemente können frei verschoben werden." aria-label="Sortierhinweis">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </span>
+                    </div>
                     <select id="plan-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; font-size:0.85rem;" onchange="this.form.requestSubmit()">
                         <option value="DATE" th:selected="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</option>
                         <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
                     </select>
-                    <span class="pf-info-tooltip" title="Nach Datum: Datierte Elemente werden chronologisch einsortiert. Manuell: Elemente können frei verschoben werden." aria-label="Sortierhinweis">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="16" x2="12" y2="12"></line>
-                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                        </svg>
-                    </span>
                 </form>
                 <div th:unless="${plan.editable}" style="display:flex; align-items:center; gap:0.5rem;">
-                    <span class="pf-sort-label">Sortierung:</span>
+                    <div class="pf-sort-label-wrap">
+                        <span class="pf-sort-label">Sortierung:</span>
+                        <span class="pf-info-tooltip" title="Nach Datum: Datierte Elemente werden chronologisch einsortiert. Manuell: Elemente können frei verschoben werden." aria-label="Sortierhinweis">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </span>
+                    </div>
                     <span class="pf-badge pf-badge--gray" th:text="${plan.project.sortMode.name() == 'DATE' ? 'Nach Datum' : 'Manuelle Reihenfolge'}">Nach Datum</span>
                 </div>
             </div>

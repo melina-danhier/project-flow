@@ -629,7 +629,8 @@ details.draft-section[open] .pf-phase-caret {
         gap: 0.5rem;
     }
     .pf-toolbar-collapse .pf-review-filter-form,
-    .pf-toolbar-collapse .pf-sort-control-wrap {
+    .pf-toolbar-collapse .pf-sort-control-wrap,
+    .pf-toolbar-collapse #draft-sort-mode-form {
         display: flex;
         align-items: center;
         justify-content: space-between;

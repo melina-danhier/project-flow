@@ -760,6 +760,12 @@
     gap: 0.5rem;
 }
 
+.pf-sort-label-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 .pf-sort-label {
     font-size: 0.85rem;
     font-weight: 600;
@@ -1371,6 +1377,14 @@ details[open] .pf-phase-caret {
     .pf-assignment-filter-wrap {
         width: 100%;
         justify-content: space-between;
+    }
+    #plan-sort-mode-form,
+    .pf-sort-control-wrap > div {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
     }
     .pf-sort-control-wrap .pf-select,
     .pf-task-filter-wrap .pf-select,

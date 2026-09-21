@@ -90,7 +90,7 @@
 
 <!-- Modern Executive Site Header -->
 <th:block th:fragment="site-header">
-<header class="site-header" id="top">
+<header class="site-header" th:classappend="${isProjectsPage == true or selectedLocation != null ? 'site-header--has-views-toggle' : ''}" id="top">
     <div class="site-header__inner">
         <div class="site-header__left">
             <!-- Ansichten hamburger button for mobile view on /projects page -->
@@ -100,13 +100,12 @@
                     id="pf-views-drawer-toggle"
                     aria-expanded="false"
                     aria-controls="pf-views-drawer"
-                    aria-label="Projektbereiche Menü öffnen">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    aria-label="Ansichten Menü öffnen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="3" y1="12" x2="21" y2="12"></line>
                     <line x1="3" y1="6" x2="21" y2="6"></line>
                     <line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
-                <span>Ansichten</span>
             </button>
             <a class="brand" th:href="${session != null and session.studyTasksCompleted != null ? '/study/completed' : (#authorization.expression('isAuthenticated()') ? '/projects' : '/')}" aria-label="ProjectFlow Startseite">
                 <span class="brand__mark" aria-hidden="true">
