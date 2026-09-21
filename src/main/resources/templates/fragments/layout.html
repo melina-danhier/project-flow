@@ -93,6 +93,21 @@
 <header class="site-header" id="top">
     <div class="site-header__inner">
         <div class="site-header__left">
+            <!-- Ansichten hamburger button for mobile view on /projects page -->
+            <button th:if="${isProjectsPage == true or selectedLocation != null}"
+                    type="button"
+                    class="site-header__views-toggle"
+                    id="pf-views-drawer-toggle"
+                    aria-expanded="false"
+                    aria-controls="pf-views-drawer"
+                    aria-label="Projektbereiche Menü öffnen">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+                <span>Ansichten</span>
+            </button>
             <a class="brand" th:href="${session != null and session.studyTasksCompleted != null ? '/study/completed' : (#authorization.expression('isAuthenticated()') ? '/projects' : '/')}" aria-label="ProjectFlow Startseite">
                 <span class="brand__mark" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -151,13 +166,14 @@
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </span>
-                        <span th:text="${#authentication.principal.displayName != null and !#authentication.principal.displayName.isBlank() ? #authentication.principal.displayName : #authentication.name}">Workspace</span>
+                        <span class="site-header__account-name" th:text="${#authentication.principal.displayName != null and !#authentication.principal.displayName.isBlank() ? #authentication.principal.displayName : #authentication.name}">Workspace</span>
                         <svg class="pf-dropdown__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </summary>
                     <div class="pf-dropdown__menu pf-dropdown__menu--right">
                         <div class="pf-dropdown__header">
+                            <div class="pf-dropdown__user-name" th:text="${#authentication.principal.displayName != null and !#authentication.principal.displayName.isBlank() ? #authentication.principal.displayName : #authentication.name}">Workspace</div>
                             <span class="pf-dropdown__eyebrow">Workspaces</span>
                         </div>
                         <a class="pf-dropdown__item pf-dropdown__item--active" th:href="@{/projects}">
@@ -191,6 +207,138 @@
         </div>
     </div>
 </header>
+<th:block th:if="${isProjectsPage == true or selectedLocation != null}">
+    <div id="pf-views-drawer-overlay" class="pf-drawer-overlay" aria-hidden="true"></div>
+    <aside id="pf-views-drawer" class="pf-views-drawer" aria-label="Projektbereiche" aria-hidden="true">
+        <div class="pf-views-drawer__header">
+            <a class="brand" th:href="@{/projects}" aria-label="ProjectFlow Startseite">
+                <span class="brand__mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </span>
+                <div class="brand__text">
+                    <span class="brand__title">ProjectFlow</span>
+                    <span class="brand__subtitle" sec:authorize="isAuthenticated()">Workspace</span>
+                </div>
+            </a>
+            <button type="button" class="pf-views-drawer__close" id="pf-views-drawer-close" aria-label="Menü schließen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="pf-views-drawer__content">
+            <div class="pf-views-drawer__label">Projektbereiche</div>
+            <nav class="pf-sidebar-nav pf-sidebar-nav--drawer" aria-label="Projektbereiche">
+                <!-- Search Button linking to dedicated Search Page -->
+                <a th:href="@{/projects/search}" class="pf-sidebar-link" aria-label="Projekte durchsuchen"
+                   th:classappend="${query != null ? 'active' : ''}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <span>Suche</span>
+                </a>
+
+                <!-- Vertical Location Navigation Links -->
+                <a th:href="@{/projects}" class="pf-sidebar-link"
+                   th:classappend="${selectedLocation != null and selectedLocation.name() == 'OVERVIEW' and query == null ? 'active' : ''}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                    <span>Aktiv</span>
+                </a>
+                <a th:href="@{/projects/drafts}" class="pf-sidebar-link"
+                   th:classappend="${selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'active' : ''}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path>
+                    </svg>
+                    <span>KI-Entwürfe</span>
+                </a>
+                <a th:href="@{/projects(location=ARCHIVE)}" class="pf-sidebar-link"
+                   th:classappend="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'active' : ''}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                        <rect x="1" y="3" width="22" height="5"></rect>
+                        <line x1="10" y1="12" x2="14" y2="12"></line>
+                    </svg>
+                    <span>Archiv</span>
+                </a>
+                <a th:href="@{/projects(location=TRASH)}" class="pf-sidebar-link"
+                   th:classappend="${selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'active' : ''}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Papierkorb</span>
+                </a>
+            </nav>
+        </div>
+    </aside>
+    <script>
+        (() => {
+            const toggleBtn = document.getElementById('pf-views-drawer-toggle');
+            const drawer = document.getElementById('pf-views-drawer');
+            const overlay = document.getElementById('pf-views-drawer-overlay');
+            const closeBtn = document.getElementById('pf-views-drawer-close');
+
+            if (!toggleBtn || !drawer || !overlay) return;
+
+            const openDrawer = () => {
+                drawer.classList.add('is-open');
+                overlay.classList.add('is-active');
+                document.body.classList.add('pf-drawer-open');
+                toggleBtn.setAttribute('aria-expanded', 'true');
+                drawer.setAttribute('aria-hidden', 'false');
+                overlay.setAttribute('aria-hidden', 'false');
+            };
+
+            const closeDrawer = () => {
+                drawer.classList.remove('is-open');
+                overlay.classList.remove('is-active');
+                document.body.classList.remove('pf-drawer-open');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                drawer.setAttribute('aria-hidden', 'true');
+                overlay.setAttribute('aria-hidden', 'true');
+            };
+
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (drawer.classList.contains('is-open')) {
+                    closeDrawer();
+                } else {
+                    openDrawer();
+                }
+            });
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeDrawer();
+                });
+            }
+
+            overlay.addEventListener('click', closeDrawer);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+                    closeDrawer();
+                }
+            });
+        })();
+    </script>
+</th:block>
 <div class="pf-study-task-shell"
      th:if="${session != null and session.studySessionId != null and session.studyTasksCompleted == null and (studyPage == null or !studyPage)}">
     <th:block th:replace="~{fragments/layout :: study-return}" />

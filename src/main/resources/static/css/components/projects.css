@@ -115,6 +115,27 @@
     }
 }
 
+@media (max-width: 640px) {
+    .pf-sidebar-toggle-btn {
+        display: none !important;
+    }
+
+    .pf-projects-sidebar,
+    .pf-projects-layout .pf-sidebar-nav {
+        display: none !important;
+    }
+}
+
+.pf-sidebar-nav--drawer {
+    display: flex !important;
+    position: static !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    width: 100% !important;
+}
+
 .pf-projects-sidebar {
     display: flex;
     flex-direction: column;

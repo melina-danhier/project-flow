@@ -2208,3 +2208,144 @@ dialog.pf-confirm-dialog::backdrop {
     }
 }
 
+/* ── Mobile Views Drawer & Navbar Controls ── */
+.site-header__views-toggle {
+    display: none !important;
+}
+
+.pf-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.48);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    z-index: 1040;
+}
+
+.pf-drawer-overlay.is-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.pf-views-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(310px, 84vw);
+    background: #ffffff;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+    z-index: 1050;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s ease;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    visibility: hidden;
+}
+
+.pf-views-drawer.is-open {
+    transform: translateX(0);
+    visibility: visible;
+}
+
+body.pf-drawer-open {
+    overflow: hidden;
+}
+
+.pf-views-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid var(--pf-border);
+    background: var(--pf-surface-subtle, #f8fafc);
+}
+
+.pf-views-drawer__header .brand {
+    text-decoration: none;
+}
+
+.pf-views-drawer__close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--pf-text-secondary);
+    padding: 0.4rem;
+    border-radius: var(--pf-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--pf-transition);
+}
+
+.pf-views-drawer__close:hover {
+    color: var(--pf-text-main);
+    background: var(--pf-surface-hover, #f1f5f9);
+}
+
+.pf-views-drawer__content {
+    padding: 1.15rem 1rem;
+    flex: 1;
+}
+
+.pf-views-drawer__label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: var(--pf-text-muted);
+    margin-bottom: 0.65rem;
+    padding: 0 0.5rem;
+}
+
+.pf-dropdown__user-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--pf-text-main);
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+}
+
+@media (max-width: 640px) {
+    .site-header__views-toggle {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.55rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border-radius: var(--pf-radius-md);
+        color: var(--pf-text-main);
+        background: transparent;
+        border: 1px solid var(--pf-border);
+        margin-right: 0.35rem;
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: var(--pf-transition);
+    }
+
+    .site-header__views-toggle:hover {
+        background: var(--pf-surface-hover, #f1f5f9);
+    }
+
+    /* In mobile view, User icon should be there instead of the name which is taking more space */
+    .site-header__account .site-header__account-name,
+    .site-header__account .pf-dropdown__chevron {
+        display: none !important;
+    }
+
+    .site-header__account {
+        padding: 0.3rem !important;
+        gap: 0 !important;
+        border-radius: 9999px !important;
+    }
+
+    .site-header__left {
+        gap: 0.35rem;
+    }
+}
+

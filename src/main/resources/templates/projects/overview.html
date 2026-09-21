@@ -6,7 +6,7 @@
 </head>
 
 <body>
-    <th:block th:replace="~{fragments/layout :: site-header}" />
+    <th:block th:replace="~{fragments/layout :: site-header}" th:with="isProjectsPage=true" />
 
     <main>
         <!-- Page Header with Primary Action -->
