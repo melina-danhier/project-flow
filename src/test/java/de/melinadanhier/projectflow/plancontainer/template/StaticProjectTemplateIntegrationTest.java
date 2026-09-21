@@ -154,7 +154,9 @@ class StaticProjectTemplateIntegrationTest {
                 .filter(task -> task.getTitle().equals(originalTaskTitle))
                 .findFirst().orElseThrow().getId();
 
-        var created = projectService.createProjectFromTemplate(template.getId(), projectForm(), owner.getId());
+        ProjectCreateForm form = projectForm();
+        form.setPlannedDurationDays(45);
+        var created = projectService.createProjectFromTemplate(template.getId(), form, owner.getId());
         entityManager.flush();
         entityManager.clear();
 
@@ -167,6 +169,7 @@ class StaticProjectTemplateIntegrationTest {
 
         assertThat(project.getCreationType()).isEqualTo(CreationType.TEMPLATE);
         assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        assertThat(project.getPlannedDurationDays()).isEqualTo(45);
         assertThat(copiedSections).hasSize(5);
         assertThat(copiedTasks).hasSize(22);
         assertThat(copiedMilestones).hasSize(4);

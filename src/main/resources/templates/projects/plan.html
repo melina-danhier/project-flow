@@ -19,10 +19,7 @@
     <div class="pf-page-header">
         <div class="pf-page-header__left">
             <a th:href="@{/projects}" class="pf-page-header__back">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
+                <th:block th:replace="~{fragments/icons :: arrow-left(14, 2.5)}" />
                 Zur Projektübersicht
             </a>
             <div class="pf-cluster" style="align-items: center; gap: 0.65rem;">
@@ -33,6 +30,13 @@
             <p class="pf-project-desc" th:if="${plan.project.description != null and !#strings.trim(plan.project.description).isEmpty()}"
                th:text="${plan.project.description}"
                style="margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--pf-text-muted); line-height: 1.45; max-width: 700px;"></p>
+            <div th:if="${plan.project.startDate != null or plan.project.endDate != null or plan.project.plannedDurationDays != null}"
+                 class="pf-cluster" style="margin-top: 0.45rem; gap: 0.75rem; color: var(--pf-text-muted); font-size: 0.82rem;">
+                <span th:if="${plan.project.startDate != null}" th:text="${'Start: ' + #temporals.format(plan.project.startDate, 'dd.MM.yyyy')}">Start</span>
+                <span th:if="${plan.project.endDate != null}" th:text="${'Ende: ' + #temporals.format(plan.project.endDate, 'dd.MM.yyyy')}">Ende</span>
+                <span th:if="${plan.project.plannedDurationDays != null}"
+                      th:text="${'Geplante Dauer: ' + plan.project.plannedDurationDays + (plan.project.plannedDurationDays == 1 ? ' Tag' : ' Tage')}">Dauer</span>
+            </div>
         </div>
 
         <div class="pf-page-header__actions">

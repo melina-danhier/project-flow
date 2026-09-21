@@ -35,6 +35,22 @@ class ProjectFormTest {
     }
 
     @Test
+    void plannedDurationIsOptionalIndependentAndValidatedWhenAllTimeValuesArePresent() {
+        ProjectCreateForm durationOnly = validCreateForm();
+        durationOnly.setPlannedDurationDays(42);
+        assertThat(validator.validate(durationOnly)).isEmpty();
+
+        ProjectUpdateForm consistent = validUpdateForm();
+        consistent.setStartDate(LocalDate.of(2026, 9, 1));
+        consistent.setEndDate(LocalDate.of(2026, 9, 10));
+        consistent.setPlannedDurationDays(10);
+        assertThat(validator.validate(consistent)).isEmpty();
+
+        consistent.setPlannedDurationDays(9);
+        assertThat(violatedProperties(consistent)).contains("plannedDurationConsistent");
+    }
+
+    @Test
     void createAndUpdateFormsShareCollaborationValidation() {
         ProjectCreateForm createForm = validCreateForm();
         ProjectUpdateForm updateForm = validUpdateForm();

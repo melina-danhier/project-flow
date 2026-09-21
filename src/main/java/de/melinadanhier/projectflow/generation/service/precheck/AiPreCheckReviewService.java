@@ -86,6 +86,7 @@ public class AiPreCheckReviewService {
             }
             AiWizardSnapshot updatedSnapshot = applyProposedChanges(snapshot, problem.proposedInputChanges());
             workflow.updateConfirmedSnapshotAfterAcceptedPreCheckChange(snapshotCodec.writeSnapshot(updatedSnapshot));
+            synchronizeProjectTimeFrame(workflow, updatedSnapshot);
             workflow.acceptOpenPoint(problemIndex);
             return completeReviewIfPossible(workflow, result);
         }
@@ -164,6 +165,13 @@ public class AiPreCheckReviewService {
                 changes.getOrDefault("additionalInformation", snapshot.additionalInformation()),
                 parseInteger(changes, "durationDays", snapshot.durationDays()),
                 changes.getOrDefault("availableWorkingTime", snapshot.availableWorkingTime()), answers);
+    }
+
+    private void synchronizeProjectTimeFrame(
+            AiPlanGenerationWorkflow workflow, AiWizardSnapshot snapshot) {
+        workflow.getProject().setStartDate(snapshot.startDate());
+        workflow.getProject().setEndDate(snapshot.endDate());
+        workflow.getProject().setPlannedDurationDays(snapshot.durationDays());
     }
 
     private java.time.LocalDate parseDate(Map<String, String> changes, String key, java.time.LocalDate fallback) {

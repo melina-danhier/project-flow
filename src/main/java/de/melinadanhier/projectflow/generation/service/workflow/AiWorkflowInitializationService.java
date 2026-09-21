@@ -61,6 +61,7 @@ public class AiWorkflowInitializationService {
         project.setDescription(snapshot.description());
         project.setStartDate(snapshot.startDate());
         project.setEndDate(snapshot.endDate());
+        project.setPlannedDurationDays(snapshot.durationDays());
         project.setCategory(snapshot.category());
         project.setSubcategory(snapshot.subcategory());
         project.setCollaborationMode(snapshot.collaborationMode());

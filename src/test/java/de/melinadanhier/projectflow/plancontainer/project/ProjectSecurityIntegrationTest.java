@@ -116,8 +116,12 @@ class ProjectSecurityIntegrationTest {
         form.setCategory(ProjectCategory.HOME);
         form.setSubcategory(ProjectSubCategory.MOVING);
         form.setCollaborationMode(CollaborationMode.INDIVIDUAL);
+        form.setPlannedDurationDays(42);
 
-        UUID projectId = projectService.createProject(form, owner.getId()).getId();
+        var created = projectService.createProject(form, owner.getId());
+        UUID projectId = created.getId();
+
+        assertThat(created.getPlannedDurationDays()).isEqualTo(42);
 
         List<ProjectMember> memberships = projectRepository.findById(projectId).orElseThrow()
                 .getMemberships().stream().toList();
@@ -132,9 +136,35 @@ class ProjectSecurityIntegrationTest {
         assertThat(project.getCategory()).isEqualTo(ProjectCategory.HOME);
         assertThat(project.getSubcategory()).isEqualTo(ProjectSubCategory.MOVING);
         assertThat(project.getCollaborationMode()).isEqualTo(CollaborationMode.INDIVIDUAL);
+        assertThat(project.getPlannedDurationDays()).isEqualTo(42);
+        assertThat(project.getStartDate()).isNull();
+        assertThat(project.getEndDate()).isNull();
         assertThat(planSectionRepository.count()).isZero();
         assertThat(taskRepository.count()).isZero();
         assertThat(milestoneRepository.count()).isZero();
+    }
+
+    @Test
+    void updatingPlannedDurationDoesNotChangeExplicitProjectDates() {
+        User owner = saveUser("duration-update@example.org");
+        Project project = saveProject("Dauer bearbeiten", owner);
+        project.setStartDate(LocalDate.of(2026, 9, 1));
+        project.setEndDate(LocalDate.of(2026, 9, 10));
+        project.setPlannedDurationDays(10);
+        projectRepository.flush();
+
+        ProjectUpdateForm form = updateForm(CollaborationMode.GROUP, project.getLockVersion());
+        form.setStartDate(project.getStartDate());
+        form.setEndDate(null);
+        form.setPlannedDurationDays(20);
+        projectService.updateProject(project.getId(), form, owner.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        Project updated = projectRepository.findById(project.getId()).orElseThrow();
+        assertThat(updated.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 1));
+        assertThat(updated.getEndDate()).isNull();
+        assertThat(updated.getPlannedDurationDays()).isEqualTo(20);
     }
 
     @Test

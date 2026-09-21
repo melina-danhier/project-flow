@@ -349,6 +349,11 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(requestCaptor.getValue().confirmedWizardData().endDate())
                 .isEqualTo(LocalDate.of(2026, 9, 30));
         assertThat(requestCaptor.getValue().confirmedWizardData().durationDays()).isEqualTo(30);
+        assertThat(projectRepository.findById(workflowRepository.findById(workflowId)
+                .orElseThrow().getProject().getId())).get().satisfies(project -> {
+            assertThat(project.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 30));
+            assertThat(project.getPlannedDurationDays()).isEqualTo(30);
+        });
         assertThat(requestCaptor.getValue().acceptedOpenPoints()).isEmpty();
         verify(aiClient).preCheck(any());
     }

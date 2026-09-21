@@ -96,6 +96,7 @@ public class ProjectController {
         form.setCollaborationMode(project.getCollaborationMode());
         form.setStartDate(project.getStartDate());
         form.setEndDate(project.getEndDate());
+        form.setPlannedDurationDays(project.getPlannedDurationDays());
         form.setStructureMode(project.getStructureMode());
         form.setSortMode(project.getSortMode());
         form.setTaskProgressDisplay(project.getTaskProgressDisplay());

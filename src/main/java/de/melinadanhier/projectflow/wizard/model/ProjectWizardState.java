@@ -66,6 +66,7 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
         form.setCreationType(creationType);
         form.setStartDate(startDate);
         form.setEndDate(endDate);
+        form.setPlannedDurationDays(durationDays);
         form.setStructureMode(structureMode);
         form.setSortMode(sortMode);
         return form;

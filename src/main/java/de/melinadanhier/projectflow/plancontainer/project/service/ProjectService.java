@@ -146,6 +146,7 @@ public class ProjectService {
         project.setDescription(form.getDescription());
         project.setStartDate(form.getStartDate());
         project.setEndDate(form.getEndDate());
+        project.setPlannedDurationDays(form.getPlannedDurationDays());
         project.setCategory(form.getCategory());
         project.setSubcategory(form.getSubcategory());
         project.setCollaborationMode(form.getCollaborationMode());
@@ -394,6 +395,7 @@ public class ProjectService {
         }
         ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory());
         validateDateRange(form.getStartDate(), form.getEndDate());
+        validatePlannedDuration(form.getStartDate(), form.getEndDate(), form.getPlannedDurationDays());
         if (convertToIndividual) {
             taskRepository.findPlanTasks(projectId).forEach(task -> task.getAssignees().clear());
             taskRepository.flush();
@@ -409,6 +411,7 @@ public class ProjectService {
         project.setDescription(form.getDescription());
         project.setStartDate(form.getStartDate());
         project.setEndDate(form.getEndDate());
+        project.setPlannedDurationDays(form.getPlannedDurationDays());
         if (form.getStructureMode() != null) {
             project.setStructureMode(form.getStructureMode());
         }
@@ -566,9 +569,22 @@ public class ProjectService {
         }
     }
 
+    private void validatePlannedDuration(
+            LocalDate startDate, LocalDate endDate, Integer plannedDurationDays) {
+        if (plannedDurationDays != null && plannedDurationDays < 1) {
+            throw new DomainValidationException("Die geplante Dauer muss mindestens einen Tag betragen.");
+        }
+        if (startDate != null && endDate != null && plannedDurationDays != null
+                && java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1 != plannedDurationDays) {
+            throw new DomainValidationException(
+                    "Startdatum, Enddatum und geplante Dauer widersprechen sich.");
+        }
+    }
+
     private void validateGeneralProjectData(ProjectCreateForm form) {
         ProjectClassificationValidator.requireValid(form.getCategory(), form.getSubcategory());
         validateDateRange(form.getStartDate(), form.getEndDate());
+        validatePlannedDuration(form.getStartDate(), form.getEndDate(), form.getPlannedDurationDays());
         if (form.getCategory() == null) {
             throw new DomainValidationException("Bitte wähle eine Oberkategorie aus.");
         }

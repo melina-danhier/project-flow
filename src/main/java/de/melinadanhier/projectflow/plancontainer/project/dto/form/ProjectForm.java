@@ -11,6 +11,7 @@ import de.melinadanhier.projectflow.plancontainer.project.model.TaskProgressDisp
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,6 +36,9 @@ public abstract class ProjectForm implements ProjectClassification, ProjectColla
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate endDate;
 
+    @Positive(message = "Die geplante Dauer muss mindestens einen Tag betragen.")
+    private Integer plannedDurationDays;
+
     @NotNull(message = "Bitte wähle eine Oberkategorie aus.")
     private ProjectCategory category;
 
@@ -50,6 +54,12 @@ public abstract class ProjectForm implements ProjectClassification, ProjectColla
     @AssertTrue(message = "Das Projektende darf nicht vor dem Projektstart liegen.")
     public boolean isDateRangeValid() {
         return startDate == null || endDate == null || !endDate.isBefore(startDate);
+    }
+
+    @AssertTrue(message = "Startdatum, Enddatum und geplante Dauer widersprechen sich.")
+    public boolean isPlannedDurationConsistent() {
+        return startDate == null || endDate == null || plannedDurationDays == null
+                || java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1 == plannedDurationDays;
     }
 
     @AssertTrue(message = "Bitte wähle Einzel- oder Gruppenprojekt aus.")

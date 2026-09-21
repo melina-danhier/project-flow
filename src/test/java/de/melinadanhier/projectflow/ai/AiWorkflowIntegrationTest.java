@@ -177,6 +177,7 @@ class AiWorkflowIntegrationTest {
             assertThat(project.getDescription()).isEqualTo(snapshot.description());
             assertThat(project.getStartDate()).isEqualTo(snapshot.startDate());
             assertThat(project.getEndDate()).isEqualTo(snapshot.endDate());
+            assertThat(project.getPlannedDurationDays()).isEqualTo(snapshot.durationDays());
             assertThat(project.getCategory()).isEqualTo(snapshot.category());
             assertThat(project.getSubcategory()).isEqualTo(snapshot.subcategory());
             assertThat(project.getCollaborationMode()).isEqualTo(snapshot.collaborationMode());
@@ -223,6 +224,27 @@ class AiWorkflowIntegrationTest {
 
         draftApplicationService.apply(completion.projectId(), owner.getId());
         assertThat(taskRepository.count()).isEqualTo(tasksBefore + 3);
+    }
+
+    @Test
+    void persistsConfirmedDurationWithoutInventingCalendarDates() {
+        User owner = saveUser("ai-duration-only@example.org");
+        AiWizardSnapshot durationOnly = new AiWizardSnapshot(
+                "Projekt ohne Datumsanker", null, null, null,
+                CollaborationMode.INDIVIDUAL, ProjectCategory.OTHER, null,
+                null, null, null, 42, "Vier Stunden pro Woche");
+        when(aiClient.preCheck(any())).thenReturn(AiPreCheckResult.withoutIssues());
+
+        AiWorkflowCompletion completion = completionService.complete(
+                UUID.randomUUID(), owner.getId(), () -> durationOnly);
+
+        assertThat(projectRepository.findById(completion.projectId())).get().satisfies(project -> {
+            assertThat(project.getPlannedDurationDays()).isEqualTo(42);
+            assertThat(project.getStartDate()).isNull();
+            assertThat(project.getEndDate()).isNull();
+        });
+        assertThat(snapshotCodec.readSnapshot(workflowRepository.findById(completion.workflowId())
+                .orElseThrow().getConfirmedSnapshot())).isEqualTo(durationOnly);
     }
 
     @Test

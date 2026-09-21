@@ -85,11 +85,14 @@
         updateSelectedMethod();
     }
 
-    // 3. Duration Picker Sync & Reciprocal 2-out-of-3 Time Calculation
+    // 3. Duration Picker Sync & explicit time-frame suggestions
     const durationValueInput = document.getElementById('durationValue');
     const durationUnitSelect = document.getElementById('durationUnit');
     const durationDaysHidden = document.getElementById('durationDays');
     const endDateInput = document.getElementById('endDate');
+    const suggestionBox = document.getElementById('time-frame-suggestion');
+    const suggestionText = document.getElementById('time-frame-suggestion-text');
+    const applySuggestionButton = document.getElementById('apply-time-frame-suggestion');
 
     if (durationValueInput && durationUnitSelect && durationDaysHidden) {
         const syncDuration = () => {
@@ -112,9 +115,9 @@
         durationUnitSelect.addEventListener('change', syncDuration);
         syncDuration();
 
-        // Reciprocal calculation: Any 2 of 3 values calculate the 3rd
+        // A calculated date remains a suggestion until the user explicitly accepts it.
         if (startDateInput && endDateInput) {
-            let isCalculating = false;
+            let suggestion = null;
 
             const parseDate = (val) => {
                 if (!val) return null;
@@ -140,91 +143,43 @@
                 return res;
             };
 
-            const calculateDurationFromDates = () => {
-                const s = parseDate(startDateInput.value);
-                const e = parseDate(endDateInput.value);
-                if (!s || !e || e < s) return;
-
-                const diffTime = e.getTime() - s.getTime();
-                const days = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                if (days <= 0) return;
-
-                durationDaysHidden.value = days;
-                if (days >= 30 && days % 30 === 0) {
-                    durationValueInput.value = days / 30;
-                    durationUnitSelect.value = 'MONTHS';
-                } else if (days >= 7 && days % 7 === 0) {
-                    durationValueInput.value = days / 7;
-                    durationUnitSelect.value = 'WEEKS';
-                } else {
-                    durationValueInput.value = days;
-                    durationUnitSelect.value = 'DAYS';
-                }
+            const hideSuggestion = () => {
+                suggestion = null;
+                if (suggestionBox) suggestionBox.style.display = 'none';
             };
 
-            const calculateEndFromStartAndDuration = () => {
-                const s = parseDate(startDateInput.value);
+            const updateSuggestion = () => {
+                hideSuggestion();
+                syncDuration();
+                const start = parseDate(startDateInput.value);
+                const end = parseDate(endDateInput.value);
                 const days = parseInt(durationDaysHidden.value, 10);
-                if (!s || isNaN(days) || days <= 0) return;
+                if (isNaN(days) || days <= 0 || (start && end)) return;
 
-                const e = addDays(s, days - 1);
-                endDateInput.value = formatDate(e);
-            };
-
-            const calculateStartFromEndAndDuration = () => {
-                const e = parseDate(endDateInput.value);
-                const days = parseInt(durationDaysHidden.value, 10);
-                if (!e || isNaN(days) || days <= 0) return;
-
-                const s = addDays(e, -(days - 1));
-                startDateInput.value = formatDate(s);
-            };
-
-            startDateInput.addEventListener('change', () => {
-                if (isCalculating) return;
-                isCalculating = true;
-                try {
-                    if (endDateInput.value) {
-                        calculateDurationFromDates();
-                    } else if (durationValueInput.value) {
-                        calculateEndFromStartAndDuration();
-                    }
-                } finally {
-                    isCalculating = false;
+                if (start && !end) {
+                    const value = formatDate(addDays(start, days - 1));
+                    suggestion = { field: endDateInput, value };
+                    if (suggestionText) suggestionText.textContent = `Vorgeschlagener Endtermin: ${value.split('-').reverse().join('.')}`;
+                } else if (end && !start) {
+                    const value = formatDate(addDays(end, -(days - 1)));
+                    suggestion = { field: startDateInput, value };
+                    if (suggestionText) suggestionText.textContent = `Vorgeschlagenes Startdatum: ${value.split('-').reverse().join('.')}`;
                 }
+
+                if (suggestion && suggestionBox) suggestionBox.style.display = 'flex';
+            };
+
+            startDateInput.addEventListener('change', updateSuggestion);
+            endDateInput.addEventListener('change', updateSuggestion);
+            durationValueInput.addEventListener('input', updateSuggestion);
+            durationUnitSelect.addEventListener('change', updateSuggestion);
+            applySuggestionButton?.addEventListener('click', () => {
+                if (!suggestion || suggestion.field.value) return;
+                suggestion.field.value = suggestion.value;
+                suggestion.field.dispatchEvent(new Event('change', { bubbles: true }));
+                hideSuggestion();
             });
-
-            endDateInput.addEventListener('change', () => {
-                if (isCalculating) return;
-                isCalculating = true;
-                try {
-                    if (startDateInput.value) {
-                        calculateDurationFromDates();
-                    } else if (durationValueInput.value) {
-                        calculateStartFromEndAndDuration();
-                    }
-                } finally {
-                    isCalculating = false;
-                }
-            });
-
-            const onDurationChanged = () => {
-                if (isCalculating) return;
-                isCalculating = true;
-                try {
-                    syncDuration();
-                    if (startDateInput.value) {
-                        calculateEndFromStartAndDuration();
-                    } else if (endDateInput.value) {
-                        calculateStartFromEndAndDuration();
-                    }
-                } finally {
-                    isCalculating = false;
-                }
-            };
-
-            durationValueInput.addEventListener('input', onDurationChanged);
-            durationUnitSelect.addEventListener('change', onDurationChanged);
+            updateSuggestion();
         }
     }
 

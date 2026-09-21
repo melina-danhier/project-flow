@@ -29,6 +29,7 @@ public class ProjectDetailsDto implements ProjectClassification, ProjectCollabor
     private SortMode sortMode;
     private LocalDate startDate;
     private LocalDate endDate;
+    private Integer plannedDurationDays;
     private ProjectCategory category;
     private ProjectSubCategory subcategory;
     private CollaborationMode collaborationMode;

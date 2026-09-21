@@ -46,6 +46,9 @@ public class Project extends PlanContainer implements ProjectClassification, Pro
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Column(name = "planned_duration_days")
+    private Integer plannedDurationDays;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "category", length = 50)
     private ProjectCategory category;
