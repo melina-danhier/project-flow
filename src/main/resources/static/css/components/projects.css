@@ -80,14 +80,12 @@
 }
 
 .pf-sidebar-toggle-btn {
-    display: none;
+    display: none !important;
 }
 
 @media (max-width: 860px) {
     .pf-sidebar-toggle-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
+        display: none !important;
     }
 
     .pf-projects-layout {

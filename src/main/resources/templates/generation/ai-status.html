@@ -109,12 +109,12 @@
             <form id="cancel-ai-run"
                   th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${workflow.workflowId})}"
                   method="post"
-                  data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
-                  data-confirm-title="KI-Projekterstellung abbrechen?"
-                  data-confirm-btn="KI-Erstellung abbrechen"
-                  data-confirm-variant="danger"
                   style="margin: 0;">
-                <button type="submit" class="pf-btn pf-btn--secondary">Abbrechen</button>
+                <button type="submit" class="pf-btn pf-btn--secondary"
+                        data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+                        data-confirm-title="KI-Projekterstellung abbrechen?"
+                        data-confirm-btn="KI-Erstellung abbrechen"
+                        data-confirm-variant="danger">Abbrechen</button>
             </form>
 
             <form th:if="${workflow.canRetry()}"
@@ -153,12 +153,6 @@
         </div>
     </div>
 
-    <script>
-        const cancelForm = document.getElementById('cancel-ai-run');
-        cancelForm?.addEventListener('submit', () => {
-            cancelForm.querySelector('button').disabled = true;
-        });
-    </script>
 </main>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />

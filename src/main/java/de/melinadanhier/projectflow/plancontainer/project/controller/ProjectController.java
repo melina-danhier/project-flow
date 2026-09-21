@@ -48,6 +48,7 @@ public class ProjectController {
         };
         model.addAttribute("projects", projectService.findAccessibleProjects(selectedLocation, currentUser.userId()));
         model.addAttribute("selectedLocation", selectedLocation);
+        model.addAttribute("isProjectsArea", true);
         return "projects/overview";
     }
 
@@ -58,6 +59,7 @@ public class ProjectController {
     ) {
         model.addAttribute("projects", projectService.findDraftProjects(currentUser.userId()));
         model.addAttribute("selectedLocation", ProjectLocation.DRAFT);
+        model.addAttribute("isProjectsArea", true);
         return "projects/overview";
     }
 
@@ -73,6 +75,8 @@ public class ProjectController {
                 query, selectedLocation, currentUser.userId()));
         model.addAttribute("query", query);
         model.addAttribute("selectedLocation", selectedLocation);
+        model.addAttribute("isProjectsArea", true);
+        model.addAttribute("isSearchPage", true);
         return "projects/search";
     }
 

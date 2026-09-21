@@ -128,7 +128,11 @@
                         <a th:href="@{/projects/new/ai/details}" class="pf-btn pf-btn--secondary">
                             ← Zurück
                         </a>
-                        <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
+                        <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);"
+                                data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
+                                data-confirm-title="Projekterstellung abbrechen?"
+                                data-confirm-btn="Erstellung abbrechen"
+                                data-confirm-variant="danger">
                             Erstellung abbrechen
                         </button>
                     </div>
@@ -140,7 +144,6 @@
         </div>
 
         <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
-              onsubmit="return confirm('Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht.');"
               style="display: none;"></form>
     </div>
 
@@ -152,9 +155,6 @@
             const button = document.getElementById('ai-confirmation-submit');
             const update = () => button.disabled = !checkbox.checked;
             checkbox.addEventListener('change', update);
-            form.addEventListener('submit', () => {
-                if (checkbox.checked) button.disabled = true;
-            });
             update();
         })();
     </script>

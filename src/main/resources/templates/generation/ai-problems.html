@@ -156,7 +156,7 @@
         <div style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <form th:if="${review.canGenerate()}"
                   th:action="@{/projects/new/ai/status/{workflowId}/generate(workflowId=${review.workflowId})}"
-                  method="post" onsubmit="this.querySelector('button').disabled=true" style="margin: 0;">
+                  method="post" style="margin: 0;">
                 <button type="submit" class="pf-btn pf-btn--primary pf-btn--lg">
                     Planentwurf jetzt generieren →
                 </button>
@@ -166,17 +166,17 @@
                 <button type="submit" class="pf-btn pf-btn--secondary">Eingaben ändern</button>
             </form>
             <form th:action="@{/projects/new/ai/problems/{workflowId}/regenerate(workflowId=${review.workflowId})}"
-                  method="post" onsubmit="this.querySelector('button').disabled=true" style="margin: 0;">
+                  method="post" style="margin: 0;">
                 <button type="submit" class="pf-btn pf-btn--secondary">Vorprüfung erneut durchführen</button>
             </form>
             <form th:action="@{/projects/new/ai/status/{workflowId}/cancel(workflowId=${review.workflowId})}"
                   method="post"
-                  data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
-                  data-confirm-title="KI-Projekterstellung abbrechen?"
-                  data-confirm-btn="KI-Erstellung abbrechen"
-                  data-confirm-variant="danger"
                   style="margin: 0;">
-                <button type="submit" class="pf-btn pf-btn--ghost">Abbrechen</button>
+                <button type="submit" class="pf-btn pf-btn--ghost"
+                        data-confirm="Möchtest du die KI-Projekterstellung wirklich abbrechen? Das gesamte Projekt einschließlich Entwurf und Eingaben wird dauerhaft gelöscht."
+                        data-confirm-title="KI-Projekterstellung abbrechen?"
+                        data-confirm-btn="KI-Erstellung abbrechen"
+                        data-confirm-variant="danger">Abbrechen</button>
             </form>
         </div>
     </div>

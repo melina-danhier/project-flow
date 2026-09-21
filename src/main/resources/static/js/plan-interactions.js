@@ -98,20 +98,34 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
-            const html = await response.text();
-            if (replacePlan(html, sourceMain)) return;
+            if (response.ok) {
+                const html = await response.text();
+                if (replacePlan(html, sourceMain)) return;
+            }
 
             if (response.redirected) {
                 window.location.assign(response.url);
                 return;
             }
             showRequestError();
+            document.dispatchEvent(new CustomEvent('projectflow:plan-error'));
         } catch (_error) {
             showRequestError();
+            document.dispatchEvent(new CustomEvent('projectflow:plan-error'));
         } finally {
             if (form?.isConnected) setBusy(form, false);
             if (sourceMain.isConnected) sourceMain.removeAttribute('aria-busy');
             requestInFlight = false;
+            if (window.projectFlowReenableButtons) {
+                window.projectFlowReenableButtons(form);
+            } else {
+                document.querySelectorAll('form[data-submitting]').forEach(f => delete f.dataset.submitting);
+                document.querySelectorAll('button.is-loading, input.is-loading, button[aria-disabled="true"]').forEach(btn => {
+                    btn.disabled = false;
+                    btn.removeAttribute('aria-disabled');
+                    btn.classList.remove('is-loading');
+                });
+            }
         }
     };
 

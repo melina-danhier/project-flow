@@ -745,6 +745,47 @@ class AuthenticationIntegrationTest {
         assertThat(updated.getOtherProjectTypeDescription()).isNull();
     }
 
+    @Test
+    void mobileViewsDrawerToggleAvailableOnAllProjectRoutes() throws Exception {
+        var user = saveUser("mobile-nav-test@example.org", "richtiges-passwort", true);
+        var session = login(user.getEmail(), "richtiges-passwort");
+
+        // 1. /projects
+        mockMvc.perform(get("/projects").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"pf-views-drawer-toggle\"")))
+                .andExpect(content().string(containsString("id=\"pf-views-drawer\"")))
+                .andExpect(content().string(containsString("pf-views-drawer__header")));
+
+        // 2. /projects/search
+        mockMvc.perform(get("/projects/search").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"pf-views-drawer-toggle\"")))
+                .andExpect(content().string(containsString("id=\"pf-views-drawer\"")))
+                .andExpect(content().string(containsString("pf-views-drawer__header")));
+
+        // 3. /projects?location=ARCHIVE
+        mockMvc.perform(get("/projects").param("location", "ARCHIVE").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"pf-views-drawer-toggle\"")))
+                .andExpect(content().string(containsString("id=\"pf-views-drawer\"")))
+                .andExpect(content().string(containsString("pf-views-drawer__header")));
+
+        // 4. /projects?location=TRASH
+        mockMvc.perform(get("/projects").param("location", "TRASH").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"pf-views-drawer-toggle\"")))
+                .andExpect(content().string(containsString("id=\"pf-views-drawer\"")))
+                .andExpect(content().string(containsString("pf-views-drawer__header")));
+
+        // 5. /projects/drafts
+        mockMvc.perform(get("/projects/drafts").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"pf-views-drawer-toggle\"")))
+                .andExpect(content().string(containsString("id=\"pf-views-drawer\"")))
+                .andExpect(content().string(containsString("pf-views-drawer__header")));
+    }
+
     private String subcategoryDropdown(MvcResult result) throws Exception {
         var matcher = java.util.regex.Pattern.compile(
                 "<select[^>]*id=\"subcategory\"[^>]*>(.*?)</select>",

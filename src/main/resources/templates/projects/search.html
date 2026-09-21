@@ -6,7 +6,9 @@
 </head>
 
 <body>
-    <th:block th:replace="~{fragments/layout :: site-header}" th:with="isProjectsPage=true" />
+    <th:block th:with="isProjectsPage=true">
+        <th:block th:replace="~{fragments/layout :: site-header}" />
+    </th:block>
 
     <main>
         <!-- Page Header -->

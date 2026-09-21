@@ -90,11 +90,11 @@
 
 <!-- Modern Executive Site Header -->
 <th:block th:fragment="site-header">
-<header class="site-header" th:classappend="${isProjectsPage == true or selectedLocation != null ? 'site-header--has-views-toggle' : ''}" id="top">
+<header class="site-header" th:classappend="${(#authorization.expression('isAuthenticated()') or isProjectsPage == true or isProjectsArea == true or selectedLocation != null or isSearchPage == true) and (session == null or session.studyTasksCompleted == null) and (studyPage == null or !studyPage) ? 'site-header--has-views-toggle' : ''}" id="top">
     <div class="site-header__inner">
         <div class="site-header__left">
             <!-- Ansichten hamburger button for mobile view on /projects page -->
-            <button th:if="${isProjectsPage == true or selectedLocation != null}"
+            <button th:if="${(#authorization.expression('isAuthenticated()') or isProjectsPage == true or isProjectsArea == true or selectedLocation != null or isSearchPage == true) and (session == null or session.studyTasksCompleted == null) and (studyPage == null or !studyPage)}"
                     type="button"
                     class="site-header__views-toggle"
                     id="pf-views-drawer-toggle"
@@ -206,7 +206,7 @@
         </div>
     </div>
 </header>
-<th:block th:if="${isProjectsPage == true or selectedLocation != null}">
+<th:block th:if="${(#authorization.expression('isAuthenticated()') or isProjectsPage == true or isProjectsArea == true or selectedLocation != null or isSearchPage == true) and (session == null or session.studyTasksCompleted == null) and (studyPage == null or !studyPage)}">
     <div id="pf-views-drawer-overlay" class="pf-drawer-overlay" aria-hidden="true"></div>
     <aside id="pf-views-drawer" class="pf-views-drawer" aria-label="Projektbereiche" aria-hidden="true">
         <div class="pf-views-drawer__header">
@@ -235,7 +235,7 @@
             <nav class="pf-sidebar-nav pf-sidebar-nav--drawer" aria-label="Projektbereiche">
                 <!-- Search Button linking to dedicated Search Page -->
                 <a th:href="@{/projects/search}" class="pf-sidebar-link" aria-label="Projekte durchsuchen"
-                   th:classappend="${query != null ? 'active' : ''}">
+                   th:classappend="${isSearchPage == true or (query != null and !#strings.isEmpty(query)) ? 'active' : ''}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
@@ -246,7 +246,7 @@
 
                 <!-- Vertical Location Navigation Links -->
                 <a th:href="@{/projects}" class="pf-sidebar-link"
-                   th:classappend="${selectedLocation != null and selectedLocation.name() == 'OVERVIEW' and query == null ? 'active' : ''}">
+                   th:classappend="${(isSearchPage == null or !isSearchPage) and (query == null or #strings.isEmpty(query)) and (selectedLocation == null or selectedLocation.name() == 'OVERVIEW') ? 'active' : ''}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
@@ -533,6 +533,9 @@
                     if (cancelBtn) cancelBtn.textContent = cancelText;
 
                     if (confirmBtn) {
+                        confirmBtn.disabled = false;
+                        confirmBtn.removeAttribute('aria-disabled');
+                        confirmBtn.classList.remove('is-loading');
                         confirmBtn.textContent = confirmText;
                         confirmBtn.className = 'pf-btn ' + (variant === 'danger' ? 'pf-btn--danger' : 'pf-btn--primary');
                     }
@@ -555,17 +558,26 @@
                     const finish = (result) => {
                         if (resolved) return;
                         resolved = true;
-                        confirmBtn.removeEventListener('click', onConfirm);
-                        cancelBtn.removeEventListener('click', onCancel);
+                        if (confirmBtn) {
+                            confirmBtn.disabled = false;
+                            confirmBtn.removeAttribute('aria-disabled');
+                            confirmBtn.classList.remove('is-loading');
+                            confirmBtn.removeEventListener('click', onConfirm);
+                        }
+                        if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
                         dialog.removeEventListener('click', onBackdrop);
                         dialog.removeEventListener('cancel', onNativeCancel);
-                        dialog.close();
+                        if (dialog.open) {
+                            dialog.close();
+                        }
                         resolve(result);
                     };
 
                     const onConfirm = () => {
-                        confirmBtn.disabled = true;
-                        confirmBtn.classList.add('is-loading');
+                        if (confirmBtn) {
+                            confirmBtn.disabled = true;
+                            confirmBtn.classList.add('is-loading');
+                        }
                         finish(true);
                     };
                     const onCancel = () => finish(false);
@@ -582,8 +594,14 @@
                     dialog.addEventListener('click', onBackdrop);
                     dialog.addEventListener('cancel', onNativeCancel);
 
-                    dialog.showModal();
-                    confirmBtn.focus();
+                    try {
+                        if (!dialog.open) {
+                            dialog.showModal();
+                        }
+                    } catch (err) {
+                        console.warn('pfConfirm showModal error:', err);
+                    }
+                    if (confirmBtn) confirmBtn.focus();
                 });
             };
 
@@ -668,6 +686,12 @@
                     return;
                 }
 
+                // If trigger is a form, only intercept if clicking on a submit button
+                if (trigger.tagName === 'FORM') {
+                    const submitBtn = e.target.closest('button, input[type="submit"]');
+                    if (!submitBtn) return;
+                }
+
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -681,9 +705,25 @@
                 if (ok) {
                     trigger.dataset.pfConfirmed = 'true';
                     if (trigger.tagName === 'BUTTON' && trigger.form) {
-                        trigger.form.requestSubmit(trigger);
+                        trigger.form.dataset.pfConfirmed = 'true';
+                        try {
+                            trigger.form.requestSubmit(trigger);
+                        } catch (_) {
+                            trigger.form.submit();
+                        }
                     } else if (trigger.tagName === 'FORM') {
-                        trigger.requestSubmit();
+                        trigger.dataset.pfConfirmed = 'true';
+                        try {
+                            const submitBtn = e.target.closest('button, input[type="submit"]');
+                            if (submitBtn) {
+                                submitBtn.dataset.pfConfirmed = 'true';
+                                trigger.requestSubmit(submitBtn);
+                            } else {
+                                trigger.requestSubmit();
+                            }
+                        } catch (_) {
+                            trigger.submit();
+                        }
                     } else if (trigger.tagName === 'A' && trigger.href) {
                         window.location.href = trigger.href;
                     } else {
@@ -697,8 +737,9 @@
                 const form = e.target;
                 if (!form.hasAttribute('data-confirm')) return;
 
-                if (form.dataset.pfConfirmed === 'true') {
+                if (form.dataset.pfConfirmed === 'true' || (e.submitter && e.submitter.dataset.pfConfirmed === 'true')) {
                     delete form.dataset.pfConfirmed;
+                    if (e.submitter) delete e.submitter.dataset.pfConfirmed;
                     return;
                 }
 
@@ -714,11 +755,49 @@
                 const ok = await window.pfConfirm({ message, title, confirmText, cancelText, variant });
                 if (ok) {
                     form.dataset.pfConfirmed = 'true';
-                    form.requestSubmit();
+                    if (e.submitter) e.submitter.dataset.pfConfirmed = 'true';
+                    try {
+                        if (e.submitter) {
+                            form.requestSubmit(e.submitter);
+                        } else {
+                            form.requestSubmit();
+                        }
+                    } catch (_) {
+                        form.submit();
+                    }
                 }
             }, true);
 
-            // ── Prevent duplicate submissions and disable submit buttons after click ──
+            // ── Prevent duplicate submissions and ensure buttons are re-enabled if action fails ──
+            const reenableFormButtons = (form) => {
+                if (form) {
+                    delete form.dataset.submitting;
+                    if (form._submitTimeoutId) {
+                        clearTimeout(form._submitTimeoutId);
+                        delete form._submitTimeoutId;
+                    }
+                    form.querySelectorAll('button, input[type="submit"]').forEach(btn => {
+                        btn.disabled = false;
+                        btn.removeAttribute('aria-disabled');
+                        btn.classList.remove('is-loading');
+                    });
+                } else {
+                    document.querySelectorAll('form[data-submitting]').forEach(f => {
+                        delete f.dataset.submitting;
+                        if (f._submitTimeoutId) {
+                            clearTimeout(f._submitTimeoutId);
+                            delete f._submitTimeoutId;
+                        }
+                    });
+                    document.querySelectorAll('button.is-loading, input.is-loading, button[aria-disabled="true"]').forEach(btn => {
+                        btn.disabled = false;
+                        btn.removeAttribute('aria-disabled');
+                        btn.classList.remove('is-loading');
+                    });
+                }
+            };
+            window.projectFlowReenableButtons = reenableFormButtons;
+
             // 1. Capture phase click blocker: drop rapid repeated clicks on submit buttons if form is already submitting
             document.addEventListener('click', (e) => {
                 const btn = e.target.closest('button, input[type="submit"]');
@@ -758,40 +837,32 @@
                         btn.classList.add('is-loading');
                     });
                 }, 0);
+
+                // Auto-recovery timeout: If an action fails to complete or doesn't navigate away within 2.5s,
+                // re-enable the action button so the user can click it again!
+                if (form._submitTimeoutId) clearTimeout(form._submitTimeoutId);
+                form._submitTimeoutId = setTimeout(() => {
+                    reenableFormButtons(form);
+                }, 2500);
             }, false);
 
             // 3. Re-enable buttons if HTML5 form validation fails on an input
             document.addEventListener('invalid', (e) => {
-                const form = e.target.form;
-                if (form) {
-                    delete form.dataset.submitting;
-                    form.querySelectorAll('button[type="submit"], input[type="submit"], button:not([type])').forEach(btn => {
-                        btn.disabled = false;
-                        btn.removeAttribute('aria-disabled');
-                        btn.classList.remove('is-loading');
-                    });
-                }
+                reenableFormButtons(e.target.form);
             }, true);
 
             // 4. Re-enable buttons on pageshow (e.g. back/forward navigation from bfcache)
-            window.addEventListener('pageshow', () => {
-                document.querySelectorAll('form[data-submitting]').forEach(form => delete form.dataset.submitting);
-                document.querySelectorAll('button.is-loading, input.is-loading').forEach(btn => {
-                    btn.disabled = false;
-                    btn.removeAttribute('aria-disabled');
-                    btn.classList.remove('is-loading');
-                });
-            });
+            window.addEventListener('pageshow', () => reenableFormButtons());
 
             // 5. Re-enable buttons when AJAX plan updates complete or fail
-            document.addEventListener('projectflow:plan-updated', () => {
-                document.querySelectorAll('form[data-submitting]').forEach(form => delete form.dataset.submitting);
-                document.querySelectorAll('button.is-loading, input.is-loading').forEach(btn => {
-                    btn.disabled = false;
-                    btn.removeAttribute('aria-disabled');
-                    btn.classList.remove('is-loading');
-                });
+            document.addEventListener('projectflow:plan-updated', () => reenableFormButtons());
+            document.addEventListener('projectflow:plan-error', () => reenableFormButtons());
+            document.addEventListener('projectflow:action-failed', (e) => {
+                const form = e.target && e.target instanceof HTMLFormElement ? e.target : null;
+                reenableFormButtons(form);
             });
+            window.addEventListener('error', () => reenableFormButtons());
+            window.addEventListener('unhandledrejection', () => reenableFormButtons());
 
             // 6. Universal Tooltip Tap / Click Toggle (Task 22)
             document.addEventListener('click', (e) => {

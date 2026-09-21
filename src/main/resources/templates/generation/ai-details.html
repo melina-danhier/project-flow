@@ -94,7 +94,11 @@
                     <a th:href="@{/projects/new/method}" class="pf-btn pf-btn--secondary">
                         ← Zurück zur Erstellungsart
                     </a>
-                    <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);">
+                    <button type="submit" form="wizard-cancel-form" class="pf-btn pf-btn--ghost" style="color: var(--pf-text-muted);"
+                            data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
+                            data-confirm-title="Projekterstellung abbrechen?"
+                            data-confirm-btn="Erstellung abbrechen"
+                            data-confirm-variant="danger">
                         Erstellung abbrechen
                     </button>
                 </div>
@@ -105,10 +109,6 @@
         </form>
 
         <form id="wizard-cancel-form" th:action="@{/projects/new/cancel}" method="post"
-              data-confirm="Möchtest du die Projekterstellung wirklich abbrechen? Alle bisherigen Eingaben werden gelöscht."
-              data-confirm-title="Projekterstellung abbrechen?"
-              data-confirm-btn="Erstellung abbrechen"
-              data-confirm-variant="danger"
               style="display: none;"></form>
     </div>
 </main>
