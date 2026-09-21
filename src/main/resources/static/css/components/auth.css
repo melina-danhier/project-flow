@@ -2,9 +2,13 @@
    ProjectFlow - Auth Layouts Component (Login & Register)
    ========================================================================== */
 
+.pf-auth-main {
+    margin-block: 0.75rem;
+}
+
 .pf-auth-container {
     max-width: 440px;
-    margin: 3.5rem auto 4rem;
+    margin: 0 auto;
 }
 
 .pf-auth-card {
@@ -38,7 +42,7 @@
 }
 
 @media (max-width: 640px) {
-    .pf-auth-container {
-        margin-top: 0;
+    .pf-auth-main {
+        margin-block: 0.5rem;
     }
 }

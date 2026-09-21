@@ -6,19 +6,14 @@
 <body>
 <th:block th:replace="~{fragments/layout :: site-header}" />
 
-<main>
+<main class="pf-auth-main">
     <div class="pf-auth-container">
         <div class="pf-auth-card">
             <div style="text-align: center; margin-bottom: 1.5rem;">
-                <div class="brand__mark" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
-                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                        <polyline points="2 17 12 22 22 17"></polyline>
-                        <polyline points="2 12 12 17 22 12"></polyline>
-                    </svg>
+                <div class="brand__mark brand__mark--auth" aria-hidden="true">
+                    <th:block th:replace="~{fragments/icons :: logo}" />
                 </div>
                 <h1>Willkommen zurück</h1>
-                <p class="subtitle">Melde dich bei deinem ProjectFlow-Arbeitsbereich an.</p>
             </div>
 
             <div th:if="${param.error}" class="pf-alert pf-alert--error" role="alert">

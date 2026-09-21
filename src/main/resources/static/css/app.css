@@ -216,9 +216,11 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: var(--pf-radius-md);
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    overflow: hidden;
+    border-radius: 11px;
     background: linear-gradient(135deg, #2563eb, #4f46e5);
     color: #ffffff;
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
@@ -230,9 +232,35 @@ a:hover {
     box-shadow: 0 6px 16px rgba(37, 99, 235, 0.38);
 }
 
-.brand__mark svg {
-    width: 22px;
-    height: 22px;
+.brand__logo {
+    display: block;
+    width: 26px;
+    height: 26px;
+}
+
+.brand__mark--auth {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+    margin: 0 auto 1rem;
+    border-radius: 14px;
+}
+
+.brand__mark--auth .brand__logo {
+    width: 34px;
+    height: 34px;
+}
+
+.brand__mark--footer {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+    border-radius: 8px;
+}
+
+.brand__mark--footer .brand__logo {
+    width: 19px;
+    height: 19px;
 }
 
 .brand__text {
@@ -1476,6 +1504,8 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     .site-footer__brand .brand__mark {
         width: 22px !important;
         height: 22px !important;
+        flex-basis: 22px;
+        border-radius: 6px;
     }
 
     .site-footer__brand span {

@@ -109,11 +109,7 @@
             </button>
             <a class="brand" th:href="${session != null and session.studyTasksCompleted != null ? '/study/completed' : (#authorization.expression('isAuthenticated()') ? '/projects' : '/')}" aria-label="ProjectFlow Startseite">
                 <span class="brand__mark" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                        <polyline points="2 17 12 22 22 17"></polyline>
-                        <polyline points="2 12 12 17 22 12"></polyline>
-                    </svg>
+                    <th:block th:replace="~{fragments/icons :: logo}" />
                 </span>
                 <div class="brand__text">
                     <span class="brand__title">ProjectFlow</span>
@@ -212,11 +208,7 @@
         <div class="pf-views-drawer__header">
             <a class="brand" th:href="@{/projects}" aria-label="ProjectFlow Startseite">
                 <span class="brand__mark" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                        <polyline points="2 17 12 22 22 17"></polyline>
-                        <polyline points="2 12 12 17 22 12"></polyline>
-                    </svg>
+                    <th:block th:replace="~{fragments/icons :: logo}" />
                 </span>
                 <div class="brand__text">
                     <span class="brand__title">ProjectFlow</span>
@@ -897,12 +889,8 @@
         <div class="site-footer__content">
             <div class="site-footer__brand">
                 <a class="brand" th:href="@{/}" aria-label="ProjectFlow Startseite">
-                    <span class="brand__mark" aria-hidden="true" style="width: 28px; height: 28px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
-                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                            <polyline points="2 17 12 22 22 17"></polyline>
-                            <polyline points="2 12 12 17 22 12"></polyline>
-                        </svg>
+                    <span class="brand__mark brand__mark--footer" aria-hidden="true">
+                        <th:block th:replace="~{fragments/icons :: logo}" />
                     </span>
                     <span style="font-weight: 700; font-size: 1.05rem; color: var(--pf-text-main);">ProjectFlow</span>
                 </a>
