@@ -30,7 +30,11 @@ public class TaskDetailsDto {
     private ElementOrigin origin;
     private TaskStatus status;
     private TaskPriority priority;
-    private Integer estimatedHours;
+    private Integer estimatedMinutes;
+
+    public String getFormattedEffort() {
+        return de.melinadanhier.projectflow.common.util.EffortFormatter.formatMinutes(estimatedMinutes);
+    }
     private LocalDate startDate;
     private LocalDate dueDate;
     private Integer relativeStartDay;

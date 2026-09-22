@@ -11,7 +11,7 @@ public record AiImprovementContent(
         String title,
         String description,
         TaskPriority priority,
-        Integer estimatedHours,
+        Integer estimatedMinutes,
         LocalDate startDate,
         LocalDate dueDate
 ) implements Serializable { }

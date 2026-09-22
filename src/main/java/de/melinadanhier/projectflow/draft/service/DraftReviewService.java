@@ -79,10 +79,10 @@ public class DraftReviewService {
             review.setActiveReviewStatus(null);
         }
         review.setTotalElementCount(draft.getSections().size() + draft.getElements().size());
-        review.setTotalEstimatedHours(draft.getElements().stream()
+        review.setTotalEstimatedMinutes(draft.getElements().stream()
                 .filter(de.melinadanhier.projectflow.draft.model.DraftTask.class::isInstance)
                 .map(de.melinadanhier.projectflow.draft.model.DraftTask.class::cast)
-                .map(de.melinadanhier.projectflow.draft.model.DraftTask::getEstimatedHours)
+                .map(de.melinadanhier.projectflow.draft.model.DraftTask::getEstimatedMinutes)
                 .filter(java.util.Objects::nonNull)
                 .mapToInt(Integer::intValue)
                 .sum());
@@ -200,7 +200,7 @@ public class DraftReviewService {
                 || !Objects.equals(task.getDescription(), description)
                 || !Objects.equals(task.getStartDate(), form.getStartDate())
                 || !Objects.equals(task.getDueDate(), form.getDueDate())
-                || !Objects.equals(task.getEstimatedHours(), form.getEstimatedHours())
+                || !Objects.equals(task.getEstimatedMinutes(), form.getEstimatedMinutes())
                 || (form.isSectionSelectionPresent()
                         && !Objects.equals(task.getDraftSection() == null ? null : task.getDraftSection().getId(),
                         form.getDraftSectionId()))
@@ -209,7 +209,7 @@ public class DraftReviewService {
         task.setDescription(description);
         task.setStartDate(form.getStartDate());
         task.setDueDate(form.getDueDate());
-        task.setEstimatedHours(form.getEstimatedHours());
+        task.setEstimatedMinutes(form.getEstimatedMinutes());
         task.setPriority(form.getPriority());
         if (form.isSectionSelectionPresent()) moveToSection(draft, task, form.getDraftSectionId());
         if (changed) task.markContentModified();
@@ -424,7 +424,7 @@ public class DraftReviewService {
     private void requireReleasedDraft(UUID projectId) {
         workflowRepository.findByProjectId(projectId).ifPresent(workflow -> {
             if (workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
-                throw new ConflictException("Bitte schließe zuerst die Prüfung der kritischen Annahmen ab.");
+                throw new ConflictException("Der Entwurf ist noch nicht zur Bearbeitung freigegeben.");
             }
         });
     }

@@ -164,7 +164,7 @@ class GenerationResponseValidatorTest {
 
     @Test
     void rejectsBlankOptionalDescriptionsAndOutOfRangeEffort() {
-        GeneratedTask invalidTask = new GeneratedTask("task-1", "Eins", "  ", 10_001,
+        GeneratedTask invalidTask = new GeneratedTask("task-1", "Eins", "  ", 600_001,
                 null, null, 1, List.of(), TaskPriority.HIGH);
         GeneratedSection section = new GeneratedSection(null, "Section", " ", 1,
                 List.of(invalidTask, task("task-2", "Zwei", 2, null, null),

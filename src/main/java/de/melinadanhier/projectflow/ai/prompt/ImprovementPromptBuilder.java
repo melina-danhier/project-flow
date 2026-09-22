@@ -60,7 +60,7 @@ public class ImprovementPromptBuilder {
             if (element.elementType() == AiImprovementElementType.TASK) data.put("startDate", element.startDate());
             data.put("dueDate", element.dueDate());
         } else if (request.feedbackType() == AiFeedbackType.ESTIMATE_EFFORT) {
-            data.put("estimatedHours", element.estimatedHours());
+            data.put("estimatedMinutes", element.estimatedMinutes());
         }
         return data;
     }
@@ -121,8 +121,9 @@ public class ImprovementPromptBuilder {
                     """;
             case ESTIMATE_EFFORT -> """
 
-                    ESTIMATE_EFFORT: Schätze den Arbeitsaufwand der ausgewählten Aufgabe in positiven ganzen Stunden.
-                    Gib estimatedHours und explanation mit einer kurzen, nutzerbezogenen Begründung (maximal 500
+                    ESTIMATE_EFFORT: Schätze den Arbeitsaufwand der ausgewählten Aufgabe in positiven ganzen Minuten (estimatedMinutes).
+                    Verwende realistische, praxisnahe Werte, üblicherweise als sinnvolle Vielfache von 15 oder 30 Minuten (z. B. 15, 30, 45, 60, 90 oder 120 Minuten). Vermeide künstliche Scheingenauigkeiten.
+                    Gib estimatedMinutes und explanation mit einer kurzen, nutzerbezogenen Begründung (maximal 500
                     Zeichen) zurück. Erkläre knapp anhand von Aufgabe und Kontext, warum der Aufwand sinnvoll ist.
                     Beschreibe nur das Ergebnis und fordere keine internen Gedankengänge oder Herleitungsschritte an.
                     """;

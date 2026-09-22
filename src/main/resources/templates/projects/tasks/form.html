@@ -106,16 +106,30 @@
                     <div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
                 <div class="pf-form-group">
-                    <label for="estimatedHours" class="pf-label">
+                    <label class="pf-label">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 0.25rem;">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
-                        Aufwand in Stunden
+                        Geschätzter Aufwand
                     </label>
-                    <input id="estimatedHours" type="number" min="1" max="10000" step="1" th:field="*{estimatedHours}"
-                           class="pf-input" placeholder="Optional">
-                    <div th:if="${#fields.hasErrors('estimatedHours')}" th:errors="*{estimatedHours}"
+                    <div class="pf-effort-inputs">
+                        <div class="pf-input-group">
+                            <input id="effortHours" type="number" min="0" step="1" th:field="*{effortHours}"
+                                   class="pf-input" placeholder="0" aria-label="Stunden">
+                            <span class="pf-input-group-text">Std.</span>
+                        </div>
+                        <div class="pf-input-group">
+                            <input id="effortMinutes" type="number" min="0" step="5" data-step-relaxed="true" th:field="*{effortMinutes}"
+                                   class="pf-input" placeholder="0" aria-label="Minuten">
+                            <span class="pf-input-group-text">Min.</span>
+                        </div>
+                    </div>
+                    <div th:if="${#fields.hasErrors('effortHours')}" th:errors="*{effortHours}"
+                         class="pf-alert pf-alert--error" role="alert"></div>
+                    <div th:if="${#fields.hasErrors('effortMinutes')}" th:errors="*{effortMinutes}"
+                         class="pf-alert pf-alert--error" role="alert"></div>
+                    <div th:if="${#fields.hasErrors('effortValid')}" th:errors="*{effortValid}"
                          class="pf-alert pf-alert--error" role="alert"></div>
                 </div>
             </div>
@@ -224,6 +238,34 @@
         </a>
     </div>
 </main>
+
+<script>
+    (function () {
+        var minInput = document.getElementById('effortMinutes');
+        if (!minInput) return;
+        function relaxStep() {
+            var val = minInput.value.trim();
+            if (val !== '' && Number(val) % 5 !== 0) {
+                minInput.step = 'any';
+            } else {
+                minInput.step = '5';
+            }
+        }
+        minInput.addEventListener('input', relaxStep);
+        minInput.addEventListener('change', relaxStep);
+        var form = minInput.closest('form') || document.getElementById('task-main-form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                minInput.step = 'any';
+            });
+            document.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    minInput.step = 'any';
+                });
+            });
+        }
+    })();
+</script>
 
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>

@@ -143,7 +143,7 @@ class ProviderAiClientTest {
 
         assertThat(response.title()).isEqualTo("Kartons strukturiert packen");
         assertThat(response.priority()).isEqualTo(TaskPriority.MEDIUM);
-        assertThat(response.estimatedHours()).isNull();
+        assertThat(response.estimatedMinutes()).isNull();
         assertThat(response.startDate()).isNull();
         assertThat(response.dueDate()).isNull();
         verify(gateway).execute(anyString(), eq(prompt), eq(AiTextImprovementResponse.class));
@@ -154,7 +154,7 @@ class ProviderAiClientTest {
     void taskReplanUsesProviderSpecificContract(String provider) {
         AiClient client = client(provider);
         var original = new AiImprovementContent(AiImprovementElementType.TASK, "Packen", "Kartons packen",
-                TaskPriority.MEDIUM, 2, LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 12));
+                TaskPriority.MEDIUM, 120, LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 12));
         var request = new AiImprovementRequest(AiFeedbackType.REPLAN, null, null, null, null, original);
         LocalDate expectedStart = LocalDate.of(2026, 9, 11);
         LocalDate expectedDue = LocalDate.of(2026, 9, 14);
@@ -173,7 +173,7 @@ class ProviderAiClientTest {
         var response = client.improveElement(request);
 
         assertThat(response.title()).isEqualTo(original.title());
-        assertThat(response.estimatedHours()).isEqualTo(original.estimatedHours());
+        assertThat(response.estimatedMinutes()).isEqualTo(original.estimatedMinutes());
         assertThat(response.startDate()).isEqualTo(expectedStart);
         assertThat(response.dueDate()).isEqualTo(expectedDue);
         assertThat(response.placement()).isEqualTo(AiReplanPlacementResponse.unchanged());
@@ -185,15 +185,15 @@ class ProviderAiClientTest {
     void effortEstimationUsesEffortOnlyContract(String provider) {
         AiClient client = client(provider);
         var original = new AiImprovementContent(AiImprovementElementType.TASK, "Packen", null,
-                TaskPriority.MEDIUM, 2, null, null);
+                TaskPriority.MEDIUM, 120, null, null);
         var request = new AiImprovementRequest(AiFeedbackType.ESTIMATE_EFFORT, null, null, null, null, original);
-        var output = new AiTaskEffortResponse(5, "Der Umfang entspricht etwa fünf Arbeitsstunden.");
+        var output = new AiTaskEffortResponse(300, "Der Umfang entspricht etwa 300 Minuten.");
         when(improvementPrompts.build(request)).thenReturn(prompt);
         doReturn(output).when(gateway).execute(anyString(), eq(prompt), eq(AiTaskEffortResponse.class));
 
         var response = client.improveElement(request);
 
-        assertThat(response.estimatedHours()).isEqualTo(5);
+        assertThat(response.estimatedMinutes()).isEqualTo(300);
         assertThat(response.title()).isEqualTo(original.title());
         assertThat(response.startDate()).isNull();
         assertThat(response.dueDate()).isNull();

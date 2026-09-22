@@ -245,7 +245,7 @@ public class DraftEditingController {
             form.setSectionSelectionPresent(true);
             form.setStartDate(element.getStartDate());
             form.setDueDate(element.getDueDate());
-            form.setEstimatedHours(element.getEstimatedHours());
+            form.setEstimatedMinutes(element.getEstimatedMinutes());
             form.setPriority(element.getPriority());
             model.addAttribute("taskForm", form);
         }

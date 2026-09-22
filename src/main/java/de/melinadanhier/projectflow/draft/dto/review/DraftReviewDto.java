@@ -33,7 +33,11 @@ public class DraftReviewDto {
     private String activeReviewFilter;
     private int reviewedElementCount;
     private int totalElementCount;
-    private int totalEstimatedHours;
+    private int totalEstimatedMinutes;
+
+    public String getFormattedTotalEffort() {
+        return de.melinadanhier.projectflow.common.util.EffortFormatter.formatMinutes(totalEstimatedMinutes);
+    }
     private List<DraftSectionDto> sections = new ArrayList<>();
     private List<DraftPlanElementDto> elements = new ArrayList<>();
     private List<DraftPlanElementDto> unsectionedElements = new ArrayList<>();

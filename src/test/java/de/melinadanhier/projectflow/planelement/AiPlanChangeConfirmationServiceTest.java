@@ -52,7 +52,7 @@ class AiPlanChangeConfirmationServiceTest {
         first = section("Vorbereitung", 100, 2); second = section("Durchführung", 200, 3);
         task = identified(new Task(), UUID.randomUUID(), 5); task.setPlanContainer(project); task.setPlanSection(first);
         task.setTitle("Packen"); task.setDescription("Erhalten"); task.setPriority(TaskPriority.MEDIUM);
-        task.setEstimatedHours(2); task.setOrigin(ElementOrigin.USER); task.setSortOrder(100);
+        task.setEstimatedMinutes(120); task.setOrigin(ElementOrigin.USER); task.setSortOrder(100);
         task.setStatus(TaskStatus.IN_PROGRESS);
         milestone = identified(new Milestone(), UUID.randomUUID(), 6); milestone.setPlanContainer(project);
         milestone.setPlanSection(second); milestone.setTitle("Übergabe"); milestone.setDescription("Alt");
@@ -90,7 +90,7 @@ class AiPlanChangeConfirmationServiceTest {
         assertThat(task.getTitle()).isEqualTo("Kartons packen");
         assertThat(task.getPlanSection()).isSameAs(second); assertThat(task.getSortOrder()).isGreaterThan(milestone.getSortOrder());
         assertThat(task.getDescription()).isEqualTo("Erhalten"); assertThat(task.getPriority()).isEqualTo(TaskPriority.MEDIUM);
-        assertThat(task.getEstimatedHours()).isEqualTo(2); assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(task.getEstimatedMinutes()).isEqualTo(120); assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
         assertThat(task.getAssignees()).containsExactly(assignee); assertThat(task.getPrerequisites()).containsExactly(prerequisite);
         assertThat(task.getOrigin()).isEqualTo(ElementOrigin.AI_MODIFIED);
         assertThat(milestone.getDescription()).isEqualTo("Neu"); assertThat(milestone.isCompleted()).isTrue();

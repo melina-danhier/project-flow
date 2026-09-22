@@ -66,8 +66,10 @@ public class PlanChangePromptBuilder {
                 Erzeuge keine neue Section, wenn eine vorhandene Section den erkennbaren Nutzerwunsch erfüllt.
                 Ist eine Zuordnung tatsächlich mehrdeutig, nimm keine unbegründeten Änderungen an mehreren Sections
                 vor, sondern wähle höchstens die nach Planinhalt plausibelste Zuordnung.
-                Erlaubt: Sections title, description, position; Tasks title, description, priority, estimatedHours,
+                Erlaubt: Sections title, description, position; Tasks title, description, priority, estimatedMinutes,
                 startDate, dueDate, section, position; Milestones title, description, dueDate, section, position.
+                estimatedMinutes bezeichnet den Arbeitsaufwand in positiven ganzen Minuten (üblicherweise als sinnvolle
+                Vielfache von 15 oder 30 Minuten, z. B. 15, 30, 45, 60, 90 oder 120 Minuten).
                 Verwende für Positionen nur before/after-Referenzen, niemals sortOrder. Referenzen müssen im Zielcontainer
                 liegen. Completion-State, Status, Zuständigkeiten, Abhängigkeiten und technische Felder bleiben unverändert.
                 Neue Elemente müssen mindestens Titel und Ziel-Section angeben. priority ist bei neuen Tasks optional:

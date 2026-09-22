@@ -114,7 +114,7 @@ public class AiElementImprovementService {
         AiImprovementContent original = request.element();
         return new AiImprovementResponse(
                 response.elementType(), response.title(), response.description(), response.priority(),
-                response.estimatedHours(), original.startDate(), original.dueDate(), response.placement(),
+                response.estimatedMinutes(), original.startDate(), original.dueDate(), response.placement(),
                 response.explanation());
     }
 
@@ -136,7 +136,7 @@ public class AiElementImprovementService {
                 proposal.comment(),
                 new de.melinadanhier.projectflow.ai.model.improvement.AiImprovementResponse(
                         proposed.elementType(), proposed.title(), proposed.description(), proposed.priority(),
-                        proposed.estimatedHours(), proposed.startDate(), proposed.dueDate(),
+                        proposed.estimatedMinutes(), proposed.startDate(), proposed.dueDate(),
                         placementResponse(proposal.placement()), proposal.explanation()));
         switch (proposal.elementType()) {
             case SECTION -> applySection(proposal);
@@ -169,7 +169,7 @@ public class AiElementImprovementService {
             case REPLAN -> !Objects.equals(task.getStartDate(), content.startDate())
                     || !Objects.equals(task.getDueDate(), content.dueDate())
                     || proposal.placement().changePlacement();
-            case ESTIMATE_EFFORT -> !Objects.equals(task.getEstimatedHours(), content.estimatedHours());
+            case ESTIMATE_EFFORT -> !Objects.equals(task.getEstimatedMinutes(), content.estimatedMinutes());
         };
         if (changed) {
             switch (proposal.feedbackType()) {
@@ -182,7 +182,7 @@ public class AiElementImprovementService {
                     task.setDueDate(content.dueDate());
                     applyPlacement(proposal, task, content.dueDate());
                 }
-                case ESTIMATE_EFFORT -> task.setEstimatedHours(content.estimatedHours());
+                case ESTIMATE_EFFORT -> task.setEstimatedMinutes(content.estimatedMinutes());
             }
             task.setOrigin(task.getOrigin().modifiedByAi());
         }
@@ -507,7 +507,7 @@ public class AiElementImprovementService {
         if (element instanceof Task task) {
             return new AiImprovementPlanContext.Element(AiImprovementElementType.TASK,
                     task.getId().toString(), task.getTitle(), task.getDescription(), position,
-                    task.getPriority(), task.getEstimatedHours(), task.getStatus(), task.getStartDate(),
+                    task.getPriority(), task.getEstimatedMinutes(), task.getStatus(), task.getStartDate(),
                     task.getDueDate(), null, task.getPrerequisites().stream()
                             .map(prerequisite -> prerequisite.getId().toString()).sorted().toList());
         }
@@ -530,7 +530,7 @@ public class AiElementImprovementService {
                 Task task = taskRepository.findByIdAndPlanContainerId(elementId, projectId)
                         .orElseThrow(this::notFound);
                 yield new AiImprovementContent(type, task.getTitle(), task.getDescription(), task.getPriority(),
-                        task.getEstimatedHours(), task.getStartDate(), task.getDueDate());
+                        task.getEstimatedMinutes(), task.getStartDate(), task.getDueDate());
             }
             case MILESTONE -> {
                 Milestone milestone = milestoneRepository.findByIdAndPlanContainerId(elementId, projectId)

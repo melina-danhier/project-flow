@@ -100,7 +100,7 @@ public class DraftValidationService {
 
     private GeneratedTask task(DraftTask task, Set<DraftPlanElement> included) {
         return new GeneratedTask(task.getId().toString(), task.getTitle(), task.getDescription(),
-                task.getEstimatedHours(), task.getStartDate(), task.getDueDate(),
+                task.getEstimatedMinutes(), task.getStartDate(), task.getDueDate(),
                 task.getSortOrder() + 1, task.getPrerequisites().stream()
                 .filter(included::contains)
                 .map(prerequisite -> prerequisite.getId().toString()).toList(), task.getPriority());

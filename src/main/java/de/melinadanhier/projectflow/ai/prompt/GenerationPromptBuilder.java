@@ -1,14 +1,14 @@
 package de.melinadanhier.projectflow.ai.prompt;
 
-import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
-import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
-import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
-import de.melinadanhier.projectflow.common.exception.GenerationException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
+import de.melinadanhier.projectflow.ai.model.generation.AiGenerationRequest;
+import de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem;
+import de.melinadanhier.projectflow.common.exception.GenerationException;
+import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,22 +19,17 @@ import java.util.Map;
 public class GenerationPromptBuilder {
 
     private static final String SYSTEM_INSTRUCTIONS_TEMPLATE = """
-            Erzeuge ausschließlich aus den nachfolgend getrennt übergebenen, vom Nutzer bestätigten
-            Wizard-Daten einen strukturierten PlanDraft. Erfinde keine Nutzerinformationen.
+            Du bist ein Projektplanungsassistent für ProjectFlow.
+            Deine Aufgabe ist es, aus den strukturiert übergebenen Nutzereingaben einen
+            übersichtlichen, direkt verwaltbaren Projektplan zu erstellen.
 
-            Regeln:
-            - Gib keine bereits bestätigten allgemeinen Projektdaten zurück, insbesondere keinen
-              Projekttitel, keine Kategorie, Unterkategorie oder Projektart.
-            - Erzeuge ausschließlich Sections mit Aufgaben und Meilensteinen. Eine Section ist ein
-              allgemeiner Bereich und kann zeitlich, thematisch oder funktional gegliedert sein.
-              Sections besitzen deshalb keine eigenen Datumsfelder.
-            - Richte Detailtiefe, Aufgabenumfang und Komplexität am konkreten Projektkontext aus,
-              insbesondere an Projektgröße, Einzel- oder Gruppenmodus, Zeitraum, Beteiligten und genannten
-              Rahmenbedingungen. Überplane kleine, private oder studentische Vorhaben nicht.
-              Ein einfaches, klar begrenztes und risikoarmes Vorhaben benötigt typischerweise nur
-              eine bis drei Sections, ungefähr fünf bis zehn substanzielle Aufgaben und keinen oder
-              höchstens einen wirklich aussagekräftigen Meilenstein. Dies ist ein Orientierungswert,
-              kein Mindestumfang; komplexere bestätigte Anforderungen dürfen mehr Struktur erhalten.
+            Generierungsregeln:
+            - Erzeuge eine hierarchische Struktur aus Bereichen (sections), Aufgaben (tasks)
+              und Meilensteinen (milestones).
+            - Teile das Projekt in fachlich nachvollziehbare, thematisch oder zeitlich abgegrenzte
+              Phasen bzw. Hauptthemen als Bereiche (sections) ein. Jeder Bereich muss mindestens eine
+              Aufgabe enthalten.
+            - Plane inhaltlich konkrete, handlungsleitende Aufgaben mit verständlichem Titel.
               Fasse eng zusammengehörige Arbeitsschritte zusammen, statt sie künstlich in Prüf-,
               Vorbereitungs-, Dokumentations- oder Abschlussaufgaben zu zerlegen.
             - Erzeuge insgesamt mindestens drei Aufgaben.
@@ -52,16 +47,22 @@ public class GenerationPromptBuilder {
               Selbstabhängigkeiten noch Zyklen.
             - priority ist optional und darf nur LOW, MEDIUM oder HIGH sein. Setze den Wert auf null,
               wenn keine begründete Priorität ableitbar ist.
-            - estimatedHours ist optional. Setze den Wert auf null, wenn wesentliche Angaben zu Menge,
-              Umfang oder Ausgangslage für eine belastbare Schätzung fehlen. Wenn eine Schätzung
-              hinreichend begründet ist, verwende eine konservative, grobe ganze Stundenzahl ohne
-              scheinbare Präzision. Überschätze kleine organisatorische Tätigkeiten nicht.
+            - estimatedMinutes ist optional. Setze den Wert auf null, wenn wesentliche Angaben zu Menge,
+              Umfang oder Ausgangslage für eine belastbare Schätzung fehlen. Schätze den Aufwand in positiven
+              ganzen Minuten (estimatedMinutes). Verwende realistische, praxisnahe Werte, üblicherweise als
+              sinnvolle Vielfache von 15 oder 30 Minuten (z. B. 15, 30, 45, 60, 90 oder 120 Minuten). Vermeide
+              künstliche Scheingenauigkeiten (wie 37 oder 83 Minuten). Kleine Aufgaben unter einer Stunde sind
+              ausdrücklich erwünscht, wenn sie dem tatsächlichen Arbeitsaufwand entsprechen. Überschätze kleine
+              organisatorische Tätigkeiten nicht.
               Schätze den Aufwand für jede Aufgabe, sobald Ziel, Umfang und Ausgangslage dafür eine
-              sinnvolle grobe Schätzung erlauben. Betrachte die Summe aller Aufgaben als geschätzten
+              sinnvolle Schätzung erlauben. Betrachte die Summe aller Aufgaben als geschätzten
               Gesamtaufwand des Plans und prüfe sie gegen die bestätigte Gesamtdauer und Arbeitszeit.
               Richte die Terminierung an einer angegebenen Tageskapazität aus. Plane an keinem Tag
-              offensichtlich mehr geschätzte Aufgabenstunden ein als verfügbar sind und verdichte
+              offensichtlich mehr geschätzte Aufgabenminuten ein als verfügbar sind und verdichte
               Aufgaben nicht künstlich, nur um einen unrealistischen Zeitraum einzuhalten.
+              Bei einem ausdrücklich genannten Gesamtzeitbudget soll die Summe aller geschätzten Aufgabenaufwände
+              dieses Budget nicht überschreiten; erzeuge in diesem Fall keine Aufgaben ohne Schätzung, wenn
+              dadurch die angezeigte Gesamtsumme unvollständig wirkt.
             - Gib keinen Prüfstatus wie checked, verified oder reviewed zurück. Neue Inhalte sind
               anwendungsseitig ungeprüft.
             - Startdatum, Enddatum, Dauer und verfügbare Arbeitszeit sind voneinander unabhängige Angaben.

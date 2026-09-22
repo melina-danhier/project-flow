@@ -50,7 +50,7 @@ public final class AiResponseSchemas {
         }
         if (type == AiTaskEffortResponse.class) {
             return object(Map.ofEntries(
-                    entry("estimatedHours", positiveInteger(MAX_ESTIMATED_HOURS)),
+                    entry("estimatedMinutes", positiveInteger(MAX_ESTIMATED_MINUTES)),
                     entry("explanation", boundedString(500))));
         }
         if (type == AiPlanChangeResponse.class) return planChangeSchema();
@@ -102,11 +102,11 @@ public final class AiResponseSchemas {
         return object(Map.ofEntries(
                 entry("operation", enumeration(AiPlanChangeOperation.class)),
                 entry("existingTaskId", nullable(string())), entry("targetSectionId", nullable(string())),
-                entry("changedFields", array(stringEnumeration("title", "description", "priority", "estimatedHours",
+                entry("changedFields", array(stringEnumeration("title", "description", "priority", "estimatedMinutes",
                         "startDate", "dueDate", "section", "position"), 1, 8)),
                 entry("title", nullable(string())), entry("description", nullable(string())),
                 entry("priority", nullable(enumeration(TaskPriority.class))),
-                entry("estimatedHours", nullable(positiveInteger(MAX_ESTIMATED_HOURS))),
+                entry("estimatedMinutes", nullable(positiveInteger(MAX_ESTIMATED_MINUTES))),
                 entry("startDate", nullable(date())), entry("dueDate", nullable(date())),
                 entry("placement", relativePlacementSchema()),
                 entry("explanation", nullable(boundedString(500)))));
@@ -193,7 +193,7 @@ public final class AiResponseSchemas {
                 entry("tempId", string()),
                 entry("title", string()),
                 entry("description", nullable(string())),
-                entry("estimatedHours", nullable(positiveInteger(MAX_ESTIMATED_HOURS))),
+                entry("estimatedMinutes", nullable(positiveInteger(MAX_ESTIMATED_MINUTES))),
                 entry("startDate", nullable(date())),
                 entry("dueDate", nullable(date())),
                 entry("order", positiveInteger()), // Gemeinsamer Nummernkreis innerhalb der Section (z. B. 100, 200...)

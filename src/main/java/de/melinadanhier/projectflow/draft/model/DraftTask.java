@@ -42,8 +42,8 @@ public class DraftTask extends DraftPlanElement {
     private LocalDate dueDate;
 
     @jakarta.validation.constraints.Positive
-    @Column(name = "estimated_hours")
-    private Integer estimatedHours;
+    @Column(name = "estimated_minutes")
+    private Integer estimatedMinutes;
 
     @Setter(AccessLevel.NONE)
     @ManyToMany(fetch = FetchType.LAZY)

@@ -857,6 +857,56 @@ main li>span:not(:only-child) {
     color: var(--pf-text-secondary);
 }
 
+/* Responsive utilities */
+.d-none {
+    display: none !important;
+}
+
+@media (min-width: 992px) {
+    .d-lg-inline {
+        display: inline-flex !important;
+    }
+    .d-lg-block {
+        display: block !important;
+    }
+}
+
+/* Effort input duo & input groups */
+.pf-effort-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.pf-input-group {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+
+.pf-input-group .pf-input,
+.pf-input-group input[type="number"] {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    flex: 1 1 auto;
+    width: 1%;
+}
+
+.pf-input-group-text {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--pf-text-secondary);
+    background-color: var(--pf-surface-subtle);
+    border: 1px solid var(--pf-border-strong);
+    border-left: 0;
+    border-top-right-radius: var(--pf-radius-md);
+    border-bottom-right-radius: var(--pf-radius-md);
+    white-space: nowrap;
+}
+
 /* ==========================================================================
    Page Headers & Breadcrumbs
    ========================================================================== */

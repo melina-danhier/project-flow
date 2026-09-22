@@ -164,19 +164,19 @@ class AiOutputParserTest {
         assertThat(parseGeneration(validGenerationJson().replace(
                 "\"title\":\"Umzugskartons packen\",", ""))).isNotNull();
         assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
-                "\"estimatedHours\":4,", "\"estimatedHours\":4,\"origin\":\"USER_INPUT\",")))
+                "\"estimatedMinutes\":240,", "\"estimatedMinutes\":240,\"origin\":\"USER_INPUT\",")))
                 .isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
     void parsesValidPriorityAndRejectsUnknownPriority() {
         var parsed = parseGeneration(validGenerationJson().replace(
-                "\"estimatedHours\":4,", "\"estimatedHours\":4,\"priority\":\"HIGH\","));
+                "\"estimatedMinutes\":240,", "\"estimatedMinutes\":240,\"priority\":\"HIGH\","));
         assertThat(parsed.sections().getFirst().tasks().getFirst().priority())
                 .isEqualTo(TaskPriority.HIGH);
 
         assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
-                "\"estimatedHours\":4,", "\"estimatedHours\":4,\"priority\":\"URGENT\",")))
+                "\"estimatedMinutes\":240,", "\"estimatedMinutes\":240,\"priority\":\"URGENT\",")))
                 .isInstanceOf(AiOutputValidationException.class);
     }
 
@@ -209,8 +209,8 @@ class AiOutputParserTest {
                 "\"sections\":",
                 "\"projectTitle\":\"Nicht übernehmen\",\"sections\":"))).isInstanceOf(AiOutputValidationException.class);
         assertThatThrownBy(() -> parseGeneration(validGenerationJson().replace(
-                "\"estimatedHours\":4,",
-                "\"estimatedHours\":4,\"reviewed\":true,"))).isInstanceOf(AiOutputValidationException.class);
+                "\"estimatedMinutes\":240,",
+                "\"estimatedMinutes\":240,\"reviewed\":true,"))).isInstanceOf(AiOutputValidationException.class);
     }
 
     @Test
@@ -278,10 +278,10 @@ class AiOutputParserTest {
                     "order":1,
                     "tasks":[
                       {"tempId":"task-1","title":"Umzugskartons packen","description":"Zimmerweise packen",
-                       "estimatedHours":4,"startDate":"2026-08-25","dueDate":"2026-08-26",
+                       "estimatedMinutes":240,"startDate":"2026-08-25","dueDate":"2026-08-26",
                        "order":1},
                       {"tempId":"task-2","title":"Transport organisieren","description":"Fahrzeug reservieren",
-                       "estimatedHours":2,"startDate":"2026-08-25","dueDate":"2026-08-26",
+                       "estimatedMinutes":120,"startDate":"2026-08-25","dueDate":"2026-08-26",
                        "order":2}
                     ],
                     "milestones":[{"tempId":"milestone-1","title":"Vorbereitung abgeschlossen",

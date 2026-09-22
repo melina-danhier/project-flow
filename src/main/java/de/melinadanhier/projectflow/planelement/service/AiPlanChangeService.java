@@ -112,7 +112,7 @@ public class AiPlanChangeService {
                 task.setTitle(change.title().trim());
                 task.setDescription(normalizeOptional(change.description()));
                 task.setPriority(change.priority());
-                task.setEstimatedHours(change.estimatedHours());
+                task.setEstimatedMinutes(change.estimatedMinutes());
                 task.setStartDate(change.startDate());
                 task.setDueDate(change.dueDate());
                 task.setOrigin(ElementOrigin.AI);
@@ -174,7 +174,7 @@ public class AiPlanChangeService {
         if (change.changedFields().contains("title")) task.setTitle(change.title().trim());
         if (change.changedFields().contains("description")) task.setDescription(normalizeOptional(change.description()));
         if (change.changedFields().contains("priority")) task.setPriority(change.priority());
-        if (change.changedFields().contains("estimatedHours")) task.setEstimatedHours(change.estimatedHours());
+        if (change.changedFields().contains("estimatedMinutes")) task.setEstimatedMinutes(change.estimatedMinutes());
         if (change.changedFields().contains("startDate")) { task.setStartDate(change.startDate()); task.setRelativeStartDay(null); }
         if (change.changedFields().contains("dueDate")) { task.setDueDate(change.dueDate()); task.setRelativeDueDay(null); }
         task.setOrigin(ElementOrigin.AI_MODIFIED);
@@ -275,7 +275,7 @@ public class AiPlanChangeService {
             add(fields, "Titel", old == null ? null : old.title(), change.title(), change.changedFields(), "title");
             add(fields, "Beschreibung", old == null ? null : old.description(), change.description(), change.changedFields(), "description");
             add(fields, "Priorität", old == null ? null : value(old.priority()), value(change.priority()), change.changedFields(), "priority");
-            add(fields, "Aufwand", old == null ? null : hours(old.estimatedHours()), hours(change.estimatedHours()), change.changedFields(), "estimatedHours");
+            add(fields, "Aufwand", old == null ? null : formatEffort(old.estimatedMinutes()), formatEffort(change.estimatedMinutes()), change.changedFields(), "estimatedMinutes");
             add(fields, "Start", old == null ? null : date(old.startDate()), date(change.startDate()), change.changedFields(), "startDate");
             add(fields, "Fällig", old == null ? null : date(old.dueDate()), date(change.dueDate()), change.changedFields(), "dueDate");
             addPlacement(fields, change.changedFields(), change.placement(), change.targetSectionId(),
@@ -318,7 +318,7 @@ public class AiPlanChangeService {
         List<AiImprovementPlanContext.Element> elements = new ArrayList<>(); int i = 0;
         for (PlanElement element : values) {
             if (element instanceof Task task) elements.add(new AiImprovementPlanContext.Element(AiImprovementElementType.TASK,
-                    task.getId().toString(), task.getTitle(), task.getDescription(), ++i, task.getPriority(), task.getEstimatedHours(),
+                    task.getId().toString(), task.getTitle(), task.getDescription(), ++i, task.getPriority(), task.getEstimatedMinutes(),
                     task.getStatus(), task.getStartDate(), task.getDueDate(), null,
                     task.getPrerequisites().stream().map(p -> p.getId().toString()).sorted().toList()));
             else { Milestone milestone = (Milestone) element; elements.add(new AiImprovementPlanContext.Element(
@@ -379,7 +379,10 @@ public class AiPlanChangeService {
     }
     private String display(String s) { return s == null || s.isBlank() ? "—" : s; }
     private String value(Object o) { return o == null ? null : o.toString(); }
-    private String hours(Integer v) { return v == null ? null : v + " Std."; }
+    private String formatEffort(Integer v) {
+        if (v == null || v <= 0) return null;
+        return de.melinadanhier.projectflow.common.util.EffortFormatter.formatMinutes(v);
+    }
     private String date(LocalDate v) { return v == null ? null : v.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")); }
     private static class ReviewBuilder {
         String title; AiPlanChangeOperation operation; boolean sectionChanged; List<PlanChangeReview.FieldChange> fields = new ArrayList<>();

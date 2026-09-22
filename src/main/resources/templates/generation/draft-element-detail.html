@@ -122,7 +122,7 @@
                         </span>
                         <div class="pf-detail-prop__content">
                             <span class="pf-detail-prop__label">Aufwand</span>
-                            <div class="pf-detail-prop__value" th:text="${draftElement.estimatedHours != null ? draftElement.estimatedHours + ' Stunden' : 'Nicht festgelegt'}"></div>
+                            <div class="pf-detail-prop__value" th:text="${draftElement.estimatedMinutes != null ? draftElement.formattedEffort : 'Nicht festgelegt'}"></div>
                         </div>
                     </div>
 

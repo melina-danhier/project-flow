@@ -34,7 +34,7 @@ public record OpenAiGenerationOutput(
             String tempId,
             String title,
             Optional<String> description,
-            Optional<Integer> estimatedHours,
+            Optional<Integer> estimatedMinutes,
             Optional<LocalDate> startDate,
             Optional<LocalDate> dueDate,
             int order,
@@ -43,16 +43,16 @@ public record OpenAiGenerationOutput(
     ) {
         public Task {
             description = emptyIfNull(description);
-            estimatedHours = emptyIfNull(estimatedHours);
+            estimatedMinutes = emptyIfNull(estimatedMinutes);
             startDate = emptyIfNull(startDate);
             dueDate = emptyIfNull(dueDate);
             priority = emptyIfNull(priority);
         }
 
         public Task(String tempId, String title, Optional<String> description,
-                    Optional<Integer> estimatedHours, Optional<LocalDate> startDate,
+                    Optional<Integer> estimatedMinutes, Optional<LocalDate> startDate,
                     Optional<LocalDate> dueDate, int order) {
-            this(tempId, title, description, estimatedHours, startDate, dueDate,
+            this(tempId, title, description, estimatedMinutes, startDate, dueDate,
                     order, List.of(), Optional.empty());
         }
     }

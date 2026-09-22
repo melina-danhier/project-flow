@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_DESCRIPTION_LENGTH;
-import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_ESTIMATED_HOURS;
+import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_ESTIMATED_MINUTES;
 import static de.melinadanhier.projectflow.ai.validation.AiResponseLimits.MAX_TITLE_LENGTH;
 
 @Component
@@ -41,7 +41,7 @@ public class AiImprovementResponseValidator {
         switch (action) {
             case IMPROVE, EXPAND, SIMPLIFY -> {
                 unchanged(issues, "priority", original.priority(), proposed.priority());
-                unchanged(issues, "estimatedHours", original.estimatedHours(), proposed.estimatedHours());
+                unchanged(issues, "estimatedMinutes", original.estimatedMinutes(), proposed.estimatedMinutes());
                 unchanged(issues, "startDate", original.startDate(), proposed.startDate());
                 unchanged(issues, "dueDate", original.dueDate(), proposed.dueDate());
                 if (action == AiFeedbackType.IMPROVE && !approximatelySameTextLength(original, proposed)) {
@@ -52,7 +52,7 @@ public class AiImprovementResponseValidator {
                 unchanged(issues, "title", original.title(), proposed.title());
                 unchanged(issues, "description", original.description(), proposed.description());
                 unchanged(issues, "priority", original.priority(), proposed.priority());
-                unchanged(issues, "estimatedHours", original.estimatedHours(), proposed.estimatedHours());
+                unchanged(issues, "estimatedMinutes", original.estimatedMinutes(), proposed.estimatedMinutes());
                 if (expectedType == AiImprovementElementType.MILESTONE) {
                     unchanged(issues, "startDate", original.startDate(), proposed.startDate());
                 }
@@ -63,8 +63,8 @@ public class AiImprovementResponseValidator {
                 unchanged(issues, "priority", original.priority(), proposed.priority());
                 unchanged(issues, "startDate", original.startDate(), proposed.startDate());
                 unchanged(issues, "dueDate", original.dueDate(), proposed.dueDate());
-                if (proposed.estimatedHours() == null) {
-                    issues.add("IMPROVEMENT_EFFORT | $.estimatedHours | Die Aufwandsschätzung fehlt.");
+                if (proposed.estimatedMinutes() == null) {
+                    issues.add("IMPROVEMENT_EFFORT | $.estimatedMinutes | Die Aufwandsschätzung fehlt.");
                 }
             }
         }
@@ -137,7 +137,7 @@ public class AiImprovementResponseValidator {
             issues.add("IMPROVEMENT_DESCRIPTION | $.description | Die Beschreibung ist zu lang.");
         }
         if (expectedType != AiImprovementElementType.TASK
-                && (response.priority() != null || response.estimatedHours() != null || response.startDate() != null)) {
+                && (response.priority() != null || response.estimatedMinutes() != null || response.startDate() != null)) {
             issues.add("IMPROVEMENT_FIELDS | $ | Nicht freigegebene Felder sind für diesen Elementtyp belegt.");
         }
         if (expectedType == AiImprovementElementType.SECTION && response.dueDate() != null) {
@@ -147,9 +147,9 @@ public class AiImprovementResponseValidator {
             if (response.priority() == null) {
                 issues.add("IMPROVEMENT_PRIORITY | $.priority | Die Aufgabenpriorität fehlt.");
             }
-            if (response.estimatedHours() != null
-                    && (response.estimatedHours() < 1 || response.estimatedHours() > MAX_ESTIMATED_HOURS)) {
-                issues.add("IMPROVEMENT_EFFORT | $.estimatedHours | Der Aufwand ist ungültig.");
+            if (response.estimatedMinutes() != null
+                    && (response.estimatedMinutes() < 1 || response.estimatedMinutes() > MAX_ESTIMATED_MINUTES)) {
+                issues.add("IMPROVEMENT_EFFORT | $.estimatedMinutes | Der Aufwand ist ungültig.");
             }
             if (response.startDate() != null && response.dueDate() != null
                     && response.dueDate().isBefore(response.startDate())) {
@@ -158,7 +158,7 @@ public class AiImprovementResponseValidator {
         }
         if (!issues.isEmpty()) throw invalid(issues);
         return new AiImprovementContent(expectedType, title, description, response.priority(),
-                response.estimatedHours(), response.startDate(), response.dueDate());
+                response.estimatedMinutes(), response.startDate(), response.dueDate());
     }
 
     private void unchanged(List<String> issues, String field, Object original, Object proposed) {

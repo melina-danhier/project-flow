@@ -14,7 +14,7 @@ import java.util.*;
 public class AiPlanChangeResponseValidator {
     private static final Set<String> SECTION_FIELDS = Set.of("title", "description", "position");
     private static final Set<String> TASK_FIELDS = Set.of(
-            "title", "description", "priority", "estimatedHours", "startDate", "dueDate", "section", "position");
+            "title", "description", "priority", "estimatedMinutes", "startDate", "dueDate", "section", "position");
     private static final Set<String> MILESTONE_FIELDS = Set.of(
             "title", "description", "dueDate", "section", "position");
 
@@ -96,7 +96,7 @@ public class AiPlanChangeResponseValidator {
                         fields.contains("title") ? change.title() : null,
                         fields.contains("description") ? change.description() : null,
                         fields.contains("priority") ? change.priority() : null,
-                        fields.contains("estimatedHours") ? change.estimatedHours() : null,
+                        fields.contains("estimatedMinutes") ? change.estimatedMinutes() : null,
                         fields.contains("startDate") ? change.startDate() : null,
                         fields.contains("dueDate") ? change.dueDate() : null,
                         fields.contains("position") ? normalizePlacement(change.placement()) : new AiRelativePlacement(null, null),
@@ -105,14 +105,14 @@ public class AiPlanChangeResponseValidator {
             LinkedHashSet<String> fields = new LinkedHashSet<>(safe(change.changedFields()));
             TaskPriority priority = change.priority() == null ? TaskPriority.MEDIUM : change.priority();
             addIf(fields, "title", !blank(change.title())); addIf(fields, "description", change.description() != null);
-            addIf(fields, "priority", true); addIf(fields, "estimatedHours", change.estimatedHours() != null);
+            addIf(fields, "priority", true); addIf(fields, "estimatedMinutes", change.estimatedMinutes() != null);
             addIf(fields, "startDate", change.startDate() != null); addIf(fields, "dueDate", change.dueDate() != null);
             addIf(fields, "section", !blank(change.targetSectionId()));
             boolean positionDeclared = fields.contains("position") && change.placement() != null
                     && exactlyOne(change.placement().beforeElementId(), change.placement().afterElementId());
             if (!positionDeclared) fields.remove("position");
             return new AiTaskChange(change.operation(), null, change.targetSectionId(),
-                    List.copyOf(fields), change.title(), change.description(), priority, change.estimatedHours(),
+                    List.copyOf(fields), change.title(), change.description(), priority, change.estimatedMinutes(),
                     change.startDate(), change.dueDate(),
                     positionDeclared ? normalizePlacement(change.placement()) : new AiRelativePlacement(null, null),
                     change.explanation());
@@ -201,7 +201,7 @@ public class AiPlanChangeResponseValidator {
         fields(change.changedFields(), TASK_FIELDS, path, issues);
         rejectUnlisted(change.changedFields(), path, issues, nullableMap(
                 "title", change.title(), "description", change.description(), "priority", change.priority(),
-                "estimatedHours", change.estimatedHours(), "startDate", change.startDate(), "dueDate", change.dueDate(),
+                "estimatedMinutes", change.estimatedMinutes(), "startDate", change.startDate(), "dueDate", change.dueDate(),
                 "position", change.placement() != null && (!blank(change.placement().beforeElementId()) || !blank(change.placement().afterElementId())) ? Boolean.TRUE : null));
         text(change.title(), change.operation() == AiPlanChangeOperation.NEW, 100, path + ".title", issues);
         text(change.description(), false, 2000, path + ".description", issues);
@@ -241,17 +241,19 @@ public class AiPlanChangeResponseValidator {
         String path = "$.milestones[" + i + "]";
         if (change == null || change.operation() == null) { issues.add("PLAN_CHANGE_MILESTONE | " + path + " | Änderung fehlt."); return; }
         fields(change.changedFields(), MILESTONE_FIELDS, path, issues);
-        rejectUnlisted(change.changedFields(), path, issues, nullableMap(
-                "title", change.title(), "description", change.description(), "dueDate", change.dueDate(),
-                "position", change.placement() != null && (!blank(change.placement().beforeElementId()) || !blank(change.placement().afterElementId())) ? Boolean.TRUE : null));
+        rejectUnlisted(change.changedFields(), path, issues,
+                nullableMap("title", change.title(), "description", change.description(), "dueDate", change.dueDate(),
+                        "position", change.placement() != null && (!blank(change.placement().beforeElementId()) || !blank(change.placement().afterElementId())) ? Boolean.TRUE : null));
         text(change.title(), change.operation() == AiPlanChangeOperation.NEW, 100, path + ".title", issues);
         text(change.description(), false, 2000, path + ".description", issues);
         text(change.explanation(), false, 500, path + ".explanation", issues);
-        dates(null, change.dueDate(), start, end, path, issues);
+        if (change.dueDate() != null && ((start != null && change.dueDate().isBefore(start))
+                || (end != null && change.dueDate().isAfter(end))))
+            issues.add("PLAN_CHANGE_PROJECT_DATES | " + path + ".dueDate | Datum liegt außerhalb des Projektzeitraums.");
         if (change.operation() == AiPlanChangeOperation.NEW) {
             target(change.targetSectionId(), sections, newSections, path, issues);
             if (!blank(change.existingMilestoneId()))
-                issues.add("PLAN_CHANGE_NEW_MILESTONE | " + path + " | Neuer Meilenstein darf keine ID haben.");
+                issues.add("PLAN_CHANGE_NEW_MILESTONE | " + path + " | Neuer Meilenstein darf keine bestehende ID haben.");
             if (!safe(change.changedFields()).contains("title"))
                 issues.add("PLAN_CHANGE_NEW_MILESTONE | " + path + " | Titel fehlt in changedFields.");
         } else {
@@ -302,7 +304,7 @@ public class AiPlanChangeResponseValidator {
             case "title" -> !Objects.equals(trim(c.title()), old.title());
             case "description" -> !Objects.equals(trim(c.description()), old.description());
             case "priority" -> !Objects.equals(c.priority(), old.priority());
-            case "estimatedHours" -> !Objects.equals(c.estimatedHours(), old.estimatedHours());
+            case "estimatedMinutes" -> !Objects.equals(c.estimatedMinutes(), old.estimatedMinutes());
             case "startDate" -> !Objects.equals(c.startDate(), old.startDate());
             case "dueDate" -> !Objects.equals(c.dueDate(), old.dueDate());
             case "section" -> !Objects.equals(c.targetSectionId(), oldSection);

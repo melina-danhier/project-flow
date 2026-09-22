@@ -20,7 +20,7 @@ public interface DraftMapper {
     @Mapping(target = "activeReviewFilter", ignore = true)
     @Mapping(target = "reviewedElementCount", ignore = true)
     @Mapping(target = "totalElementCount", ignore = true)
-    @Mapping(target = "totalEstimatedHours", ignore = true)
+    @Mapping(target = "totalEstimatedMinutes", ignore = true)
     @Mapping(target = "pendingElementCount", ignore = true)
     @Mapping(target = "unsectionedElements", ignore = true)
     DraftReviewDto toReviewDto(DraftPlan draftPlan);
@@ -41,7 +41,7 @@ public interface DraftMapper {
             target.setType("TASK");
             target.setStartDate(task.getStartDate());
             target.setDueDate(task.getDueDate());
-            target.setEstimatedHours(task.getEstimatedHours());
+            target.setEstimatedMinutes(task.getEstimatedMinutes());
         } else if (source instanceof DraftMilestone milestone) {
             target.setType("MILESTONE");
             target.setDueDate(milestone.getDueDate());

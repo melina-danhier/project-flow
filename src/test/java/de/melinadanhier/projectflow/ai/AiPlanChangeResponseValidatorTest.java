@@ -41,7 +41,7 @@ class AiPlanChangeResponseValidatorTest {
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
 
         assertThat(normalized.tasks().getFirst().changedFields()).containsExactly(
-                "title", "priority", "description", "estimatedHours", "startDate", "dueDate", "section");
+                "title", "priority", "description", "estimatedMinutes", "startDate", "dueDate", "section");
     }
     @Test void acceptsNewPhaseAndTaskDespiteProviderPlaceholderIdsAndAmbiguousPositions() {
         var section = new AiSectionChange(AiPlanChangeOperation.NEW, "provider-placeholder", "new-aftercare",
@@ -76,7 +76,7 @@ class AiPlanChangeResponseValidatorTest {
         assertThat(result.description()).isEqualTo("Genauer Beschreibungstext");
         assertThat(result.title()).isNull();
         assertThat(result.priority()).isNull();
-        assertThat(result.estimatedHours()).isNull();
+        assertThat(result.estimatedMinutes()).isNull();
         assertThat(result.startDate()).isNull();
         assertThat(result.dueDate()).isNull();
         assertThat(result.targetSectionId()).isNull();

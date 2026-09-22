@@ -120,7 +120,7 @@ public class DraftPlanAdoptionFactory {
             task.setPriority(draftTask.getPriority());
             task.setStartDate(draftTask.getStartDate());
             task.setDueDate(draftTask.getDueDate());
-            task.setEstimatedHours(draftTask.getEstimatedHours());
+            task.setEstimatedMinutes(draftTask.getEstimatedMinutes());
             target = task;
         } else if (source instanceof DraftMilestone draftMilestone) {
             Milestone milestone = new Milestone();

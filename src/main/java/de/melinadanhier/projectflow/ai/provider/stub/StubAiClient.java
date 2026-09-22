@@ -60,7 +60,7 @@ public class StubAiClient implements AiClient {
         return new AiImprovementResponse(element.elementType(), element.title(), description,
                 element.priority(),
                 request.feedbackType() == de.melinadanhier.projectflow.ai.model.improvement.AiFeedbackType.ESTIMATE_EFFORT
-                        && element.estimatedHours() == null ? 2 : element.estimatedHours(),
+                        && element.estimatedMinutes() == null ? 120 : element.estimatedMinutes(),
                 element.startDate(), element.dueDate(),
                 request.feedbackType() == de.melinadanhier.projectflow.ai.model.improvement.AiFeedbackType.REPLAN
                         ? de.melinadanhier.projectflow.ai.model.improvement.AiReplanPlacementResponse.unchanged()

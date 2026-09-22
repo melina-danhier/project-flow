@@ -35,7 +35,7 @@
             <p class="pf-draft-review-hint" style="margin: 0.35rem 0 0.5rem; font-size: 0.85rem; color: var(--pf-text-muted); max-width: 680px; line-height: 1.45;">
                 Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest.
             </p>
-            <div class="pf-project-facts" th:if="${draft.categoryLabel != null or draft.projectStartDate != null or draft.projectEndDate != null or draft.totalEstimatedHours > 0}">
+            <div class="pf-project-facts" th:if="${draft.categoryLabel != null or draft.projectStartDate != null or draft.projectEndDate != null or draft.totalEstimatedMinutes > 0}">
                 <span class="pf-badge pf-badge--gray" th:if="${draft.categoryLabel}" th:text="${draft.categoryLabel}"></span>
                 <span class="pf-badge pf-badge--outline" th:if="${draft.projectStartDate != null or draft.projectEndDate != null}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -45,9 +45,9 @@
                     <span th:if="${draft.projectStartDate != null and draft.projectEndDate != null}"> – </span>
                     <th:block th:if="${draft.projectEndDate != null}"><time th:datetime="${draft.projectEndDate}" th:text="${#temporals.format(draft.projectEndDate, 'dd.MM.yyyy')}"></time></th:block>
                 </span>
-                <span class="pf-badge pf-badge--outline" th:if="${draft.totalEstimatedHours > 0}">
+                <span class="pf-badge pf-badge--outline" th:if="${draft.totalEstimatedMinutes > 0}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    <span th:text="${draft.totalEstimatedHours + ' Std. Gesamt'}"></span>
+                    <span th:text="${draft.formattedTotalEffort + ' Gesamt'}"></span>
                 </span>
             </div>
         </div>
@@ -277,7 +277,7 @@
                         
                         <!-- Compact Metadata -->
                         <div class="pf-element-meta">
-                            <span th:if="${element.type == 'TASK' and element.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--gray" th:text="${element.estimatedHours + ' Std.'}"></span>
+                            <span th:if="${element.type == 'TASK' and element.estimatedMinutes != null}" class="pf-badge pf-badge--sm pf-badge--gray" th:text="${element.formattedEffort}"></span>
                             <span th:if="${element.type == 'TASK' and element.priority != null}" class="pf-badge pf-badge--sm"
                                   th:classappend="${element.priority.name() == 'HIGH' ? 'pf-badge--red' : (element.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
                                   th:text="${element.priority.name() == 'LOW' ? 'Niedrig' : (element.priority.name() == 'HIGH' ? 'Hoch' : 'Mittel')}"></span>

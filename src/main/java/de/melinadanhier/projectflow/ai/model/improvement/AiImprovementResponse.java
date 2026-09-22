@@ -9,7 +9,7 @@ public record AiImprovementResponse(
         String title,
         String description,
         TaskPriority priority,
-        Integer estimatedHours,
+        Integer estimatedMinutes,
         LocalDate startDate,
         LocalDate dueDate,
         AiReplanPlacementResponse placement,
@@ -20,12 +20,12 @@ public record AiImprovementResponse(
             String title,
             String description,
             TaskPriority priority,
-            Integer estimatedHours,
+            Integer estimatedMinutes,
             LocalDate startDate,
             LocalDate dueDate,
             String explanation
     ) {
-        this(elementType, title, description, priority, estimatedHours, startDate, dueDate, null, explanation);
+        this(elementType, title, description, priority, estimatedMinutes, startDate, dueDate, null, explanation);
     }
 
     public AiImprovementResponse(
@@ -33,15 +33,15 @@ public record AiImprovementResponse(
             String title,
             String description,
             TaskPriority priority,
-            Integer estimatedHours,
+            Integer estimatedMinutes,
             LocalDate startDate,
             LocalDate dueDate
     ) {
-        this(elementType, title, description, priority, estimatedHours, startDate, dueDate, null, null);
+        this(elementType, title, description, priority, estimatedMinutes, startDate, dueDate, null, null);
     }
 
     public AiImprovementContent toContent() {
         return new AiImprovementContent(
-                elementType, title, description, priority, estimatedHours, startDate, dueDate);
+                elementType, title, description, priority, estimatedMinutes, startDate, dueDate);
     }
 }

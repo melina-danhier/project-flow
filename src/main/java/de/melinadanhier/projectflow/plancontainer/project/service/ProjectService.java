@@ -223,7 +223,7 @@ public class ProjectService {
         if (source instanceof Task sourceTask) {
             Task task = new Task();
             task.setPriority(sourceTask.getPriority());
-            task.setEstimatedHours(sourceTask.getEstimatedHours());
+            task.setEstimatedMinutes(sourceTask.getEstimatedMinutes());
             task.setStartDate(toAbsoluteDate(conversionStartDate, sourceTask.getStartDate(), sourceTask.getRelativeStartDay(), dateHandling));
             task.setDueDate(toAbsoluteDate(conversionStartDate, sourceTask.getDueDate(), sourceTask.getRelativeDueDay(), dateHandling));
             task.setRelativeStartDay(null);
@@ -686,7 +686,7 @@ public class ProjectService {
         dto.setDueDate(task.getDueDate());
         dto.setTaskStatus(task.getStatus());
         dto.setTaskPriority(task.getPriority());
-        dto.setEstimatedHours(task.getEstimatedHours());
+        dto.setEstimatedMinutes(task.getEstimatedMinutes());
         dto.setBlocked(TaskDependencyPolicy.isBlocked(task));
         dto.setHasAssignees(task.getAssignees() != null && !task.getAssignees().isEmpty());
         boolean assignedToMe = currentUserId != null && task.getAssignees() != null

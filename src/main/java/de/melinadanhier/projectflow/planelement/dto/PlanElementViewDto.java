@@ -33,7 +33,11 @@ public class PlanElementViewDto {
     private boolean milestoneCompleted;
     private boolean blocked;
     private ElementOrigin origin;
-    private Integer estimatedHours;
+    private Integer estimatedMinutes;
+
+    public String getFormattedEffort() {
+        return de.melinadanhier.projectflow.common.util.EffortFormatter.formatMinutes(estimatedMinutes);
+    }
     private boolean assignedToCurrentUser;
     private boolean hasAssignees;
     private List<String> assigneeDisplayNames = new ArrayList<>();

@@ -7,5 +7,5 @@ import java.util.List;
 public record AiTaskChange(
         AiPlanChangeOperation operation, String existingTaskId, String targetSectionId,
         List<String> changedFields, String title, String description, TaskPriority priority,
-        Integer estimatedHours, LocalDate startDate, LocalDate dueDate,
+        Integer estimatedMinutes, LocalDate startDate, LocalDate dueDate,
         AiRelativePlacement placement, String explanation) { }

@@ -26,7 +26,11 @@ public class DraftPlanElementDto {
     private String type;
     private LocalDate startDate;
     private LocalDate dueDate;
-    private Integer estimatedHours;
+    private Integer estimatedMinutes;
+
+    public String getFormattedEffort() {
+        return de.melinadanhier.projectflow.common.util.EffortFormatter.formatMinutes(estimatedMinutes);
+    }
     private TaskPriority priority;
 
     public boolean isUserModified() {

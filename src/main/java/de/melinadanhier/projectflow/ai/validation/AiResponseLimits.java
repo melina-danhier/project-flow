@@ -9,7 +9,7 @@ public final class AiResponseLimits {
     public static final int MAX_TASKS = 200;
     public static final int MAX_MILESTONES = 100;
     public static final int MAX_DEPENDENCIES = 500;
-    public static final int MAX_ESTIMATED_HOURS = 10_000;
+    public static final int MAX_ESTIMATED_MINUTES = 600_000;
     public static final int MAX_PRE_CHECK_PROBLEMS = 100;
     public static final int MAX_TITLE_LENGTH = 100;
     public static final int MAX_DESCRIPTION_LENGTH = 2000;

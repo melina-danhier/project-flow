@@ -48,15 +48,46 @@ public class TaskForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate dueDate;
 
-    @Positive
-    @Max(10_000)
-    private Integer estimatedHours;
+    @PositiveOrZero(message = "Die Stunden dürfen nicht negativ sein.")
+    private Integer effortHours;
+
+    @PositiveOrZero(message = "Die Minuten dürfen nicht negativ sein.")
+    private Integer effortMinutes;
 
     private Set<UUID> assigneeIds = new LinkedHashSet<>();
 
     @PositiveOrZero
     @NotNull(groups = UpdateValidation.class)
     private Long lockVersion;
+
+    public Integer getEstimatedMinutes() {
+        if (effortHours == null && effortMinutes == null) {
+            return null;
+        }
+        long h = effortHours != null ? effortHours : 0;
+        long m = effortMinutes != null ? effortMinutes : 0;
+        long total = h * 60 + m;
+        if (total <= 0) {
+            return null;
+        }
+        return (int) Math.min(total, Integer.MAX_VALUE);
+    }
+
+    public void setEstimatedMinutes(Integer minutes) {
+        if (minutes == null || minutes <= 0) {
+            this.effortHours = null;
+            this.effortMinutes = null;
+        } else {
+            this.effortHours = minutes / 60;
+            this.effortMinutes = minutes % 60;
+        }
+    }
+
+    @AssertTrue(message = "Der geschätzte Gesamtaufwand darf maximal 600.000 Minuten (10.000 Stunden) betragen.")
+    public boolean isEffortValid() {
+        Integer minutes = getEstimatedMinutes();
+        return minutes == null || minutes <= 600_000;
+    }
 
     @AssertTrue(message = "Das Fälligkeitsdatum darf nicht vor dem Startdatum liegen.")
     public boolean isDateRangeValid() {

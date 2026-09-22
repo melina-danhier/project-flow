@@ -928,7 +928,7 @@ class SeparatedPlanUiIntegrationTest {
         form.setSortOrder(current.getSortOrder());
         form.setStartDate(current.getStartDate());
         form.setDueDate(current.getDueDate());
-        form.setEstimatedHours(current.getEstimatedHours());
+        form.setEstimatedMinutes(current.getEstimatedMinutes());
         form.setAssigneeIds(java.util.Set.of(membership.getId()));
         form.setLockVersion(current.getLockVersion());
         taskService.updateTask(project.getId(), task.getId(), form, owner.getId());

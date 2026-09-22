@@ -35,7 +35,7 @@ public record AiImprovementPlanContext(
             String description,
             int position,
             TaskPriority priority,
-            Integer estimatedHours,
+            Integer estimatedMinutes,
             TaskStatus status,
             LocalDate startDate,
             LocalDate dueDate,

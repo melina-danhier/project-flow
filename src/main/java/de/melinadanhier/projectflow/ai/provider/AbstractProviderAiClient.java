@@ -82,13 +82,13 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
                 AiTextImprovementResponse output = requireOutput(
                         gateway.execute(model, prompt, AiTextImprovementResponse.class));
                 yield new AiImprovementResponse(original.elementType(), output.title(), output.description(),
-                        original.priority(), original.estimatedHours(), original.startDate(), original.dueDate(), null);
+                        original.priority(), original.estimatedMinutes(), original.startDate(), original.dueDate(), null);
             }
             case REPLAN -> switch (original.elementType()) {
                 case TASK -> {
                     AiTaskReplanResponse output = requestTaskReplan(model, prompt);
                     yield new AiImprovementResponse(original.elementType(), original.title(), original.description(),
-                            original.priority(), original.estimatedHours(), output.startDate(), output.dueDate(),
+                            original.priority(), original.estimatedMinutes(), output.startDate(), output.dueDate(),
                             normalizePlacement(output.placement()), output.explanation());
                 }
                 case MILESTONE -> {
@@ -106,7 +106,7 @@ public abstract class AbstractProviderAiClient<T> implements AiClient {
                 AiTaskEffortResponse output = requireOutput(
                         gateway.execute(model, prompt, AiTaskEffortResponse.class));
                 yield new AiImprovementResponse(original.elementType(), original.title(), original.description(),
-                        original.priority(), output.estimatedHours(), original.startDate(), original.dueDate(),
+                        original.priority(), output.estimatedMinutes(), original.startDate(), original.dueDate(),
                         output.explanation());
             }
         };

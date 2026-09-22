@@ -30,7 +30,22 @@
             <div class="pf-form-group"><label for="draftTaskSection" class="pf-label">Phase</label><select id="draftTaskSection" th:field="*{draftSectionId}" class="pf-select"><option value="">Ohne Phase</option><option th:each="section : ${draft.sections}" th:value="${section.id}" th:text="${section.title}"></option></select></div>
             <div class="pf-detail-grid">
                 <div class="pf-form-group"><label for="priority" class="pf-label">Priorität</label><select id="priority" th:field="*{priority}" class="pf-select"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option></select><div th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" class="pf-alert pf-alert--error"></div></div>
-                <div class="pf-form-group"><label for="estimatedHours" class="pf-label">Aufwand in Stunden</label><input id="estimatedHours" type="number" min="1" max="10000" th:field="*{estimatedHours}" class="pf-input"><div th:if="${#fields.hasErrors('estimatedHours')}" th:errors="*{estimatedHours}" class="pf-alert pf-alert--error"></div></div>
+                <div class="pf-form-group">
+                    <label class="pf-label">Geschätzter Aufwand</label>
+                    <div class="pf-effort-inputs">
+                        <div class="pf-input-group">
+                            <input id="effortHours" type="number" min="0" step="1" th:field="*{effortHours}" class="pf-input" placeholder="0" aria-label="Stunden">
+                            <span class="pf-input-group-text">Std.</span>
+                        </div>
+                        <div class="pf-input-group">
+                            <input id="effortMinutes" type="number" min="0" step="5" data-step-relaxed="true" th:field="*{effortMinutes}" class="pf-input" placeholder="0" aria-label="Minuten">
+                            <span class="pf-input-group-text">Min.</span>
+                        </div>
+                    </div>
+                    <div th:if="${#fields.hasErrors('effortHours')}" th:errors="*{effortHours}" class="pf-alert pf-alert--error"></div>
+                    <div th:if="${#fields.hasErrors('effortMinutes')}" th:errors="*{effortMinutes}" class="pf-alert pf-alert--error"></div>
+                    <div th:if="${#fields.hasErrors('effortValid')}" th:errors="*{effortValid}" class="pf-alert pf-alert--error"></div>
+                </div>
                 <div class="pf-form-group"><label for="startDate" class="pf-label">Startdatum</label><input id="startDate" type="date" th:field="*{startDate}" class="pf-input"><div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error"></div></div>
                 <div class="pf-form-group"><label for="dueDate" class="pf-label">Fälligkeitsdatum</label><input id="dueDate" type="date" th:field="*{dueDate}" class="pf-input"><div th:if="${#fields.hasErrors('dueDate')}" th:errors="*{dueDate}" class="pf-alert pf-alert--error"></div></div>
             </div>
@@ -60,6 +75,33 @@
     </div>
 </main>
 
+<script>
+    (function () {
+        var minInput = document.getElementById('effortMinutes');
+        if (!minInput) return;
+        function relaxStep() {
+            var val = minInput.value.trim();
+            if (val !== '' && Number(val) % 5 !== 0) {
+                minInput.step = 'any';
+            } else {
+                minInput.step = '5';
+            }
+        }
+        minInput.addEventListener('input', relaxStep);
+        minInput.addEventListener('change', relaxStep);
+        var form = minInput.closest('form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                minInput.step = 'any';
+            });
+            form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    minInput.step = 'any';
+                });
+            });
+        }
+    })();
+</script>
 <script th:src="@{/js/plan-views.js}"></script>
 <th:block th:replace="~{fragments/layout :: site-footer}" />
 </body>

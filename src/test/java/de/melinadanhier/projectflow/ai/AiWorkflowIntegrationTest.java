@@ -164,7 +164,7 @@ class AiWorkflowIntegrationTest {
         assertThat(workflow.getPreCheckPromptVersion()).isEqualTo(AiPromptVersions.PRE_CHECK_PROMPT);
         assertThat(workflow.getPreCheckSchemaVersion()).isEqualTo(AiSchemaVersions.PRE_CHECK);
         assertThat(workflow.getGenerationPromptVersion()).isEqualTo(AiPromptVersions.GENERATION_PROMPT);
-        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("generation-schema-v3");
+        assertThat(workflow.getGenerationSchemaVersion()).isEqualTo("generation-schema-v4");
         assertThat(snapshotCodec.readSnapshot(workflow.getConfirmedSnapshot())).isEqualTo(snapshot);
         assertThat(workflow.getPreCheckRetryCount()).isZero();
         assertThat(snapshotCodec.readGeneratedPlan(workflow.getGeneratedPlan())).isEqualTo(generatedPlan());

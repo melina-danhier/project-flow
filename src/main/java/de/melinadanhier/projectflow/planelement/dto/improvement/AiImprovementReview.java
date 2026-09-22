@@ -30,8 +30,8 @@ public record AiImprovementReview(List<AiImprovementFieldChange> changes) {
                         proposed.description(), "Keine Beschreibung");
             }
             case REPLAN -> addReplanChanges(changes, proposal, original, proposed);
-            case ESTIMATE_EFFORT -> addIfChanged(changes, "estimated-hours", "Aufwand",
-                    original.estimatedHours(), proposed.estimatedHours(), AiImprovementReview::hours);
+            case ESTIMATE_EFFORT -> addIfChanged(changes, "estimated-minutes", "Aufwand",
+                    original.estimatedMinutes(), proposed.estimatedMinutes(), AiImprovementReview::formatEffort);
         }
         return new AiImprovementReview(changes);
     }
@@ -105,7 +105,10 @@ public record AiImprovementReview(List<AiImprovementFieldChange> changes) {
         return value == null ? "Nicht festgelegt" : value.format(DATE_FORMAT);
     }
 
-    private static String hours(Integer value) {
-        return value == null ? "Nicht festgelegt" : value + " Stunden";
+    private static String formatEffort(Integer value) {
+        if (value == null || value <= 0) {
+            return "Nicht festgelegt";
+        }
+        return de.melinadanhier.projectflow.common.util.EffortFormatter.formatMinutes(value);
     }
 }

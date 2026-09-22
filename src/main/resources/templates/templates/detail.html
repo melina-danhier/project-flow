@@ -68,8 +68,8 @@
                                 <span th:if="${task.priority != null}" class="pf-badge pf-badge--sm"
                                       th:classappend="${task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
                                       th:text="${task.priority.name() == 'LOW' ? 'Priorität: Niedrig' : (task.priority.name() == 'HIGH' ? 'Priorität: Hoch' : 'Priorität: Mittel')}"></span>
-                                <span th:if="${task.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                      th:text="${'Aufwand: ' + task.estimatedHours + ' Std.'}"></span>
+                                <span th:if="${task.estimatedMinutes != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Aufwand: ' + task.formattedEffort}"></span>
                                 <span th:if="${task.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
                                       th:text="${'ab ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
                                 <span th:if="${task.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
@@ -127,8 +127,8 @@
                                 <span th:if="${task.priority != null}" class="pf-badge pf-badge--sm"
                                       th:classappend="${task.priority.name() == 'HIGH' ? 'pf-badge--red' : (task.priority.name() == 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow')}"
                                       th:text="${task.priority.name() == 'LOW' ? 'Priorität: Niedrig' : (task.priority.name() == 'HIGH' ? 'Priorität: Hoch' : 'Priorität: Mittel')}"></span>
-                                <span th:if="${task.estimatedHours != null}" class="pf-badge pf-badge--sm pf-badge--outline"
-                                      th:text="${'Aufwand: ' + task.estimatedHours + ' Std.'}"></span>
+                                <span th:if="${task.estimatedMinutes != null}" class="pf-badge pf-badge--sm pf-badge--outline"
+                                      th:text="${'Aufwand: ' + task.formattedEffort}"></span>
                                 <span th:if="${task.startDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"
                                       th:text="${'ab ' + #temporals.format(task.startDate, 'dd.MM.yyyy')}"></span>
                                 <span th:if="${task.dueDate != null}" class="pf-badge pf-badge--sm pf-badge--outline"

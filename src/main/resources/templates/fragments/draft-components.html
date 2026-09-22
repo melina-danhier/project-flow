@@ -95,9 +95,9 @@
             <option value="MEDIUM" th:selected="${element.priority.name() == 'MEDIUM'}">Mittel</option>
             <option value="HIGH" th:selected="${element.priority.name() == 'HIGH'}">Hoch</option>
         </select>
-        <label th:for="${'task-hours-' + element.id}">Aufwand in Stunden</label>
-        <input th:id="${'task-hours-' + element.id}" type="number" name="estimatedHours" min="1"
-               th:value="${element.estimatedHours}">
+        <label th:for="${'task-hours-' + element.id}">Aufwand in Minuten</label>
+        <input th:id="${'task-hours-' + element.id}" type="number" name="estimatedMinutes" min="1" max="600000"
+               th:value="${element.estimatedMinutes}">
         <label th:for="${'task-start-' + element.id}">Startdatum</label>
         <input th:id="${'task-start-' + element.id}" type="date" name="startDate"
                th:value="${element.startDate}">
@@ -128,9 +128,9 @@
             <option value="HIGH">Hoch</option>
         </select>
         <div th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" class="pf-alert pf-alert--error" role="alert"></div>
-        <label th:for="${'task-hours-' + element.id}">Aufwand in Stunden</label>
-        <input th:id="${'task-hours-' + element.id}" type="number" th:field="*{estimatedHours}" min="1">
-        <div th:if="${#fields.hasErrors('estimatedHours')}" th:errors="*{estimatedHours}" class="pf-alert pf-alert--error" role="alert"></div>
+        <label th:for="${'task-hours-' + element.id}">Aufwand in Minuten</label>
+        <input th:id="${'task-hours-' + element.id}" type="number" th:field="*{estimatedMinutes}" min="1" max="600000">
+        <div th:if="${#fields.hasErrors('estimatedMinutes')}" th:errors="*{estimatedMinutes}" class="pf-alert pf-alert--error" role="alert"></div>
         <label th:for="${'task-start-' + element.id}">Startdatum</label>
         <input th:id="${'task-start-' + element.id}" type="date" th:field="*{startDate}">
         <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="pf-alert pf-alert--error" role="alert"></div>

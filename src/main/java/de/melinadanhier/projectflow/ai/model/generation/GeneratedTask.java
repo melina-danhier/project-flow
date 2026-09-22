@@ -16,7 +16,7 @@ public record GeneratedTask(
         @NotBlank @Size(max = 100) String tempId,
         @NotBlank @Size(max = MAX_TITLE_LENGTH) String title,
         @Size(max = MAX_DESCRIPTION_LENGTH) String description,
-        @Positive @Max(MAX_ESTIMATED_HOURS) Integer estimatedHours,
+        @Positive @Max(MAX_ESTIMATED_MINUTES) Integer estimatedMinutes,
         LocalDate startDate,
         LocalDate dueDate,
         @Positive int order,
@@ -31,16 +31,16 @@ public record GeneratedTask(
                 : prerequisiteTaskTempIds.stream().map(GeneratedTask::trim).toList();
     }
 
-    public GeneratedTask(String tempId, String title, String description, Integer estimatedHours,
+    public GeneratedTask(String tempId, String title, String description, Integer estimatedMinutes,
                          LocalDate startDate, LocalDate dueDate, int order) {
-        this(tempId, title, description, estimatedHours, startDate, dueDate,
+        this(tempId, title, description, estimatedMinutes, startDate, dueDate,
                 order, List.of(), null);
     }
 
-    public GeneratedTask(String tempId, String title, String description, Integer estimatedHours,
+    public GeneratedTask(String tempId, String title, String description, Integer estimatedMinutes,
                          LocalDate startDate, LocalDate dueDate, int order,
                          List<String> prerequisiteTaskTempIds) {
-        this(tempId, title, description, estimatedHours, startDate, dueDate,
+        this(tempId, title, description, estimatedMinutes, startDate, dueDate,
                 order, prerequisiteTaskTempIds, null);
     }
 

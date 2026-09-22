@@ -117,7 +117,7 @@ class AiElementImprovementServiceTest {
         when(taskRepository.findByIdAndPlanContainerId(elementId, projectId)).thenReturn(Optional.of(task));
         when(aiClient.improveElement(any())).thenReturn(new AiImprovementResponse(
                 AiImprovementElementType.TASK, "Kartons beschriften", "Raum und Inhalt notieren",
-                TaskPriority.MEDIUM, 2, LocalDate.of(2026, 9, 11), LocalDate.of(2026, 9, 12)));
+                TaskPriority.MEDIUM, 120, LocalDate.of(2026, 9, 11), LocalDate.of(2026, 9, 12)));
 
         AiImprovementProposal proposal = service.propose(projectId, AiImprovementElementType.TASK,
                 elementId, form(AiFeedbackType.EXPAND, "  Schwerpunkt auf Ergebnis  "), userId);
@@ -195,19 +195,19 @@ class AiElementImprovementServiceTest {
     @EnumSource(value = AiFeedbackType.class, names = {"IMPROVE", "EXPAND", "SIMPLIFY"})
     void rejectsInventedTaskPlanningValuesForEveryFeedbackType(AiFeedbackType feedbackType) {
         Task task = task(1);
-        task.setEstimatedHours(null);
+        task.setEstimatedMinutes(null);
         task.setStartDate(null);
         task.setDueDate(null);
         when(authorizationService.requireEditableMember(projectId, userId)).thenReturn(membership);
         when(taskRepository.findByIdAndPlanContainerId(elementId, projectId)).thenReturn(Optional.of(task));
         when(aiClient.improveElement(any())).thenReturn(new AiImprovementResponse(
                 AiImprovementElementType.TASK, "Packen und beschriften", "Kartons nach Räumen sortieren",
-                TaskPriority.MEDIUM, 8, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 1)));
+                TaskPriority.MEDIUM, 480, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 1)));
 
         assertThatThrownBy(() -> service.propose(projectId, AiImprovementElementType.TASK, elementId,
                 form(feedbackType, null), userId)).isInstanceOf(AiOutputValidationException.class);
 
-        assertThat(task.getEstimatedHours()).isNull();
+        assertThat(task.getEstimatedMinutes()).isNull();
         assertThat(task.getStartDate()).isNull();
         assertThat(task.getDueDate()).isNull();
         verify(taskRepository, never()).flush();
@@ -247,7 +247,7 @@ class AiElementImprovementServiceTest {
         when(planElementRepository.findAllByPlanContainerIdAndPlanSectionIdOrderBySortOrderAsc(projectId, sectionId))
                 .thenReturn(List.of(prerequisite, selected, milestone));
         when(aiClient.improveElement(any())).thenReturn(new AiImprovementResponse(
-                AiImprovementElementType.TASK, "Packen", null, TaskPriority.MEDIUM, 2,
+                AiImprovementElementType.TASK, "Packen", null, TaskPriority.MEDIUM, 120,
                 LocalDate.of(2026, 9, 13), LocalDate.of(2026, 9, 15),
                 AiReplanPlacementResponse.unchanged(),
                 "Die Aufgabe liegt vor dem Transporttermin."));
@@ -282,7 +282,7 @@ class AiElementImprovementServiceTest {
         when(authorizationService.requireEditableMember(projectId, userId)).thenReturn(membership);
         when(taskRepository.findByIdAndPlanContainerId(elementId, projectId)).thenReturn(Optional.of(task));
         when(aiClient.improveElement(any())).thenReturn(new AiImprovementResponse(
-                AiImprovementElementType.TASK, "Packen", null, TaskPriority.MEDIUM, 5,
+                AiImprovementElementType.TASK, "Packen", null, TaskPriority.MEDIUM, 300,
                 LocalDate.of(2026, 9, 11), LocalDate.of(2026, 9, 12),
                 "Der Umfang entspricht etwa fünf Arbeitsstunden."));
 
@@ -332,7 +332,7 @@ class AiElementImprovementServiceTest {
         AiImprovementProposal proposal = proposal(AiImprovementElementType.TASK, 5, AiFeedbackType.REPLAN,
                 null,
                 new AiImprovementResponse(AiImprovementElementType.TASK, "Packen", null,
-                        TaskPriority.MEDIUM, 2, LocalDate.of(2026, 9, 15), LocalDate.of(2026, 9, 16),
+                        TaskPriority.MEDIUM, 120, LocalDate.of(2026, 9, 15), LocalDate.of(2026, 9, 16),
                         "Die neuen Termine passen zur Abhängigkeitsreihenfolge."));
 
         service.confirm(proposal, userId);
@@ -340,7 +340,7 @@ class AiElementImprovementServiceTest {
         assertThat(task.getTitle()).isEqualTo("Packen");
         assertThat(task.getDescription()).isNull();
         assertThat(task.getPriority()).isEqualTo(TaskPriority.MEDIUM);
-        assertThat(task.getEstimatedHours()).isEqualTo(2);
+        assertThat(task.getEstimatedMinutes()).isEqualTo(120);
         assertThat(task.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 15));
         assertThat(task.getDueDate()).isEqualTo(LocalDate.of(2026, 9, 16));
         assertThat(task.getOrigin()).isEqualTo(ElementOrigin.AI_MODIFIED);
@@ -451,7 +451,7 @@ class AiElementImprovementServiceTest {
         assertThat(selected.getPlanSection()).isSameAs(section);
         assertThat(selected.getTitle()).isEqualTo("Packen");
         assertThat(selected.getPriority()).isEqualTo(TaskPriority.MEDIUM);
-        assertThat(selected.getEstimatedHours()).isEqualTo(2);
+        assertThat(selected.getEstimatedMinutes()).isEqualTo(120);
         assertThat(selected.getStatus()).isEqualTo(TaskStatus.OPEN);
     }
 
@@ -487,7 +487,7 @@ class AiElementImprovementServiceTest {
                 projectId, section.getId())).thenReturn(List.of(milestone, selected));
         when(aiClient.improveElement(any())).thenReturn(new AiImprovementResponse(
                 AiImprovementElementType.TASK, selected.getTitle(), selected.getDescription(),
-                selected.getPriority(), selected.getEstimatedHours(), selected.getStartDate(), selected.getDueDate(),
+                selected.getPriority(), selected.getEstimatedMinutes(), selected.getStartDate(), selected.getDueDate(),
                 new AiReplanPlacementResponse(true, section.getId().toString(), milestoneId.toString(), null),
                 "Die Reinigung stellt den im Meilenstein beschriebenen Zustand erst her."));
 
@@ -543,7 +543,7 @@ class AiElementImprovementServiceTest {
         LocalDate proposedDueDate = LocalDate.of(2026, 10, 10);
         when(aiClient.improveElement(any())).thenReturn(new AiImprovementResponse(
                 AiImprovementElementType.TASK, selected.getTitle(), selected.getDescription(),
-                selected.getPriority(), selected.getEstimatedHours(), null, proposedDueDate,
+                selected.getPriority(), selected.getEstimatedMinutes(), null, proposedDueDate,
                 new AiReplanPlacementResponse(true, section.getId().toString(),
                         referenceId.toString(), null),
                 "Die Aufgabe soll logisch vor dem Meilenstein eingeordnet werden."));
@@ -647,7 +647,7 @@ class AiElementImprovementServiceTest {
         LocalDate proposedStartDate = LocalDate.of(2026, 10, 17);
         when(aiClient.improveElement(any())).thenReturn(new AiImprovementResponse(
                 AiImprovementElementType.TASK, selected.getTitle(), selected.getDescription(),
-                selected.getPriority(), selected.getEstimatedHours(), proposedStartDate, reference.getDueDate(),
+                selected.getPriority(), selected.getEstimatedMinutes(), proposedStartDate, reference.getDueDate(),
                 new AiReplanPlacementResponse(true, section.getId().toString(),
                         referenceId.toString(), null),
                 "Die Vorbereitung endet am bereits terminierten Meilenstein."));
@@ -775,7 +775,7 @@ class AiElementImprovementServiceTest {
                 projectId, current.getId())).thenReturn(List.of(selected));
         when(aiClient.improveElement(any())).thenReturn(new AiImprovementResponse(
                 AiImprovementElementType.TASK, selected.getTitle(), selected.getDescription(),
-                selected.getPriority(), selected.getEstimatedHours(), selected.getStartDate(), selected.getDueDate(),
+                selected.getPriority(), selected.getEstimatedMinutes(), selected.getStartDate(), selected.getDueDate(),
                 new AiReplanPlacementResponse(true, target.getId().toString(), null, null),
                 "Die Aufgabe passt in die Transportphase, aber die genaue Reihenfolge ist im Abschnitt selbst zu entscheiden."));
 
@@ -938,12 +938,12 @@ class AiElementImprovementServiceTest {
         AiImprovementProposal proposal = proposal(AiImprovementElementType.TASK, 3,
                 AiFeedbackType.ESTIMATE_EFFORT, null,
                 new AiImprovementResponse(AiImprovementElementType.TASK, "Packen", null,
-                        TaskPriority.MEDIUM, 6, LocalDate.of(2026, 9, 11), LocalDate.of(2026, 9, 12),
-                        "Sechs Stunden entsprechen dem beschriebenen Umfang."));
+                        TaskPriority.MEDIUM, 360, LocalDate.of(2026, 9, 11), LocalDate.of(2026, 9, 12),
+                        "360 Minuten entsprechen dem beschriebenen Umfang."));
 
         service.confirm(proposal, userId);
 
-        assertThat(task.getEstimatedHours()).isEqualTo(6);
+        assertThat(task.getEstimatedMinutes()).isEqualTo(360);
         assertThat(task.getTitle()).isEqualTo("Packen");
         assertThat(task.getDescription()).isNull();
         assertThat(task.getPriority()).isEqualTo(TaskPriority.MEDIUM);
@@ -1024,10 +1024,10 @@ class AiElementImprovementServiceTest {
     private AiImprovementProposal replanProposal(
             Task selected, AiReplanPlacementProposal placement, LocalDate start, LocalDate due) {
         AiImprovementContent original = new AiImprovementContent(AiImprovementElementType.TASK,
-                selected.getTitle(), selected.getDescription(), selected.getPriority(), selected.getEstimatedHours(),
+                selected.getTitle(), selected.getDescription(), selected.getPriority(), selected.getEstimatedMinutes(),
                 selected.getStartDate(), selected.getDueDate());
         AiImprovementContent proposed = new AiImprovementContent(AiImprovementElementType.TASK,
-                selected.getTitle(), selected.getDescription(), selected.getPriority(), selected.getEstimatedHours(),
+                selected.getTitle(), selected.getDescription(), selected.getPriority(), selected.getEstimatedMinutes(),
                 start, due);
         return new AiImprovementProposal(UUID.randomUUID(), projectId, elementId,
                 AiImprovementElementType.TASK, selected.getLockVersion(), AiFeedbackType.REPLAN, null,
@@ -1036,7 +1036,7 @@ class AiElementImprovementServiceTest {
 
     private AiImprovementResponse replanResponse(Task selected, AiReplanPlacementResponse placement) {
         return new AiImprovementResponse(AiImprovementElementType.TASK, selected.getTitle(),
-                selected.getDescription(), selected.getPriority(), selected.getEstimatedHours(),
+                selected.getDescription(), selected.getPriority(), selected.getEstimatedMinutes(),
                 selected.getStartDate(), selected.getDueDate(), placement,
                 "Die Planung passt zum aktuellen Ablauf.");
     }
@@ -1063,7 +1063,7 @@ class AiElementImprovementServiceTest {
         task.setTitle("Packen");
         task.setOrigin(ElementOrigin.USER);
         task.setPriority(TaskPriority.MEDIUM);
-        task.setEstimatedHours(2);
+        task.setEstimatedMinutes(120);
         task.setStartDate(LocalDate.of(2026, 9, 11));
         task.setDueDate(LocalDate.of(2026, 9, 12));
         ReflectionTestUtils.setField(task, "id", elementId);
@@ -1120,7 +1120,7 @@ class AiElementImprovementServiceTest {
     private AiImprovementContent originalContent(AiImprovementElementType type) {
         return switch (type) {
             case SECTION -> new AiImprovementContent(type, "Phase", null, null, null, null, null);
-            case TASK -> new AiImprovementContent(type, "Packen", null, TaskPriority.MEDIUM, 2,
+            case TASK -> new AiImprovementContent(type, "Packen", null, TaskPriority.MEDIUM, 120,
                     LocalDate.of(2026, 9, 11), LocalDate.of(2026, 9, 12));
             case MILESTONE -> new AiImprovementContent(type, "Übergabe", "Alte Beschreibung", null, null, null,
                     LocalDate.of(2026, 10, 20));
