@@ -246,9 +246,6 @@ categories:
           - key: eventType
             label: "Was für eine Veranstaltung planst du?"
             placeholder: "z. B. Sommerfest des Sportvereins, Tag der offenen Tür"
-          - key: participants
-            label: "Wer nimmt teil?"
-            placeholder: "z. B. Vereinsmitglieder und ihre Familien"
           - key: venue
             label: "Wo soll die Veranstaltung stattfinden?"
             placeholder: "z. B. auf dem Vereinsgelände, im Gemeindehaus"
@@ -335,18 +332,18 @@ categories:
     subcategories:
       MOVING:
         questions:
-          - key: movingSituation
-            label: "Wohin ziehst du und wie weit ist der Umzug?"
-            placeholder: "z. B. von einer 50-m²-Wohnung in eine 70-m²-Wohnung in derselben Stadt"
           - key: householdScope
-            label: "Wie viele Möbel und Gegenstände müssen umgezogen werden?"
-            placeholder: "z. B. komplette Einrichtung mit Waschmaschine und großem Kleiderschrank"
-          - key: externalHelp
-            label: "Planst du ein Umzugsunternehmen oder helfen Freunde?"
-            placeholder: "z. B. drei Freunde helfen am Umzugstag, kein Unternehmen"
-          - key: transportOptions
-            label: "Welche Transportmöglichkeiten stehen zur Verfügung?"
-            placeholder: "z. B. zwei Autos, ein Transporter wird noch gemietet"
+            label: "Wie groß ist die bisherige Wohnung in etwa und wie viele Zimmer umfasst sie?"
+            placeholder: "z. B. 2 Zimmer, ca. 55 m², voll eingerichtet (inkl. Keller/Küche)"
+          - key: movingSituation
+            label: "Von wo nach wo geht der Umzug (Entfernung, Stockwerke, Aufzug vorhanden)?"
+            placeholder: "z. B. in derselben Stadt, 3. Stock ohne Aufzug in 1. Stock mit Aufzug"
+          - key: transportAndHelp
+            label: "Wie sind Transport und Helfer am Umzugstag geplant?"
+            placeholder: "z. B. Transporter gemietet und 3 Freunde helfen, kein Umzugsunternehmen"
+          - key: declutterOrRenovate
+            label: "Gibt es Vorarbeiten wie Ausmisten, Möbelentsorgung oder Renovieren?"
+            placeholder: "z. B. Keller vorab ausmisten, alte Couch zum Sperrmüll, alte Wohnung vor Übergabe streichen"
 
       RENOVATION_OR_HOME_PROJECT:
         questions:

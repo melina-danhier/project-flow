@@ -15,19 +15,7 @@ public record AiPreCheckInputChange(
     }
 
     public String fieldLabel() {
-        return switch (field) {
-            case "title" -> "Titel";
-            case "description" -> "Beschreibung";
-            case "startDate" -> "Startdatum";
-            case "endDate" -> "Enddatum";
-            case "projectGoal" -> "Projektziel / Themenumfang";
-            case "constraints" -> "Einschränkungen";
-            case "additionalInformation" -> "Zusätzliche Angaben";
-            case "durationDays" -> "Dauer";
-            case "availableWorkingTime" -> "Verfügbare Arbeitszeit";
-            default -> field != null && field.startsWith("projectSpecificAnswers.")
-                    ? field.substring("projectSpecificAnswers.".length()) : field;
-        };
+        return PreCheckFieldLabelResolver.resolveLabel(field);
     }
 
     public String displayPreviousValue() {

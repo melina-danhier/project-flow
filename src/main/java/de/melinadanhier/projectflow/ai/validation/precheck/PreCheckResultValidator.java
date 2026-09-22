@@ -50,6 +50,9 @@ public class PreCheckResultValidator {
                     && !problem.proposedInputChanges().isEmpty()) {
                 issues.add("PROPOSED_INPUT_CHANGES_INVALID | problems[" + index + "].proposedInputChanges");
             }
+            if (problem != null && problem.proposedInputChanges().size() > 1) {
+                issues.add("PROPOSED_INPUT_CHANGES_TOO_MANY | problems[" + index + "].proposedInputChanges");
+            }
             if (problem != null && problem.proposedInputChanges().stream()
                     .anyMatch(change -> !isSupportedInputField(change.field()))) {
                 issues.add("PROPOSED_INPUT_FIELD_INVALID | problems[" + index + "].proposedInputChanges");
@@ -75,6 +78,23 @@ public class PreCheckResultValidator {
                 || field.startsWith("projectSpecificAnswers."));
     }
 
+    public enum WorkingTimeForm {
+        PER_DAY,
+        PER_WEEK,
+        PER_WEEKEND,
+        TOTAL,
+        COMPLEX_OR_UNKNOWN
+    }
+
+    private static final java.util.regex.Pattern CANONICAL_PER_DAY =
+            java.util.regex.Pattern.compile("^(\\d+(?:[.,]\\d+)?)\\s+stunden?\\s+pro\\s+tag$", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private static final java.util.regex.Pattern CANONICAL_PER_WEEK =
+            java.util.regex.Pattern.compile("^(\\d+(?:[.,]\\d+)?)\\s+stunden?\\s+pro\\s+woche$", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private static final java.util.regex.Pattern CANONICAL_PER_WEEKEND =
+            java.util.regex.Pattern.compile("^(\\d+(?:[.,]\\d+)?)\\s+stunden?\\s+pro\\s+wochenende$", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private static final java.util.regex.Pattern CANONICAL_TOTAL =
+            java.util.regex.Pattern.compile("^(\\d+(?:[.,]\\d+)?)\\s+stunden?(?:\\s+gesamt)?$", java.util.regex.Pattern.CASE_INSENSITIVE);
+
     private void validateConcreteChanges(
             de.melinadanhier.projectflow.ai.model.precheck.AiPreCheckProblem problem,
             int problemIndex, List<String> issues) {
@@ -86,7 +106,12 @@ public class PreCheckResultValidator {
                 issues.add("PROPOSED_VALUE_UNCHANGED | " + path);
                 continue;
             }
-            if (!valueMentioned(problem.acceptedInterpretation(), change.previousValue())
+            boolean checkPreviousMentioned = true;
+            if ("availableWorkingTime".equals(change.field())
+                    && detectPreviousForm(change.previousValue()) == WorkingTimeForm.COMPLEX_OR_UNKNOWN) {
+                checkPreviousMentioned = false;
+            }
+            if ((checkPreviousMentioned && !valueMentioned(problem.acceptedInterpretation(), change.previousValue()))
                     || !valueMentioned(problem.acceptedInterpretation(), change.newValue())) {
                 issues.add("PREFERRED_CHANGE_VALUES_MISSING | " + path);
             }
@@ -105,7 +130,7 @@ public class PreCheckResultValidator {
                 issues.add("PROPOSED_DATE_INVALID | " + path);
             }
             if ("availableWorkingTime".equals(change.field())
-                    && !change.newValue().matches(".*\\d+(?:[.,]\\d+)?\\s*(?:h|stunde|stunden).*")) {
+                    && !isWorkingTimeRecommendationValid(change.previousValue(), change.newValue())) {
                 issues.add("PROPOSED_WORKING_TIME_INVALID | " + path);
             }
             String proposalText = (problem.message() + " " + problem.suggestedUserAction() + " "
@@ -118,6 +143,92 @@ public class PreCheckResultValidator {
             if (scopeReduction && scopeField && !change.newValue().matches(".*[,;•].*")) {
                 issues.add("PROPOSED_SCOPE_NOT_EXPLICIT | " + path);
             }
+        }
+    }
+
+    private boolean isWorkingTimeRecommendationValid(String previousValue, String newValue) {
+        WorkingTimeForm newForm = detectCanonicalForm(newValue);
+        if (newForm == null) {
+            return false;
+        }
+        WorkingTimeForm prevForm = detectPreviousForm(previousValue);
+        if (prevForm != WorkingTimeForm.COMPLEX_OR_UNKNOWN) {
+            return prevForm == newForm;
+        }
+        return true;
+    }
+
+    private WorkingTimeForm detectCanonicalForm(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String trimmed = value.trim();
+        var matcherDay = CANONICAL_PER_DAY.matcher(trimmed);
+        if (matcherDay.matches() && parsePositiveAmount(matcherDay.group(1)) > 0) {
+            return WorkingTimeForm.PER_DAY;
+        }
+        var matcherWeek = CANONICAL_PER_WEEK.matcher(trimmed);
+        if (matcherWeek.matches() && parsePositiveAmount(matcherWeek.group(1)) > 0) {
+            return WorkingTimeForm.PER_WEEK;
+        }
+        var matcherWeekend = CANONICAL_PER_WEEKEND.matcher(trimmed);
+        if (matcherWeekend.matches() && parsePositiveAmount(matcherWeekend.group(1)) > 0) {
+            return WorkingTimeForm.PER_WEEKEND;
+        }
+        var matcherTotal = CANONICAL_TOTAL.matcher(trimmed);
+        if (matcherTotal.matches() && parsePositiveAmount(matcherTotal.group(1)) > 0) {
+            return WorkingTimeForm.TOTAL;
+        }
+        return null;
+    }
+
+    private WorkingTimeForm detectPreviousForm(String value) {
+        if (value == null || value.isBlank() || "nicht angegeben".equalsIgnoreCase(value.trim())) {
+            return WorkingTimeForm.COMPLEX_OR_UNKNOWN;
+        }
+        String normalized = value.toLowerCase(java.util.Locale.GERMAN).trim();
+        boolean hasWeekdayBreakdown = normalized.contains("montag") || normalized.contains("dienstag")
+                || normalized.contains("mittwoch") || normalized.contains("donnerstag")
+                || normalized.contains("freitag");
+        if (hasWeekdayBreakdown) {
+            return WorkingTimeForm.COMPLEX_OR_UNKNOWN;
+        }
+
+        if ((normalized.contains("wochenende") || normalized.contains("samstag") || normalized.contains("sonntag"))
+                && !normalized.contains("woche") && !normalized.contains("tag")) {
+            return WorkingTimeForm.PER_WEEKEND;
+        }
+        if (normalized.contains("pro wochenende") || normalized.contains("am wochenende")) {
+            return WorkingTimeForm.PER_WEEKEND;
+        }
+
+        if (normalized.contains("pro woche") || normalized.contains("wöchentlich")
+                || normalized.contains("/ woche") || normalized.contains("/woche")) {
+            return WorkingTimeForm.PER_WEEK;
+        }
+
+        if (normalized.contains("pro tag") || normalized.contains("täglich")
+                || normalized.contains("/ tag") || normalized.contains("/tag")) {
+            return WorkingTimeForm.PER_DAY;
+        }
+
+        if (normalized.contains("gesamt") || normalized.contains("insgesamt")) {
+            return WorkingTimeForm.TOTAL;
+        }
+
+        if (normalized.matches("^\\d+(?:[.,]\\d+)?\\s*(?:stunden|stunde|std\\.?|h)$")) {
+            return WorkingTimeForm.TOTAL;
+        }
+
+        return WorkingTimeForm.COMPLEX_OR_UNKNOWN;
+    }
+
+    private static double parsePositiveAmount(String numberStr) {
+        try {
+            double val = Double.parseDouble(numberStr.replace(',', '.'));
+            return val > 0 ? val : -1;
+        } catch (NumberFormatException e) {
+            return -1;
         }
     }
 

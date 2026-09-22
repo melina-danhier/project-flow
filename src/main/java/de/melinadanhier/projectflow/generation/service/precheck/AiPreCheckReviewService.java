@@ -21,13 +21,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -154,16 +155,34 @@ public class AiPreCheckReviewService {
                 answers.put(key.substring("projectSpecificAnswers.".length()), value);
             }
         });
+        LocalDate startDate = parseDate(changes, "startDate", snapshot.startDate());
+        LocalDate endDate = parseDate(changes, "endDate", snapshot.endDate());
+        Integer durationDays = parseInteger(changes, "durationDays", snapshot.durationDays());
+
+        // Änderungen an Start- oder Enddatum bzw. Dauer können technisch abhängige Zeitraumwerte
+        // aktualisieren, sofern diese bereits im Snapshot existierten. Diese gelten nicht als
+        // eigenständige KI-Empfehlungen, sondern dienen ausschließlich der Wahrung der mathematischen
+        // Konsistenz desselben Zeitraums (startDate + durationDays == endDate).
+        if (changes.containsKey("endDate") && startDate != null && endDate != null && snapshot.durationDays() != null) {
+            durationDays = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        } else if (changes.containsKey("durationDays") && startDate != null && durationDays != null && snapshot.endDate() != null) {
+            endDate = startDate.plusDays(durationDays - 1);
+        } else if (changes.containsKey("startDate")) {
+            if (endDate != null && snapshot.durationDays() != null) {
+                durationDays = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
+            }
+        }
+
         return new AiWizardSnapshot(
                 changes.getOrDefault("title", snapshot.title()),
                 changes.getOrDefault("description", snapshot.description()),
-                parseDate(changes, "startDate", snapshot.startDate()),
-                parseDate(changes, "endDate", snapshot.endDate()),
+                startDate,
+                endDate,
                 snapshot.collaborationMode(), snapshot.category(), snapshot.subcategory(),
                 changes.getOrDefault("projectGoal", snapshot.projectGoal()),
                 changes.getOrDefault("constraints", snapshot.constraints()),
                 changes.getOrDefault("additionalInformation", snapshot.additionalInformation()),
-                parseInteger(changes, "durationDays", snapshot.durationDays()),
+                durationDays,
                 changes.getOrDefault("availableWorkingTime", snapshot.availableWorkingTime()), answers);
     }
 
@@ -174,8 +193,8 @@ public class AiPreCheckReviewService {
         workflow.getProject().setPlannedDurationDays(snapshot.durationDays());
     }
 
-    private java.time.LocalDate parseDate(Map<String, String> changes, String key, java.time.LocalDate fallback) {
-        return changes.containsKey(key) ? java.time.LocalDate.parse(changes.get(key)) : fallback;
+    private LocalDate parseDate(Map<String, String> changes, String key, LocalDate fallback) {
+        return changes.containsKey(key) ? LocalDate.parse(changes.get(key)) : fallback;
     }
 
     private Integer parseInteger(Map<String, String> changes, String key, Integer fallback) {

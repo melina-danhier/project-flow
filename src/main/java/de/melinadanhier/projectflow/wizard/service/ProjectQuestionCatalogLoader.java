@@ -26,6 +26,7 @@ public class ProjectQuestionCatalogLoader {
     private final ProjectQuestion finalConstraints;
     private final Map<ProjectCategory, List<ProjectQuestion>> categoryQuestions;
     private final Map<ProjectSubCategory, List<ProjectQuestion>> subcategoryQuestions;
+    private final Map<String, String> questionLabelsByKey;
 
     @PostConstruct
     void registerWithStaticCatalog() {
@@ -103,6 +104,24 @@ public class ProjectQuestionCatalogLoader {
                 new ProjectQuestion("constraints", "Welche besonderen Wünsche, Vorgaben oder Einschränkungen sollen berücksichtigt werden?", null);
         this.categoryQuestions = Map.copyOf(catQ);
         this.subcategoryQuestions = Map.copyOf(subQ);
+
+        Map<String, String> labels = new LinkedHashMap<>();
+        labels.put(this.availableTime.key(), this.availableTime.label());
+        labels.put(this.finalConstraints.key(), this.finalConstraints.label());
+        catQ.values().forEach(list -> list.forEach(q -> labels.put(q.key(), q.label())));
+        subQ.values().forEach(list -> list.forEach(q -> labels.put(q.key(), q.label())));
+        this.questionLabelsByKey = Map.copyOf(labels);
+        AiProjectQuestionCatalog.init(this);
+    }
+
+    /**
+     * Finds the human-readable German question label for a given question key.
+     */
+    public Optional<String> findQuestionLabel(String key) {
+        if (key == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(questionLabelsByKey.get(key));
     }
 
     /**

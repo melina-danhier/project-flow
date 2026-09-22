@@ -32,6 +32,10 @@ public final class AiProjectQuestionCatalog {
         loader = catalogLoader;
     }
 
+    public static java.util.Optional<String> findQuestionLabel(String key) {
+        return loader != null ? loader.findQuestionLabel(key) : java.util.Optional.empty();
+    }
+
     public static List<AiProjectQuestion> questionsFor(
             ProjectCategory category, ProjectSubCategory subcategory) {
         if (loader == null) {

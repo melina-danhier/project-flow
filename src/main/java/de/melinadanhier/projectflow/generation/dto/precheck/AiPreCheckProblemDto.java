@@ -17,11 +17,45 @@ public record AiPreCheckProblemDto(
         List<AiPreCheckInputChange> proposedInputChanges,
         boolean proposedChangeApplicable
 ) {
+    public AiPreCheckProblemDto {
+        suggestedUserAction = cleanSuggestedUserAction(suggestedUserAction);
+    }
+
+    public static String cleanSuggestedUserAction(String action) {
+        if (action == null || action.isBlank()) {
+            return action;
+        }
+        return action.replaceFirst("^(?i)(mögliche\\s+anpassungen|mögliche\\s+anpassung|anpassungen|vorschlag):\\s*", "").trim();
+    }
+
     public boolean isOpenPoint() {
         return severity == AiPreCheckSeverity.WARNING;
     }
 
     public boolean isCriticalAssumption() {
         return type == AiPreCheckProblemType.CRITICAL_ASSUMPTION;
+    }
+
+    public String getTypeLabel() {
+        if (type == null) {
+            return "";
+        }
+        return switch (type) {
+            case CRITICAL_ASSUMPTION -> "Empfohlene Anpassung";
+            case ASSUMPTION -> "Planungsannahme";
+            case RISK -> "Planungsrisiko";
+            case CONFLICT -> "Widerspruch";
+        };
+    }
+
+    public String getActionLabel() {
+        if (type == null) {
+            return null;
+        }
+        return switch (type) {
+            case CRITICAL_ASSUMPTION -> "Vorgeschlagene Änderung übernehmen";
+            case ASSUMPTION, RISK -> "Ohne Änderung fortfahren";
+            case CONFLICT -> null;
+        };
     }
 }

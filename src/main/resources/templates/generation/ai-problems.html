@@ -62,12 +62,12 @@
                 <div class="pf-card__header">
                     <span class="pf-badge"
                           th:classappend="${problem.severity.name() == 'ERROR' ? 'pf-badge--red' : 'pf-badge--yellow'}"
-                          th:text="${problem.severity.name() == 'ERROR' ? 'Fehler' : (problem.criticalAssumption ? 'Kritische Annahme' : 'Warnung')}">Hinweis</span>
+                          th:text="${problem.typeLabel}">Hinweis</span>
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <p style="font-size: 0.95rem; color: var(--pf-text-main); font-weight: 600; margin-bottom: 0.4rem;" th:text="${problem.message}"></p>
                     <p th:if="${problem.criticalAssumption and problem.suggestedUserAction != null and !problem.suggestedUserAction.isBlank()}" style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0 0 0.5rem 0;">
-                        <strong>Mögliche Anpassungen: </strong><span th:text="${problem.suggestedUserAction}"></span>
+                        <strong>Mögliche Anpassung: </strong><span th:text="${problem.suggestedUserAction}"></span>
                     </p>
                     <p th:if="${!problem.criticalAssumption and problem.suggestedUserAction != null and !problem.suggestedUserAction.isBlank()}" style="font-size: 0.88rem; color: var(--pf-text-secondary); margin: 0 0 0.5rem 0;">
                         <strong th:text="${problem.severity.name() == 'ERROR' ? 'Vorschlag: ' : 'Mögliche Anpassung: '}">Vorschlag: </strong><span th:text="${problem.suggestedUserAction}"></span>
@@ -100,11 +100,11 @@
                     </div>
 
                     <!-- Action A: Direct Accept -->
-                    <form th:if="${!problem.criticalAssumption or problem.proposedChangeApplicable}"
+                    <form th:if="${problem.actionLabel != null and (!problem.criticalAssumption or problem.proposedChangeApplicable)}"
                           th:action="@{/projects/new/ai/problems/{workflowId}/open-points/{problemIndex}/accept(workflowId=${review.workflowId},problemIndex=${problem.index})}"
                           method="post" style="margin: 0.5rem 0 0 0;">
                         <button type="submit" class="pf-btn pf-btn--sm pf-btn--outline">
-                            <span th:text="${problem.criticalAssumption ? 'Vorgeschlagene Änderung übernehmen' : 'Warnung ignorieren und fortfahren'}">Übernehmen</span>
+                            <span th:text="${problem.actionLabel}">Übernehmen</span>
                         </button>
                     </form>
 

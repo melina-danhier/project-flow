@@ -42,6 +42,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CountDownLatch;
@@ -141,9 +142,11 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(content().string(containsString("action=\"" + acceptUrl(workflowId, 1) + "\"")))
                 .andExpect(content().string(containsString("action=\"" + confirmUrl(workflowId, 1) + "\"")))
                 .andExpect(content().string(containsString(
-                        "Änderung oder Ergänzung zur vorgeschlagenen Planung (optional)")));
+                        "Änderung oder Ergänzung zur vorgeschlagenen Planung (optional)")))
+                .andExpect(content().string(containsString("<strong>Projektziel: </strong>")))
+                .andExpect(content().string(not(containsString("<strong>projectGoal: </strong>"))));
         mockMvc.perform(get(problemsUrl(workflowId)).session(session).with(user(principal)))
-                .andExpect(content().string(containsString("Warnung ignorieren und fortfahren")))
+                .andExpect(content().string(containsString("Ohne Änderung fortfahren")))
                 .andExpect(content().string(containsString("Vorgeschlagene Änderung übernehmen")));
         mockMvc.perform(post(acceptUrl(workflowId, 0)).session(session).with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
@@ -325,20 +328,27 @@ class AiPreCheckWizardIntegrationTest {
     @Test
     void acceptedCriticalAssumptionAppliesMultipleChangesDeterministically() throws Exception {
         User owner = saveUser("multiple-precheck-changes@example.org");
-        var problem = new AiPreCheckProblem(
+        var problem1 = new AiPreCheckProblem(
                 AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
                 "Für dieses Ziel ist der Zeitraum zu knapp.",
                 "Zeitraum verlängern oder Umfang reduzieren.",
-                "Das Enddatum wird von 21.09.2026 auf 30.09.2026 und die Dauer von 21 auf 30 Tage geändert.",
-                List.of(
-                        new AiPreCheckInputChange("endDate", "2026-09-21", "2026-09-30"),
-                        new AiPreCheckInputChange("durationDays", "21", "30")));
-        when(aiClient.preCheck(any())).thenReturn(result(problem));
+                "Das Enddatum wird von 21.09.2026 auf 30.09.2026 geändert.",
+                List.of(new AiPreCheckInputChange("endDate", "2026-09-21", "2026-09-30")));
+        var problem2 = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                "Die wöchentliche Arbeitszeit reicht für diesen Umfang nicht aus.",
+                "Arbeitszeit erhöhen oder Aufgaben delegieren.",
+                "Die Arbeitszeit wird von Etwa 8 Stunden pro Woche auf 12 Stunden pro Woche erhöht.",
+                List.of(new AiPreCheckInputChange("availableWorkingTime", "Etwa 8 Stunden pro Woche", "12 Stunden pro Woche")));
+        when(aiClient.preCheck(any())).thenReturn(result(problem1, problem2));
         when(aiClient.generatePlan(any())).thenReturn(generatedPlan());
         UUID workflowId = start(owner);
         awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
 
         mockMvc.perform(post(acceptUrl(workflowId, 0)).with(user(principal(owner))).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(problemsUrl(workflowId)));
+        mockMvc.perform(post(acceptUrl(workflowId, 1)).with(user(principal(owner))).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(statusUrl(workflowId)));
 
@@ -349,6 +359,8 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(requestCaptor.getValue().confirmedWizardData().endDate())
                 .isEqualTo(LocalDate.of(2026, 9, 30));
         assertThat(requestCaptor.getValue().confirmedWizardData().durationDays()).isEqualTo(30);
+        assertThat(requestCaptor.getValue().confirmedWizardData().availableWorkingTime())
+                .isEqualTo("12 Stunden pro Woche");
         assertThat(projectRepository.findById(workflowRepository.findById(workflowId)
                 .orElseThrow().getProject().getId())).get().satisfies(project -> {
             assertThat(project.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 30));
@@ -533,8 +545,100 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void preCheckProblemDisplaysGermanLabelsForTechnicalFieldKeys() throws Exception {
+        User owner = saveUser("precheck-labels@example.org");
+        AiWizardSnapshot customSnapshot = new AiWizardSnapshot(
+                "Umzug planen", "Wohnungswechsel organisieren",
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 21),
+                CollaborationMode.INDIVIDUAL, ProjectCategory.HOME, ProjectSubCategory.MOVING,
+                "Rechtzeitig umziehen", "Budget 2.000 Euro", "Kartons vorhanden",
+                21, "8 stunden pro woche",
+                Map.of(
+                        "scope", "Küche und Bad",
+                        "userPreCheckCorrection1", "Erste Vorabplanung",
+                        "someFutureFieldKey", "Bisherige Detailangabe"
+                ));
+        var problem1 = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                "Arbeitszeit anpassen", "Arbeitszeit prüfen.",
+                "Arbeitszeit wird von 8 stunden pro woche auf 12 stunden pro woche angepasst.",
+                List.of(new AiPreCheckInputChange("availableWorkingTime", "8 stunden pro woche", "12 stunden pro woche")));
+        var problem2 = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                "Endtermin anpassen", "Termine prüfen.",
+                "Endtermin wird vom 21.09.2026 auf den 30.09.2026 verschoben.",
+                List.of(new AiPreCheckInputChange("endDate", "2026-09-21", "2026-09-30")));
+        var problem3 = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                "Ziel anpassen", "Ziel prüfen.",
+                "Ziel von Rechtzeitig umziehen auf Neue Wohnung renovieren anpassen.",
+                List.of(new AiPreCheckInputChange("projectGoal", "Rechtzeitig umziehen", "Neue Wohnung renovieren")));
+        var problem4 = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                "Umfang anpassen", "Umfang prüfen.",
+                "Umfang von Küche und Bad auf Nur Küche anpassen.",
+                List.of(new AiPreCheckInputChange("projectSpecificAnswers.scope", "Küche und Bad", "Nur Küche")));
+        var problem5 = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                "Vorabplanung anpassen", "Vorabplanung prüfen.",
+                "Korrektur von Erste Vorabplanung auf Aktualisierte Vorabplanung anpassen.",
+                List.of(new AiPreCheckInputChange("projectSpecificAnswers.userPreCheckCorrection1", "Erste Vorabplanung", "Aktualisierte Vorabplanung")));
+        var problem6 = new AiPreCheckProblem(
+                AiPreCheckSeverity.WARNING, AiPreCheckProblemType.CRITICAL_ASSUMPTION,
+                "Detailangabe anpassen", "Detailangabe prüfen.",
+                "Zusatz von Bisherige Detailangabe auf Neue Detailangabe anpassen.",
+                List.of(new AiPreCheckInputChange("projectSpecificAnswers.someFutureFieldKey", "Bisherige Detailangabe", "Neue Detailangabe")));
+
+        when(aiClient.preCheck(any())).thenReturn(result(problem1, problem2, problem3, problem4, problem5, problem6));
+        UUID workflowId = start(owner, () -> customSnapshot);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+
+        mockMvc.perform(get(problemsUrl(workflowId)).with(user(principal(owner))))
+                .andExpect(status().isOk())
+                .andExpect(view().name("generation/ai-problems"))
+                .andExpect(content().string(containsString("<strong>Verfügbare Arbeitszeit: </strong>")))
+                .andExpect(content().string(containsString("<strong>Enddatum: </strong>")))
+                .andExpect(content().string(containsString("<strong>Projektziel: </strong>")))
+                .andExpect(content().string(containsString("<strong>Umfang: </strong>")))
+                .andExpect(content().string(containsString("<strong>Ergänzung zur Planung: </strong>")))
+                .andExpect(content().string(containsString("<strong>Weitere Angabe: </strong>")))
+                .andExpect(content().string(not(containsString("<strong>availableWorkingTime: </strong>"))))
+                .andExpect(content().string(not(containsString("<strong>endDate: </strong>"))))
+                .andExpect(content().string(not(containsString("<strong>projectGoal: </strong>"))))
+                .andExpect(content().string(not(containsString("<strong>scope: </strong>"))))
+                .andExpect(content().string(not(containsString("<strong>userPreCheckCorrection1: </strong>"))))
+                .andExpect(content().string(not(containsString("<strong>someFutureFieldKey: </strong>"))));
+    }
+
+    @Test
+    void freeUserWorkingTimeInputInOptionalContextFieldIsAccepted() throws Exception {
+        User owner = saveUser("precheck-free-input@example.org");
+        when(aiClient.preCheck(any())).thenReturn(
+                result(warning("Zeit knapp")),
+                AiPreCheckResult.withoutIssues());
+        UUID workflowId = start(owner);
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_NEEDS_REVIEW);
+
+        String customDistribution = "Montag 2h, Mittwoch 1.5h, Samstag 4h";
+        mockMvc.perform(post(confirmUrl(workflowId, 0))
+                        .with(user(principal(owner))).with(csrf())
+                        .param("planningContext", customDistribution))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(statusUrl(workflowId)));
+
+        awaitStatus(workflowId, AiPlanGenerationWorkflowStatus.PRE_CHECK_COMPLETED);
+        assertThat(workflowRepository.findById(workflowId).orElseThrow().getConfirmedSnapshot())
+                .contains("userPreCheckCorrection1")
+                .contains(customDistribution);
+    }
+
     private UUID start(User owner) {
-        return completionService.complete(UUID.randomUUID(), owner.getId(), this::snapshot).workflowId();
+        return start(owner, this::snapshot);
+    }
+
+    private UUID start(User owner, java.util.function.Supplier<AiWizardSnapshot> snapshotSupplier) {
+        return completionService.complete(UUID.randomUUID(), owner.getId(), snapshotSupplier).workflowId();
     }
 
     private void awaitStatus(UUID workflowId, AiPlanGenerationWorkflowStatus expected) throws Exception {
