@@ -75,6 +75,15 @@ public class PlanChangePromptBuilder {
                 Neue Elemente müssen mindestens Titel und Ziel-Section angeben. priority ist bei neuen Tasks optional:
                 Setze sie nur mit fachlicher Grundlage, sonst null. Die Anwendung verwendet dann den technischen
                 Standardwert MEDIUM, ohne daraus eine inhaltliche Aussage abzuleiten.
+                Datumsfelder sind auch bei neuen Tasks und Milestones optional. Erfinde oder schätze kein Datum nur,
+                um startDate oder dueDate zu befüllen. Setze beide Felder auf null und nenne sie nicht in
+                changedFields, wenn ein Datum für den Änderungswunsch nicht erforderlich ist, aus den bestätigten
+                Projektdaten nicht zuverlässig abgeleitet werden kann oder der Plan insgesamt nicht datumsabhängig
+                ist. Ein Sortiermodus, die Existenz des Feldes im Schema oder die bloße Position im Plan sind keine
+                fachliche Begründung für ein Datum. Bewahre bei bestehenden Elementen vorhandene Datumswerte
+                unverändert, solange der Nutzer keine zeitliche Änderung verlangt. Verwende Datumswerte nur bei
+                einem erkennbaren zeitlichen Nutzerwunsch oder wenn eine konkrete, bestätigte zeitliche Vorgabe des
+                Projekts die Zuordnung eindeutig trägt. Auch dann gilt: Im Zweifel null statt eines erfundenen Datums.
                 Bewahre den übrigen Plan. summary und optionale explanations sind kurz, nutzerbezogen und enthalten
                 keine internen Gedankengänge, IDs oder technischen Feldnamen.
 
