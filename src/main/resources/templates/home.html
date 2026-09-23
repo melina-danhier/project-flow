@@ -7,6 +7,11 @@
 <th:block th:replace="~{fragments/layout :: site-header}" />
 
 <main style="width: 100%; max-width: none; margin: 0; padding: 0;">
+    <div style="max-width: 900px; margin: 1.25rem auto 0; padding: 0 1.25rem;">
+        <div class="pf-alert pf-alert--info">
+            <span>Du möchtest an der Studie teilnehmen oder nach einem Fehler oder Fehlklick zur Studie zurückkehren? Klicke <a th:href="@{/study/start}" aria-label="Hier zur Studie" style="color: inherit; text-decoration: underline; font-weight: 600;">hier</a>.</span>
+        </div>
+    </div>
 
     <!-- ==================== Hero Section ==================== -->
     <section class="pf-hero">
