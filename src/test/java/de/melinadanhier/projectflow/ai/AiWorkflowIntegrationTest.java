@@ -211,12 +211,10 @@ class AiWorkflowIntegrationTest {
         assertThat(planSectionRepository.count()).isEqualTo(sectionsBefore + 1);
         assertThat(taskRepository.count()).isEqualTo(tasksBefore + 3);
         assertThat(milestoneRepository.count()).isEqualTo(milestonesBefore + 1);
-        assertThat(draftRepository.findById(draft.getId())).get()
-                .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
-        assertThat(workflowRepository.findById(completion.workflowId())).get()
-                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        assertThat(draftRepository.findById(draft.getId())).isEmpty();
+        assertThat(workflowRepository.findById(completion.workflowId())).isEmpty();
         assertThatThrownBy(() -> generationWorkflowService.retry(completion.workflowId(), owner.getId()))
-                .isInstanceOf(ConflictException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
         assertThat(projectRepository.findById(completion.projectId())).get().satisfies(project -> {
             assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
             assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);

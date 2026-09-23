@@ -258,10 +258,10 @@ class AiPreCheckWizardIntegrationTest {
         assertThat(milestoneRepository.count()).isEqualTo(activeMilestonesBefore + 1);
         assertThat(projectRepository.findById(projectId)).get()
                 .extracting("location").isEqualTo(ProjectLocation.OVERVIEW);
-        assertThat(draftRepository.findById(draft.getId())).get()
-                .extracting("status").isEqualTo(DraftPlanStatus.APPLIED);
-        assertThat(workflowRepository.findById(workflowId)).get()
-                .extracting("status").isEqualTo(AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED);
+        assertThat(projectRepository.findById(projectId)).get()
+                .extracting("planConfirmedAt").isNotNull();
+        assertThat(draftRepository.findById(draft.getId())).isEmpty();
+        assertThat(workflowRepository.findById(workflowId)).isEmpty();
 
         mockMvc.perform(post("/projects/" + projectId + "/draft/apply").with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection());

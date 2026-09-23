@@ -20,6 +20,8 @@ import lombok.Getter;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "draft_plan_elements")
@@ -33,11 +35,13 @@ public abstract class DraftPlanElement extends MutableEntity {
     @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "plan_draft_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private DraftPlan draftPlan;
 
     @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "draft_section_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private DraftSection draftSection;
 
     @NotBlank

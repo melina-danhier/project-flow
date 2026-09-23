@@ -11,6 +11,7 @@ import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
@@ -50,8 +51,12 @@ public class DraftApplicationService {
     /** Applies a reviewed draft immediately or requests explicit confirmation for pending/empty drafts. */
     @Transactional
     public DraftApplyResult apply(UUID projectId, UUID userId) {
+        projectRepository.findForUpdate(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
         authorizationService.requireOwner(projectId, userId);
-        if (alreadyApplied(projectId)) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        if (isAlreadyApplied(project)) {
             return DraftApplyResult.applied();
         }
         DraftApplicationSummary summary = summarize(projectId, userId);
@@ -74,9 +79,13 @@ public class DraftApplicationService {
 
     @Transactional
     public UUID continueWithPending(UUID projectId, UUID draftId, UUID userId, long lockVersion) {
+        projectRepository.findForUpdate(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
         authorizationService.requireOwner(projectId, userId);
-        if (alreadyApplied(projectId)) {
-            return confirmAndApply(projectId, draftId, userId, lockVersion, false);
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        if (isAlreadyApplied(project)) {
+            return projectId;
         }
         DraftApplicationSummary summary = summarize(projectId, userId);
         if (summary.pendingElementCount() == 0) {
@@ -87,9 +96,13 @@ public class DraftApplicationService {
 
     @Transactional
     public UUID confirmEmpty(UUID projectId, UUID draftId, UUID userId, long lockVersion) {
+        projectRepository.findForUpdate(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
         authorizationService.requireOwner(projectId, userId);
-        if (alreadyApplied(projectId)) {
-            return confirmAndApply(projectId, draftId, userId, lockVersion, true);
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        if (isAlreadyApplied(project)) {
+            return projectId;
         }
         DraftApplicationSummary summary = summarize(projectId, userId);
         if (!summary.empty()) {
@@ -125,13 +138,24 @@ public class DraftApplicationService {
         projectRepository.findForUpdate(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
         authorizationService.requireOwner(projectId, userId);
-        DraftPlan draft = draftRepository.findForUpdateByProjectId(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Für dieses Projekt ist kein Planentwurf vorhanden."));
-        Project project = draft.getProject();
-        if (project == null || !projectId.equals(project.getId())) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        if (isAlreadyApplied(project)) {
+            return projectId;
+        }
+        var draftOpt = draftRepository.findForUpdateByProjectId(projectId);
+        if (draftOpt.isEmpty()) {
+            if (isAlreadyApplied(project)) {
+                return projectId;
+            }
             throw new ResourceNotFoundException("Für dieses Projekt ist kein Planentwurf vorhanden.");
         }
-        if (draft.getId() == null || draftId != null && !draft.getId().equals(draftId)) {
+        DraftPlan draft = draftOpt.get();
+        Project draftProject = draft.getProject();
+        if (draftProject == null || !projectId.equals(draftProject.getId())) {
+            throw new ResourceNotFoundException("Für dieses Projekt ist kein Planentwurf vorhanden.");
+        }
+        if (draft.getId() == null || (draftId != null && !draft.getId().equals(draftId))) {
             if (project.getLocation() != ProjectLocation.DRAFT) {
                 throw new DraftVersionConflictException(
                         "Das Projekt wurde bereits mit einem anderen Plan aktiviert.", false);
@@ -165,9 +189,13 @@ public class DraftApplicationService {
         validationService.validateForApplication(draft);
         adoptionFactory.adopt(draft, project);
         project.setLocation(ProjectLocation.OVERVIEW);
-        draft.setStatus(DraftPlanStatus.APPLIED);
-        draft.setAppliedAt(Instant.now(clock));
-        projectRepository.saveAndFlush(project);
+        project.setPlanConfirmedAt(Instant.now(clock));
+        project.attachDraft(null);
+
+        workflowRepository.findByProjectId(projectId).ifPresent(workflowRepository::delete);
+        draftRepository.delete(draft);
+        projectRepository.save(project);
+        projectRepository.flush();
         return projectId;
     }
 
@@ -198,12 +226,12 @@ public class DraftApplicationService {
         return status == DraftPlanStatus.READY_FOR_REVIEW || status == DraftPlanStatus.IN_REVIEW;
     }
 
-    private boolean alreadyApplied(UUID projectId) {
-        return draftRepository.findByProjectId(projectId)
-                .filter(draft -> draft.getStatus() == DraftPlanStatus.APPLIED)
-                .map(DraftPlan::getProject)
-                .filter(project -> project.getLocation() == ProjectLocation.OVERVIEW)
-                .isPresent();
+    private boolean isAlreadyApplied(Project project) {
+        return project.getCreationType() == CreationType.AI
+                && project.getLocation() == ProjectLocation.OVERVIEW
+                && project.getPlanConfirmedAt() != null
+                && draftRepository.findByProjectId(project.getId()).isEmpty()
+                && workflowRepository.findByProjectId(project.getId()).isEmpty();
     }
 
     private void requireEmptyDraftProject(Project project) {

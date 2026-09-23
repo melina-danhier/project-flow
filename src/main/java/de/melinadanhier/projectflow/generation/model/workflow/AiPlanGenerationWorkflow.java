@@ -148,6 +148,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
             name = "ai_workflow_acknowledged_warnings",
             joinColumns = @JoinColumn(name = "workflow_id")
     )
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @Column(name = "problem_index", nullable = false)
     private Set<Integer> acceptedOpenPointIndices = new HashSet<>();
 
@@ -156,6 +157,7 @@ public class AiPlanGenerationWorkflow extends MutableEntity {
             name = "ai_workflow_open_point_contexts",
             joinColumns = @JoinColumn(name = "workflow_id")
     )
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @MapKeyColumn(name = "problem_index")
     @Column(name = "confirmed_context", nullable = false, length = 1000)
     private Map<Integer, String> customOpenPointInterpretations = new HashMap<>();

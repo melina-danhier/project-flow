@@ -17,6 +17,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
@@ -25,6 +27,7 @@ import java.util.Set;
 @Entity
 @Table(name = "draft_tasks")
 @PrimaryKeyJoinColumn(name = "id")
+@OnDelete(action = OnDeleteAction.CASCADE)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -56,6 +59,7 @@ public class DraftTask extends DraftPlanElement {
                     columnNames = {"successor_draft_task_id", "prerequisite_draft_task_id"}
             )
     )
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<DraftTask> prerequisites = new LinkedHashSet<>();
 
     public void addPrerequisite(DraftTask prerequisite) {

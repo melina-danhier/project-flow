@@ -234,10 +234,12 @@ class DraftReviewIntegrationTest {
     @Test
     void explicitConfirmationAppliesExactlyOnceAndDoesNotCopyWorkflowFields() throws Exception {
         Fixture f = fixture("Material ist verfügbar", "Raum ist frei");
-        long version = review(f).getLockVersion();
+        var reviewDto = review(f);
+        long version = reviewDto.getLockVersion();
+        UUID draftId = reviewDto.getId();
         for (int attempt = 0; attempt < 2; attempt++) {
             mvc.perform(post(f.url() + "/continue-with-pending")
-                            .param("draftId", review(f).getId().toString())
+                            .param("draftId", draftId.toString())
                             .param("lockVersion", String.valueOf(version))
                             .with(user(f.owner())).with(csrf()))
                     .andExpect(redirectedUrl("/projects/" + f.projectId() + "/plan"));
@@ -245,8 +247,6 @@ class DraftReviewIntegrationTest {
         assertApplied(f);
         assertThat(jdbc.queryForList("select status from tasks where id in (select id from plan_elements where plan_container_id = ?)",
                 String.class, f.projectId())).containsOnly("OPEN");
-        assertThat(review(f).getElements()).allSatisfy(element ->
-                assertThat(element.getReviewStatus()).isEqualTo(DraftReviewStatus.PENDING));
         verifyNoInteractions(aiClient);
     }
 
@@ -813,8 +813,9 @@ class DraftReviewIntegrationTest {
     }
     private void assertApplied(Fixture f) {
         assertThat(elementCount(f)).isEqualTo(4);
-        assertThat(review(f).getStatus()).isEqualTo(DraftPlanStatus.APPLIED);
+        assertThat(drafts.findByProjectId(f.projectId())).isEmpty();
         assertThat(projects.findById(f.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        assertThat(projects.findById(f.projectId()).orElseThrow().getPlanConfirmedAt()).isNotNull();
     }
     private record Fixture(UUID projectId, AuthenticatedUser owner) {
         String url() { return "/projects/" + projectId + "/draft"; }

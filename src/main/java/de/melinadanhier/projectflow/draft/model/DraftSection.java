@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.draft.model;
 
 import de.melinadanhier.projectflow.common.model.MutableEntity;
+import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,11 +16,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import de.melinadanhier.projectflow.planelement.model.ElementOrigin;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +37,7 @@ public class DraftSection extends MutableEntity {
     @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "plan_draft_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private DraftPlan draftPlan;
 
     @NotBlank

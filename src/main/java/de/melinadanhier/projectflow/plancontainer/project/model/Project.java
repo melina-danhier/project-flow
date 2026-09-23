@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -74,6 +75,9 @@ public class Project extends PlanContainer implements ProjectClassification, Pro
     @Enumerated(EnumType.STRING)
     @Column(name = "location", nullable = false, length = 20)
     private ProjectLocation location = ProjectLocation.OVERVIEW;
+
+    @Column(name = "plan_confirmed_at")
+    private Instant planConfirmedAt;
 
     @NotNull
     @Enumerated(EnumType.STRING)

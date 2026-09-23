@@ -1,9 +1,14 @@
 package de.melinadanhier.projectflow.draft.controller;
 
+import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
 import de.melinadanhier.projectflow.draft.service.DraftReviewService;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
+import de.melinadanhier.projectflow.plancontainer.project.model.Project;
+import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
+import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
+import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.security.service.AuthenticatedUser;
 import de.melinadanhier.projectflow.study.domain.StudyEventType;
 import de.melinadanhier.projectflow.study.service.StudyTrackingService;
@@ -26,12 +31,20 @@ public class DraftReviewController {
     private final DraftReviewService draftReviewService;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
     private final StudyTrackingService studyTrackingService;
+    private final ProjectAuthorizationService projectAuthorizationService;
+    private final ProjectRepository projectRepository;
 
     @GetMapping({"/projects/{projectId}/draft", "/projects/{projectId}/draft/review"})
     public String review(@PathVariable UUID projectId,
                          @AuthenticationPrincipal AuthenticatedUser currentUser,
                          @RequestParam(required = false) String reviewStatus,
                          Model model) {
+        projectAuthorizationService.requireMember(projectId, currentUser.userId());
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projekt oder Ressource wurde nicht gefunden."));
+        if (project.getLocation() != ProjectLocation.DRAFT || project.getPlanConfirmedAt() != null) {
+            return "redirect:/projects/" + projectId + "/plan";
+        }
         var workflow = workflowRepository.findOwnedByProjectId(projectId, currentUser.userId()).orElse(null);
         if (workflow != null && workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
             return "redirect:/projects/new/ai/status/" + workflow.getId();

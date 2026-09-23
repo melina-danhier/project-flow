@@ -5,8 +5,12 @@ import de.melinadanhier.projectflow.draft.dto.application.DraftApplyStatus;
 import de.melinadanhier.projectflow.draft.model.*;
 import de.melinadanhier.projectflow.draft.repository.DraftRepository;
 import de.melinadanhier.projectflow.draft.service.DraftApplicationService;
+import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow;
+import de.melinadanhier.projectflow.generation.model.workflow.AiWorkflowCompletionToken;
+import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
+import de.melinadanhier.projectflow.generation.repository.AiWorkflowCompletionTokenRepository;
+import de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService;
 import de.melinadanhier.projectflow.plancontainer.project.model.Project;
-import de.melinadanhier.projectflow.plancontainer.project.model.classification.ProjectSubCategory;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.CreationType;
 import de.melinadanhier.projectflow.plancontainer.project.model.lifecycle.ProjectLocation;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
@@ -20,24 +24,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.LocalDate;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -46,15 +52,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class DraftApplicationIntegrationTest {
     @Autowired DraftApplicationService applications;
-    @Autowired
-    DraftRepository drafts;
+    @Autowired DraftRepository drafts;
     @Autowired ProjectRepository projects;
     @Autowired UserRepository users;
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired MockMvc mvc;
-    @Autowired de.melinadanhier.projectflow.generation.service.workflow.AiGenerationWorkflowService generations;
-    @Autowired de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository workflows;
+    @Autowired AiGenerationWorkflowService generations;
+    @Autowired AiPlanGenerationWorkflowRepository workflows;
+    @Autowired AiWorkflowCompletionTokenRepository completionTokens;
     @MockitoSpyBean de.melinadanhier.projectflow.draft.service.DraftPlanAdoptionFactory adoptionFactory;
     @MockitoBean de.melinadanhier.projectflow.generation.event.listener.AiGenerationRequestedEventListener generationListener;
     @MockitoBean de.melinadanhier.projectflow.generation.event.listener.AiPreCheckRequestedEventListener preCheckListener;
@@ -97,27 +103,46 @@ class DraftApplicationIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from task_prerequisites tp join plan_elements pe "
                 + "on pe.id = tp.successor_task_id where pe.plan_container_id = ?", Integer.class, fixture.projectId())).isOne();
 
-        var applied = drafts.findById(fixture.draftId()).orElseThrow();
-        assertThat(applied.getStatus()).isEqualTo(DraftPlanStatus.APPLIED);
-        assertThat(applied.getAppliedAt()).isNotNull();
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        assertThat(drafts.findById(fixture.draftId())).isEmpty();
+        assertThat(workflows.findByProjectId(fixture.projectId())).isEmpty();
+
+        assertThat(jdbc.queryForObject("select count(*) from plan_drafts where id = ?",
+                Integer.class, fixture.draftId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from draft_sections where plan_draft_id = ?",
+                Integer.class, fixture.draftId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from draft_plan_elements where plan_draft_id = ?",
+                Integer.class, fixture.draftId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from ai_plan_generation_workflows where id = ?",
+                Integer.class, fixture.workflowId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from ai_workflow_completion_tokens where workflow_id = ?",
+                Integer.class, fixture.workflowId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from ai_workflow_acknowledged_warnings where workflow_id = ?",
+                Integer.class, fixture.workflowId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from ai_workflow_open_point_contexts where workflow_id = ?",
+                Integer.class, fixture.workflowId())).isZero();
+
+        Project project = projects.findById(fixture.projectId()).orElseThrow();
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        assertThat(project.getPlanConfirmedAt()).isNotNull();
+        assertThat(project.getCurrentDraft()).isNull();
+
         assertThat(applications.apply(fixture.projectId(), fixture.ownerId()).status())
                 .isEqualTo(DraftApplyStatus.APPLIED);
 
-        applications.confirmAndApply(fixture.projectId(), fixture.draftId(), fixture.ownerId(),
-                summary.lockVersion(), false);
+        assertThat(applications.confirmAndApply(fixture.projectId(), fixture.draftId(), fixture.ownerId(),
+                summary.lockVersion(), false)).isEqualTo(fixture.projectId());
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isEqualTo(5);
 
         User owner = users.findById(fixture.ownerId()).orElseThrow();
         var principal = new de.melinadanhier.projectflow.security.service.AuthenticatedUser(
                 owner.getId(), owner.getEmail(), owner.getPasswordHash(), true);
-        assertThat(mvc.perform(post("/projects/" + fixture.projectId() + "/draft/continue-with-pending")
-                        .param("draftId", UUID.randomUUID().toString())
+        mvc.perform(post("/projects/" + fixture.projectId() + "/draft/continue-with-pending")
+                        .param("draftId", fixture.draftId().toString())
                         .param("lockVersion", String.valueOf(summary.lockVersion()))
                         .with(user(principal)).with(csrf()))
-                .andExpect(status().isConflict()).andReturn().getResolvedException())
-                .isInstanceOf(de.melinadanhier.projectflow.draft.service.DraftVersionConflictException.class);
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/projects/" + fixture.projectId() + "/plan"));
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isEqualTo(5);
     }
@@ -140,9 +165,33 @@ class DraftApplicationIntegrationTest {
 
         applications.confirmEmpty(fixture.projectId(), fixture.draftId(), fixture.ownerId(),
                 summary.lockVersion());
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        Project project = projects.findById(fixture.projectId()).orElseThrow();
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        assertThat(project.getPlanConfirmedAt()).isNotNull();
+        assertThat(drafts.findById(fixture.draftId())).isEmpty();
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isZero();
+    }
+
+    @Test
+    void confirmEmptyRemovesDraftAndWorkflow() {
+        Fixture fixture = rejectedFixture();
+        UUID workflowId = new TransactionTemplate(transactionManager).execute(status -> {
+            Project project = projects.findById(fixture.projectId()).orElseThrow();
+            var workflow = AiPlanGenerationWorkflow.create(
+                    project, "{}", "test", UUID.randomUUID(), Instant.now(), "v1");
+            workflows.saveAndFlush(workflow);
+            jdbc.update("update ai_plan_generation_workflows set status = 'GENERATION_COMPLETED' where id = ?", workflow.getId());
+            return workflow.getId();
+        });
+        long version = applications.summarize(fixture.projectId(), fixture.ownerId()).lockVersion();
+        applications.confirmEmpty(fixture.projectId(), fixture.draftId(), fixture.ownerId(), version);
+
+        Project project = projects.findById(fixture.projectId()).orElseThrow();
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.OVERVIEW);
+        assertThat(project.getPlanConfirmedAt()).isNotNull();
+        assertThat(drafts.findById(fixture.draftId())).isEmpty();
+        assertThat(workflows.findById(workflowId)).isEmpty();
     }
 
     @Test
@@ -166,7 +215,7 @@ class DraftApplicationIntegrationTest {
         Fixture fixture = rejectedFixture();
         UUID workflowId = new TransactionTemplate(transactionManager).execute(status -> {
             Project project = projects.findById(fixture.projectId()).orElseThrow();
-            var workflow = de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflow.create(
+            var workflow = AiPlanGenerationWorkflow.create(
                     project, "{}", "test", UUID.randomUUID(), Instant.now(), "v1");
             workflows.saveAndFlush(workflow);
             jdbc.update("update ai_plan_generation_workflows set status = 'GENERATION_COMPLETED' where id = ?", workflow.getId());
@@ -202,9 +251,12 @@ class DraftApplicationIntegrationTest {
         }
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isZero();
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
+        Project project = projects.findById(fixture.projectId()).orElseThrow();
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.DRAFT);
+        assertThat(project.getPlanConfirmedAt()).isNull();
         assertThat(drafts.findById(fixture.draftId()).orElseThrow().getStatus())
                 .isIn(DraftPlanStatus.READY_FOR_REVIEW, DraftPlanStatus.IN_REVIEW);
+        assertThat(workflows.findByProjectId(fixture.projectId())).isPresent();
     }
 
     @Test
@@ -232,9 +284,12 @@ class DraftApplicationIntegrationTest {
 
         assertThat(jdbc.queryForObject("select count(*) from plan_elements where plan_container_id = ?",
                 Integer.class, fixture.projectId())).isZero();
-        assertThat(projects.findById(fixture.projectId()).orElseThrow().getLocation()).isEqualTo(ProjectLocation.DRAFT);
+        Project project = projects.findById(fixture.projectId()).orElseThrow();
+        assertThat(project.getLocation()).isEqualTo(ProjectLocation.DRAFT);
+        assertThat(project.getPlanConfirmedAt()).isNull();
         assertThat(drafts.findById(fixture.draftId()).orElseThrow().getStatus())
                 .isIn(DraftPlanStatus.READY_FOR_REVIEW, DraftPlanStatus.IN_REVIEW);
+        assertThat(workflows.findByProjectId(fixture.projectId())).isPresent();
     }
 
     private Fixture richFixture() {
@@ -267,7 +322,19 @@ class DraftApplicationIntegrationTest {
             pending.addPrerequisite(unsectioned);
             pending.addPrerequisite(omitted);
             drafts.saveAndFlush(draft);
-            return new Fixture(project.getId(), draft.getId(), project.getMemberships().iterator().next().getUser().getId());
+
+            var workflow = AiPlanGenerationWorkflow.create(
+                    project, "{\"title\":\"atomic-rich\"}", "1.0", UUID.randomUUID(), Instant.now(), "v1");
+            workflows.saveAndFlush(workflow);
+            jdbc.update("update ai_plan_generation_workflows set status = 'GENERATION_COMPLETED' where id = ?", workflow.getId());
+            completionTokens.saveAndFlush(
+                    AiWorkflowCompletionToken.create(UUID.randomUUID(), workflow));
+            jdbc.update("insert into ai_workflow_acknowledged_warnings (workflow_id, problem_index) values (?, ?)",
+                    workflow.getId(), 0);
+            jdbc.update("insert into ai_workflow_open_point_contexts (workflow_id, problem_index, confirmed_context) values (?, ?, ?)",
+                    workflow.getId(), 1, "Kontext");
+
+            return new Fixture(project.getId(), draft.getId(), project.getMemberships().iterator().next().getUser().getId(), workflow.getId());
         });
     }
 
@@ -279,7 +346,7 @@ class DraftApplicationIntegrationTest {
             DraftTask task = task("Auch nein", 0, DraftReviewStatus.REJECTED);
             draft.addSection(section); draft.addElement(task); section.addElement(task);
             drafts.saveAndFlush(draft);
-            return new Fixture(project.getId(), draft.getId(), project.getMemberships().iterator().next().getUser().getId());
+            return new Fixture(project.getId(), draft.getId(), project.getMemberships().iterator().next().getUser().getId(), null);
         });
     }
 
@@ -315,5 +382,5 @@ class DraftApplicationIntegrationTest {
         value.setOrigin(ElementOrigin.AI); return value;
     }
 
-    private record Fixture(UUID projectId, UUID draftId, UUID ownerId) { }
+    private record Fixture(UUID projectId, UUID draftId, UUID ownerId, UUID workflowId) { }
 }
