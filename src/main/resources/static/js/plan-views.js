@@ -223,10 +223,14 @@ function initializePlanViews() {
                     var optOpen = document.createElement('option');
                     optOpen.value = 'false';
                     optOpen.textContent = 'Offen';
+                    optOpen.style.backgroundColor = '#f1f5f9';
+                    optOpen.style.color = '#475569';
                     optOpen.selected = !item.completed;
                     var optDone = document.createElement('option');
                     optDone.value = 'true';
                     optDone.textContent = 'Erreicht';
+                    optDone.style.backgroundColor = '#ecfdf5';
+                    optDone.style.color = '#065f46';
                     optDone.selected = item.completed;
                     select.append(optOpen, optDone);
                     select.addEventListener('change', function () {
@@ -257,13 +261,15 @@ function initializePlanViews() {
                     select.className = 'pf-status-select pf-status-select--' + (item.taskStatus ? item.taskStatus.toLowerCase() : 'open');
                     select.setAttribute('aria-label', 'Aufgabenstatus ändern: ' + item.title);
                     [
-                        { value: 'OPEN', label: 'Offen' },
-                        { value: 'IN_PROGRESS', label: 'In Bearbeitung' },
-                        { value: 'COMPLETED', label: 'Erledigt' }
+                        { value: 'OPEN', label: 'Offen', bg: '#f1f5f9', color: '#475569' },
+                        { value: 'IN_PROGRESS', label: 'In Bearbeitung', bg: '#eff6ff', color: '#1d4ed8' },
+                        { value: 'COMPLETED', label: 'Erledigt', bg: '#ecfdf5', color: '#065f46' }
                     ].forEach(function (st) {
                         var opt = document.createElement('option');
                         opt.value = st.value;
                         opt.textContent = st.label;
+                        opt.style.backgroundColor = st.bg;
+                        opt.style.color = st.color;
                         if (item.taskStatus === st.value) opt.selected = true;
                         select.appendChild(opt);
                     });

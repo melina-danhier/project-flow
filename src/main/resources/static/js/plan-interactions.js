@@ -558,31 +558,15 @@
         }
     };
 
-    const updateProjectActionsDropdownClass = () => {
-        const dropdown = document.getElementById('project-actions-dropdown');
-        if (!dropdown) return;
-        if (window.innerWidth <= 640) {
-            dropdown.classList.remove('pf-dropdown--right');
-            dropdown.classList.add('pf-dropdown--left');
-        } else {
-            dropdown.classList.remove('pf-dropdown--left');
-            dropdown.classList.add('pf-dropdown--right');
-        }
-    };
-
-    window.addEventListener('resize', updateProjectActionsDropdownClass);
-
     document.addEventListener('DOMContentLoaded', () => {
         setupPlanModals();
         setupFilters();
         setupMobileCollapses();
-        updateProjectActionsDropdownClass();
     });
     document.addEventListener('projectflow:plan-updated', () => {
         setupPlanModals();
         setupFilters();
         setupMobileCollapses();
-        updateProjectActionsDropdownClass();
     });
 
     window.ProjectFlowPlan = { submit: submitFields };
