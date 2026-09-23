@@ -80,6 +80,22 @@ class StudyModeRestrictionFilterTest {
         filter.doFilter(staticRequest, staticResponse, staticChain);
         assertThat(staticResponse.getRedirectedUrl()).isNull();
         assertThat(staticChain.getRequest()).isSameAs(staticRequest);
+
+        MockHttpServletRequest svgRequest = new MockHttpServletRequest("GET", "/images/logo.svg");
+        svgRequest.setSession(session);
+        MockHttpServletResponse svgResponse = new MockHttpServletResponse();
+        MockFilterChain svgChain = new MockFilterChain();
+        filter.doFilter(svgRequest, svgResponse, svgChain);
+        assertThat(svgResponse.getRedirectedUrl()).isNull();
+        assertThat(svgChain.getRequest()).isSameAs(svgRequest);
+
+        MockHttpServletRequest faviconSvgRequest = new MockHttpServletRequest("GET", "/favicon.svg");
+        faviconSvgRequest.setSession(session);
+        MockHttpServletResponse faviconSvgResponse = new MockHttpServletResponse();
+        MockFilterChain faviconSvgChain = new MockFilterChain();
+        filter.doFilter(faviconSvgRequest, faviconSvgResponse, faviconSvgChain);
+        assertThat(faviconSvgResponse.getRedirectedUrl()).isNull();
+        assertThat(faviconSvgChain.getRequest()).isSameAs(faviconSvgRequest);
     }
 
     private MockHttpServletRequest activeStudyRequest(String method, String path) {

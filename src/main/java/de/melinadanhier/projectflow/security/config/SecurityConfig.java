@@ -43,7 +43,9 @@ public class SecurityConfig {
                                 "/error",
                                 "/css/**",
                                 "/js/**",
-                                "/images/**"
+                                "/images/**",
+                                "/favicon.ico",
+                                "/favicon.svg"
                         )
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/templates", "/templates/**")

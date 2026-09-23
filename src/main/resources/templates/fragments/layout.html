@@ -8,6 +8,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#2563eb">
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
+    <link rel="apple-touch-icon" th:href="@{/images/logo.svg}">
     <link th:unless="${studyPage == true or (session != null and session.studySessionId != null)}" rel="preconnect" href="https://fonts.googleapis.com">
     <link th:unless="${studyPage == true or (session != null and session.studySessionId != null)}" rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link th:unless="${studyPage == true or (session != null and session.studySessionId != null)}" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">

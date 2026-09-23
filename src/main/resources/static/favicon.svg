@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 38 38" width="38" height="38">
+    <defs>
+        <linearGradient id="pf-brand-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#2563eb" />
+            <stop offset="100%" stop-color="#4f46e5" />
+        </linearGradient>
+    </defs>
+    <rect width="38" height="38" rx="9" fill="url(#pf-brand-gradient)" />
+    <g fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12.5,12.5 19,19 12.5,25.5 6,19" />
+        <polyline points="20.5,13 26.5,19 20.5,25" />
+        <polyline points="25.5,13 31.5,19 25.5,25" />
+    </g>
+</svg>

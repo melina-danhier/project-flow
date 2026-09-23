@@ -26,7 +26,7 @@ public class StudyModeRestrictionFilter extends OncePerRequestFilter {
 
         if (activeStudy) {
             boolean tasksCompleted = session.getAttribute(StudyTrackingService.TASKS_COMPLETED_ATTRIBUTE) != null;
-            if (tasksCompleted && !path.startsWith("/study") && !path.startsWith("/css") && !path.startsWith("/js") && !path.startsWith("/images") && !"/favicon.ico".equals(path)) {
+            if (tasksCompleted && !path.startsWith("/study") && !path.startsWith("/css") && !path.startsWith("/js") && !path.startsWith("/images") && !"/favicon.ico".equals(path) && !"/favicon.svg".equals(path)) {
                 response.sendRedirect(request.getContextPath() + "/study/completed");
                 return;
             }
