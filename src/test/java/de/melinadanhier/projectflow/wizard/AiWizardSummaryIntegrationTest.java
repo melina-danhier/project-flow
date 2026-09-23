@@ -98,6 +98,21 @@ class AiWizardSummaryIntegrationTest {
     }
 
     @Test
+    void rendersExactInputDurationInSummary() throws Exception {
+        WizardRequest request = wizardRequest(true);
+        request.state().setDurationValue(6);
+        request.state().setDurationUnit("WEEKS");
+        request.state().setDurationDays(42);
+
+        mockMvc.perform(get("/projects/new/ai/summary")
+                        .session(request.session()).with(user(request.user())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<dt>Dauer</dt>")))
+                .andExpect(content().string(containsString("6 Wochen")))
+                .andExpect(content().string(not(containsString("42 Tage"))));
+    }
+
+    @Test
     void omitsEmptyOptionalRowsAndFormatsAFixedDateAsOneAbsoluteDate() throws Exception {
         WizardRequest request = wizardRequest(false);
         ProjectWizardState state = request.state();

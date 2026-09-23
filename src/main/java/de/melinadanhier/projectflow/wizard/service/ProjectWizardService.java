@@ -38,6 +38,8 @@ public class ProjectWizardService {
         state.setCollaborationMode(form.getCollaborationMode());
         state.setStartDate(form.getStartDate());
         state.setEndDate(form.getEndDate());
+        state.setDurationValue(form.getDurationValue());
+        state.setDurationUnit(form.getDurationUnit());
         state.setDurationDays(form.getDurationDays());
         state.setAvailableWorkingTime(normalizeOptionalText(form.getAvailableWorkingTime()));
         state.setCompletionToken(null);
@@ -106,7 +108,10 @@ public class ProjectWizardService {
                 state.getCollaborationMode() == CollaborationMode.GROUP,
                 categoryLabel(state),
                 "KI-generierter Plan",
-                state.getDurationDays(), state.getAvailableWorkingTime(),
+                state.getDurationDays(),
+                state.getDurationValue(),
+                state.getDurationUnit(),
+                state.getAvailableWorkingTime(),
                 state.getProjectGoal(), state.getConstraints(), state.getAdditionalInformation(), answers);
     }
 

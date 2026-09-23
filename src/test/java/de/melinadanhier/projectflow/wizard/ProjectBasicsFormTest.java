@@ -35,13 +35,14 @@ class ProjectBasicsFormTest {
     }
 
     @Test
-    void normalCategoryRequiresASubcategory() {
+    void normalCategoryDefaultsToOtherSubcategoryWhenUnset() {
         ProjectBasicsForm withoutSubcategory = validForm();
         withoutSubcategory.setSubcategory(null);
         ProjectBasicsForm withSubcategory = validForm();
         withSubcategory.setSubcategory(ProjectSubCategory.THESIS);
 
-        assertThat(violatedProperties(withoutSubcategory)).contains("subcategory");
+        assertThat(withoutSubcategory.getSubcategory()).isEqualTo(ProjectSubCategory.OTHER_EDUCATION);
+        assertThat(validator.validate(withoutSubcategory)).isEmpty();
         assertThat(validator.validate(withSubcategory)).isEmpty();
     }
 
@@ -339,6 +340,40 @@ class ProjectBasicsFormTest {
         assertThat(service.requireOwned(userId, session).getCategory()).isEqualTo(ProjectCategory.HOME);
         assertThat(ProjectBasicsForm.from(service.requireOwned(userId, session)).getSubcategory())
                 .isEqualTo(ProjectSubCategory.OTHER_HOME);
+    }
+
+    @Test
+    void preservesExactDurationInputWhenRestoringFromWizardState() {
+        UUID userId = UUID.randomUUID();
+        MockHttpSession session = new MockHttpSession();
+
+        ProjectBasicsForm form = validForm();
+        form.setTitle("Dauer Test");
+        form.setDurationValue(14);
+        form.setDurationUnit("DAYS");
+
+        ProjectWizardService service = new ProjectWizardService();
+        service.saveBasics(form, userId, session);
+        ProjectWizardState state = service.requireOwned(userId, session);
+
+        assertThat(state.getDurationValue()).isEqualTo(14);
+        assertThat(state.getDurationUnit()).isEqualTo("DAYS");
+        assertThat(state.getDurationDays()).isEqualTo(14);
+
+        ProjectBasicsForm restored = ProjectBasicsForm.from(state);
+        assertThat(restored.getDurationValue()).isEqualTo(14);
+        assertThat(restored.getDurationUnit()).isEqualTo("DAYS");
+        assertThat(restored.getDurationDays()).isEqualTo(14);
+
+        // Also test weeks
+        form.setDurationValue(3);
+        form.setDurationUnit("WEEKS");
+        service.saveBasics(form, userId, session);
+        state = service.requireOwned(userId, session);
+        restored = ProjectBasicsForm.from(state);
+        assertThat(restored.getDurationValue()).isEqualTo(3);
+        assertThat(restored.getDurationUnit()).isEqualTo("WEEKS");
+        assertThat(restored.getDurationDays()).isEqualTo(21);
     }
 
     private ProjectBasicsForm validForm() {

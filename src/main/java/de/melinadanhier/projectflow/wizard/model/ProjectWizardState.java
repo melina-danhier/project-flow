@@ -36,6 +36,8 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
     private CreationType creationType;
     private LocalDate startDate;
     private LocalDate endDate;
+    private Integer durationValue;
+    private String durationUnit;
     private Integer durationDays;
     private String availableWorkingTime;
     private StructureMode structureMode;
@@ -48,6 +50,28 @@ public class ProjectWizardState implements Serializable, ProjectClassification {
     private UUID completionToken;
     private UUID activeWorkflowId;
     private UUID selectedTemplateId;
+
+    public void setDurationDays(Integer durationDays) {
+        this.durationDays = durationDays;
+        if (durationDays == null) {
+            this.durationValue = null;
+            this.durationUnit = null;
+            return;
+        }
+        if (this.durationValue != null && matchesDuration(this.durationValue, this.durationUnit, durationDays)) {
+            return;
+        }
+        this.durationValue = durationDays;
+        this.durationUnit = "DAYS";
+    }
+
+    private boolean matchesDuration(Integer val, String unit, Integer days) {
+        if (val == null || unit == null || days == null) return false;
+        if ("WEEKS".equalsIgnoreCase(unit)) return val * 7 == days;
+        if ("MONTHS".equalsIgnoreCase(unit)) return val * 30 == days;
+        if ("DAYS".equalsIgnoreCase(unit)) return val.equals(days);
+        return false;
+    }
 
     public Map<String, String> getProjectSpecificAnswers() {
         if (projectSpecificAnswers == null) {

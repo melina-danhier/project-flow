@@ -36,6 +36,13 @@ public class ProjectBasicsForm implements ProjectClassification {
 
     private ProjectSubCategory subcategory;
 
+    public ProjectSubCategory getSubcategory() {
+        if (subcategory == null && category != null && category != ProjectCategory.OTHER) {
+            return ProjectSubCategory.defaultForCategory(category);
+        }
+        return subcategory;
+    }
+
     @NotNull(message = "Bitte wähle Einzel- oder Gruppenprojekt aus.")
     private CollaborationMode collaborationMode = CollaborationMode.INDIVIDUAL;
 
@@ -110,7 +117,12 @@ public class ProjectBasicsForm implements ProjectClassification {
         form.setCollaborationMode(state.getCollaborationMode() == null ? CollaborationMode.INDIVIDUAL : state.getCollaborationMode());
         form.setStartDate(state.getStartDate());
         form.setEndDate(state.getEndDate());
-        form.setDurationDays(state.getDurationDays());
+        if (state.getDurationValue() != null) {
+            form.setDurationUnit(state.getDurationUnit());
+            form.setDurationValue(state.getDurationValue());
+        } else {
+            form.setDurationDays(state.getDurationDays());
+        }
         form.setAvailableWorkingTime(state.getAvailableWorkingTime());
         return form;
     }

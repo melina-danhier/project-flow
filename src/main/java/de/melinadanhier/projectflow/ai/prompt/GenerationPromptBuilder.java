@@ -45,6 +45,18 @@ public class GenerationPromptBuilder {
             - Gib für jede Aufgabe prerequisiteTaskTempIds als Liste vorhandener Aufgaben-tempId-Werte
               zurück. Nutze eine leere Liste, wenn keine Abhängigkeiten bestehen. Erzeuge weder
               Selbstabhängigkeiten noch Zyklen.
+              prerequisiteTaskTempIds drückt ausschließlich zwingende zeitliche Voraussetzungen im Sinne
+              einer Finish-to-Start-Abhängigkeit aus: Die Voraussetzung A muss vollständig abgeschlossen sein,
+              bevor die Nachfolgeaufgabe B beginnen darf. Daher muss bei terminierten Aufgaben
+              B.startDate >= A.dueDate gelten. Falls B kein startDate besitzt, muss mindestens
+              B.dueDate >= A.dueDate gelten. Ein Beginn am selben Kalendertag wie das Fälligkeitsdatum der
+              Voraussetzung ist erlaubt.
+              Aufgaben dürfen sich grundsätzlich zeitlich überlappen oder parallel bearbeitet werden;
+              solche überlappenden oder nur allgemein zusammenhängenden Aufgaben dürfen jedoch nicht über
+              prerequisiteTaskTempIds miteinander verknüpft werden. Setze eine Abhängigkeit nur, wenn die
+              Fertigstellung der Vorgängeraufgabe tatsächlich zwingend notwendig ist, damit die Nachfolgeaufgabe
+              beginnen kann. Nicht jede inhaltliche, thematische oder organisatorische Beziehung zwischen
+              Aufgaben ist eine Voraussetzung.
             - priority ist optional und darf nur LOW, MEDIUM oder HIGH sein. Setze den Wert auf null,
               wenn keine begründete Priorität ableitbar ist.
             - estimatedMinutes ist optional. Setze den Wert auf null, wenn wesentliche Angaben zu Menge,
