@@ -74,6 +74,16 @@ public enum ProjectSubCategory {
         return Arrays.stream(values()).filter(value -> value.category == category).toList();
     }
 
+    public static ProjectSubCategory defaultForCategory(ProjectCategory category) {
+        if (category == null || category == ProjectCategory.OTHER) {
+            return null;
+        }
+        return forCategory(category).stream()
+                .filter(ProjectSubCategory::isOther)
+                .findFirst()
+                .orElse(null);
+    }
+
     public static boolean isValidFor(ProjectCategory category, ProjectSubCategory subcategory) {
         boolean categoryHasSubcategories = !forCategory(category).isEmpty();
         if (!categoryHasSubcategories) {

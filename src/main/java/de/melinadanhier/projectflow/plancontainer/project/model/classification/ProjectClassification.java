@@ -23,8 +23,12 @@ public interface ProjectClassification {
         return getCategory() == ProjectCategory.OTHER;
     }
 
-    default boolean isSubcategoryRequired() {
+    default boolean hasSubcategories() {
         return !getSubcategoryOptions().isEmpty();
+    }
+
+    default boolean isSubcategoryRequired() {
+        return false;
     }
 
     default String getProjectTypeLabel() {

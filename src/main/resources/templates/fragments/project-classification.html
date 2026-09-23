@@ -4,7 +4,6 @@
     <div class="pf-form-group">
         <label for="category" class="pf-label">
             <span>Oberkategorie</span>
-            <span class="pf-required-star" aria-hidden="true">*</span>
         </label>
         <select id="category" th:field="*{category}" class="pf-select" required>
             <option value="OTHER">Sonstiges</option>
@@ -19,14 +18,12 @@
         </select>
         <div th:if="${#fields.hasErrors('category')}" class="pf-alert pf-alert--error" th:errors="*{category}" role="alert"></div>
     </div>
-    <div id="subcategory-fields" th:hidden="!*{subcategoryRequired}" class="pf-form-group">
+    <div id="subcategory-fields" th:hidden="*{otherCategory}" class="pf-form-group">
         <label for="subcategory" class="pf-label">
             <span>Unterkategorie</span>
-            <span class="pf-required-star" aria-hidden="true">*</span>
         </label>
         <select id="subcategory" th:field="*{subcategory}" class="pf-select"
-                th:disabled="!*{subcategoryRequired}" th:required="*{subcategoryRequired}">
-            <option value="" disabled>Bitte auswählen</option>
+                th:disabled="*{otherCategory}">
             <option th:each="option : *{subcategoryOptions}" th:value="${option.name()}" th:text="${option.label}"></option>
         </select>
         <div th:if="${#fields.hasErrors('subcategory')}" class="pf-alert pf-alert--error" th:errors="*{subcategory}" role="alert"></div>

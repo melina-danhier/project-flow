@@ -40,7 +40,10 @@ public class ProjectClassificationValidator
 
     private static Map<String, String> errors(ProjectCategory category, ProjectSubCategory subcategory) {
         Map<String, String> errors = new LinkedHashMap<>();
-        if (!ProjectSubCategory.isValidFor(category, subcategory)) {
+        ProjectSubCategory effective = (subcategory == null && category != null)
+                ? ProjectSubCategory.defaultForCategory(category)
+                : subcategory;
+        if (!ProjectSubCategory.isValidFor(category, effective)) {
             errors.put("subcategory", ProjectSubCategory.forCategory(category).isEmpty()
                     ? "Für diese Oberkategorie ist keine Unterkategorie vorgesehen."
                     : "Bitte wähle eine Unterkategorie der gewählten Oberkategorie.");

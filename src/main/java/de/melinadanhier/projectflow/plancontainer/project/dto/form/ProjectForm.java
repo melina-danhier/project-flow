@@ -44,6 +44,13 @@ public abstract class ProjectForm implements ProjectClassification, ProjectColla
 
     private ProjectSubCategory subcategory;
 
+    public ProjectSubCategory getSubcategory() {
+        if (subcategory == null && category != null && category != ProjectCategory.OTHER) {
+            return ProjectSubCategory.defaultForCategory(category);
+        }
+        return subcategory;
+    }
+
     @NotNull(message = "Bitte wähle Einzel- oder Gruppenprojekt aus.")
     private CollaborationMode collaborationMode;
 

@@ -678,7 +678,7 @@ class AuthenticationIntegrationTest {
                 .andExpect(status().is3xxRedirection());
         mockMvc.perform(get("/projects/new").session(session))
                 .andExpect(status().isOk())
-                .andExpect(result -> assertThat(subcategoryDropdown(result).split("<option")).hasSize(8))
+                .andExpect(result -> assertThat(subcategoryDropdown(result).split("<option")).hasSize(7))
                 .andExpect(result -> assertThat(subcategoryDropdown(result)).containsPattern(
                         "<option[^>]*value=\"THESIS\"[^>]*selected=\"selected\""))
                 .andExpect(result -> assertThat(subcategoryDropdown(result)).doesNotContain("MOVING"))
@@ -703,10 +703,9 @@ class AuthenticationIntegrationTest {
         mockMvc.perform(post("/projects/new").session(session).with(csrf())
                         .param("title", "Wohnprojekt").param("category", "HOME")
                         .param("subcategory", "").param("collaborationMode", "INDIVIDUAL"))
-                .andExpect(status().isOk())
-                .andExpect(model().attributeHasFieldErrors("projectBasicsForm", "subcategory"));
+                .andExpect(status().is3xxRedirection());
         assertThat(((ProjectWizardState) session.getAttribute(ProjectWizardService.SESSION_ATTRIBUTE))
-                .getSubcategory()).isEqualTo(ProjectSubCategory.THESIS);
+                .getSubcategory()).isEqualTo(ProjectSubCategory.OTHER_HOME);
         mockMvc.perform(get("/projects/new").session(session))
                 .andExpect(result -> assertThat(subcategoryDropdown(result)).doesNotContain("Keine Unterkategorie"));
     }
