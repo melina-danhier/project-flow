@@ -50,7 +50,7 @@
             <!-- Classification (Category & Subcategory) -->
             <div class="pf-form-row">
                 <label for="category" class="pf-label">
-                    <span>Kategorie <span class="pf-required-star" aria-hidden="true">*</span></span>
+                    <span>Kategorie</span>
                     <span class="pf-hint">Themenbereich</span>
                 </label>
                 <div class="pf-form-field">
@@ -61,7 +61,7 @@
             <!-- Collaboration Mode -->
             <div class="pf-form-row">
                 <div class="pf-label">
-                    <span>Beteiligte Personen <span class="pf-required-star" aria-hidden="true">*</span></span>
+                    <span>Beteiligte Personen</span>
                     <span class="pf-hint">Zusammenarbeit</span>
                 </div>
                 <div class="pf-form-field">
@@ -82,13 +82,25 @@
             <!-- Time-related Section -->
             <div class="pf-time-section-box">
                 <div class="pf-time-section-header">
-                    <h3>Zeitlicher Rahmen & Arbeitszeit</h3>
+                    <div class="pf-time-section-title-wrap">
+                        <h3>Zeitlicher Rahmen & Arbeitszeit</h3>
+                        <span class="pf-info-tooltip pf-time-tip-icon"
+                              data-tooltip="Tipp: Startdatum, Endtermin und geplante Dauer sind unabhängig voneinander optional. Mit einem Datum und einer Dauer kann ProjectFlow die fehlende Grenze vorschlagen."
+                              title="Tipp: Startdatum, Endtermin und geplante Dauer sind unabhängig voneinander optional. Mit einem Datum und einer Dauer kann ProjectFlow die fehlende Grenze vorschlagen."
+                              aria-label="Tipp zu Zeitangaben">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </span>
+                    </div>
                     <p>
                         Diese Werte beschreiben die Zeit, die dir für die eigentliche Arbeit zur Verfügung steht (z. B. bis zum Event-, Abgabe- oder Liefertermin).
                     </p>
                 </div>
 
-                <div class="pf-alert pf-alert--info" style="margin-bottom: 1.25rem; font-size: 0.88rem; padding: 0.65rem 0.95rem;">
+                <div class="pf-alert pf-alert--info pf-time-tip-alert" style="margin-bottom: 1.25rem; font-size: 0.88rem; padding: 0.65rem 0.95rem;">
                     💡 <strong>Tipp:</strong> Startdatum, Endtermin und geplante Dauer sind unabhängig voneinander optional. Mit einem Datum und einer Dauer kann ProjectFlow die fehlende Grenze vorschlagen.
                 </div>
 
