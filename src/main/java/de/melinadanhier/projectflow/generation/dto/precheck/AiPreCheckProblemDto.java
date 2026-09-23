@@ -54,7 +54,7 @@ public record AiPreCheckProblemDto(
         }
         return switch (type) {
             case CRITICAL_ASSUMPTION -> "Vorgeschlagene Änderung übernehmen";
-            case ASSUMPTION, RISK -> "Ohne Änderung fortfahren";
+            case ASSUMPTION, RISK -> "Bestätigen";
             case CONFLICT -> null;
         };
     }

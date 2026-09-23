@@ -12,8 +12,21 @@
     <div class="pf-loading-card">
         <p th:if="${successMessage}" th:text="${successMessage}" role="status" class="pf-alert pf-alert--success"></p>
 
+        <th:block th:if="${workflow.processing}">
+            <th:block th:replace="~{fragments/loading-screen :: processing(
+                    ${workflow.preCheckRun ? 'Projektangaben werden geprüft' : 'Projektplan wird erstellt'},
+                    ${workflow.preCheckRun ? 'Deine Angaben werden geprüft und vorbereitet.' : 'Phasen, Meilensteine und Aufgaben werden erstellt.'},
+                    'Fortschritt der KI-Planerstellung',
+                    'Angaben prüfen',
+                    'Prüfung auf Vollständigkeit und Machbarkeit.',
+                    'Plan erstellen',
+                    'Generierung von Phasen, Meilensteinen und Aufgaben.',
+                    ${workflow.preCheckRun ? 1 : 2},
+                    'Wird automatisch aktualisiert')}" />
+        </th:block>
+
         <!-- Hero Section -->
-        <div class="pf-loading-hero">
+        <div th:unless="${workflow.processing}" class="pf-loading-hero">
             <!-- Processing Icon / Emblem (Clean & static) -->
             <div th:if="${workflow.processing}" class="pf-loading-icon-wrap" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -39,7 +52,7 @@
         </div>
 
         <!-- Progress Stepper (Exactly 2 user-facing steps) -->
-        <div class="pf-stepper" role="list" aria-label="Fortschritt der KI-Planerstellung">
+        <div th:unless="${workflow.processing}" class="pf-stepper" role="list" aria-label="Fortschritt der KI-Planerstellung">
             <!-- Step 1: Projektangaben prüfen -->
             <div class="pf-step"
                  th:classappend="${(!workflow.preCheckRun and workflow.status.name() != 'TECHNICAL_FAILURE') ? ' is-completed' : (workflow.processing and workflow.preCheckRun ? ' is-active' : ((workflow.status.name() == 'TECHNICAL_FAILURE' and (workflow.errorOperation?.name() == 'PRE_CHECK' or workflow.preCheckRun)) ? ' is-failed' : ' is-upcoming'))}"
@@ -86,14 +99,6 @@
                     </div>
                     <p class="pf-step-desc">Generierung von Phasen, Meilensteinen und Aufgaben.</p>
                 </div>
-            </div>
-        </div>
-
-        <!-- Subtle Heartbeat Indicator for Auto-refresh -->
-        <div th:if="${workflow.processing}" class="pf-loading-heartbeat-wrap">
-            <div class="pf-loading-heartbeat">
-                <span class="pf-heartbeat-dot" aria-hidden="true"></span>
-                <span>Wird automatisch aktualisiert</span>
             </div>
         </div>
 

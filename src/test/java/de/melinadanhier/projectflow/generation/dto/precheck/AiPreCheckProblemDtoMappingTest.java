@@ -31,10 +31,10 @@ class AiPreCheckProblemDtoMappingTest {
                 .isEqualTo("Vorgeschlagene Änderung übernehmen");
 
         assertThat(createDto(AiPreCheckProblemType.ASSUMPTION, AiPreCheckSeverity.WARNING).getActionLabel())
-                .isEqualTo("Ohne Änderung fortfahren");
+                .isEqualTo("Bestätigen");
 
         assertThat(createDto(AiPreCheckProblemType.RISK, AiPreCheckSeverity.WARNING).getActionLabel())
-                .isEqualTo("Ohne Änderung fortfahren");
+                .isEqualTo("Bestätigen");
 
         assertThat(createDto(AiPreCheckProblemType.CONFLICT, AiPreCheckSeverity.ERROR).getActionLabel())
                 .isNull();

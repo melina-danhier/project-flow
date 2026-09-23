@@ -146,7 +146,7 @@ class AiPreCheckWizardIntegrationTest {
                 .andExpect(content().string(containsString("<strong>Projektziel: </strong>")))
                 .andExpect(content().string(not(containsString("<strong>projectGoal: </strong>"))));
         mockMvc.perform(get(problemsUrl(workflowId)).session(session).with(user(principal)))
-                .andExpect(content().string(containsString("Ohne Änderung fortfahren")))
+                .andExpect(content().string(containsString("Bestätigen")))
                 .andExpect(content().string(containsString("Vorgeschlagene Änderung übernehmen")));
         mockMvc.perform(post(acceptUrl(workflowId, 0)).session(session).with(user(principal)).with(csrf()))
                 .andExpect(status().is3xxRedirection())
@@ -471,6 +471,7 @@ class AiPreCheckWizardIntegrationTest {
         mockMvc.perform(get(statusUrl(workflowId)).session(session).with(user(principal)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Plan neu generieren")))
+                .andExpect(content().string(not(containsString("Wird automatisch aktualisiert"))))
                 .andExpect(content().string(containsString("Zurück zur Zusammenfassung der Eingaben")));
 
         mockMvc.perform(post(statusUrl(workflowId) + "/edit")

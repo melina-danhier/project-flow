@@ -94,6 +94,7 @@ class AiWizardSummaryIntegrationTest {
                 .andExpect(content().string(containsString("Budget 2.000 Euro")))
                 .andExpect(content().string(containsString("21 Tage")))
                 .andExpect(content().string(containsString("aria-labelledby=\"ai-processing-information\"")))
+                .andExpect(content().string(not(containsString("Art der Erstellung"))))
                 .andExpect(content().string(not(containsString("Zeitrahmen-Modus"))));
     }
 

@@ -3,11 +3,12 @@
 <head>
     <th:block th:replace="~{fragments/layout :: head('KI-Änderung prüfen')}" />
     <link rel="stylesheet" th:href="@{/css/components/plan.css}">
+    <link rel="stylesheet" th:href="@{/css/components/loading-screen.css}">
 </head>
 <body>
 <header th:replace="~{fragments/layout :: site-header}"></header>
 
-<main class="pf-page pf-plan-change-review">
+<main id="plan-change-review-content" class="pf-page pf-plan-change-review">
     <div class="pf-page-header">
         <div class="pf-page-header__left">
             <a th:href="@{/projects/{id}/plan(id=${proposal.projectId})}" class="pf-page-header__back">
@@ -81,7 +82,8 @@
             <button type="submit" class="pf-btn pf-btn--primary">Änderungen übernehmen</button>
         </form>
         <form th:action="@{/projects/{projectId}/plan/ai-change/{proposalId}/regenerate(projectId=${proposal.projectId},proposalId=${proposal.proposalId})}"
-              method="post" style="margin: 0;">
+              method="post" style="margin: 0;" data-loading-screen-target="plan-change-loading"
+              data-loading-content-target="plan-change-review-content">
             <button type="submit" class="pf-btn pf-btn--secondary">Mit gleichem Wunsch neu generieren</button>
         </form>
         <form th:action="@{/projects/{projectId}/plan/ai-change/{proposalId}/discard(projectId=${proposal.projectId},proposalId=${proposal.proposalId})}"
@@ -93,6 +95,22 @@
     </div>
 </main>
 
+<main id="plan-change-loading" class="pf-loading-container" hidden aria-hidden="true">
+    <div class="pf-loading-card">
+        <th:block th:replace="~{fragments/loading-screen :: processing(
+            'Planänderung wird neu erstellt',
+            'Die KI verarbeitet deinen Änderungswunsch erneut und erstellt eine neue Variante.',
+            'Fortschritt der KI-Plananpassung',
+            'Änderungswunsch prüfen',
+            'Der vorhandene Wunsch wird erneut mit dem aktuellen Plan abgeglichen.',
+            'Vorschlag erstellen',
+            'Eine neue Variante der betroffenen Bereiche und Aufgaben wird ausgearbeitet.',
+            2,
+            'Neue Variante wird erstellt')}" />
+    </div>
+</main>
+
+<script th:src="@{/js/loading-screen.js}"></script>
 <th:block th:replace="~{fragments/layout :: site-footer}"/>
 </body>
 </html>
