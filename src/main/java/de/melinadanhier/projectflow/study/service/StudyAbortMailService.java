@@ -1,7 +1,9 @@
 package de.melinadanhier.projectflow.study.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -28,7 +30,7 @@ public class StudyAbortMailService {
     private final String recipientAddress;
 
     public StudyAbortMailService(
-            JavaMailSender mailSender,
+            @Autowired(required = false) @Nullable JavaMailSender mailSender,
             @Value("${projectflow.study.abort-report-mail-to:}") String recipientAddress
     ) {
         this.mailSender = mailSender;
@@ -44,6 +46,11 @@ public class StudyAbortMailService {
      * @param timestamp     server-side timestamp of the abort
      */
     public void sendReport(String comment, String currentPage, UUID studySessionId, Instant timestamp) {
+        if (mailSender == null) {
+            log.warn("Studienabbruch-Mail nicht gesendet: Kein JavaMailSender konfiguriert.");
+            return;
+        }
+
         if (recipientAddress == null || recipientAddress.isBlank()) {
             log.warn("Studienabbruch-Mail nicht gesendet: Keine Empfängeradresse konfiguriert (STUDY_ABORT_MAIL_TO).");
             return;

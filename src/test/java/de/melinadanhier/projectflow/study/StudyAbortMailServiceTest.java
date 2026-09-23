@@ -3,6 +3,7 @@ package de.melinadanhier.projectflow.study;
 import de.melinadanhier.projectflow.study.service.StudyAbortMailService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -93,5 +94,23 @@ class StudyAbortMailServiceTest {
         service.sendReport("test", null, null, Instant.now());
 
         verifyNoInteractions(mailSender);
+    }
+
+    @Test
+    void nullMailSenderSkipsMailSilently() {
+        StudyAbortMailService service = new StudyAbortMailService(null, "study@example.com");
+
+        assertThatCode(() -> service.sendReport("test", null, null, Instant.now()))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void springInstantiatesServiceWithoutJavaMailSenderBean() {
+        new ApplicationContextRunner()
+                .withUserConfiguration(StudyAbortMailService.class)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context).hasSingleBean(StudyAbortMailService.class);
+                });
     }
 }
