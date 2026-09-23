@@ -348,16 +348,6 @@
                 }
             });
 
-            // Close dropdowns on outside click
-            document.addEventListener('click', (e) => {
-                document.querySelectorAll('details.pf-dropdown[open]').forEach(details => {
-                    if (!details.contains(e.target)) {
-                        if (window.closePfDropdown) window.closePfDropdown(details);
-                        else details.removeAttribute('open');
-                    }
-                });
-            });
-
             // Click on project card opens the project
             document.addEventListener('click', (e) => {
                 const card = e.target.closest('.pf-project-card[data-card-href]');

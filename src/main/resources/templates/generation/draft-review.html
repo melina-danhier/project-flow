@@ -73,14 +73,14 @@
             </div>
 
             <!-- Mobile: Action Menu Dropdown -->
-            <details th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-dropdown pf-dropdown--right pf-draft-header-actions--mobile">
-                <summary class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger">
+            <div th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-dropdown pf-dropdown--right pf-draft-header-actions--mobile">
+                <button type="button" class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger" aria-expanded="false">
                     <span>Aktionen</span>
                     <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
-                </summary>
-                <div class="pf-dropdown__menu">
+                </button>
+                <div class="pf-dropdown__menu" hidden>
                     <form th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post" style="margin:0;">
                         <button type="submit" class="pf-dropdown__item">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -106,7 +106,7 @@
                         </button>
                     </form>
                 </div>
-            </details>
+            </div>
         </div>
         <input type="hidden" id="draft-lock-version" name="lockVersion" th:value="${draft.lockVersion}">
         <input type="hidden" id="draft-csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -115,20 +115,21 @@
     <!-- Flash Messages (dismissible) -->
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
-    <!-- Toolbar: Filter bar + Sorting control + View switcher (Collapsible on mobile) -->
-    <details class="pf-toolbar-collapse" open>
-        <summary class="pf-toolbar-collapse-summary pf-btn pf-btn--sm pf-btn--outline">
+    <!-- Toolbar: filtering/sorting and a separately available view selector -->
+    <div class="pf-plan-controls-row">
+    <div class="pf-toolbar-collapse">
+        <button type="button" class="pf-toolbar-collapse-summary pf-btn pf-btn--sm pf-btn--outline" aria-expanded="true" aria-controls="draft-filter-controls">
             <span class="pf-cluster" style="gap: 0.5rem; align-items: center;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                 </svg>
-                <span>Filter & Ansicht</span>
+                <span>Filter &amp; Sortierung</span>
             </span>
             <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-        </summary>
-        <div class="pf-plan-toolbar">
+        </button>
+    <div class="pf-plan-toolbar" id="draft-filter-controls">
         <div class="pf-plan-toolbar__left" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <form class="pf-review-filter-form" method="get" th:action="@{/projects/{projectId}/draft/review(projectId=${draft.projectId})}">
                 <label for="review-status-filter" class="pf-filter-label">Filter:</label>
@@ -163,10 +164,14 @@
             </div>
         </div>
 
-        <!-- View Selection Dropdown -->
-        <div class="pf-plan-view-wrap">
-            <details class="pf-dropdown pf-dropdown--right pf-plan-view-dropdown pf-plan-view-switcher" role="group" aria-label="Entwurfsansicht auswählen">
-                <summary class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger">
+    </div>
+    </div>
+
+        <!-- View Selection Dropdown stays visible independently of the collapsible filters. -->
+        <div class="pf-plan-view-wrap pf-plan-view-wrap--standalone">
+            <span class="pf-sort-label pf-view-label">Ansicht:</span>
+            <div class="pf-dropdown pf-dropdown--right pf-plan-view-dropdown pf-plan-view-switcher" role="group" aria-label="Entwurfsansicht auswählen">
+                <button type="button" class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger" aria-expanded="false">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
                         <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
@@ -175,8 +180,8 @@
                     <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
-                </summary>
-                <div class="pf-dropdown__menu">
+                </button>
+                <div class="pf-dropdown__menu" hidden>
                     <button type="button" class="pf-dropdown__item is-active" data-plan-view="list" aria-pressed="true">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
                         <span>Liste</span>
@@ -194,22 +199,21 @@
                         <span>Kalender</span>
                     </button>
                 </div>
-            </details>
+            </div>
         </div>
     </div>
-    </details>
 
     <!-- Alternative View Container (Cards, Board, Calendar) -->
     <div id="plan-alternative-view" class="pf-plan-alternative-view" hidden aria-live="polite"></div>
 
     <!-- Sections (Expanded by default, Caret toggle, Inline editing) -->
     <div id="draft-sections">
-        <details class="draft-section plan-phase pf-plan-phase" th:each="section : ${draft.sections}" open
+        <section class="draft-section plan-phase pf-plan-phase" th:each="section : ${draft.sections}"
                  th:attr="draggable=${draft.status.name() != 'APPLIED'},data-section-id=${section.id},data-section-title=${section.title},data-section-description=${section.description},data-move-url=@{/projects/{projectId}/draft/sections/{sectionId}/move(projectId=${draft.projectId},sectionId=${section.id})}">
-            <summary class="pf-plan-section__header section-heading">
+            <header class="pf-plan-section__header section-heading">
                 <div class="pf-phase-header__left">
                     <!-- Collapse Toggle Caret -->
-                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen">
+                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen" aria-expanded="true" th:attr="aria-controls=${'draft-section-content-' + section.id}">
                         <svg class="pf-phase-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -267,9 +271,9 @@
                         </button>
                     </th:block>
                 </div>
-            </summary>
+            </header>
 
-            <ol class="plan-elements pf-element-list" th:attr="data-section-id=${section.id}">
+            <ol class="plan-elements pf-element-list pf-collapsible-content" th:id="${'draft-section-content-' + section.id}" th:attr="data-section-id=${section.id}">
                 <li class="plan-element pf-element-item" th:each="element : ${section.elements}" th:id="${'draft-element-' + element.id}"
                     th:attr="draggable=${draft.status.name() != 'APPLIED'},data-element-id=${element.id},data-element-title=${element.title},data-element-type=${element.type},data-detail-url=${element.type == 'TASK' ? '/projects/' + draft.projectId + '/draft/tasks/' + element.id : '/projects/' + draft.projectId + '/draft/milestones/' + element.id},data-section-id=${section.id},data-manual-position=${element.manualPosition},data-dated=${element.dueDate != null or element.startDate != null},data-date=${element.dueDate != null ? element.dueDate.toString() : (element.startDate != null ? element.startDate.toString() : '')},data-start-date=${element.startDate != null ? element.startDate.toString() : ''},data-due-date=${element.dueDate != null ? element.dueDate.toString() : ''},data-review-status=${element.reviewStatus.name()},data-move-url=@{/projects/{projectId}/draft/elements/{elementId}/move(projectId=${draft.projectId},elementId=${element.id})}">
                     
@@ -313,7 +317,7 @@
                     </div>
                 </li>
             </ol>
-        </details>
+        </section>
     </div>
 
     <p th:if="${draft.sections.isEmpty()}" class="pf-empty-state">Keine Elemente entsprechen dem gewählten Filter.</p>

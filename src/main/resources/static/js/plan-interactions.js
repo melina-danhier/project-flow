@@ -3,6 +3,15 @@
     const planMain = () => document.querySelector('main[data-project-id]');
     const stateKey = main => `projectflow:plan-state:${main.dataset.projectId}`;
 
+    const setSectionExpanded = (section, expanded) => {
+        if (!section) return;
+        section.classList.toggle('is-collapsed', !expanded);
+        const trigger = section.querySelector(':scope > .pf-plan-section__header .pf-phase-toggle-btn');
+        const content = section.querySelector(':scope > .pf-collapsible-content');
+        if (trigger) trigger.setAttribute('aria-expanded', String(expanded));
+        if (content) content.hidden = !expanded;
+    };
+
     const readState = main => {
         try {
             return JSON.parse(sessionStorage.getItem(stateKey(main))) || {};
@@ -14,7 +23,7 @@
     const captureState = main => {
         if (!main) return;
         const state = {
-            openSectionIds: [...main.querySelectorAll('details.plan-section[open]')]
+            openSectionIds: [...main.querySelectorAll('.plan-section[data-section-id]:not(.is-collapsed)')]
                 .map(section => section.dataset.sectionId)
                 .filter(Boolean),
             scrollY: window.scrollY
@@ -29,12 +38,12 @@
     const restoreState = main => {
         if (!main) return;
         const state = readState(main);
-        const openSectionIds = new Set(state.openSectionIds || []);
-        main.querySelectorAll('details.plan-section').forEach(section => {
-            if (openSectionIds.has(section.dataset.sectionId)) {
-                section.open = true;
-            }
-        });
+        if (Array.isArray(state.openSectionIds)) {
+            const openSectionIds = new Set(state.openSectionIds);
+            main.querySelectorAll('.plan-section[data-section-id]').forEach(section => {
+                setSectionExpanded(section, openSectionIds.has(section.dataset.sectionId));
+            });
+        }
         if (Number.isFinite(state.scrollY)) {
             requestAnimationFrame(() => window.scrollTo(0, state.scrollY));
         }
@@ -154,24 +163,8 @@
         void submitRequest(form.action, body, main, form);
     });
 
-    document.addEventListener('toggle', event => {
-        if (event.target.matches('details.plan-section')) captureState(planMain());
-    }, true);
     window.addEventListener('pagehide', () => captureState(planMain()));
     document.addEventListener('DOMContentLoaded', () => restoreState(planMain()));
-
-    // Global dropdown click-outside closer
-    document.addEventListener('click', event => {
-        document.querySelectorAll('details.pf-dropdown[open]').forEach(dropdown => {
-            if (!dropdown.contains(event.target)) {
-                if (window.closePfDropdown) {
-                    window.closePfDropdown(dropdown);
-                } else {
-                    dropdown.removeAttribute('open');
-                }
-            }
-        });
-    });
 
     // Phase collapse behavior: Only toggle when clicking caret (.pf-phase-toggle-btn)
     document.addEventListener('click', event => {
@@ -183,9 +176,9 @@
         const toggleBtn = event.target.closest('.pf-phase-toggle-btn');
         if (toggleBtn) {
             event.preventDefault();
-            const details = toggleBtn.closest('details.plan-section');
-            if (details) {
-                details.open = !details.open;
+            const section = toggleBtn.closest('.plan-section');
+            if (section) {
+                setSectionExpanded(section, section.classList.contains('is-collapsed'));
                 captureState(planMain());
             }
             return;
@@ -203,11 +196,11 @@
         if (editBtn) {
             event.preventDefault();
             event.stopPropagation();
-            const section = editBtn.closest('details.plan-section');
-            const menu = editBtn.closest('details.pf-phase-menu');
+            const section = editBtn.closest('.plan-section');
+            const menu = editBtn.closest('.pf-phase-menu');
             if (menu) {
                 if (window.closePfDropdown) window.closePfDropdown(menu);
-                else menu.removeAttribute('open');
+                else menu.classList.remove('is-open');
             }
             if (section) {
                 const displayWrap = section.querySelector('.pf-phase-display-wrap');
@@ -230,7 +223,7 @@
         if (cancelBtn) {
             event.preventDefault();
             event.stopPropagation();
-            const section = cancelBtn.closest('details.plan-section');
+            const section = cancelBtn.closest('.plan-section');
             if (section) {
                 const displayWrap = section.querySelector('.pf-phase-display-wrap');
                 const editForm = section.querySelector('.pf-phase-inline-edit');
@@ -252,7 +245,7 @@
                 const actionsDropdown = document.getElementById('project-actions-dropdown');
                 if (actionsDropdown) {
                     if (window.closePfDropdown) window.closePfDropdown(actionsDropdown);
-                    else actionsDropdown.removeAttribute('open');
+                    else actionsDropdown.classList.remove('is-open');
                 }
                 newSectionDialog.showModal();
                 newSectionDialog.querySelector('#new-section-title')?.focus();
@@ -327,10 +320,10 @@
             if (moveBtn && moveElementDialog && moveElementForm) {
                 event.preventDefault();
                 event.stopPropagation();
-                const menu = moveBtn.closest('details.pf-item-menu, details.pf-dropdown');
+                const menu = moveBtn.closest('.pf-item-menu, .pf-dropdown');
                 if (menu) {
                     if (window.closePfDropdown) window.closePfDropdown(menu);
-                    else menu.removeAttribute('open');
+                    else menu.classList.remove('is-open');
                 }
 
                 const title = moveBtn.dataset.elementTitle || 'Element';
@@ -369,10 +362,10 @@
             if (deleteBtn && deleteSectionDialog && deleteSectionForm) {
                 event.preventDefault();
                 event.stopPropagation();
-                const menu = deleteBtn.closest('details.pf-phase-menu');
+                const menu = deleteBtn.closest('.pf-phase-menu');
                 if (menu) {
                     if (window.closePfDropdown) window.closePfDropdown(menu);
-                    else menu.removeAttribute('open');
+                    else menu.classList.remove('is-open');
                 }
 
                 const sectionId = deleteBtn.dataset.sectionId;
@@ -554,9 +547,25 @@
 
     const setupMobileCollapses = () => {
         if (window.innerWidth <= 640) {
-            document.querySelectorAll('.pf-plan-control-collapse[open]').forEach(el => el.removeAttribute('open'));
+            document.querySelectorAll('.pf-plan-control-collapse').forEach(el => {
+                el.classList.add('is-collapsed');
+                el.querySelector(':scope > .pf-plan-control-collapse-summary')?.setAttribute('aria-expanded', 'false');
+                const content = el.querySelector(':scope > .pf-plan-control-bar');
+                if (content) content.hidden = true;
+            });
         }
     };
+
+    document.addEventListener('click', event => {
+        const trigger = event.target.closest('.pf-plan-control-collapse-summary');
+        if (!trigger) return;
+        const collapse = trigger.closest('.pf-plan-control-collapse');
+        const content = collapse?.querySelector(':scope > .pf-plan-control-bar');
+        const expanded = collapse?.classList.contains('is-collapsed') ?? false;
+        collapse?.classList.toggle('is-collapsed', !expanded);
+        trigger.setAttribute('aria-expanded', String(expanded));
+        if (content) content.hidden = !expanded;
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         setupPlanModals();

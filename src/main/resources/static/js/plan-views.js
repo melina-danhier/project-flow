@@ -9,6 +9,32 @@ function initializePlanViews() {
     if (!switcher || !alternativeView || !sections) return;
     if (switcher.dataset.initialized === 'true') return;
     switcher.dataset.initialized = 'true';
+    var viewTrigger = switcher.querySelector(':scope > .pf-dropdown__trigger');
+    var viewMenu = switcher.querySelector(':scope > .pf-dropdown__menu');
+
+    function setViewMenuOpen(open) {
+        switcher.classList.toggle('is-open', open);
+        if (viewTrigger) viewTrigger.setAttribute('aria-expanded', String(open));
+        if (viewMenu) viewMenu.hidden = !open;
+    }
+
+    setViewMenuOpen(false);
+    if (viewTrigger) {
+        viewTrigger.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            setViewMenuOpen(!switcher.classList.contains('is-open'));
+        });
+    }
+    document.addEventListener('click', function (event) {
+        if (!switcher.contains(event.target)) setViewMenuOpen(false);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && switcher.classList.contains('is-open')) {
+            setViewMenuOpen(false);
+            if (viewTrigger) viewTrigger.focus();
+        }
+    });
 
     var monthCursor;
     var cardPage = 0;
@@ -40,6 +66,22 @@ function initializePlanViews() {
 
     function formatDateRange(startIso, dueIso) {
         return formatDate(startIso) + ' – ' + formatDate(dueIso);
+    }
+
+    function formatEffort(minutes) {
+        var value = Number(minutes);
+        if (!Number.isFinite(value) || value <= 0) return '';
+        if (value < 60) return value + ' Min.';
+        var hours = Math.floor(value / 60);
+        var remainingMinutes = value % 60;
+        return remainingMinutes ? hours + ' Std. ' + remainingMinutes + ' Min.' : hours + ' Std.';
+    }
+
+    function statusLabel(item) {
+        if (item.type === 'milestone') return item.completed ? 'Erreicht' : 'Offen';
+        if (item.taskStatus === 'IN_PROGRESS') return 'In Bearbeitung';
+        if (item.taskStatus === 'COMPLETED' || item.completed) return 'Erledigt';
+        return 'Offen';
     }
 
     function getActiveFilters() {
@@ -121,20 +163,23 @@ function initializePlanViews() {
 
                     return {
                         title: element.dataset.elementTitle || (link ? link.textContent.trim() : draftTitle),
+                        description: text(element, '.pf-element-item__desc, .pf-element-desc'),
                         href: element.dataset.detailUrl || (link ? link.getAttribute('href') : '/projects/' + projectId + '/draft/'
                             + (type === 'task' ? 'tasks/' : 'milestones/') + element.dataset.elementId),
                         type: type,
                         date: element.dataset.date || '',
                         startDate: element.dataset.startDate || '',
                         dueDate: element.dataset.dueDate || element.dataset.date || '',
-                        dateLabel: text(element, '.pf-badge--outline') || text(element, '.element-facts time'),
-                        state: text(element, '.pf-badge--gray') || text(element, '.review-status'),
+                        dateLabel: text(element, '.element-facts time'),
+                        state: text(element, '.review-status'),
                         priority: priority,
                         priorityLabel: priorityLabel,
                         effort: effort,
+                        effortLabel: formatEffort(effort) || text(element, '.pf-element-meta .pf-badge--gray'),
                         assignedMe: assignedMe,
                         hasAssignees: hasAssignees,
                         assignees: assignees,
+                        originLabel: text(element, '.pf-origin-text'),
                         taskStatus: taskStatus,
                         completed: isCompleted,
                         lockVersion: element.dataset.lockVersion || '',
@@ -176,9 +221,35 @@ function initializePlanViews() {
         form.submit();
     }
 
-    function elementCard(item) {
-        var li = document.createElement('li');
+    function appendBadge(container, label, className, title) {
+        if (!label) return;
+        var badge = document.createElement('span');
+        badge.className = 'pf-badge ' + className;
+        badge.textContent = label;
+        if (title) badge.title = title;
+        container.appendChild(badge);
+    }
+
+    function appendOriginBadge(container, label) {
+        if (!label) return;
+        var badge = document.createElement('span');
+        badge.className = 'pf-badge pf-badge--outline pf-origin-badge';
+        badge.title = label;
+        badge.setAttribute('aria-label', label);
+        badge.innerHTML = '<svg class="pf-origin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>';
+        var originText = document.createElement('span');
+        originText.className = 'pf-origin-text';
+        originText.textContent = label;
+        badge.appendChild(originText);
+        container.appendChild(badge);
+    }
+
+    function elementCard(item, options) {
+        options = options || {};
+        var li = document.createElement(options.tagName || 'li');
         li.className = 'pf-plan-compact-element pf-plan-compact-element--' + item.type;
+        li.classList.add('pf-element-item', 'plan-element', 'pf-element-item--' + item.type);
+        if (options.calendar) li.classList.add('pf-calendar__task');
         li.dataset.elementId = item.elementId;
         li.dataset.sectionId = item.sectionId;
         li.dataset.date = item.date;
@@ -193,12 +264,16 @@ function initializePlanViews() {
                 window.location.href = item.href;
             });
         }
+        var left = document.createElement('div');
+        left.className = 'pf-element-item__left';
         if (editable) {
             li.draggable = true;
             var handle = document.createElement('button');
-            handle.type = 'button'; handle.className = 'pf-compact-drag-handle';
-            handle.textContent = '↕'; handle.title = 'Element verschieben'; handle.setAttribute('aria-label', 'Element verschieben');
-            li.appendChild(handle);
+            handle.type = 'button';
+            handle.className = 'pf-compact-drag-handle element-drag-handle pf-drag-handle-visual';
+            handle.title = 'Element verschieben'; handle.setAttribute('aria-label', 'Element verschieben');
+            handle.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle><circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle></svg>';
+            left.appendChild(handle);
         }
         var leading = null;
         if (!isDraft && editable) {
@@ -284,41 +359,68 @@ function initializePlanViews() {
                 }
             }
         } else {
-            leading = document.createElement('span');
-            leading.className = 'pf-plan-compact-element__icon';
-            leading.textContent = item.type === 'milestone' ? (item.completed ? '✓' : '◆') : (item.completed ? '✓' : '○');
+            if (isDraft || progressDisplay !== 'STATUS') {
+                leading = document.createElement('span');
+                leading.className = 'pf-element-item__icon pf-element-item__icon--' + item.type;
+                leading.textContent = item.type === 'milestone' ? (item.completed ? '✓' : '◆') : (item.completed ? '✓' : '○');
+            }
         }
 
         var content = document.createElement('div');
-        content.className = 'pf-plan-compact-element__body';
+        content.className = 'pf-plan-compact-element__body pf-element-item__body';
         var link = document.createElement('a');
         link.href = item.href;
         link.textContent = item.title;
-        link.className = 'pf-plan-compact-element__title';
-        content.appendChild(link);
-
-        var metaParts = [];
-        if (item.priorityLabel) {
-            metaParts.push(item.priorityLabel);
+        link.className = 'pf-plan-compact-element__title pf-element-item__title';
+        if (item.type === 'milestone') {
+            var milestoneTitle = document.createElement('div');
+            milestoneTitle.className = 'pf-milestone-title-wrap';
+            var milestoneIcon = document.createElement('span');
+            milestoneIcon.className = 'pf-milestone-icon-indicator';
+            milestoneIcon.title = 'Meilenstein: Markiert ein wichtiges Zwischenziel im Projekt.';
+            milestoneIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15" stroke-width="2"></line></svg>';
+            milestoneTitle.append(milestoneIcon, link);
+            content.appendChild(milestoneTitle);
+        } else {
+            content.appendChild(link);
         }
+
+        if (item.description) {
+            var description = document.createElement('span');
+            description.className = 'pf-element-item__desc';
+            description.textContent = item.description;
+            content.appendChild(description);
+        }
+        if (item.assignees) {
+            var assignees = document.createElement('span');
+            assignees.className = 'pf-element-item__assignees';
+            assignees.textContent = 'Zugewiesen: ' + item.assignees;
+            content.appendChild(assignees);
+        }
+
+        if (leading) left.appendChild(leading);
+        left.appendChild(content);
+
+        var right = document.createElement('div');
+        right.className = 'pf-element-item__right';
+        if (item.type === 'task' && item.priorityLabel) {
+            var priorityClass = item.priority === 'HIGH' ? 'pf-badge--red' : item.priority === 'LOW' ? 'pf-badge--gray' : 'pf-badge--yellow';
+            appendBadge(right, item.priorityLabel, priorityClass);
+        }
+        if (item.type === 'task') appendBadge(right, item.effortLabel, 'pf-badge--gray', 'Geschätzter Aufwand');
         if (item.startDate && item.dueDate) {
-            metaParts.push(formatDateRange(item.startDate, item.dueDate));
+            appendBadge(right, formatDateRange(item.startDate, item.dueDate), 'pf-badge--outline');
         } else if (item.dueDate) {
-            metaParts.push((item.type === 'milestone' ? '' : 'Fällig: ') + formatDate(item.dueDate));
+            appendBadge(right, (item.type === 'milestone' ? '' : 'Fällig: ') + formatDate(item.dueDate), 'pf-badge--outline');
         } else if (item.startDate) {
-            metaParts.push('Start: ' + formatDate(item.startDate));
-        } else if (item.dateLabel) {
-            metaParts.push(item.dateLabel);
+            appendBadge(right, 'ab ' + formatDate(item.startDate), 'pf-badge--outline');
+        } else {
+            appendBadge(right, item.dateLabel, 'pf-badge--outline');
         }
-        if (metaParts.length > 0) {
-            var meta = document.createElement('small');
-            meta.className = 'pf-plan-compact-element__meta';
-            meta.textContent = metaParts.join(' · ');
-            content.appendChild(meta);
-        }
+        if (!editable) appendBadge(right, item.state || statusLabel(item), 'pf-badge--gray');
+        appendOriginBadge(right, item.originLabel);
 
-        if (leading) li.appendChild(leading);
-        li.appendChild(content);
+        li.append(left, right);
         return li;
     }
 
@@ -500,9 +602,8 @@ function initializePlanViews() {
             var iso = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
             cell.dataset.date = iso;
             tasks.filter(function (task) { return isTaskOnDate(task, iso, calendarDateMode); }).forEach(function (task) {
-                var link = document.createElement('a'); link.className = 'pf-calendar__task'; link.href = task.href;
-                link.textContent = task.title; link.title = task.title;
-                link.dataset.elementId = task.elementId; link.dataset.date = iso;
+                var link = elementCard(task, { calendar: true, tagName: 'article' });
+                link.dataset.date = iso;
                 if (calendarDateMode === 'both' && task.startDate && (task.dueDate || task.date) && task.startDate !== (task.dueDate || task.date)) {
                     link.classList.add('pf-calendar__task--range');
                     if (iso === task.startDate) link.classList.add('pf-calendar__task--range-start');
@@ -619,7 +720,7 @@ function initializePlanViews() {
             button.setAttribute('aria-pressed', String(active));
         });
         var activeBtn = switcher.querySelector('[data-plan-view="' + view + '"]');
-        var summary = switcher.querySelector('summary');
+        var summary = viewTrigger;
         if (summary && activeBtn) {
             var activeSvg = activeBtn.querySelector('svg');
             var triggerSvg = summary.querySelector('svg:not(.pf-dropdown__chevron)');
@@ -635,10 +736,7 @@ function initializePlanViews() {
                 currentLabel.textContent = span ? span.textContent.trim() : activeBtn.textContent.trim();
             }
         }
-        if (switcher.tagName === 'DETAILS' && switcher.hasAttribute('open')) {
-            if (window.closePfDropdown) window.closePfDropdown(switcher);
-            else switcher.removeAttribute('open');
-        }
+        setViewMenuOpen(false);
         if (!isList) {
             var filters = getActiveFilters();
             var phases = collectPhases().map(function (phase) {

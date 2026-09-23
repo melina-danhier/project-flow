@@ -156,7 +156,7 @@
     transition: var(--pf-transition, all 0.15s ease);
 }
 
-.pf-template-phase summary.pf-plan-section__header {
+.pf-template-phase .pf-plan-section__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -169,12 +169,8 @@
     transition: background 0.15s ease;
 }
 
-details.pf-template-phase[open] summary.pf-plan-section__header {
+.pf-template-phase:not(.is-collapsed) .pf-plan-section__header {
     border-bottom: 1px solid var(--pf-border);
-}
-
-.pf-template-phase summary::-webkit-details-marker {
-    display: none;
 }
 
 .pf-template-phase .pf-phase-header__left {
@@ -209,11 +205,11 @@ details.pf-template-phase[open] summary.pf-plan-section__header {
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-details.pf-template-phase:not([open]) .pf-phase-caret {
+.pf-template-phase.is-collapsed .pf-phase-caret {
     transform: rotate(-90deg);
 }
 
-details.pf-template-phase[open] .pf-phase-caret {
+.pf-template-phase:not(.is-collapsed) .pf-phase-caret {
     transform: rotate(0deg);
 }
 

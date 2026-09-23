@@ -37,14 +37,14 @@
                     <span>Plan mit KI verbessern</span>
                 </a>
             <!-- Consolidated Project Actions Dropdown -->
-            <details class="pf-dropdown pf-dropdown--right" id="project-actions-dropdown">
-                <summary class="pf-btn pf-btn--outline pf-dropdown__trigger">
+            <div class="pf-dropdown pf-dropdown--right" id="project-actions-dropdown">
+                <button type="button" class="pf-btn pf-btn--outline pf-dropdown__trigger" aria-expanded="false">
                     <span>Aktionen</span>
                     <svg class="pf-dropdown__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
-                </summary>
-                <div class="pf-dropdown__menu">
+                </button>
+                <div class="pf-dropdown__menu" hidden>
                     <!-- Mobile only: Plan mit KI verbessern inside dropdown -->
                     <a th:if="${plan.editable}" class="pf-dropdown__item pf-dropdown__item--mobile-ai" th:href="@{/projects/{projectId}/plan/ai-change(projectId=${plan.project.id})}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -158,7 +158,7 @@
                         </form>
                     </th:block>
                 </div>
-            </details>
+            </div>
             </div>
         </div>
 
@@ -183,20 +183,21 @@
     <!-- Flash Messages -->
     <th:block th:replace="~{fragments/flash-messages :: all}" />
 
-    <!-- Plan Control Bar: Consistent Sorting Control & Compact View Selector (Collapsible on mobile) -->
-    <details class="pf-plan-control-collapse" open>
-        <summary class="pf-plan-control-collapse-summary pf-btn pf-btn--sm pf-btn--outline">
+    <!-- Plan controls: filtering/sorting and a separately available view selector -->
+    <div class="pf-plan-controls-row">
+    <div class="pf-plan-control-collapse">
+        <button type="button" class="pf-plan-control-collapse-summary pf-btn pf-btn--sm pf-btn--outline" aria-expanded="true" aria-controls="plan-filter-controls">
             <span class="pf-cluster" style="gap: 0.5rem; align-items: center;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                 </svg>
-                <span>Filter &amp; Ansicht</span>
+                <span>Filter &amp; Sortierung</span>
             </span>
             <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-        </summary>
-        <div class="pf-plan-control-bar">
+        </button>
+        <div class="pf-plan-control-bar" id="plan-filter-controls">
             <div class="pf-plan-control-bar__left">
                 <!-- Sorting Control -->
                 <div class="pf-sort-control-wrap">
@@ -254,43 +255,45 @@
                     </select>
                 </div>
 
-                <!-- View Selection Dropdown (placed directly on the right next to filtering/sorting) -->
-                <div class="pf-plan-view-wrap">
-                    <span class="pf-sort-label pf-view-label">Ansicht:</span>
-                    <details class="pf-dropdown pf-dropdown--left pf-plan-view-dropdown pf-plan-view-switcher" role="group" aria-label="Planansicht auswählen">
-                        <summary class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
-                                <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
-                            </svg>
-                            <span class="pf-view-current-label">Liste</span>
-                            <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </summary>
-                        <div class="pf-dropdown__menu">
-                            <button type="button" class="pf-dropdown__item is-active" data-plan-view="list" aria-pressed="true">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                                <span>Liste</span>
-                            </button>
-                            <button type="button" class="pf-dropdown__item" data-plan-view="cards" aria-pressed="false">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
-                                <span>Karten</span>
-                            </button>
-                            <button type="button" class="pf-dropdown__item" data-plan-view="board" aria-pressed="false">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18"></rect><rect x="10" y="3" width="5" height="18"></rect><rect x="17" y="3" width="5" height="18"></rect></svg>
-                                <span>Board</span>
-                            </button>
-                            <button type="button" class="pf-dropdown__item" data-plan-view="calendar" aria-pressed="false">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                                <span>Kalender</span>
-                            </button>
-                        </div>
-                    </details>
-                </div>
             </div>
         </div>
-    </details>
+    </div>
+
+    <!-- View Selection Dropdown stays visible independently of the collapsible filters. -->
+    <div class="pf-plan-view-wrap pf-plan-view-wrap--standalone">
+        <span class="pf-sort-label pf-view-label">Ansicht:</span>
+        <div class="pf-dropdown pf-dropdown--left pf-plan-view-dropdown pf-plan-view-switcher" role="group" aria-label="Planansicht auswählen">
+            <button type="button" class="pf-btn pf-btn--sm pf-btn--outline pf-dropdown__trigger" aria-expanded="false">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span class="pf-view-current-label">Liste</span>
+                <svg class="pf-dropdown__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+            <div class="pf-dropdown__menu" hidden>
+                <button type="button" class="pf-dropdown__item is-active" data-plan-view="list" aria-pressed="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    <span>Liste</span>
+                </button>
+                <button type="button" class="pf-dropdown__item" data-plan-view="cards" aria-pressed="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                    <span>Karten</span>
+                </button>
+                <button type="button" class="pf-dropdown__item" data-plan-view="board" aria-pressed="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18"></rect><rect x="10" y="3" width="5" height="18"></rect><rect x="17" y="3" width="5" height="18"></rect></svg>
+                    <span>Board</span>
+                </button>
+                <button type="button" class="pf-dropdown__item" data-plan-view="calendar" aria-pressed="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span>Kalender</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
 
     <!-- Alternative View Container (Cards, Board, Calendar) -->
     <div id="plan-alternative-view" class="pf-plan-alternative-view" hidden aria-live="polite"></div>
@@ -298,16 +301,15 @@
     <!-- Plan Sections Container -->
     <div id="plan-sections">
         <!-- Sections Loop -->
-        <details th:each="section, sectionStat : ${plan.sections}"
+        <section th:each="section, sectionStat : ${plan.sections}"
                  class="pf-plan-section plan-phase plan-section"
-                 open="open"
                  th:attr="data-section-id=${section.id},data-section-title=${section.title},data-section-description=${section.description},data-position=${sectionStat.index},data-move-url=@{/projects/{projectId}/plan/sections/{sectionId}/move(projectId=${plan.project.id},sectionId=${section.id})},draggable=${plan.editable}">
             
             <!-- Phase Header: Triangle caret (left), Title & Description, Right-aligned Actions Menu -->
-            <summary class="pf-plan-section__header">
+            <header class="pf-plan-section__header">
                 <div class="pf-phase-header__left">
                     <!-- Collapse Toggle Button (Caret) -->
-                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen">
+                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen" aria-expanded="true" th:attr="aria-controls=${'plan-section-content-' + section.id}">
                         <svg class="pf-phase-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -362,15 +364,15 @@
                     </span>
 
                     <!-- Phase Overflow Menu (Right-Aligned Hamburger) -->
-                    <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-phase-menu">
-                        <summary class="pf-card-menu__btn" title="Bereichsoptionen" aria-label="Bereichsoptionen">
+                    <div th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-phase-menu">
+                        <button type="button" class="pf-card-menu__btn" title="Bereichsoptionen" aria-label="Bereichsoptionen" aria-expanded="false">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="1.5"></circle>
                                 <circle cx="12" cy="5" r="1.5"></circle>
                                 <circle cx="12" cy="19" r="1.5"></circle>
                             </svg>
-                        </summary>
-                        <div class="pf-dropdown__menu">
+                        </button>
+                        <div class="pf-dropdown__menu" hidden>
                             <button type="button" class="pf-dropdown__item pf-phase-edit-btn">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -410,12 +412,12 @@
                                 <span>Bereich löschen</span>
                             </button>
                         </div>
-                    </details>
+                    </div>
                 </div>
-            </summary>
+            </header>
 
             <!-- Elements in this Section -->
-            <ul class="pf-element-list plan-elements" th:attr="data-section-id=${section.id}">
+            <ul class="pf-element-list plan-elements pf-collapsible-content" th:id="${'plan-section-content-' + section.id}" th:attr="data-section-id=${section.id}">
                 <li th:if="${#lists.isEmpty(section.elements)}" class="pf-element-item--empty" style="padding: 0.85rem; color: var(--pf-text-muted); text-align: center; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); font-size: 0.88rem;">
                     Keine Aufgaben oder Meilensteine in diesem Bereich vorhanden.
                 </li>
@@ -539,13 +541,13 @@
                         </span>
 
                         <!-- Element Action Menu (Far-right hamburger) -->
-                        <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
-                            <summary class="pf-card-menu__btn" title="Elementoptionen" aria-label="Elementoptionen">
+                        <div th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
+                            <button type="button" class="pf-card-menu__btn" title="Elementoptionen" aria-label="Elementoptionen" aria-expanded="false">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle>
                                 </svg>
-                            </summary>
-                            <div class="pf-dropdown__menu">
+                            </button>
+                            <div class="pf-dropdown__menu" hidden>
                                 <a class="pf-dropdown__item"
                                    th:href="${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id + '/edit' : '/projects/' + plan.project.id + '/milestones/' + element.id + '/edit'}">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -596,11 +598,11 @@
                                     </button>
                                 </form>
                             </div>
-                        </details>
+                        </div>
                     </div>
                 </li>
             </ul>
-        </details>
+        </section>
     </div>
 
     <!-- Unsectioned Elements (Always visible in project plan views) -->
@@ -721,13 +723,13 @@
                     <!-- Read-only Status Badge -->
                     <span class="pf-badge pf-badge--gray" th:if="${!plan.editable and element.stateLabel != null}" th:text="${element.stateLabel}"></span>
 
-                    <details th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
-                        <summary class="pf-card-menu__btn" title="Elementoptionen" aria-label="Elementoptionen">
+                    <div th:if="${plan.editable}" class="pf-dropdown pf-dropdown--right pf-item-menu">
+                        <button type="button" class="pf-card-menu__btn" title="Elementoptionen" aria-label="Elementoptionen" aria-expanded="false">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle>
                             </svg>
-                        </summary>
-                        <div class="pf-dropdown__menu">
+                        </button>
+                        <div class="pf-dropdown__menu" hidden>
                             <a class="pf-dropdown__item"
                                th:href="${element.type.name() == 'TASK' ? '/projects/' + plan.project.id + '/tasks/' + element.id + '/edit' : '/projects/' + plan.project.id + '/milestones/' + element.id + '/edit'}">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -778,7 +780,7 @@
                                 </button>
                             </form>
                         </div>
-                    </details>
+                    </div>
                 </div>
             </li>
         </ul>

@@ -200,27 +200,24 @@
         submitMove(dragged.dataset.moveUrl, { targetPosition: before ? siblings.indexOf(before) : siblings.length });
     });
 
+    const setSectionExpanded = (section, expanded) => {
+        if (!section) return;
+        section.classList.toggle('is-collapsed', !expanded);
+        const trigger = section.querySelector(':scope > .pf-plan-section__header .pf-phase-toggle-btn');
+        const content = section.querySelector(':scope > .pf-collapsible-content');
+        if (trigger) trigger.setAttribute('aria-expanded', String(expanded));
+        if (content) content.hidden = !expanded;
+    };
+
     // 4. Phase collapse behavior: Only toggle when clicking caret (.pf-phase-toggle-btn)
     document.addEventListener('click', event => {
         const toggleBtn = event.target.closest('.pf-phase-toggle-btn');
         if (toggleBtn) {
             event.preventDefault();
             event.stopPropagation();
-            const details = toggleBtn.closest('details.draft-section');
-            if (details) {
-                details.open = !details.open;
-            }
+            const section = toggleBtn.closest('.draft-section');
+            if (section) setSectionExpanded(section, section.classList.contains('is-collapsed'));
             return;
-        }
-
-        // Prevent header click from toggling <details>
-        const header = event.target.closest('summary.pf-plan-section__header');
-        if (header) {
-            // If the user clicked interactive buttons or forms inside summary, don't interfere
-            if (event.target.closest('button, input, textarea, a, form, .pf-phase-inline-edit')) {
-                return;
-            }
-            event.preventDefault();
         }
     });
 
@@ -267,7 +264,7 @@
         if (!card) return;
 
         // Do not navigate if clicking an interactive control
-        if (event.target.closest('button, input, textarea, select, a, label, form, .drag-handle, .pf-drag-handle-visual, .pf-compact-drag-handle, .review-actions, .review-actions-wrap, .pf-element-edit-btn, summary')) {
+        if (event.target.closest('button, input, textarea, select, a, label, form, .drag-handle, .pf-drag-handle-visual, .pf-compact-drag-handle, .review-actions, .review-actions-wrap, .pf-element-edit-btn')) {
             return;
         }
 
@@ -320,9 +317,25 @@
         }
     }, { capture: true });
 
+    document.addEventListener('click', event => {
+        const trigger = event.target.closest('.pf-toolbar-collapse-summary');
+        if (!trigger) return;
+        const collapse = trigger.closest('.pf-toolbar-collapse');
+        const content = collapse?.querySelector(':scope > .pf-plan-toolbar');
+        const expanded = collapse?.classList.contains('is-collapsed') ?? false;
+        collapse?.classList.toggle('is-collapsed', !expanded);
+        trigger.setAttribute('aria-expanded', String(expanded));
+        if (content) content.hidden = !expanded;
+    });
+
     // 9. Auto-collapse toolbar on mobile devices (Task 11)
     if (window.innerWidth <= 640) {
-        document.querySelectorAll('.pf-toolbar-collapse[open]').forEach(el => el.removeAttribute('open'));
+        document.querySelectorAll('.pf-toolbar-collapse').forEach(el => {
+            el.classList.add('is-collapsed');
+            el.querySelector(':scope > .pf-toolbar-collapse-summary')?.setAttribute('aria-expanded', 'false');
+            const content = el.querySelector(':scope > .pf-plan-toolbar');
+            if (content) content.hidden = true;
+        });
     }
 
 })();

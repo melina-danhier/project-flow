@@ -26,16 +26,16 @@
             </div>
 
             <!-- Hamburger Menu Dropdown (larger button & icon) -->
-            <details class="pf-dropdown pf-card-menu">
-                <summary class="pf-card-menu__btn" title="Aktionen">
+            <div class="pf-dropdown pf-card-menu">
+                <button type="button" class="pf-card-menu__btn" title="Aktionen" aria-label="Aktionen" aria-expanded="false">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="4" y1="6" x2="20" y2="6"></line>
                         <line x1="4" y1="12" x2="20" y2="12"></line>
                         <line x1="4" y1="18" x2="20" y2="18"></line>
                     </svg>
-                </summary>
-                <div class="pf-dropdown__menu pf-dropdown__menu--right">
+                </button>
+                <div class="pf-dropdown__menu pf-dropdown__menu--right" hidden>
                     <!-- Edit Project / Review Draft (at top) -->
                     <a th:if="${(selectedLocation == null or selectedLocation.name() == 'OVERVIEW') and project.owner}"
                         th:href="@{/projects/{id}/edit(id=${project.id})}" class="pf-dropdown__item">
@@ -199,7 +199,7 @@
                         </button>
                     </form>
                 </div>
-            </details>
+            </div>
         </div>
 
         <!-- Middle: Category & Timeframe (Centered) -->

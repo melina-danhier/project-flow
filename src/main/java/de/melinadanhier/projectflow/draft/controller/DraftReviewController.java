@@ -1,7 +1,6 @@
 package de.melinadanhier.projectflow.draft.controller;
 
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
-import de.melinadanhier.projectflow.draft.model.DraftReviewStatus;
 import de.melinadanhier.projectflow.draft.service.DraftReviewService;
 import de.melinadanhier.projectflow.generation.model.workflow.AiPlanGenerationWorkflowStatus;
 import de.melinadanhier.projectflow.generation.repository.AiPlanGenerationWorkflowRepository;
@@ -22,11 +21,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
 public class DraftReviewController {
+
+    private static final String REVIEW_FILTERS_SESSION_ATTRIBUTE =
+            DraftReviewController.class.getName() + ".reviewFilters";
 
     private final DraftReviewService draftReviewService;
     private final AiPlanGenerationWorkflowRepository workflowRepository;
@@ -38,6 +42,7 @@ public class DraftReviewController {
     public String review(@PathVariable UUID projectId,
                          @AuthenticationPrincipal AuthenticatedUser currentUser,
                          @RequestParam(required = false) String reviewStatus,
+                         HttpSession session,
                          Model model) {
         projectAuthorizationService.requireMember(projectId, currentUser.userId());
         Project project = projectRepository.findById(projectId)
@@ -49,7 +54,8 @@ public class DraftReviewController {
         if (workflow != null && workflow.getStatus() != AiPlanGenerationWorkflowStatus.GENERATION_COMPLETED) {
             return "redirect:/projects/new/ai/status/" + workflow.getId();
         }
-        var draft = draftReviewService.review(projectId, currentUser.userId(), reviewStatus);
+        String activeReviewStatus = resolveReviewStatus(session, projectId, reviewStatus);
+        var draft = draftReviewService.review(projectId, currentUser.userId(), activeReviewStatus);
         model.addAttribute("draft", draft);
         return "generation/draft-review";
     }
@@ -120,6 +126,25 @@ public class DraftReviewController {
 
     private String reviewRedirect(UUID projectId) {
         return "redirect:/projects/" + projectId + "/draft/review";
+    }
+
+    @SuppressWarnings("unchecked")
+    private String resolveReviewStatus(HttpSession session, UUID projectId, String requestedStatus) {
+        Object current = session.getAttribute(REVIEW_FILTERS_SESSION_ATTRIBUTE);
+        Map<UUID, String> filters;
+        if (current instanceof Map<?, ?>) {
+            filters = (Map<UUID, String>) current;
+        } else {
+            filters = new LinkedHashMap<>();
+            session.setAttribute(REVIEW_FILTERS_SESSION_ATTRIBUTE, filters);
+        }
+
+        if (requestedStatus != null) {
+            String normalized = requestedStatus.trim().toUpperCase();
+            filters.put(projectId, normalized);
+            return normalized;
+        }
+        return filters.getOrDefault(projectId, "");
     }
 
     private String elementRedirect(UUID projectId, UUID elementId, boolean detail, UUID userId) {

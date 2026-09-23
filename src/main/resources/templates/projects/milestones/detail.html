@@ -29,15 +29,15 @@
                     <span class="pf-badge pf-badge--purple" title="Ein Meilenstein markiert einen wichtigen Zwischen- oder Zielpunkt im Projekt." style="cursor: help;">Meilenstein</span>
                 </div>
                 <!-- Mobile: Compact Menu directly next to title (never slips below) -->
-                <details th:if="${milestone.editable}" class="pf-dropdown pf-dropdown--right pf-task-header-actions--mobile">
-                    <summary class="pf-btn pf-btn--outline pf-btn--icon" title="Aktionen" aria-label="Aktionen">
+                <div th:if="${milestone.editable}" class="pf-dropdown pf-dropdown--right pf-task-header-actions--mobile">
+                    <button type="button" class="pf-btn pf-btn--outline pf-btn--icon pf-dropdown__trigger" title="Aktionen" aria-label="Aktionen" aria-expanded="false">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="1.5"></circle>
                             <circle cx="12" cy="5" r="1.5"></circle>
                             <circle cx="12" cy="19" r="1.5"></circle>
                         </svg>
-                    </summary>
-                    <div class="pf-dropdown__menu" style="min-width: 180px; width: max-content; max-width: calc(100vw - 2rem); white-space: nowrap;">
+                    </button>
+                    <div class="pf-dropdown__menu" hidden style="min-width: 180px; width: max-content; max-width: calc(100vw - 2rem); white-space: nowrap;">
                         <a class="pf-dropdown__item"
                            th:href="@{/projects/{projectId}/plan-elements/MILESTONE/{milestoneId}/improve(projectId=${milestone.planContainerId},milestoneId=${milestone.id})}">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -56,7 +56,7 @@
                             </button>
                         </form>
                     </div>
-                </details>
+                </div>
             </div>
         </div>
 

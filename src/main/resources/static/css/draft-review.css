@@ -31,7 +31,7 @@ main[data-sort-mode] {
 .pf-toolbar-collapse {
     margin-bottom: 1.25rem;
 }
-.pf-toolbar-collapse > summary.pf-toolbar-collapse-summary {
+.pf-toolbar-collapse > .pf-toolbar-collapse-summary {
     display: none;
 }
 
@@ -53,6 +53,16 @@ main[data-sort-mode] {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+}
+
+.pf-plan-controls-row > .pf-toolbar-collapse {
+    margin-bottom: 0;
+}
+
+.pf-plan-controls-row > .pf-toolbar-collapse .pf-plan-toolbar {
+    height: 100%;
+    margin-bottom: 0;
+    box-sizing: border-box;
 }
 
 .pf-review-filter-form {
@@ -118,7 +128,7 @@ main[data-sort-mode] {
     gap: 1rem;
 }
 
-details.draft-section {
+.draft-section {
     border: 1.5px solid var(--pf-border-strong, #cbd5e1);
     border-radius: var(--pf-radius-lg);
     background: #ffffff;
@@ -127,7 +137,7 @@ details.draft-section {
     transition: var(--pf-transition, all 0.2s ease);
 }
 
-details.draft-section summary.pf-plan-section__header {
+.draft-section .pf-plan-section__header {
     cursor: default;
     list-style: none;
     display: flex;
@@ -140,12 +150,8 @@ details.draft-section summary.pf-plan-section__header {
     user-select: none;
 }
 
-details.draft-section[open] summary.pf-plan-section__header {
+.draft-section:not(.is-collapsed) .pf-plan-section__header {
     border-bottom-color: var(--pf-border-strong, #cbd5e1);
-}
-
-details.draft-section summary::-webkit-details-marker {
-    display: none;
 }
 
 .pf-phase-header__left {
@@ -195,13 +201,11 @@ details.draft-section summary::-webkit-details-marker {
     display: inline-block;
 }
 
-details:not([open]) .pf-phase-caret,
-details.draft-section:not([open]) .pf-phase-caret {
+.draft-section.is-collapsed .pf-phase-caret {
     transform: rotate(-90deg);
 }
 
-details[open] .pf-phase-caret,
-details.draft-section[open] .pf-phase-caret {
+.draft-section:not(.is-collapsed) .pf-phase-caret {
     transform: rotate(0deg);
 }
 
@@ -728,11 +732,13 @@ details.draft-section[open] .pf-phase-caret {
         z-index: 30;
         margin-bottom: 0.85rem;
     }
-    .pf-toolbar-collapse:has(.pf-plan-view-dropdown[open]),
+    .pf-plan-controls-row > .pf-toolbar-collapse {
+        margin-bottom: 0;
+    }
     .pf-toolbar-collapse:focus-within {
         z-index: 1050;
     }
-    .pf-toolbar-collapse > summary.pf-toolbar-collapse-summary {
+    .pf-toolbar-collapse > .pf-toolbar-collapse-summary {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -748,9 +754,6 @@ details.draft-section[open] .pf-phase-caret {
         font-size: 0.88rem;
         font-weight: 600;
         color: var(--pf-text-secondary);
-    }
-    .pf-toolbar-collapse > summary::-webkit-details-marker {
-        display: none;
     }
     .pf-toolbar-collapse .pf-plan-toolbar {
         margin-top: 0.5rem;
@@ -773,35 +776,8 @@ details.draft-section[open] .pf-phase-caret {
         justify-content: space-between;
         width: 100%;
     }
-    .pf-toolbar-collapse .pf-plan-view-wrap {
-        width: 100%;
-        position: relative;
-        z-index: 50;
-    }
-    .pf-toolbar-collapse .pf-plan-view-dropdown {
-        width: 100%;
-        position: relative;
-        overflow: visible;
-    }
-    .pf-toolbar-collapse .pf-plan-view-dropdown[open] {
-        z-index: 1060;
-    }
-    .pf-toolbar-collapse .pf-plan-view-dropdown summary {
-        width: 100%;
-        justify-content: space-between;
-    }
-    .pf-toolbar-collapse .pf-plan-view-dropdown .pf-dropdown__menu {
-        position: absolute;
-        top: calc(100% + 0.35rem);
-        right: 0;
-        left: auto;
-        min-width: 170px;
-        max-width: calc(100vw - 2rem);
-        z-index: 1060;
-    }
-
     /* Task 12: Section Header - title on same line as caret/drag; actions below title */
-    details.draft-section summary.pf-plan-section__header {
+    .draft-section .pf-plan-section__header {
         flex-direction: column;
         align-items: stretch;
         gap: 0.5rem;

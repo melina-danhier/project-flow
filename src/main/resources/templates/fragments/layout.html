@@ -234,9 +234,9 @@
                     <span class="site-header__avatar">ST</span>
                     <span class="site-header__account-name">Studienkonto</span>
                 </div>
-                <details th:unless="${session != null and session.studySessionId != null}"
-                         class="pf-dropdown site-header__account-dropdown">
-                    <summary class="site-header__account pf-dropdown__trigger" aria-label="Benutzerkonto und Workspaces" title="Benutzerkonto">
+                <div th:unless="${session != null and session.studySessionId != null}"
+                     class="pf-dropdown site-header__account-dropdown">
+                    <button type="button" class="site-header__account pf-dropdown__trigger" aria-label="Benutzerkonto und Workspaces" title="Benutzerkonto" aria-expanded="false">
                         <span class="site-header__avatar">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -247,8 +247,8 @@
                         <svg class="pf-dropdown__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
-                    </summary>
-                    <div class="pf-dropdown__menu pf-dropdown__menu--right">
+                    </button>
+                    <div class="pf-dropdown__menu pf-dropdown__menu--right" hidden>
                         <div class="pf-dropdown__header">
                             <div class="pf-dropdown__user-name" th:text="${#authentication.principal.displayName != null and !#authentication.principal.displayName.isBlank() ? #authentication.principal.displayName : #authentication.name}">Workspace</div>
                             <span class="pf-dropdown__eyebrow">Workspaces</span>
@@ -279,7 +279,7 @@
                             </button>
                         </form>
                     </div>
-                </details>
+                </div>
             </th:block>
         </div>
     </div>
@@ -475,72 +475,65 @@
 
     <!-- Study Task Introduction Modal (Shown once at beginning of phase) -->
     <dialog th:if="${session != null and session.studySessionId != null and session.showStudyTaskIntro != null}"
-            id="pf-study-task-intro-dialog" class="pf-modal pf-dialog pf-study-task-modal"
-            aria-labelledby="pf-study-intro-title" style="max-width: 620px; width: 92%;">
-        <div class="pf-modal__header" style="border-bottom: 1px solid var(--pf-border); padding-bottom: 0.75rem;">
-            <div class="pf-cluster" style="align-items: center; gap: 0.5rem;">
-                <span class="pf-badge pf-badge--primary" style="font-size: 0.75rem;">Nutzerstudie</span>
-                <h2 id="pf-study-intro-title" class="pf-modal__title" style="margin: 0; font-size: 1.25rem;"
-                    th:text="${session.showStudyTaskIntro == 'TASK_1' ? 'Aufgabe 1: Projektplan erstellen' : 'Aufgabe 2: Plan anpassen'}">Aufgabe</h2>
+            id="pf-study-task-intro-dialog" class="pf-confirm-dialog pf-study-task-dialog"
+            aria-labelledby="pf-study-intro-title">
+        <div class="pf-confirm-dialog__content">
+            <div class="pf-confirm-dialog__header">
+                <div class="pf-confirm-icon-wrap pf-confirm-icon-wrap--primary">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                </div>
+                <div class="pf-confirm-dialog__body">
+                    <h3 class="pf-confirm-title" id="pf-study-intro-title"
+                        th:text="${session.showStudyTaskIntro == 'TASK_1' ? 'Aufgabe 1: Projektplan erstellen' : 'Aufgabe 2: Plan anpassen'}">Aufgabe</h3>
+                    <p class="pf-confirm-message">Nutzerstudie</p>
+                </div>
             </div>
-        </div>
-        <div class="pf-modal__body" style="padding-top: 1rem;">
-            <div th:if="${session.showStudyTaskIntro == 'TASK_1'}" class="pf-study-intro-content">
-                <strong style="font-size: 0.95rem;">Szenario (Umzug)</strong>
-                <p style="margin: 0.35rem 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Du planst einen Umzug in eine neue Wohnung innerhalb derselben Stadt. Der Umzug soll in etwa zwei Wochen stattfinden.
-                </p>
-                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Du wohnst aktuell in einer ungefähr 50 m² großen Wohnung. Einige Möbel müssen für den Transport abgebaut werden. Einen Teil des Verpackungsmaterials hast du bereits, weiteres musst du noch besorgen.
-                </p>
-                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Am Umzugstag helfen dir drei Freunde. Für den Transport stehen zwei Autos zur Verfügung. Größere Möbelstücke müssen entsprechend eingeplant werden.
-                </p>
-                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    In der neuen Wohnung möchtest du möglichst schnell die wichtigsten Dinge nutzbar haben. Gleichzeitig soll der Umzug ohne unnötigen Stress ablaufen und möglichst gut vorbereitet sein.
-                </p>
-                <p style="margin: 0 0 1rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Nutze ProjectFlow, um aus diesen Informationen einen sinnvollen Projektplan zu erstellen. Du kannst bei Bedarf eigene plausible Annahmen ergänzen.
-                </p>
+            <div class="pf-study-intro-body">
+                <div th:if="${session.showStudyTaskIntro == 'TASK_1'}" class="pf-study-intro-content">
+                    <strong>Szenario (Umzug)</strong>
+                    <p>Du planst einen Umzug in eine neue Wohnung innerhalb derselben Stadt. Der Umzug soll in etwa zwei Wochen stattfinden.</p>
+                    <p>Du wohnst aktuell in einer ungefähr 50 m² großen Wohnung. Einige Möbel müssen für den Transport abgebaut werden. Einen Teil des Verpackungsmaterials hast du bereits, weiteres musst du noch besorgen.</p>
+                    <p>Am Umzugstag helfen dir drei Freunde. Für den Transport stehen zwei Autos zur Verfügung. Größere Möbelstücke müssen entsprechend eingeplant werden.</p>
+                    <p>In der neuen Wohnung möchtest du möglichst schnell die wichtigsten Dinge nutzbar haben. Gleichzeitig soll der Umzug ohne unnötigen Stress ablaufen und möglichst gut vorbereitet sein.</p>
+                    <p>Nutze ProjectFlow, um aus diesen Informationen einen sinnvollen Projektplan zu erstellen. Du kannst bei Bedarf eigene plausible Annahmen ergänzen.</p>
 
-                <strong style="font-size: 0.95rem;">Aufgabe</strong>
-                <p style="margin: 0.35rem 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Erstelle mit ProjectFlow einen Projektplan für diesen Umzug. Nutze dabei die angebotene KI-Unterstützung. Prüfe die erzeugten Vorschläge so, wie du es auch bei einem eigenen Projekt tun würdest. Du darfst Vorschläge übernehmen, ändern oder ablehnen.
-                </p>
-                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Übernimm am Ende einen Projektplan, mit dem du grundsätzlich weiterarbeiten würdest.
-                </p>
-                <p class="pf-text-muted" style="margin: 0; font-size: 0.82rem;">
-                    Hinweis: Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.
-                </p>
-            </div>
-            <div th:if="${session.showStudyTaskIntro == 'TASK_2'}" class="pf-study-intro-content">
-                <strong style="font-size: 0.95rem;">Geänderte Situation</strong>
-                <p style="margin: 0.35rem 0 1rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Die Freunde, die dir ursprünglich beim Transport helfen wollten, können am geplanten Umzugstag kurzfristig nicht mehr helfen.
-                </p>
+                    <strong>Aufgabe</strong>
+                    <p>Erstelle mit ProjectFlow einen Projektplan für diesen Umzug. Nutze dabei die angebotene KI-Unterstützung. Prüfe die erzeugten Vorschläge so, wie du es auch bei einem eigenen Projekt tun würdest. Du darfst Vorschläge übernehmen, ändern oder ablehnen.</p>
+                    <p>Übernimm am Ende einen Projektplan, mit dem du grundsätzlich weiterarbeiten würdest.</p>
+                    <p class="pf-hint">Hinweis: Bitte gib keine echten personenbezogenen, vertraulichen oder sensiblen Informationen ein.</p>
+                </div>
+                <div th:if="${session.showStudyTaskIntro == 'TASK_2'}" class="pf-study-intro-content">
+                    <strong>Geänderte Situation</strong>
+                    <p>Die Freunde, die dir ursprünglich beim Transport helfen wollten, können am geplanten Umzugstag kurzfristig nicht mehr helfen.</p>
 
-                <strong style="font-size: 0.95rem;">Aufgabe</strong>
-                <p style="margin: 0.35rem 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Passe deinen bestehenden Projektplan mithilfe der KI-Unterstützung von ProjectFlow an diese neue Situation an.
-                </p>
-                <p style="margin: 0 0 0.75rem; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Du kannst dafür wahlweise oben im Plan <strong>„Plan mit KI verbessern“</strong> oder bei den betroffenen Aufgaben <strong>„Aufgabe mit KI anpassen“</strong> nutzen.
-                </p>
-                <p style="margin: 0; font-size: 0.92rem; line-height: 1.55; color: var(--pf-text-secondary);">
-                    Prüfe den Änderungsvorschlag und entscheide anschließend selbst, ob du ihn übernehmen oder verwerfen möchtest.
-                </p>
+                    <strong>Aufgabe</strong>
+                    <p>Passe deinen bestehenden Projektplan mithilfe der KI-Unterstützung von ProjectFlow an diese neue Situation an.</p>
+                    <p>Du kannst dafür wahlweise oben im Plan <strong>„Plan mit KI verbessern"</strong> oder bei den betroffenen Aufgaben <strong>„Aufgabe mit KI anpassen"</strong> nutzen.</p>
+                    <p>Prüfe den Änderungsvorschlag und entscheide anschließend selbst, ob du ihn übernehmen oder verwerfen möchtest.</p>
+                </div>
             </div>
-            <div class="pf-modal__actions" style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+            <div class="pf-confirm-dialog__actions">
                 <input type="hidden" id="pf-study-intro-csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <button type="button" class="pf-btn pf-btn--primary" id="pf-study-intro-ack-btn" style="min-width: 120px;">Verstanden</button>
+                <button type="button" class="pf-btn pf-btn--primary" id="pf-study-intro-ack-btn">Verstanden</button>
             </div>
         </div>
         <script>
             (() => {
                 const dialog = document.getElementById('pf-study-task-intro-dialog');
                 if (!dialog) return;
+                // Prevent ESC from closing the dialog without acknowledgment
+                dialog.addEventListener('cancel', e => e.preventDefault());
                 if (!dialog.open) dialog.showModal();
+                // The browser auto-focuses the button at the bottom, which scrolls the
+                // dialog content down. Reset the scrollable body to the top and move
+                // focus to the title so the user sees the beginning of the task.
+                const scrollBody = dialog.querySelector('.pf-study-intro-body');
+                if (scrollBody) scrollBody.scrollTop = 0;
+                const title = document.getElementById('pf-study-intro-title');
+                if (title) { title.setAttribute('tabindex', '-1'); title.focus({ preventScroll: true }); }
                 const ackBtn = document.getElementById('pf-study-intro-ack-btn');
                 if (ackBtn) {
                     ackBtn.addEventListener('click', () => {
@@ -679,101 +672,61 @@
                 });
             };
 
-            // Global Smooth Dropdown Animation & Management
-            window.closePfDropdown = function(details) {
-                if (!details || !details.hasAttribute('open') || details.classList.contains('is-closing')) return;
+            // Accessible dropdown management. Native disclosure elements are avoided because
+            // these menus contain interactive descendants.
+            const setPfDropdownOpen = (dropdown, open, restoreFocus = false) => {
+                if (!dropdown) return;
+                const trigger = dropdown.querySelector(':scope > .pf-dropdown__trigger, :scope > .pf-card-menu__btn');
+                const menu = dropdown.querySelector(':scope > .pf-dropdown__menu');
+                if (!trigger || !menu) return;
+                dropdown.classList.toggle('is-open', open);
+                trigger.setAttribute('aria-expanded', String(open));
+                menu.hidden = !open;
+                if (restoreFocus) trigger.focus();
+                if (!open) return;
 
-                const menu = details.querySelector('.pf-dropdown__menu');
-                if (!menu) {
-                    details.removeAttribute('open');
-                    return;
-                }
-
-                details.classList.add('is-closing');
-                let isDone = false;
-
-                const finish = () => {
-                    if (isDone) return;
-                    isDone = true;
-                    details.removeAttribute('open');
-                    details.classList.remove('is-closing');
-                    menu.removeEventListener('animationend', finish);
-                };
-
-                menu.addEventListener('animationend', finish, { once: true });
-                setTimeout(finish, 210);
-            };
-
-            // Global dropdown toggle & click-outside listener (Capture phase)
-            document.addEventListener('click', (e) => {
-                const summary = e.target.closest('details.pf-dropdown > summary');
-                if (summary) {
-                    const details = summary.closest('details.pf-dropdown');
-                    if (details) {
-                        if (details.classList.contains('is-closing')) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            details.classList.remove('is-closing');
-                            return;
-                        }
-                        if (details.hasAttribute('open')) {
-                            // Already open: intercept click in capture phase to animate closing
-                            e.preventDefault();
-                            e.stopPropagation();
-                            window.closePfDropdown(details);
-                            return;
-                        }
-                        // About to open: close any other open dropdowns smoothly
-                        document.querySelectorAll('details.pf-dropdown[open]').forEach(other => {
-                            if (other !== details) {
-                                window.closePfDropdown(other);
-                            }
-                        });
-                    }
-                    return;
-                }
-
-                // Smoothly close dropdowns when clicking outside
-                document.querySelectorAll('details.pf-dropdown[open]').forEach(details => {
-                    if (!details.contains(e.target)) {
-                        window.closePfDropdown(details);
-                    }
-                });
-            }, true);
-
-            // Prevent dropdown menus from overflowing viewport boundaries
-            document.addEventListener('toggle', (e) => {
-                if (e.target.matches && e.target.matches('details.pf-dropdown') && e.target.open) {
-                    const menu = e.target.querySelector('.pf-dropdown__menu');
-                    if (!menu) return;
-                    menu.style.left = '';
-                    menu.style.right = '';
-
+                menu.style.left = '';
+                menu.style.right = '';
+                requestAnimationFrame(() => {
                     const rect = menu.getBoundingClientRect();
                     const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
                     const padding = 12;
-
                     if (rect.right > viewportWidth - padding) {
                         menu.style.left = 'auto';
                         menu.style.right = '0';
                     }
-
                     const updatedRect = menu.getBoundingClientRect();
                     if (updatedRect.left < padding) {
-                        const parentRect = e.target.getBoundingClientRect();
+                        const parentRect = dropdown.getBoundingClientRect();
                         menu.style.right = 'auto';
                         menu.style.left = `${Math.max(0, padding - parentRect.left)}px`;
                     }
-                }
-            }, true);
+                });
+            };
 
-            // Escape key closes open dropdowns smoothly
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' || e.key === 'Esc') {
-                    document.querySelectorAll('details.pf-dropdown[open]').forEach(details => {
-                        window.closePfDropdown(details);
+            window.closePfDropdown = dropdown => setPfDropdownOpen(dropdown, false);
+
+            document.addEventListener('click', e => {
+                const trigger = e.target.closest('.pf-dropdown:not(.pf-plan-view-switcher) > .pf-dropdown__trigger, .pf-dropdown:not(.pf-plan-view-switcher) > .pf-card-menu__btn');
+                if (trigger) {
+                    const dropdown = trigger.closest('.pf-dropdown');
+                    const willOpen = !dropdown.classList.contains('is-open');
+                    document.querySelectorAll('.pf-dropdown.is-open').forEach(other => {
+                        if (other !== dropdown) setPfDropdownOpen(other, false);
                     });
+                    setPfDropdownOpen(dropdown, willOpen);
+                    return;
                 }
+                document.querySelectorAll('.pf-dropdown.is-open').forEach(dropdown => {
+                    if (!dropdown.contains(e.target)) setPfDropdownOpen(dropdown, false);
+                });
+            });
+
+            document.addEventListener('keydown', e => {
+                if (e.key !== 'Escape' && e.key !== 'Esc') return;
+                document.querySelectorAll('.pf-dropdown.is-open').forEach(dropdown => {
+                    setPfDropdownOpen(dropdown, false, true);
+                });
             });
 
             // Global interception of clicks on elements with data-confirm

@@ -46,7 +46,14 @@ class StudyNavigationTemplateTest {
                 .contains("keine echten personenbezogenen");
         assertThat(layout)
                 .contains("@{/css/study-mode.css}")
-                .contains("@{/js/study-mode.js}");
+                .contains("@{/js/study-mode.js}")
+                .contains("title.setAttribute('tabindex', '-1')");
+
+        String appCss = Files.readString(Path.of(
+                "src/main/resources/static/css/app.css"));
+        assertThat(appCss)
+                .contains("dialog.pf-study-task-dialog .pf-confirm-title:focus")
+                .contains("outline: none;");
 
         String start = Files.readString(Path.of(
                 "src/main/resources/templates/study/start.html"));

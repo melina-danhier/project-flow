@@ -28,6 +28,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -87,6 +88,8 @@ class DraftReviewIntegrationTest {
                 .andExpect(content().string(containsString("data-plan-view=\"cards\"")))
                 .andExpect(content().string(containsString("data-plan-view=\"board\"")))
                 .andExpect(content().string(containsString("data-plan-view=\"calendar\"")))
+                .andExpect(content().string(containsString("class=\"pf-dropdown pf-dropdown--right pf-plan-view-dropdown pf-plan-view-switcher\"")))
+                .andExpect(content().string(not(containsString("<details class=\"pf-dropdown pf-dropdown--right pf-plan-view-dropdown"))))
                 .andExpect(content().string(containsString("/js/plan-views.js")))
                 .andExpect(content().string(containsString("data-element-title=\"Aufgabe 1\"")))
                 .andExpect(content().string(not(containsString("type=\"checkbox\""))))
@@ -727,6 +730,31 @@ class DraftReviewIntegrationTest {
 
         DraftReviewDto updated = review(f);
         assertThat(updated.getSortMode()).isEqualTo(de.melinadanhier.projectflow.plancontainer.model.SortMode.DATE);
+    }
+
+    @Test
+    void reviewFilterSurvivesReviewActionRedirect() throws Exception {
+        Fixture f = fixture(null, null);
+        DraftReviewDto current = review(f);
+        UUID elementId = current.getElements().getFirst().getId();
+        MockHttpSession session = new MockHttpSession();
+
+        mvc.perform(get(f.reviewUrl())
+                        .param("reviewStatus", "OPEN_AND_ACCEPTED")
+                        .session(session).with(user(f.owner())))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("draft", hasProperty(
+                        "activeReviewFilter", is("OPEN_AND_ACCEPTED"))));
+
+        mvc.perform(post(f.url() + "/elements/" + elementId + "/reject")
+                        .param("lockVersion", String.valueOf(current.getLockVersion()))
+                        .session(session).with(user(f.owner())).with(csrf()))
+                .andExpect(redirectedUrl(f.reviewUrl()));
+
+        mvc.perform(get(f.reviewUrl()).session(session).with(user(f.owner())))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("draft", hasProperty(
+                        "activeReviewFilter", is("OPEN_AND_ACCEPTED"))));
     }
 
     @Test

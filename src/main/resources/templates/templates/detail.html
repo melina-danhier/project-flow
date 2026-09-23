@@ -42,10 +42,10 @@
     </div>
 
     <section>
-        <details th:each="section : ${template.sections}" class="pf-plan-section plan-phase pf-template-phase" open>
-            <summary class="pf-plan-section__header">
+        <section th:each="section : ${template.sections}" class="pf-plan-section plan-phase pf-template-phase">
+            <header class="pf-plan-section__header">
                 <div class="pf-phase-header__left">
-                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen">
+                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen" aria-expanded="true" th:attr="aria-controls=${'template-section-content-' + section.id}">
                         <svg class="pf-phase-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -55,8 +55,8 @@
                         <small th:if="${section.description}" th:text="${section.description}" class="pf-phase-desc"></small>
                     </div>
                 </div>
-            </summary>
-            <ul class="pf-element-list">
+            </header>
+            <ul class="pf-element-list pf-collapsible-content" th:id="${'template-section-content-' + section.id}">
                 <li th:each="task : ${template.tasks}" th:if="${task.planSectionId == section.id}" class="pf-element-item pf-element-item--task">
                     <div class="pf-element-item__main">
                         <div class="pf-element-header-row">
@@ -108,11 +108,11 @@
                     </div>
                 </li>
             </ul>
-        </details>
-        <details th:if="${template.tasks.?[planSectionId == null].size() + template.milestones.?[planSectionId == null].size() > 0}" class="pf-plan-section plan-phase pf-template-phase" open>
-            <summary class="pf-plan-section__header">
+        </section>
+        <section th:if="${template.tasks.?[planSectionId == null].size() + template.milestones.?[planSectionId == null].size() > 0}" class="pf-plan-section plan-phase pf-template-phase">
+            <header class="pf-plan-section__header">
                 <div class="pf-phase-header__left">
-                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen">
+                    <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen" aria-expanded="true" aria-controls="template-unsectioned-content">
                         <svg class="pf-phase-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -121,8 +121,8 @@
                         <strong class="pf-phase-title">Ohne Phase</strong>
                     </div>
                 </div>
-            </summary>
-            <ul class="pf-element-list">
+            </header>
+            <ul class="pf-element-list pf-collapsible-content" id="template-unsectioned-content">
                 <li th:each="task : ${template.tasks}" th:if="${task.planSectionId == null}" class="pf-element-item pf-element-item--task">
                     <div class="pf-element-item__main">
                         <div class="pf-element-header-row">
@@ -174,7 +174,7 @@
                     </div>
                 </li>
             </ul>
-        </details>
+        </section>
     </section>
 </main>
 <th:block th:replace="~{fragments/layout :: site-footer}" />
