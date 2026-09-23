@@ -3,13 +3,13 @@
 <head>
     <th:block th:replace="~{fragments/layout :: head('Anmelden')}" />
 </head>
-<body>
+<body class="pf-auth-page">
 <th:block th:replace="~{fragments/layout :: site-header}" />
 
 <main class="pf-auth-main">
     <div class="pf-auth-container">
         <div class="pf-auth-card">
-            <div style="text-align: center; margin-bottom: 1.5rem;">
+            <div style="text-align: center; margin-bottom: 1.25rem;">
                 <div class="brand__mark brand__mark--auth" aria-hidden="true">
                     <th:block th:replace="~{fragments/icons :: logo}" />
                 </div>

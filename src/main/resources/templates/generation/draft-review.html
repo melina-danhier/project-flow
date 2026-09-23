@@ -17,26 +17,24 @@
                 <th:block th:replace="~{fragments/icons :: arrow-left(14, 2.5)}" />
                 Zurück zu den Entwürfen
             </a>
-            <div class="pf-cluster" style="align-items: center; gap: 0.75rem;">
-                <h1 th:text="${draft.projectTitle}" style="margin: 0;">Projekttitel</h1>
-                <div class="pf-draft-badge-wrap" style="display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <span class="pf-badge pf-badge--purple">KI-Entwurf</span>
-                    <span class="pf-info-tooltip pf-draft-review-info-icon"
-                          title="Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest."
-                          aria-label="Hinweis zum KI-Entwurf">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="16" x2="12" y2="12"></line>
-                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                        </svg>
-                    </span>
-                </div>
-            </div>
-            <p class="pf-draft-review-hint" style="margin: 0.35rem 0 0.5rem; font-size: 0.85rem; color: var(--pf-text-muted); max-width: 680px; line-height: 1.45;">
-                Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest.
-            </p>
-            <div class="pf-project-facts" th:if="${draft.categoryLabel != null or draft.projectStartDate != null or draft.projectEndDate != null or draft.totalEstimatedMinutes > 0}">
-                <span class="pf-badge pf-badge--gray" th:if="${draft.categoryLabel}" th:text="${draft.categoryLabel}"></span>
+            <h1 th:text="${draft.projectTitle}" style="margin: 0 0 0.5rem;">Projekttitel</h1>
+            <div class="pf-project-facts">
+                <span class="pf-badge pf-badge--gray" th:if="${draft.categoryLabel != null and !draft.categoryLabel.isBlank()}" th:text="${draft.categoryLabel}">Kategorie</span>
+                <span class="pf-badge pf-badge--purple pf-info-tooltip"
+                      role="button" tabindex="0"
+                      data-tooltip="Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest."
+                      aria-label="Hinweis zum KI-Entwurf: Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest."
+                      style="display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+                    <span>KI-Entwurf</span>
+                    <svg class="pf-draft-review-info-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </span>
+                <span class="pf-badge pf-badge--blue" role="status" title="Prüfungsfortschritt">
+                    <strong th:text="${draft.reviewedElementCount + ' / ' + draft.totalElementCount + ' geprüft'}">0 / 0 geprüft</strong>
+                </span>
                 <span class="pf-badge pf-badge--outline" th:if="${draft.projectStartDate != null or draft.projectEndDate != null}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     <span th:if="${draft.projectStartDate != null and draft.projectEndDate == null}">Ab </span>
@@ -53,11 +51,6 @@
         </div>
 
         <div class="pf-page-header__actions">
-            <!-- Reviewed Element Count Badge at top-right -->
-            <span class="pf-badge pf-badge--blue" role="status" title="Prüfungsfortschritt">
-                <strong th:text="${draft.reviewedElementCount + ' / ' + draft.totalElementCount + ' geprüft'}">0 / 0 geprüft</strong>
-            </span>
-
             <!-- Draft Review Actions (Desktop) -->
             <div class="pf-draft-header-actions--desktop">
                 <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
@@ -142,9 +135,9 @@
                 <select id="review-status-filter" name="reviewStatus" class="pf-select pf-select--sm" onchange="this.form.submit()">
                     <option value="" th:selected="${draft.activeReviewFilter == null or draft.activeReviewFilter == ''}">Alle Elemente</option>
                     <option value="OPEN_AND_ACCEPTED" th:selected="${draft.activeReviewFilter == 'OPEN_AND_ACCEPTED'}">Offene und übernommene Elemente</option>
-                    <option value="PENDING" th:selected="${draft.activeReviewFilter == 'PENDING'}">Offene Elemente</option>
-                    <option value="ACCEPTED" th:selected="${draft.activeReviewFilter == 'ACCEPTED'}">Übernommene Elemente</option>
-                    <option value="REJECTED" th:selected="${draft.activeReviewFilter == 'REJECTED'}">Abgelehnte Elemente</option>
+                    <option value="PENDING" th:selected="${draft.activeReviewFilter == 'PENDING'}" style="background-color: #f1f5f9; color: #334155;">Offene Elemente</option>
+                    <option value="ACCEPTED" th:selected="${draft.activeReviewFilter == 'ACCEPTED'}" style="background-color: #ecfdf5; color: #065f46;">Übernommene Elemente</option>
+                    <option value="REJECTED" th:selected="${draft.activeReviewFilter == 'REJECTED'}" style="background-color: #fef2f2; color: #991b1b;">Abgelehnte Elemente</option>
                 </select>
             </form>
 
@@ -232,8 +225,10 @@
 
                     <!-- Section Display Wrap (Title & Description) -->
                     <div class="pf-phase-display-wrap" th:hidden="${editingDraftSectionId == section.id}">
-                        <h2 class="pf-phase-title" th:text="${section.title}">Bereichstitel</h2>
-                        <span class="pf-badge pf-badge--yellow pf-badge--outline" th:if="${section.visibleOriginLabel != null}" th:text="${section.visibleOriginLabel}"></span>
+                        <div class="pf-phase-title-row">
+                            <h2 class="pf-phase-title" th:text="${section.title}">Bereichstitel</h2>
+                            <span class="pf-badge pf-badge--yellow pf-badge--outline" th:if="${section.visibleOriginLabel != null}" th:text="${section.visibleOriginLabel}"></span>
+                        </div>
                         <p class="pf-phase-desc" th:if="${section.description}" th:text="${section.description}"></p>
                     </div>
 
@@ -263,7 +258,13 @@
                     <span class="pf-badge pf-badge--blue" th:text="${section.elements.size() + (section.elements.size() == 1 ? ' Element' : ' Elemente')}">0 Elemente</span>
                     <th:block th:if="${draft.status.name() != 'APPLIED'}">
                         <div th:replace="~{fragments/draft-components :: review-actions('sections', ${section.id}, ${draft.projectId}, ${section.reviewStatus.name()}, ${draft.lockVersion})}"></div>
-                        <button type="button" class="pf-btn pf-btn--sm pf-btn--secondary pf-phase-edit-btn" title="Bereich bearbeiten">Bearbeiten</button>
+                        <button type="button" class="pf-btn pf-btn--sm pf-btn--secondary pf-phase-edit-btn" title="Bereich bearbeiten">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            <span>Bearbeiten</span>
+                        </button>
                     </th:block>
                 </div>
             </summary>
@@ -301,7 +302,13 @@
                             <!-- Dedicated Edit Page Button -->
                             <a class="pf-btn pf-btn--sm pf-btn--ghost pf-element-edit-btn"
                                th:href="@{/projects/{pId}/draft/{seg}/{eId}/edit(pId=${draft.projectId},seg=${element.type == 'TASK' ? 'tasks' : 'milestones'},eId=${element.id})}"
-                               title="Element bearbeiten">Bearbeiten</a>
+                               title="Element bearbeiten">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                <span>Bearbeiten</span>
+                            </a>
                         </th:block>
                     </div>
                 </li>

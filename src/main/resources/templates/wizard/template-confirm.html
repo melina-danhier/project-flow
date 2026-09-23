@@ -13,7 +13,7 @@
         <div th:if="${confirmationError}" class="pf-alert pf-alert--error" th:text="${confirmationError}"></div>
         <form th:action="@{/projects/new/template/confirm}" method="post">
             <label class="pf-choice-card" style="margin:1rem 0"><input type="checkbox" name="confirmed" value="true"><span>Ich bestätige die Übernahme ohne relative Vorlagentermine.</span></label>
-            <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><a class="pf-btn pf-btn--secondary" th:href="@{/projects/new}">Projektangaben ändern</a><button class="pf-btn pf-btn--primary" type="submit">Ohne Vorlagentermine erstellen →</button></div>
+            <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><a class="pf-btn pf-btn--secondary" th:href="@{/projects/new}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg><span>Projektangaben ändern</span></a><button class="pf-btn pf-btn--primary" type="submit">Ohne Vorlagentermine erstellen →</button></div>
         </form>
     </div>
 </main><th:block th:replace="~{fragments/layout :: site-footer}" /></body></html>

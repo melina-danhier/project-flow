@@ -13,9 +13,21 @@
     <main>
         <!-- Page Header -->
         <div class="pf-page-header">
-            <div class="pf-page-header__left">
-                <h1 style="margin: 0;">Projekte durchsuchen</h1>
-                <p class="pf-page-header__subtitle">Finde deine Projekte schnell nach Titel, Beschreibung oder
+            <div class="pf-page-header__left"
+                 th:with="subtitleText='Finde deine Projekte schnell nach Titel, Beschreibung oder Kategorie.'">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <h1 style="margin: 0;">Projekte durchsuchen</h1>
+                    <span class="pf-info-tooltip pf-view-info-icon"
+                          th:attr="data-tooltip=${subtitleText},aria-label=${subtitleText}">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </span>
+                </div>
+                <p class="pf-page-header__subtitle pf-view-subtitle"
+                    th:text="${subtitleText}">Finde deine Projekte schnell nach Titel, Beschreibung oder
                     Kategorie.</p>
             </div>
             <div class="pf-page-header__actions">

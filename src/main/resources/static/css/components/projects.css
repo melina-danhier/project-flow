@@ -589,3 +589,40 @@
     border-color: var(--pf-primary-border);
     font-weight: 700;
 }
+
+/* Subtitles of views hidden as tooltip on mobile */
+.pf-view-info-icon {
+    display: none;
+    color: var(--pf-text-muted);
+    cursor: pointer;
+    vertical-align: middle;
+    transition: var(--pf-transition);
+}
+
+.pf-view-info-icon:hover {
+    color: var(--pf-primary);
+}
+
+@media (max-width: 640px) {
+    .pf-view-info-icon {
+        display: inline-flex !important;
+    }
+
+    .pf-view-subtitle {
+        display: none !important;
+    }
+
+    .pf-page-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 0.5rem;
+        padding-bottom: 0 !important;
+    }
+
+    .pf-page-header__actions {
+        width: auto !important;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+}

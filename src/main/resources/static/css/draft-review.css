@@ -85,7 +85,7 @@ main[data-sort-mode] {
     position: absolute;
     bottom: calc(100% + 8px);
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(calc(-50% + var(--pf-tooltip-shift, 0px)));
     background: #1e293b;
     color: #f8fafc;
     padding: 0.5rem 0.75rem;
@@ -93,8 +93,11 @@ main[data-sort-mode] {
     font-size: 0.78rem;
     line-height: 1.35;
     white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
     width: max-content;
-    max-width: 20rem;
+    max-width: min(20rem, calc(100vw - 20px));
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
@@ -148,10 +151,15 @@ details.draft-section summary::-webkit-details-marker {
 .pf-phase-header__left {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     flex: 1;
     min-width: 0;
     flex-wrap: nowrap;
+}
+
+.pf-phase-header__left .pf-drag-handle-visual {
+    margin-right: 0;
+    flex-shrink: 0;
 }
 
 .pf-phase-header__right {
@@ -199,9 +207,19 @@ details.draft-section[open] .pf-phase-caret {
 
 .pf-phase-display-wrap {
     display: flex;
-    align-items: baseline;
-    gap: 0.65rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.pf-phase-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     flex-wrap: wrap;
+    min-width: 0;
 }
 
 .pf-phase-title {
@@ -209,12 +227,17 @@ details.draft-section[open] .pf-phase-caret {
     font-size: 1.05rem;
     font-weight: 700;
     color: var(--pf-text-main);
+    line-height: 1.3;
+    text-align: left;
+    word-break: break-word;
 }
 
 .pf-phase-desc {
     margin: 0;
     font-size: 0.85rem;
     color: var(--pf-text-muted);
+    line-height: 1.4;
+    text-align: left;
 }
 
 /* Phase Inline Edit Form */
@@ -354,39 +377,144 @@ details.draft-section[open] .pf-phase-caret {
     display: none;
 }
 
+/* Mobile Review Status Dropdown with Colored Backgrounds */
+.draft-review-status-select {
+    appearance: none;
+    -webkit-appearance: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.28rem 1.6rem 0.28rem 0.65rem;
+    border-radius: var(--pf-radius-sm);
+    cursor: pointer;
+    background-repeat: no-repeat;
+    background-position: right 0.45rem center;
+    background-size: 10px 10px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    border: 1px solid var(--pf-border);
+    transition: all 0.15s ease;
+}
+
+.draft-review-status-select--pending {
+    background-color: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.draft-review-status-select--accepted {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23065f46' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.draft-review-status-select--rejected {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23991b1b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.draft-review-status-select option,
+.draft-review-status-option {
+    font-weight: 600;
+    padding: 0.4rem 0.6rem;
+}
+
+.draft-review-status-select option[value="PENDING"],
+.draft-review-status-option--pending,
+#review-status-filter option[value="PENDING"] {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+}
+
+.draft-review-status-select option[value="ACCEPTED"],
+.draft-review-status-option--accepted,
+#review-status-filter option[value="ACCEPTED"] {
+    background-color: #ecfdf5 !important;
+    color: #065f46 !important;
+}
+
+.draft-review-status-select option[value="REJECTED"],
+.draft-review-status-option--rejected,
+#review-status-filter option[value="REJECTED"] {
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+}
+
 .review-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
     font-size: 0.8rem;
-    padding: 0.3rem 0.6rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
     border-radius: var(--pf-radius-sm);
+    border: 1px solid var(--pf-border);
+    background: transparent !important;
+    color: var(--pf-text-secondary);
+    box-shadow: none !important;
     cursor: pointer;
     transition: all 0.15s ease;
+    line-height: 1.2;
 }
 
+/* Inactive button styles & hovers (no permanent background) */
+.review-btn:not(.is-active) {
+    background: transparent !important;
+    color: var(--pf-text-secondary) !important;
+    border-color: var(--pf-border) !important;
+    box-shadow: none !important;
+}
+
+.review-btn--pending:not(.is-active):hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+.review-btn--accept:not(.is-active):hover {
+    background: #ecfdf5 !important;
+    border-color: #86efac !important;
+    color: #16a34a !important;
+}
+
+.review-btn--reject:not(.is-active):hover {
+    background: #fef2f2 !important;
+    border-color: #fca5a5 !important;
+    color: #dc2626 !important;
+}
+
+/* Active button styles (permanent background only when active) */
 .review-btn.is-active {
     cursor: default;
-    opacity: 0.95;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+    opacity: 1;
+    box-shadow: var(--pf-shadow-xs);
+    font-weight: 600;
 }
 
-.review-btn--pending.is-active {
-    background: var(--pf-surface-subtle, #f1f5f9);
-    color: var(--pf-text-secondary, #475569);
-    border-color: var(--pf-border-strong, #cbd5e1);
+/* Grau für Offen */
+.review-btn--pending.is-active,
+.review-btn--pending.is-active:hover {
+    background: #64748b !important;
+    border-color: #64748b !important;
+    color: #ffffff !important;
 }
 
-.review-btn--accept.is-active {
-    background: var(--pf-primary, #0284c7);
-    color: #ffffff;
-    border-color: var(--pf-primary, #0284c7);
+/* Grün für Angenommen */
+.review-btn--accept.is-active,
+.review-btn--accept.is-active:hover {
+    background: #16a34a !important;
+    border-color: #16a34a !important;
+    color: #ffffff !important;
 }
 
-.review-btn--reject.is-active {
-    background: var(--pf-danger, #ef4444);
-    color: #ffffff;
-    border-color: var(--pf-danger, #ef4444);
+/* Rot für Verworfen */
+.review-btn--reject.is-active,
+.review-btn--reject.is-active:hover {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
 }
 
 .review-actions form {
@@ -565,7 +693,10 @@ details.draft-section[open] .pf-phase-caret {
 }
 
 .pf-draft-review-info-icon {
-    display: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
 }
 
 @media (max-width: 48rem) {
@@ -593,7 +724,13 @@ details.draft-section[open] .pf-phase-caret {
     }
     /* Task 11: Collapsible Draft Toolbar on Mobile */
     .pf-toolbar-collapse {
+        position: relative;
+        z-index: 30;
         margin-bottom: 0.85rem;
+    }
+    .pf-toolbar-collapse:has(.pf-plan-view-dropdown[open]),
+    .pf-toolbar-collapse:focus-within {
+        z-index: 1050;
     }
     .pf-toolbar-collapse > summary.pf-toolbar-collapse-summary {
         display: flex;
@@ -638,11 +775,29 @@ details.draft-section[open] .pf-phase-caret {
     }
     .pf-toolbar-collapse .pf-plan-view-wrap {
         width: 100%;
+        position: relative;
+        z-index: 50;
     }
-    .pf-toolbar-collapse .pf-plan-view-dropdown,
+    .pf-toolbar-collapse .pf-plan-view-dropdown {
+        width: 100%;
+        position: relative;
+        overflow: visible;
+    }
+    .pf-toolbar-collapse .pf-plan-view-dropdown[open] {
+        z-index: 1060;
+    }
     .pf-toolbar-collapse .pf-plan-view-dropdown summary {
         width: 100%;
         justify-content: space-between;
+    }
+    .pf-toolbar-collapse .pf-plan-view-dropdown .pf-dropdown__menu {
+        position: absolute;
+        top: calc(100% + 0.35rem);
+        right: 0;
+        left: auto;
+        min-width: 170px;
+        max-width: calc(100vw - 2rem);
+        z-index: 1060;
     }
 
     /* Task 12: Section Header - title on same line as caret/drag; actions below title */
@@ -660,18 +815,33 @@ details.draft-section[open] .pf-phase-caret {
         flex-wrap: nowrap;
         min-width: 0;
     }
+    .pf-phase-header__left .pf-drag-handle-visual {
+        margin-right: 0;
+    }
     .pf-phase-display-wrap {
         min-width: 0;
         flex: 1;
         display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.15rem;
+    }
+    .pf-phase-title-row {
+        display: flex;
         align-items: center;
-        gap: 0.5rem;
-        flex-wrap: nowrap;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        min-width: 0;
     }
     .pf-phase-title {
         font-size: 0.98rem;
         word-break: break-word;
         overflow-wrap: break-word;
+        text-align: left;
+    }
+    .pf-phase-desc {
+        font-size: 0.82rem;
+        text-align: left;
     }
     .pf-phase-header__right {
         width: 100%;

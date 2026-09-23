@@ -216,22 +216,27 @@
         <div class="site-header__right">
             <!-- Show login button for anonymous users -->
             <th:block sec:authorize="!isAuthenticated()">
-                <a class="site-header__account" th:href="@{/login}" aria-label="Anmelden">
-                    <span class="site-header__avatar">PF</span>
-                    <span>Anmelden</span>
+                <a class="site-header__account" th:href="@{/login}" aria-label="Anmelden" title="Anmelden">
+                    <span class="site-header__avatar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </span>
+                    <span class="site-header__account-name">Anmelden</span>
                 </a>
             </th:block>
 
             <!-- Show user info dropdown for authenticated users -->
             <th:block sec:authorize="isAuthenticated()">
                 <div th:if="${session != null and session.studySessionId != null}"
-                     class="site-header__account" aria-label="Automatisch angemeldetes Studienkonto">
+                     class="site-header__account" aria-label="Automatisch angemeldetes Studienkonto" title="Studienkonto aktiv">
                     <span class="site-header__avatar">ST</span>
-                    <span>Studienkonto aktiv</span>
+                    <span class="site-header__account-name">Studienkonto</span>
                 </div>
                 <details th:unless="${session != null and session.studySessionId != null}"
                          class="pf-dropdown site-header__account-dropdown">
-                    <summary class="site-header__account pf-dropdown__trigger" aria-label="Benutzerkonto und Workspaces">
+                    <summary class="site-header__account pf-dropdown__trigger" aria-label="Benutzerkonto und Workspaces" title="Benutzerkonto">
                         <span class="site-header__avatar">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -736,6 +741,32 @@
                 });
             }, true);
 
+            // Prevent dropdown menus from overflowing viewport boundaries
+            document.addEventListener('toggle', (e) => {
+                if (e.target.matches && e.target.matches('details.pf-dropdown') && e.target.open) {
+                    const menu = e.target.querySelector('.pf-dropdown__menu');
+                    if (!menu) return;
+                    menu.style.left = '';
+                    menu.style.right = '';
+
+                    const rect = menu.getBoundingClientRect();
+                    const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+                    const padding = 12;
+
+                    if (rect.right > viewportWidth - padding) {
+                        menu.style.left = 'auto';
+                        menu.style.right = '0';
+                    }
+
+                    const updatedRect = menu.getBoundingClientRect();
+                    if (updatedRect.left < padding) {
+                        const parentRect = e.target.getBoundingClientRect();
+                        menu.style.right = 'auto';
+                        menu.style.left = `${Math.max(0, padding - parentRect.left)}px`;
+                    }
+                }
+            }, true);
+
             // Escape key closes open dropdowns smoothly
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' || e.key === 'Esc') {
@@ -933,22 +964,48 @@
             window.addEventListener('error', () => reenableFormButtons());
             window.addEventListener('unhandledrejection', () => reenableFormButtons());
 
-            // 6. Universal Tooltip Tap / Click Toggle (Task 22)
-            document.addEventListener('click', (e) => {
-                const trigger = e.target.closest('.pf-info-tooltip, [data-tooltip]');
+            // 6. Universal Tooltip Tap / Click Toggle & Bounds Clamping
+            const adjustTooltipPosition = (popover) => {
+                if (!popover) return;
+                popover.style.setProperty('--pf-tooltip-shift', '0px');
+                popover.classList.remove('pf-tooltip-popover--below');
 
-                // Close other active tooltips
-                document.querySelectorAll('.pf-tooltip-active').forEach(el => {
-                    if (el !== trigger) el.classList.remove('pf-tooltip-active');
-                });
+                const update = () => {
+                    const rect = popover.getBoundingClientRect();
+                    if (!rect || (rect.width === 0 && rect.height === 0)) return;
 
-                if (!trigger) return;
+                    const padding = 10; // Safe distance from screen edges
+                    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 360;
 
-                // Ensure popover element exists inside trigger
+                    let shift = 0;
+                    if (rect.left < padding) {
+                        shift = padding - rect.left;
+                    } else if (rect.right > viewportWidth - padding) {
+                        shift = (viewportWidth - padding) - rect.right;
+                    }
+
+                    if (Math.abs(shift) > 0.5) {
+                        popover.style.setProperty('--pf-tooltip-shift', `${Math.round(shift)}px`);
+                    } else {
+                        popover.style.setProperty('--pf-tooltip-shift', '0px');
+                    }
+
+                    // Check if clipped at top of viewport
+                    if (rect.top < padding) {
+                        popover.classList.add('pf-tooltip-popover--below');
+                    }
+                };
+
+                update();
+                requestAnimationFrame(update);
+            };
+
+            const ensureTooltipPopover = (trigger) => {
+                if (!trigger) return null;
                 let popover = trigger.querySelector(':scope > .pf-tooltip-popover');
                 if (!popover) {
                     const text = trigger.getAttribute('data-tooltip') || trigger.getAttribute('title') || trigger.getAttribute('aria-label');
-                    if (!text) return;
+                    if (!text) return null;
                     trigger.removeAttribute('title');
                     popover = document.createElement('div');
                     popover.className = 'pf-tooltip-popover';
@@ -956,9 +1013,49 @@
                     popover.textContent = text;
                     trigger.appendChild(popover);
                 }
+                adjustTooltipPosition(popover);
+                return popover;
+            };
 
+            document.addEventListener('mouseenter', (e) => {
+                const trigger = e.target && e.target.closest ? e.target.closest('.pf-info-tooltip, [data-tooltip]') : null;
+                if (trigger) {
+                    const popover = ensureTooltipPopover(trigger);
+                    if (popover) adjustTooltipPosition(popover);
+                }
+            }, true);
+
+            document.addEventListener('focusin', (e) => {
+                const trigger = e.target && e.target.closest ? e.target.closest('.pf-info-tooltip, [data-tooltip]') : null;
+                if (trigger) {
+                    const popover = ensureTooltipPopover(trigger);
+                    if (popover) adjustTooltipPosition(popover);
+                }
+            }, true);
+
+            document.addEventListener('click', (e) => {
+                const trigger = e.target && e.target.closest ? e.target.closest('.pf-info-tooltip, [data-tooltip]') : null;
+
+                // Close other active tooltips
+                document.querySelectorAll('.pf-tooltip-active').forEach(el => {
+                    if (el !== trigger) el.classList.remove('pf-tooltip-active');
+                });
+
+                if (!trigger) return;
+                const popover = ensureTooltipPopover(trigger);
                 trigger.classList.toggle('pf-tooltip-active');
+                if (trigger.classList.contains('pf-tooltip-active') && popover) {
+                    adjustTooltipPosition(popover);
+                }
             });
+
+            const repositionActiveTooltips = () => {
+                document.querySelectorAll('.pf-tooltip-active > .pf-tooltip-popover, .pf-info-tooltip:hover > .pf-tooltip-popover, [data-tooltip]:hover > .pf-tooltip-popover').forEach(popover => {
+                    adjustTooltipPosition(popover);
+                });
+            };
+            window.addEventListener('resize', repositionActiveTooltips, { passive: true });
+            window.addEventListener('scroll', repositionActiveTooltips, { passive: true });
         })();
     </script>
 

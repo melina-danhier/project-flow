@@ -86,8 +86,15 @@
                 <li th:each="milestone : ${template.milestones}" th:if="${milestone.planSectionId == section.id}" class="pf-element-item pf-element-item--milestone">
                     <div class="pf-element-item__main">
                         <div class="pf-element-header-row">
-                            <div class="pf-element-header-left">
-                                <span class="pf-element-item__icon pf-element-item__icon--milestone" aria-hidden="true">◆</span>
+                                <button type="button" class="pf-milestone-icon-indicator pf-info-tooltip"
+                                        data-tooltip="Meilenstein: Markiert ein wichtiges Zwischenziel im Projekt."
+                                        title="Meilenstein: Markiert ein wichtiges Zwischenziel im Projekt."
+                                        aria-label="Was ist ein Meilenstein?">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                                        <line x1="4" y1="22" x2="4" y2="15" stroke-width="2"></line>
+                                    </svg>
+                                </button>
                                 <strong class="pf-element-title" th:text="${milestone.title}"></strong>
                             </div>
                             <div class="pf-element-meta" th:if="${milestone.dueDate != null or milestone.relativeDueDay != null}">
@@ -145,8 +152,15 @@
                 <li th:each="milestone : ${template.milestones}" th:if="${milestone.planSectionId == null}" class="pf-element-item pf-element-item--milestone">
                     <div class="pf-element-item__main">
                         <div class="pf-element-header-row">
-                            <div class="pf-element-header-left">
-                                <span class="pf-element-item__icon pf-element-item__icon--milestone" aria-hidden="true">◆</span>
+                                <button type="button" class="pf-milestone-icon-indicator pf-info-tooltip"
+                                        data-tooltip="Meilenstein: Markiert ein wichtiges Zwischenziel im Projekt."
+                                        title="Meilenstein: Markiert ein wichtiges Zwischenziel im Projekt."
+                                        aria-label="Was ist ein Meilenstein?">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                                        <line x1="4" y1="22" x2="4" y2="15" stroke-width="2"></line>
+                                    </svg>
+                                </button>
                                 <strong class="pf-element-title" th:text="${milestone.title}"></strong>
                             </div>
                             <div class="pf-element-meta" th:if="${milestone.dueDate != null or milestone.relativeDueDay != null}">

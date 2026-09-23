@@ -10,11 +10,11 @@
         <form th:action="@{/projects/{pId}/draft/{seg}/{eId}/reset(pId=${projectId},seg=${pathSegment},eId=${entityId})}"
               method="post" style="margin: 0;">
             <input type="hidden" name="lockVersion" th:value="${lockVersion}">
-            <button th:if="${reviewStatusName != 'PENDING'}" class="pf-btn pf-btn--sm pf-btn--ghost review-btn review-btn--pending" type="submit" title="Auf offen setzen">
+            <button th:if="${reviewStatusName != 'PENDING'}" class="pf-btn pf-btn--sm review-btn review-btn--pending" type="submit" title="Auf offen setzen">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>
                 <span>Offen</span>
             </button>
-            <button th:if="${reviewStatusName == 'PENDING'}" class="pf-btn pf-btn--sm pf-btn--outline review-btn review-btn--pending is-active" type="button" disabled title="Bereits offen">
+            <button th:if="${reviewStatusName == 'PENDING'}" class="pf-btn pf-btn--sm review-btn review-btn--pending is-active" type="button" disabled title="Bereits offen">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>
                 <span>Offen</span>
             </button>
@@ -24,11 +24,11 @@
         <form th:action="@{/projects/{pId}/draft/{seg}/{eId}/accept(pId=${projectId},seg=${pathSegment},eId=${entityId})}"
               method="post" style="margin: 0;">
             <input type="hidden" name="lockVersion" th:value="${lockVersion}">
-            <button th:if="${reviewStatusName != 'ACCEPTED'}" class="pf-btn pf-btn--sm pf-btn--ghost review-btn review-btn--accept" type="submit" title="Übernehmen">
+            <button th:if="${reviewStatusName != 'ACCEPTED'}" class="pf-btn pf-btn--sm review-btn review-btn--accept" type="submit" title="Übernehmen">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 <span>Übernehmen</span>
             </button>
-            <button th:if="${reviewStatusName == 'ACCEPTED'}" class="pf-btn pf-btn--sm pf-btn--primary review-btn review-btn--accept is-active" type="button" disabled title="Bereits übernommen">
+            <button th:if="${reviewStatusName == 'ACCEPTED'}" class="pf-btn pf-btn--sm review-btn review-btn--accept is-active" type="button" disabled title="Bereits übernommen">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 <span>Übernommen</span>
             </button>
@@ -38,11 +38,11 @@
         <form th:action="@{/projects/{pId}/draft/{seg}/{eId}/reject(pId=${projectId},seg=${pathSegment},eId=${entityId})}"
               method="post" style="margin: 0;">
             <input type="hidden" name="lockVersion" th:value="${lockVersion}">
-            <button th:if="${reviewStatusName != 'REJECTED'}" class="pf-btn pf-btn--sm pf-btn--ghost pf-btn--danger review-btn review-btn--reject" type="submit" title="Ablehnen">
+            <button th:if="${reviewStatusName != 'REJECTED'}" class="pf-btn pf-btn--sm review-btn review-btn--reject" type="submit" title="Ablehnen">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 <span>Ablehnen</span>
             </button>
-            <button th:if="${reviewStatusName == 'REJECTED'}" class="pf-btn pf-btn--sm pf-btn--danger review-btn review-btn--reject is-active" type="button" disabled title="Bereits abgelehnt">
+            <button th:if="${reviewStatusName == 'REJECTED'}" class="pf-btn pf-btn--sm review-btn review-btn--reject is-active" type="button" disabled title="Bereits abgelehnt">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 <span>Abgelehnt</span>
             </button>
@@ -52,11 +52,12 @@
     <!-- Mobile: Compact select dropdown -->
     <div class="review-actions--mobile">
         <select class="pf-select pf-select--sm draft-review-status-select"
+                th:classappend="${'draft-review-status-select--' + #strings.toLowerCase(reviewStatusName)}"
                 th:attr="data-accept-url=@{/projects/{pId}/draft/{seg}/{eId}/accept(pId=${projectId},seg=${pathSegment},eId=${entityId})},data-reject-url=@{/projects/{pId}/draft/{seg}/{eId}/reject(pId=${projectId},seg=${pathSegment},eId=${entityId})},data-reset-url=@{/projects/{pId}/draft/{seg}/{eId}/reset(pId=${projectId},seg=${pathSegment},eId=${entityId})},data-lock-version=${lockVersion}"
                 aria-label="Status wählen">
-            <option value="PENDING" th:selected="${reviewStatusName == 'PENDING'}">○ Offen</option>
-            <option value="ACCEPTED" th:selected="${reviewStatusName == 'ACCEPTED'}">✓ Übernehmen</option>
-            <option value="REJECTED" th:selected="${reviewStatusName == 'REJECTED'}">✕ Ablehnen</option>
+            <option value="PENDING" th:selected="${reviewStatusName == 'PENDING'}" class="draft-review-status-option draft-review-status-option--pending" style="background-color: #f1f5f9; color: #334155;">○ Offen</option>
+            <option value="ACCEPTED" th:selected="${reviewStatusName == 'ACCEPTED'}" class="draft-review-status-option draft-review-status-option--accepted" style="background-color: #ecfdf5; color: #065f46;">✓ Übernehmen</option>
+            <option value="REJECTED" th:selected="${reviewStatusName == 'REJECTED'}" class="draft-review-status-option draft-review-status-option--rejected" style="background-color: #fef2f2; color: #991b1b;">✕ Ablehnen</option>
         </select>
     </div>
 </div>
@@ -68,7 +69,16 @@
             <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>
         </svg>
     </span>
-    <span class="element-icon pf-milestone-diamond" aria-hidden="true" th:if="${element.type == 'MILESTONE'}">◆</span>
+    <button type="button" th:if="${element.type == 'MILESTONE'}"
+            class="pf-milestone-icon-indicator pf-info-tooltip"
+            data-tooltip="Meilenstein: Markiert ein wichtiges Zwischenziel im Projekt."
+            title="Meilenstein: Markiert ein wichtiges Zwischenziel im Projekt."
+            aria-label="Was ist ein Meilenstein?">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+            <line x1="4" y1="22" x2="4" y2="15" stroke-width="2"></line>
+        </svg>
+    </button>
     <a th:if="${element.type == 'TASK'}" th:href="@{/projects/{projectId}/draft/tasks/{taskId}(projectId=${projectId},taskId=${element.id})}"
        th:text="${element.title}" class="pf-element-title"></a>
     <a th:if="${element.type == 'MILESTONE'}" th:href="@{/projects/{projectId}/draft/milestones/{milestoneId}(projectId=${projectId},milestoneId=${element.id})}"

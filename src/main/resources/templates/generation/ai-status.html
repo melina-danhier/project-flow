@@ -90,16 +90,16 @@
         </div>
 
         <!-- Subtle Heartbeat Indicator for Auto-refresh -->
-        <div style="text-align: center;">
-            <div th:if="${workflow.processing}" class="pf-loading-heartbeat">
+        <div th:if="${workflow.processing}" class="pf-loading-heartbeat-wrap">
+            <div class="pf-loading-heartbeat">
                 <span class="pf-heartbeat-dot" aria-hidden="true"></span>
                 <span>Wird automatisch aktualisiert</span>
             </div>
         </div>
 
-        <div th:if="${workflow.errorMessage}" class="pf-alert pf-alert--error" th:text="${workflow.errorMessage}" role="alert" style="margin-top: 1.25rem;"></div>
+        <div th:if="${workflow.errorMessage}" class="pf-alert pf-alert--error pf-loading-error" th:text="${workflow.errorMessage}" role="alert"></div>
 
-        <p th:if="${workflow.status.name() == 'GENERATION_FAILED' or workflow.status.name() == 'TECHNICAL_FAILURE'}" style="color: var(--pf-text-muted); font-size: 0.9rem; text-align: center; margin-top: 1rem;">
+        <p th:if="${workflow.status.name() == 'GENERATION_FAILED' or workflow.status.name() == 'TECHNICAL_FAILURE'}" class="pf-loading-note">
             Deine bestätigten Angaben bleiben erhalten.
             <span th:if="${workflow.canRetry()}">Du kannst die Generierung mit demselben Stand erneut versuchen oder zu deinen Eingaben zurückkehren.</span>
         </p>

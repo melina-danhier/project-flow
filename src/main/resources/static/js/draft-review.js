@@ -110,6 +110,8 @@
         const select = event.target.closest('.draft-review-status-select');
         if (!select) return;
         const val = select.value;
+        select.classList.remove('draft-review-status-select--pending', 'draft-review-status-select--accepted', 'draft-review-status-select--rejected');
+        select.classList.add('draft-review-status-select--' + val.toLowerCase());
         let targetUrl = '';
         if (val === 'ACCEPTED') targetUrl = select.dataset.acceptUrl;
         else if (val === 'REJECTED') targetUrl = select.dataset.rejectUrl;

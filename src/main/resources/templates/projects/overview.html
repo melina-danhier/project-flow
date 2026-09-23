@@ -13,12 +13,23 @@
     <main>
         <!-- Page Header with Primary Action -->
         <div class="pf-page-header">
-            <div class="pf-page-header__left">
-                <h1 style="margin: 0;"
-                    th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Projektarchiv' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Papierkorb' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Projektentwürfe (KI)' : 'Meine Projekte'))}">
-                    Meine Projekte</h1>
-                <p class="pf-page-header__subtitle"
-                    th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Hier findest du deine abgeschlossenen und archivierten Projekte.' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Verwalte gelöschte Projekte oder stelle sie wieder her.' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Prüfe und überarbeite deine durch KI generierten Projektentwürfe.' : 'Hier siehst du deine aktiven und zugewiesenen Projekte auf einen Blick.'))}">
+            <div class="pf-page-header__left"
+                 th:with="subtitleText=${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Hier findest du deine abgeschlossenen und archivierten Projekte.' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Verwalte gelöschte Projekte oder stelle sie wieder her.' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Prüfe und überarbeite deine durch KI generierten Projektentwürfe.' : 'Hier siehst du deine aktiven und zugewiesenen Projekte auf einen Blick.'))}">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <h1 style="margin: 0;"
+                        th:text="${selectedLocation != null and selectedLocation.name() == 'ARCHIVE' ? 'Projektarchiv' : (selectedLocation != null and selectedLocation.name() == 'TRASH' ? 'Papierkorb' : (selectedLocation != null and selectedLocation.name() == 'DRAFT' ? 'Projektentwürfe (KI)' : 'Meine Projekte'))}">
+                        Meine Projekte</h1>
+                    <span class="pf-info-tooltip pf-view-info-icon"
+                          th:attr="data-tooltip=${subtitleText},aria-label=${subtitleText}">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </span>
+                </div>
+                <p class="pf-page-header__subtitle pf-view-subtitle"
+                    th:text="${subtitleText}">
                     Hier siehst du deine aktiven und zugewiesenen Projekte auf einen Blick.</p>
             </div>
             <div class="pf-page-header__actions"

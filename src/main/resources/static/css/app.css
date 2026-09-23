@@ -348,22 +348,62 @@ a:hover {
 .site-header__account {
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.4rem 0.85rem;
+    justify-content: center;
+    height: 36px;
+    padding: 0 0.85rem 0 0.35rem;
+    gap: 0.5rem;
     background: #ffffff;
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-full);
     color: var(--pf-text-main);
-    font-size: 0.88rem;
-    font-weight: 600;
     box-shadow: var(--pf-shadow-xs);
     transition: var(--pf-transition);
+    cursor: pointer;
+    text-decoration: none;
+    flex-shrink: 0;
+    max-width: 220px;
+    box-sizing: border-box;
 }
 
 .site-header__account:hover {
     border-color: var(--pf-primary-border);
     background: var(--pf-primary-soft);
     color: var(--pf-primary);
+}
+
+.site-header__account-name {
+    display: inline-block;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--pf-text-main);
+}
+
+.site-header__account:hover .site-header__account-name {
+    color: var(--pf-primary);
+}
+
+.site-header__account .pf-dropdown__chevron {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    opacity: 0.6;
+    color: var(--pf-text-muted);
+    transition: transform var(--pf-transition);
+}
+
+.site-header__account:hover .pf-dropdown__chevron {
+    color: var(--pf-primary);
+    opacity: 1;
+}
+
+.pf-dropdown[open] .site-header__account .pf-dropdown__chevron {
+    transform: rotate(180deg);
 }
 
 .site-header__avatar {
@@ -1483,25 +1523,33 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
    ========================================================================== */
 
 @media (max-width: 650px) {
+    html {
+        font-size: 15px;
+    }
+
+    body {
+        font-size: 0.9rem;
+    }
+
     main {
         width: calc(100% - 1.25rem);
         margin: 1.25rem auto 2.5rem;
     }
 
     h1 {
-        font-size: 1.45rem;
+        font-size: 1.35rem;
         line-height: 1.25;
         margin-bottom: 0.5rem;
     }
 
     h2 {
-        font-size: 1.2rem;
+        font-size: 1.12rem;
         margin-top: 1.25rem;
         margin-bottom: 0.65rem;
     }
 
     h3 {
-        font-size: 1.02rem;
+        font-size: 0.96rem;
     }
 
     .pf-page-header {
@@ -1532,6 +1580,19 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
 
     .site-nav {
         display: none;
+    }
+
+    .site-header__account {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        justify-content: center;
+        gap: 0;
+    }
+
+    .site-header__account .site-header__account-name,
+    .site-header__account .pf-dropdown__chevron {
+        display: none !important;
     }
 
     .site-footer {
@@ -1591,6 +1652,10 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     display: inline-block;
 }
 
+.pf-dropdown[open] {
+    z-index: 1050;
+}
+
 .pf-dropdown>summary {
     list-style: none;
     cursor: pointer;
@@ -1626,6 +1691,11 @@ nav.pf-cluster[aria-label="Projektbereiche"] a:first-child {
     top: calc(100% + 0.5rem);
     left: 0;
     min-width: 160px;
+    max-width: min(340px, calc(100vw - 1.5rem));
+    max-height: calc(100vh - 4.5rem);
+    max-height: calc(100dvh - 4.5rem);
+    overflow-y: auto;
+    box-sizing: border-box;
     background: var(--pf-surface, #ffffff);
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-radius-md);
@@ -2174,32 +2244,32 @@ dialog.pf-confirm-dialog::backdrop {
 
     /* Task 21: Mobile General Polish - Typography & UI Elements */
     h1 {
-        font-size: 1.35rem;
+        font-size: 1.25rem;
     }
     h2 {
-        font-size: 1.15rem;
+        font-size: 1.08rem;
     }
     h3 {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
     .pf-page-header {
         margin-bottom: 0.85rem;
-        padding-bottom: 0.75rem;
+        padding-bottom: 0;
     }
     .pf-page-header h1 {
-        font-size: 1.25rem;
+        font-size: 1.18rem;
     }
     .pf-btn {
-        padding: 0.45rem 0.85rem;
-        font-size: 0.85rem;
+        padding: 0.42rem 0.8rem;
+        font-size: 0.82rem;
     }
     .pf-btn--sm {
-        padding: 0.35rem 0.65rem;
-        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.78rem;
     }
     .pf-badge {
-        font-size: 0.72rem;
-        padding: 0.15rem 0.45rem;
+        font-size: 0.7rem;
+        padding: 0.12rem 0.4rem;
     }
 }
 
@@ -2226,7 +2296,7 @@ dialog.pf-confirm-dialog::backdrop {
     position: absolute;
     bottom: calc(100% + 6px);
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(calc(-50% + var(--pf-tooltip-shift, 0px)));
     background: #1e293b;
     color: #f8fafc;
     padding: 0.45rem 0.7rem;
@@ -2235,8 +2305,11 @@ dialog.pf-confirm-dialog::backdrop {
     font-weight: 500;
     line-height: 1.35;
     white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
     width: max-content;
-    max-width: min(280px, calc(100vw - 2rem));
+    max-width: min(280px, calc(100vw - 20px));
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     pointer-events: none;
@@ -2249,11 +2322,23 @@ dialog.pf-confirm-dialog::backdrop {
     content: "";
     position: absolute;
     top: 100%;
-    left: 50%;
+    left: clamp(10px, calc(50% - var(--pf-tooltip-shift, 0px)), calc(100% - 10px));
     transform: translateX(-50%);
     border-width: 5px;
     border-style: solid;
     border-color: #1e293b transparent transparent transparent;
+}
+
+/* Flipped below when not enough space at top of viewport */
+.pf-tooltip-popover--below {
+    bottom: auto !important;
+    top: calc(100% + 6px) !important;
+}
+
+.pf-tooltip-popover--below::after {
+    top: auto !important;
+    bottom: 100% !important;
+    border-color: transparent transparent #1e293b transparent !important;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2261,15 +2346,24 @@ dialog.pf-confirm-dialog::backdrop {
     [data-tooltip]:hover > .pf-tooltip-popover {
         opacity: 1;
         visibility: visible;
-        transform: translateX(-50%) translateY(-2px);
+        transform: translateX(calc(-50% + var(--pf-tooltip-shift, 0px))) translateY(-2px);
+    }
+
+    .pf-info-tooltip:hover > .pf-tooltip-popover--below,
+    [data-tooltip]:hover > .pf-tooltip-popover--below {
+        transform: translateX(calc(-50% + var(--pf-tooltip-shift, 0px))) translateY(2px);
     }
 }
 
 .pf-tooltip-active > .pf-tooltip-popover {
     opacity: 1 !important;
     visibility: visible !important;
-    transform: translateX(-50%) translateY(-2px) !important;
+    transform: translateX(calc(-50% + var(--pf-tooltip-shift, 0px))) translateY(-2px) !important;
     pointer-events: auto !important;
+}
+
+.pf-tooltip-active > .pf-tooltip-popover--below {
+    transform: translateX(calc(-50% + var(--pf-tooltip-shift, 0px))) translateY(2px) !important;
 }
 
 /* Task 3 & 20: Task & Milestone Details Header Actions (Desktop vs Mobile) */
@@ -2433,35 +2527,8 @@ body.pf-drawer-open {
         box-shadow: none !important;
     }
 
-    /* In mobile view, User icon should be there instead of the name which is taking more space */
-    .site-header__account .site-header__account-name,
-    .site-header__account .pf-dropdown__chevron {
-        display: none !important;
-    }
-
-    .site-header__account {
-        padding: 0.3rem !important;
-        gap: 0 !important;
-        border-radius: 9999px !important;
-    }
-
     .site-header__left {
         gap: 0.35rem;
-    }
-
-    /* Center logo icon and text when views toggle is present on mobile navbar */
-    .site-header--has-views-toggle .site-header__inner {
-        position: relative;
-    }
-
-    .site-header--has-views-toggle .brand,
-    .site-header:has(.site-header__views-toggle) .brand {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        margin: 0;
-        white-space: nowrap;
-        pointer-events: auto;
     }
 }
 
