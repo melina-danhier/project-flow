@@ -121,7 +121,7 @@ class AiWizardSummaryIntegrationTest {
     void editingAiDetailsKeepsAllOtherWizardDataAndPrefillsSavedValues() throws Exception {
         WizardRequest request = wizardRequest(true);
         request.state().getProjectSpecificAnswers().put("movingSituation", "Von Berlin nach Hamburg");
-        request.state().getProjectSpecificAnswers().put("transportOptions", "Transporter ist reserviert");
+        request.state().getProjectSpecificAnswers().put("transportAndHelp", "Transporter ist reserviert");
 
         mockMvc.perform(get("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())))
@@ -132,7 +132,7 @@ class AiWizardSummaryIntegrationTest {
         mockMvc.perform(post("/projects/new/ai/details")
                         .session(request.session()).with(user(request.user())).with(csrf())
                         .param("answers[movingSituation]", "  Neuer Ausgangs- und Zielort  ")
-                        .param("answers[transportOptions]", "Transporter und drei Helfer sind verfügbar")
+                        .param("answers[transportAndHelp]", "Transporter und drei Helfer sind verfügbar")
                         .param("additionalInformation", "  Priorität hat ein stressarmer Ablauf  "))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/projects/new/ai/summary"));
@@ -142,7 +142,7 @@ class AiWizardSummaryIntegrationTest {
             assertThat(state.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 21));
             assertThat(state.getProjectSpecificAnswers())
                     .containsEntry("movingSituation", "Neuer Ausgangs- und Zielort")
-                    .containsEntry("transportOptions", "Transporter und drei Helfer sind verfügbar");
+                    .containsEntry("transportAndHelp", "Transporter und drei Helfer sind verfügbar");
             assertThat(state.getAdditionalInformation()).isEqualTo("Priorität hat ein stressarmer Ablauf");
         });
         mockMvc.perform(get("/projects/new/ai/summary")
