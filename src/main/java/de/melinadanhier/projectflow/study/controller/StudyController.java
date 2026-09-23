@@ -1,6 +1,8 @@
 package de.melinadanhier.projectflow.study.controller;
 
+import de.melinadanhier.projectflow.study.dto.StudyAbortReportForm;
 import de.melinadanhier.projectflow.study.dto.StudyConsentForm;
+import de.melinadanhier.projectflow.study.service.StudyAbortMailService;
 import de.melinadanhier.projectflow.study.service.StudyEnrollmentService;
 import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import de.melinadanhier.projectflow.study.service.StudyUserService;
@@ -9,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +25,7 @@ import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepo
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
@@ -28,23 +33,31 @@ public class StudyController {
     private final StudyTrackingService trackingService;
     private final StudyUserService studyUserService;
     private final StudyEnrollmentService enrollmentService;
+    private final StudyAbortMailService abortMailService;
+    private final Clock clock;
     private final ProjectRepository projectRepository;
 
     @Autowired
     public StudyController(StudyTrackingService trackingService,
                            StudyUserService studyUserService,
                            StudyEnrollmentService enrollmentService,
+                           StudyAbortMailService abortMailService,
+                           Clock clock,
                            @Autowired(required = false) ProjectRepository projectRepository) {
         this.trackingService = trackingService;
         this.studyUserService = studyUserService;
         this.enrollmentService = enrollmentService;
+        this.abortMailService = abortMailService;
+        this.clock = clock;
         this.projectRepository = projectRepository;
     }
 
     public StudyController(StudyTrackingService trackingService,
                            StudyUserService studyUserService,
-                           StudyEnrollmentService enrollmentService) {
-        this(trackingService, studyUserService, enrollmentService, null);
+                           StudyEnrollmentService enrollmentService,
+                           StudyAbortMailService abortMailService,
+                           Clock clock) {
+        this(trackingService, studyUserService, enrollmentService, abortMailService, clock, null);
     }
 
     @Value("${projectflow.study.questionnaire-url:}")
@@ -165,10 +178,32 @@ public class StudyController {
             HttpServletResponse response
     ) {
         if (!trackingService.finish(session)) {
-            throw new IllegalStateException("Keine aktive Studien-Session vorhanden.");
+            return "redirect:/";
         }
         studyUserService.logout(request, response);
         return questionnaireRedirect();
+    }
+
+    @PostMapping("/study/abort-report")
+    @ResponseBody
+    public ResponseEntity<Void> abortReport(
+            @Valid @RequestBody StudyAbortReportForm form,
+            HttpSession session
+    ) {
+        UUID studySessionId = null;
+        Object attr = session.getAttribute(StudyTrackingService.SESSION_ATTRIBUTE);
+        if (attr instanceof UUID id) {
+            studySessionId = id;
+        }
+
+        abortMailService.sendReport(
+                form.getComment(),
+                form.getCurrentPage(),
+                studySessionId,
+                Instant.now(clock)
+        );
+
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/study/abort")
@@ -178,10 +213,16 @@ public class StudyController {
             HttpServletResponse response
     ) {
         if (!trackingService.abort(session)) {
-            throw new IllegalStateException("Keine aktive Studien-Session vorhanden.");
+            return "redirect:/study/aborted";
         }
         studyUserService.logout(request, response);
-        return questionnaireRedirect();
+        return "redirect:/study/aborted";
+    }
+
+    @GetMapping("/study/aborted")
+    public String aborted(Model model) {
+        model.addAttribute("studyPage", true);
+        return "study/aborted";
     }
 
     @GetMapping("/study/restricted")

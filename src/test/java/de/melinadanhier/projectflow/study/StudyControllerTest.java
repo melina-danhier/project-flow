@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.study;
 
 import de.melinadanhier.projectflow.study.controller.StudyController;
 import de.melinadanhier.projectflow.study.dto.StudyConsentForm;
+import de.melinadanhier.projectflow.study.service.StudyAbortMailService;
 import de.melinadanhier.projectflow.study.service.StudyEnrollmentService;
 import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import de.melinadanhier.projectflow.study.service.StudyUserService;
@@ -16,10 +17,14 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class StudyControllerTest {
@@ -27,6 +32,8 @@ class StudyControllerTest {
     private final StudyTrackingService trackingService = mock(StudyTrackingService.class);
     private final StudyUserService studyUserService = mock(StudyUserService.class);
     private final StudyEnrollmentService enrollmentService = mock(StudyEnrollmentService.class);
+    private final StudyAbortMailService abortMailService = mock(StudyAbortMailService.class);
+    private final Clock clock = Clock.fixed(Instant.parse("2026-09-22T20:45:00Z"), ZoneId.of("UTC"));
     private final HttpSession session = mock(HttpSession.class);
     private final HttpServletRequest request = mock(HttpServletRequest.class);
     private final HttpServletResponse response = mock(HttpServletResponse.class);
@@ -37,7 +44,7 @@ class StudyControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new StudyController(trackingService, studyUserService, enrollmentService);
+        controller = new StudyController(trackingService, studyUserService, enrollmentService, abortMailService, clock);
         ReflectionTestUtils.setField(controller, "questionnaireUrl", "https://survey.example/study");
     }
 
@@ -160,7 +167,93 @@ class StudyControllerTest {
     }
 
     @Test
+    void finishRedirectsGracefullyWhenNoActiveSession() {
+        when(trackingService.finish(session)).thenReturn(false);
+
+        assertThat(controller.finish(session, request, response))
+                .isEqualTo("redirect:/");
+        verifyNoInteractions(studyUserService);
+    }
+
+    @Test
     void explainsRestrictedStudyFunction() {
         assertThat(controller.restricted()).isEqualTo("study/restricted");
+    }
+
+    @Test
+    void abortRedirectsToAbortedPageWithoutQuestionnaireRedirect() {
+        when(trackingService.abort(session)).thenReturn(true);
+
+        assertThat(controller.abort(session, request, response))
+                .isEqualTo("redirect:/study/aborted");
+        verify(trackingService).abort(session);
+        verify(studyUserService).logout(request, response);
+    }
+
+    @Test
+    void abortRedirectsGracefullyWhenNoActiveSession() {
+        when(trackingService.abort(session)).thenReturn(false);
+
+        assertThat(controller.abort(session, request, response))
+                .isEqualTo("redirect:/study/aborted");
+        verifyNoInteractions(studyUserService);
+    }
+
+    @Test
+    void abortedPageRendersView() {
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        assertThat(controller.aborted(model)).isEqualTo("study/aborted");
+        assertThat(model.get("studyPage")).isEqualTo(true);
+    }
+
+    // ── Abort report tests ──
+
+    @Test
+    void abortReportCallsMailServiceWithComment() {
+        var form = new de.melinadanhier.projectflow.study.dto.StudyAbortReportForm();
+        form.setComment("Fehler beim Plan");
+        form.setCurrentPage("/projects/123/plan");
+
+        UUID studySessionId = UUID.randomUUID();
+        when(session.getAttribute(StudyTrackingService.SESSION_ATTRIBUTE)).thenReturn(studySessionId);
+
+        var result = controller.abortReport(form, session);
+
+        assertThat(result.getStatusCode().is2xxSuccessful()).isTrue();
+        verify(abortMailService).sendReport(
+                eq("Fehler beim Plan"),
+                eq("/projects/123/plan"),
+                eq(studySessionId),
+                any(Instant.class)
+        );
+    }
+
+    @Test
+    void abortReportAcceptsEmptyComment() {
+        var form = new de.melinadanhier.projectflow.study.dto.StudyAbortReportForm();
+
+        var result = controller.abortReport(form, session);
+
+        assertThat(result.getStatusCode().is2xxSuccessful()).isTrue();
+        verify(abortMailService).sendReport(
+                isNull(),
+                isNull(),
+                isNull(),
+                any(Instant.class)
+        );
+    }
+
+    @Test
+    void abortReportPropagatesUnexpectedExceptionsFromMailService() {
+        var form = new de.melinadanhier.projectflow.study.dto.StudyAbortReportForm();
+        form.setComment("test");
+        doThrow(new RuntimeException("SMTP error")).when(abortMailService)
+                .sendReport(any(), any(), any(), any());
+
+        // The mail service itself catches MailException; an unexpected RuntimeException
+        // would propagate. This documents that the controller doesn't swallow everything.
+        assertThatThrownBy(() -> controller.abortReport(form, session))
+                .isInstanceOf(RuntimeException.class);
     }
 }

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Studie abgebrochen')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main class="pf-page-shell" style="max-width: 680px; margin: 3rem auto; padding: 0 1rem;">
+    <section class="pf-card" style="text-align: center; padding: 2.5rem 2rem;">
+        <div class="pf-confirm-icon-wrap" style="margin: 0 auto 1.25rem; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fef2f2; color: #dc2626;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+        </div>
+        <p class="pf-eyebrow" style="color: var(--pf-text-muted, #64748b); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85rem; margin-bottom: 0.5rem;">Nutzerstudie</p>
+        <h1 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.75rem;">Studie abgebrochen</h1>
+        <p style="font-size: 1.05rem; line-height: 1.6; color: var(--pf-text-secondary, #475569); margin-bottom: 2rem;">
+            Du hast die Teilnahme an der Studie vorzeitig beendet. Deine Sitzung wurde als abgebrochen vermerkt und du wurdest abgemeldet. Es werden keine weiteren Daten erfasst und es erfolgt keine Weiterleitung zum Fragebogen. Vielen Dank für dein Interesse!
+        </p>
+
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a class="pf-btn pf-btn--secondary" th:href="@{/}">Zur Startseite</a>
+            <a class="pf-btn pf-btn--primary" th:href="@{/study/start}">Studie erneut starten</a>
+        </div>
+    </section>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

@@ -188,6 +188,10 @@ class AuthenticationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("study/start"));
 
+        mockMvc.perform(get("/study/aborted"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("study/aborted"));
+
         mockMvc.perform(get("/study/continue"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login"));

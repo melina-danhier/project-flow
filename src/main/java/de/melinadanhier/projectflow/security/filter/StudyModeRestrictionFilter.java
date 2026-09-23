@@ -41,7 +41,7 @@ public class StudyModeRestrictionFilter extends OncePerRequestFilter {
 
     private boolean isBlocked(HttpServletRequest request, String path) {
         if ("/login".equals(path) || "/register".equals(path) || "/logout".equals(path)
-                || "/study/start".equals(path)) {
+                || "/study/start".equals(path) || "/study/aborted".equals(path)) {
             return true;
         }
         if (path.startsWith("/projects/") && path.contains("/members")) {

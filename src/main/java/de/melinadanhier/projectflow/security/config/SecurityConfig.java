@@ -40,6 +40,7 @@ public class SecurityConfig {
                                 "/register",
                                 "/study",
                                 "/study/start",
+                                "/study/aborted",
                                 "/error",
                                 "/css/**",
                                 "/js/**",

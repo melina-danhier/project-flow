@@ -16,6 +16,9 @@ spring:
   flyway:
     enabled: false
 
+  mail:
+    host: localhost
+
 projectflow:
   ai:
     provider: stub

@@ -83,11 +83,86 @@
         </th:block>
     </div>
     <form th:if="${session != null and session.studySessionId != null}"
-          th:action="@{/study/abort}" method="post"
-          data-confirm="Möchtest du die Studie wirklich abbrechen? Die Sitzung wird als abgebrochen markiert."
-          data-confirm-title="Studie abbrechen" data-confirm-btn="Studie abbrechen" data-confirm-variant="danger">
-        <button class="pf-btn pf-btn--ghost" type="submit">Studie abbrechen</button>
+          th:action="@{/study/abort}" method="post" id="pf-study-abort-form">
+        <button class="pf-btn pf-btn--ghost" type="button" id="pf-study-abort-trigger">Studie abbrechen</button>
     </form>
+    <dialog th:if="${session != null and session.studySessionId != null}"
+            id="pf-study-abort-dialog" class="pf-confirm-dialog" aria-labelledby="pf-study-abort-title">
+        <div class="pf-confirm-dialog__content">
+            <div class="pf-confirm-dialog__header">
+                <div class="pf-confirm-icon-wrap pf-confirm-icon-wrap--danger">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <div class="pf-confirm-dialog__body">
+                    <h3 class="pf-confirm-title" id="pf-study-abort-title">Studie abbrechen</h3>
+                    <p class="pf-confirm-message">Möchtest du die Studie wirklich abbrechen?</p>
+                </div>
+            </div>
+            <div style="margin-top: 1rem;">
+                <label for="pf-study-abort-comment" style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.35rem;">
+                    Warum möchtest du die Studie abbrechen? <span class="pf-hint">(optional)</span>
+                </label>
+                <textarea id="pf-study-abort-comment" maxlength="1000" rows="3" class="pf-textarea"
+                          placeholder="Optionaler Kommentar..." style="width: 100%; resize: vertical;"></textarea>
+                <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--pf-text-secondary); line-height: 1.45;">
+                    Wenn du die Studie wegen eines technischen Problems abbrichst, kannst du hier kurz beschreiben,
+                    was passiert ist. Dein Kommentar wird zusammen mit wenigen technischen Informationen zur
+                    Fehlerdiagnose an die Studienleitung gesendet. Einzelne fehlgeschlagene KI-Anfragen können
+                    auftreten; in diesem Fall hilft häufig ein erneuter Versuch.
+                </p>
+            </div>
+            <div class="pf-confirm-dialog__actions" style="margin-top: 1rem;">
+                <button type="button" class="pf-btn pf-btn--ghost" id="pf-study-abort-cancel">Zurück zur Studie</button>
+                <button type="button" class="pf-btn pf-btn--danger" id="pf-study-abort-confirm">Abbrechen und senden</button>
+            </div>
+        </div>
+    </dialog>
+    <script th:if="${session != null and session.studySessionId != null}">
+        (() => {
+            const trigger = document.getElementById('pf-study-abort-trigger');
+            const dialog = document.getElementById('pf-study-abort-dialog');
+            const form = document.getElementById('pf-study-abort-form');
+            const cancelBtn = document.getElementById('pf-study-abort-cancel');
+            const confirmBtn = document.getElementById('pf-study-abort-confirm');
+            const commentField = document.getElementById('pf-study-abort-comment');
+            if (!trigger || !dialog || !form) return;
+
+            trigger.addEventListener('click', () => {
+                try { dialog.showModal(); } catch (_) {}
+            });
+
+            cancelBtn.addEventListener('click', () => dialog.close());
+            dialog.addEventListener('cancel', (e) => { e.preventDefault(); dialog.close(); });
+            dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+            confirmBtn.addEventListener('click', async () => {
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('is-loading');
+                try {
+                    const csrfMeta = document.querySelector('meta[name="_csrf_header"]');
+                    const csrfInput = form.querySelector('input[name="_csrf"]');
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (csrfInput) {
+                        const headerName = csrfMeta ? csrfMeta.content : 'X-CSRF-TOKEN';
+                        headers[headerName] = csrfInput.value;
+                    }
+                    await fetch('/study/abort-report', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            comment: commentField.value || '',
+                            currentPage: window.location.pathname + window.location.search
+                        })
+                    }).catch(() => {});
+                } catch (_) {}
+                form.submit();
+            });
+        })();
+    </script>
 </th:block>
 
 <!-- Modern Executive Site Header -->

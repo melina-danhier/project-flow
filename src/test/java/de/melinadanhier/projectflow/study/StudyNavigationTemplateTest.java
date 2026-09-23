@@ -66,6 +66,14 @@ class StudyNavigationTemplateTest {
                 .contains("Zum Fragebogen")
                 .contains("th:action=\"@{/study/finish}\"");
 
+        String aborted = Files.readString(Path.of(
+                "src/main/resources/templates/study/aborted.html"));
+        assertThat(aborted)
+                .contains("Studie abgebrochen")
+                .contains("Du hast die Teilnahme an der Studie vorzeitig beendet.")
+                .contains("th:href=\"@{/}\"")
+                .contains("th:href=\"@{/study/start}\"");
+
         String planChangeReview = Files.readString(Path.of(
                 "src/main/resources/templates/projects/plan-change/review.html"));
         assertThat(planChangeReview)

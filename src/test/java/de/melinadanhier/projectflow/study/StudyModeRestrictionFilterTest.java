@@ -112,6 +112,7 @@ class StudyModeRestrictionFilterTest {
                 Arguments.of("POST", "/register", null, null),
                 Arguments.of("POST", "/logout", null, null),
                 Arguments.of("GET", "/study/start", null, null),
+                Arguments.of("GET", "/study/aborted", null, null),
                 Arguments.of("GET", "/projects/123/members", null, null),
                 Arguments.of("POST", "/projects/123/members/456/remove", null, null),
                 Arguments.of("GET", "/projects/new", "templateId", UUID.randomUUID().toString()),
