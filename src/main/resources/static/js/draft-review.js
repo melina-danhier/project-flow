@@ -2,6 +2,8 @@
     'use strict';
 
     const review = document.querySelector('main[data-sort-mode]');
+    if (!review) return;
+    const editable = review.dataset.draftStatus !== 'APPLIED';
     let dragged = null;
     let dropIndicator = null;
 
@@ -67,14 +69,43 @@
         }
     }
 
+    const isMobileDevice = () => {
+        if (typeof window.matchMedia === 'function') {
+            return window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+        }
+        return window.innerWidth <= 768;
+    };
+
+    const draggableItems = Array.from(review.querySelectorAll('.draft-section[data-move-url], .plan-elements > .plan-element[data-move-url]'));
+
+    const updateDraggableState = () => {
+        const isMobile = isMobileDevice();
+        draggableItems.forEach(item => {
+            item.draggable = !isMobile && editable;
+            if (!item.draggable) delete item.dataset.dragArmed;
+        });
+    };
+
+    updateDraggableState();
+    if (typeof window.matchMedia === 'function') {
+        const mql = window.matchMedia('(max-width: 768px), (pointer: coarse)');
+        mql.addEventListener?.('change', updateDraggableState);
+    } else {
+        window.addEventListener('resize', updateDraggableState);
+    }
+
     // 1. Draggable items setup (drag handle initiates drag)
     const handleSelector = '.pf-drag-handle, .pf-drag-handle-visual, .element-drag-handle, .pf-compact-drag-handle, .pf-compact-phase-drag-handle, .drag-handle, .pf-phase-drag-handle, .pf-section-drag-handle';
-    document.querySelectorAll('[draggable="true"]').forEach(item => {
+    draggableItems.forEach(item => {
         item.querySelectorAll(handleSelector).forEach(handle => {
-            handle.addEventListener('pointerdown', () => { item.dataset.dragArmed = 'true'; });
+            handle.addEventListener('pointerdown', () => {
+                if (!isMobileDevice()) {
+                    item.dataset.dragArmed = 'true';
+                }
+            });
         });
         item.addEventListener('dragstart', event => {
-            if (isInteractive(event.target)) {
+            if (isMobileDevice() || isInteractive(event.target)) {
                 event.preventDefault();
                 return;
             }
@@ -125,7 +156,7 @@
     // 2. Elements drop zones (.plan-elements) with insertion line
     document.querySelectorAll('.plan-elements').forEach(list => {
         list.addEventListener('dragover', event => {
-            if (!dragged?.classList.contains('plan-element')) return;
+            if (isMobileDevice() || !dragged?.classList.contains('plan-element')) return;
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
             list.classList.add('drop-target');
@@ -151,7 +182,7 @@
             event.preventDefault();
             list.classList.remove('drop-target');
             removeDropIndicator();
-            if (!dragged?.classList.contains('plan-element')) return;
+            if (isMobileDevice() || !dragged?.classList.contains('plan-element')) return;
 
             const draggedDate = dragged.dataset.date || '';
             const siblings = [...list.querySelectorAll('.plan-element:not(.is-dragging)')];
@@ -169,7 +200,7 @@
     // 3. Sections drop zone (#draft-sections)
     const sections = document.querySelector('#draft-sections');
     sections?.addEventListener('dragover', event => {
-        if (!dragged?.classList.contains('draft-section')) return;
+        if (isMobileDevice() || !dragged?.classList.contains('draft-section')) return;
         event.preventDefault();
         sections.classList.add('drop-target');
 
@@ -194,7 +225,7 @@
         event.preventDefault();
         sections.classList.remove('drop-target');
         removeDropIndicator();
-        if (!dragged?.classList.contains('draft-section')) return;
+        if (isMobileDevice() || !dragged?.classList.contains('draft-section')) return;
         const siblings = [...sections.querySelectorAll(':scope > .draft-section:not(.is-dragging)')];
         const before = siblings.find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
         submitMove(dragged.dataset.moveUrl, { targetPosition: before ? siblings.indexOf(before) : siblings.length });

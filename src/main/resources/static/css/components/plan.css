@@ -104,7 +104,7 @@
 .pf-element-item__left {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.35rem;
 }
 
 .pf-element-item__icon {
@@ -320,27 +320,75 @@
     border-radius: var(--pf-radius-lg);
     background: var(--pf-surface-subtle, #f8fafc);
     box-shadow: var(--pf-shadow-sm);
-    overflow: hidden;
+    overflow: visible;
 }
 
-.pf-phase-card>header,
-.pf-board-column>header {
-    padding: 1rem;
+.pf-phase-card > header,
+.pf-board-column > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0;
     border-bottom: 1px solid var(--pf-border);
+    background: var(--pf-surface-subtle);
+    border-top-left-radius: var(--pf-radius-lg);
+    border-top-right-radius: var(--pf-radius-lg);
 }
 
-.pf-phase-card h3,
-.pf-board-column h3 {
-    display: inline;
-    margin: 0 0.5rem 0 0;
-    font-size: 1.05rem;
+.pf-phase-card > header .pf-phase-header__left,
+.pf-board-column > header .pf-phase-header__left {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    flex: 1;
 }
 
-.pf-phase-card header p,
-.pf-board-column header p {
-    margin: 0.5rem 0 0;
+.pf-phase-card .pf-phase-title,
+.pf-board-column .pf-phase-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pf-phase-card .pf-phase-desc,
+.pf-board-column .pf-phase-desc {
+    margin: 0.2rem 0 0;
     color: var(--pf-text-muted);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    line-height: 1.3;
+}
+
+.pf-phase-card.is-collapsed,
+.pf-board-column.is-collapsed {
+    height: auto !important;
+    align-self: start;
+}
+
+.pf-phase-card.is-collapsed > header,
+.pf-board-column.is-collapsed > header {
+    border-bottom: none;
+}
+
+.pf-phase-card.is-collapsed .pf-plan-compact-list,
+.pf-board-column.is-collapsed .pf-plan-compact-list {
+    display: none !important;
+}
+
+.pf-phase-card.is-collapsed .pf-phase-desc,
+.pf-board-column.is-collapsed .pf-phase-desc {
+    display: none;
+}
+
+.plan-phase.is-collapsed .pf-plan-section__header {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
 }
 
 .pf-plan-compact-list {
@@ -357,10 +405,11 @@
 
 .pf-plan-compact-element {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.6rem 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    position: relative;
 }
 
 .pf-plan-compact-element--milestone {
@@ -368,7 +417,8 @@
 }
 
 .pf-plan-compact-element__body {
-    flex: 1;
+    flex: 1 1 8rem;
+    min-width: 0;
 }
 
 .pf-plan-compact-element__title {
@@ -380,18 +430,51 @@
 }
 
 .pf-plan-compact-element .pf-element-item__left {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
     min-width: 0;
-    flex: 1 1 12rem;
+    flex-wrap: wrap;
+    padding-right: 1.85rem;
 }
 
 .pf-plan-compact-element .pf-element-item__right {
-    flex: 0 1 auto;
+    display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding-right: 1.85rem;
+}
+
+.pf-plan-compact-element .pf-element-item__right:empty {
+    display: none;
+}
+
+.pf-plan-compact-element .pf-badge {
+    white-space: nowrap;
+}
+
+.pf-plan-compact-element .pf-origin-badge {
+    display: none !important;
+}
+
+.pf-plan-compact-element .pf-item-menu {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    margin-left: 0 !important;
+    z-index: 10;
 }
 
 .pf-plan-compact-element .pf-status-select {
-    padding: 0.2rem 0.45rem;
+    width: auto;
+    flex: 0 0 auto;
+    max-width: 100%;
+    padding: 0.2rem 1.6rem 0.2rem 0.45rem;
     font-size: 0.75rem;
     height: auto;
     border-radius: var(--pf-radius-sm);
@@ -417,6 +500,21 @@
 .pf-compact-drag-handle:active,
 .pf-compact-phase-drag-handle:active {
     cursor: grabbing;
+}
+
+/* Mobile / Touch: Hide all Drag and Drop indicators */
+@media (max-width: 768px), (pointer: coarse) {
+    .pf-drag-handle,
+    .pf-drag-handle-visual,
+    .element-drag-handle,
+    .pf-compact-drag-handle,
+    .pf-compact-phase-drag-handle,
+    .drag-handle,
+    .pf-phase-drag-handle,
+    .pf-section-drag-handle,
+    .section-drag-handle {
+        display: none !important;
+    }
 }
 
 .pf-plan-compact-element.is-dragging,
@@ -598,24 +696,59 @@
 }
 
 .pf-calendar__task {
-    display: flex;
+    display: block;
     margin-bottom: 0.25rem;
-    padding: 0.55rem 0.6rem;
-    background: var(--pf-surface);
+    padding: 0.25rem 0.45rem !important;
+    background: var(--pf-surface, #ffffff);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-sm, 4px);
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: var(--pf-transition);
+}
+
+.pf-calendar__task:hover {
+    border-color: var(--pf-primary);
+    background: var(--pf-primary-soft, #f5f3ff);
 }
 
 .pf-calendar__task .pf-element-item__left,
-.pf-calendar__task .pf-element-item__right {
-    width: 100%;
+.pf-calendar__task .pf-element-item__body {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
-.pf-calendar__task .pf-element-item__right {
-    justify-content: flex-start;
+.pf-calendar__task .pf-element-item__title {
+    display: block !important;
+    font-size: 0.78rem !important;
+    font-weight: 500 !important;
+    color: var(--pf-text-main) !important;
+    text-decoration: none !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    line-height: 1.35 !important;
 }
 
-.pf-calendar__task .pf-badge {
-    font-size: 0.68rem;
-    padding: 0.12rem 0.4rem;
+.pf-calendar__task:hover .pf-element-item__title {
+    color: var(--pf-primary) !important;
+}
+
+.pf-calendar__task .pf-element-item__right,
+.pf-calendar__task .pf-compact-drag-handle,
+.pf-calendar__task .pf-drag-handle-visual,
+.pf-calendar__task .pf-status-select,
+.pf-calendar__task input[type="checkbox"],
+.pf-calendar__task .pf-element-item__icon,
+.pf-calendar__task .pf-milestone-icon-indicator,
+.pf-calendar__task .pf-element-item__desc,
+.pf-calendar__task .pf-element-item__assignees {
+    display: none !important;
 }
 
 .pf-calendar__undated {
@@ -850,6 +983,12 @@
     align-items: stretch !important;
     gap: 0.35rem;
     margin-bottom: 1.25rem;
+}
+
+.pf-plan-page-header .pf-page-header__back {
+    align-self: flex-start !important;
+    width: fit-content;
+    max-width: fit-content;
 }
 
 .pf-plan-title-row {
@@ -1640,6 +1779,14 @@
         justify-content: flex-start;
         padding-left: 2rem;
         padding-right: 0;
+    }
+    .pf-plan-compact-element.pf-element-item {
+        padding: 0.65rem 0.75rem !important;
+    }
+    .plan-element.pf-plan-compact-element .pf-element-item__right {
+        justify-content: flex-start !important;
+        padding-left: 0 !important;
+        padding-right: 1.85rem !important;
     }
     .plan-element .pf-item-menu {
         position: absolute;

@@ -55,6 +55,9 @@
                         <small th:if="${section.description}" th:text="${section.description}" class="pf-phase-desc"></small>
                     </div>
                 </div>
+                <div class="pf-phase-header__right">
+                    <span class="pf-badge pf-badge--blue" th:text="${template.tasks.?[planSectionId == section.id].size() + (template.tasks.?[planSectionId == section.id].size() == 1 ? ' Aufgabe' : ' Aufgaben')}">0 Aufgaben</span>
+                </div>
             </header>
             <ul class="pf-element-list pf-collapsible-content" th:id="${'template-section-content-' + section.id}">
                 <li th:each="task : ${template.tasks}" th:if="${task.planSectionId == section.id}" class="pf-element-item pf-element-item--task">
@@ -120,6 +123,9 @@
                     <div class="pf-phase-display-wrap">
                         <strong class="pf-phase-title">Ohne Phase</strong>
                     </div>
+                </div>
+                <div class="pf-phase-header__right">
+                    <span class="pf-badge pf-badge--blue" th:text="${template.tasks.?[planSectionId == null].size() + (template.tasks.?[planSectionId == null].size() == 1 ? ' Aufgabe' : ' Aufgaben')}">0 Aufgaben</span>
                 </div>
             </header>
             <ul class="pf-element-list pf-collapsible-content" id="template-unsectioned-content">

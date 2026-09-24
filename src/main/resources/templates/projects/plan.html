@@ -215,7 +215,7 @@
                         </div>
                         <select id="plan-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; font-size:0.85rem;" onchange="this.form.requestSubmit()">
                             <option value="DATE" th:selected="${plan.project.sortMode.name() == 'DATE'}">Nach Datum</option>
-                            <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
+                            <option value="MANUAL" th:selected="${plan.project.sortMode.name() == 'MANUAL'}">Manuell</option>
                         </select>
                     </form>
                     <div th:unless="${plan.editable}" style="display:flex; align-items:center; gap:0.5rem;">
@@ -229,7 +229,7 @@
                                 </svg>
                             </span>
                         </div>
-                        <span class="pf-badge pf-badge--gray" th:text="${plan.project.sortMode.name() == 'DATE' ? 'Nach Datum' : 'Manuelle Reihenfolge'}">Nach Datum</span>
+                        <span class="pf-badge pf-badge--gray" th:text="${plan.project.sortMode.name() == 'DATE' ? 'Nach Datum' : 'Manuell'}">Nach Datum</span>
                     </div>
                 </div>
 
@@ -606,10 +606,28 @@
     </div>
 
     <!-- Unsectioned Elements (Always visible in project plan views) -->
-    <div class="pf-plan-section plan-section unsectioned" style="margin-top: 1.5rem; border-style: dashed;"
+    <div class="pf-plan-section plan-phase plan-section unsectioned" style="margin-top: 1.5rem; border-style: dashed;"
          data-section-id="">
-        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem;">Ohne Bereich <span class="pf-sr-only">(Planelemente ohne Phase)</span></h3>
-        <ul class="pf-element-list plan-elements" data-section-id="">
+        <header class="pf-plan-section__header">
+            <div class="pf-phase-header__left">
+                <!-- Collapse Toggle Button (Caret) -->
+                <button type="button" class="pf-phase-toggle-btn" aria-label="Bereich auf- oder zuklappen" title="Bereich auf- oder zuklappen" aria-expanded="true" aria-controls="plan-unsectioned-content">
+                    <svg class="pf-phase-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+
+                <div class="pf-phase-display-wrap">
+                    <strong class="pf-phase-title">Ohne Bereich <span class="pf-sr-only">(Planelemente ohne Phase)</span></strong>
+                </div>
+            </div>
+
+            <div class="pf-phase-header__right">
+                <span class="pf-badge pf-badge--blue" th:text="${#lists.size(plan.unsectionedElements) + (#lists.size(plan.unsectionedElements) == 1 ? ' Element' : ' Elemente')}">0 Elemente</span>
+            </div>
+        </header>
+
+        <ul class="pf-element-list plan-elements pf-collapsible-content" id="plan-unsectioned-content" data-section-id="">
             <li th:if="${#lists.isEmpty(plan.unsectionedElements)}" class="pf-element-item--empty" style="padding: 0.85rem; color: var(--pf-text-muted); text-align: center; background: var(--pf-surface-subtle); border-radius: var(--pf-radius-md); font-size: 0.88rem;">
                 Keine Aufgaben oder Meilensteine ohne Bereich vorhanden.
             </li>

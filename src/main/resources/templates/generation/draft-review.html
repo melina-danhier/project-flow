@@ -158,7 +158,7 @@
                     </div>
                     <select id="draft-sort-mode-select" name="sortMode" class="pf-select pf-select--sm" style="width:auto; font-size:0.85rem;" onchange="this.form.requestSubmit()">
                         <option value="DATE" th:selected="${draft.sortMode != null and draft.sortMode.name() == 'DATE'}">Nach Datum</option>
-                        <option value="MANUAL" th:selected="${draft.sortMode != null and draft.sortMode.name() == 'MANUAL'}">Manuelle Reihenfolge</option>
+                        <option value="MANUAL" th:selected="${draft.sortMode != null and draft.sortMode.name() == 'MANUAL'}">Manuell</option>
                     </select>
                 </form>
             </div>
@@ -220,7 +220,7 @@
                     </button>
 
                     <!-- Section Drag Handle (Visual cue only) -->
-                    <span th:if="${draft.status.name() != 'APPLIED'}" class="pf-drag-handle-visual" aria-hidden="true" title="Bereich verschieben">
+                    <span th:if="${draft.status.name() != 'APPLIED'}" class="section-drag-handle pf-drag-handle-visual" aria-hidden="true" title="Bereich verschieben">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle>
                             <circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle>

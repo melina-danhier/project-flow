@@ -36,6 +36,7 @@ function initializePlanViews() {
         }
     });
 
+    var dragMedia = window.matchMedia('(max-width: 768px), (pointer: coarse)');
     var monthCursor;
     var cardPage = 0;
     var calendarDateMode = 'due';
@@ -185,7 +186,8 @@ function initializePlanViews() {
                         lockVersion: element.dataset.lockVersion || '',
                         elementId: element.dataset.elementId,
                         sectionId: element.dataset.sectionId || '',
-                        moveUrl: element.dataset.moveUrl || ''
+                        moveUrl: element.dataset.moveUrl || '',
+                        menuSource: element.querySelector('.pf-item-menu')
                     };
                 });
             return {
@@ -193,7 +195,8 @@ function initializePlanViews() {
                 description: description,
                 elements: elements,
                 sectionId: phase.dataset.sectionId || '',
-                moveUrl: phase.dataset.moveUrl || ''
+                moveUrl: phase.dataset.moveUrl || '',
+                menuSource: phase.querySelector('.pf-phase-menu')
             };
         });
     }
@@ -242,6 +245,26 @@ function initializePlanViews() {
         originText.textContent = label;
         badge.appendChild(originText);
         container.appendChild(badge);
+    }
+
+    function appendActionMenu(container, source) {
+        if (!editable || !source) return;
+        var menu = source.cloneNode(true);
+        menu.classList.remove('is-open');
+        menu.querySelector('.pf-dropdown__menu').hidden = true;
+        menu.querySelector('button').setAttribute('aria-expanded', 'false');
+        var originalActions = source.querySelectorAll('.pf-dropdown__item');
+        menu.querySelectorAll('.pf-dropdown__item').forEach(function (action, index) {
+            action.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                window.closePfDropdown?.(menu);
+                // Existing handlers use the original phase and element context.
+                if (action.classList.contains('pf-phase-edit-btn')) showView('list');
+                originalActions[index].click();
+            });
+        });
+        container.appendChild(menu);
     }
 
     function elementCard(item, options) {
@@ -421,6 +444,7 @@ function initializePlanViews() {
         appendOriginBadge(right, item.originLabel);
 
         li.append(left, right);
+        if (!options.calendar) appendActionMenu(li, item.menuSource);
         return li;
     }
 
@@ -433,20 +457,32 @@ function initializePlanViews() {
         var header = document.createElement('header');
         var title = document.createElement('h3');
         title.textContent = phase.title;
+        title.className = 'pf-phase-title';
+        var heading = document.createElement('div');
+        heading.className = 'pf-phase-display-wrap';
+        heading.appendChild(title);
+        var headerLeft = document.createElement('div');
+        headerLeft.className = 'pf-phase-header__left';
         if (editable && phase.moveUrl) {
             var handle = document.createElement('button');
-            handle.type = 'button'; handle.className = 'pf-compact-phase-drag-handle';
-            handle.textContent = '↕'; handle.title = 'Phase verschieben'; handle.setAttribute('aria-label', 'Phase verschieben');
-            header.appendChild(handle);
+            handle.type = 'button'; handle.className = 'pf-compact-phase-drag-handle pf-drag-handle-visual';
+            handle.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle><circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle></svg>'; handle.title = 'Phase verschieben'; handle.setAttribute('aria-label', 'Phase verschieben');
+            headerLeft.appendChild(handle);
         }
         var count = document.createElement('span');
         count.className = 'pf-badge pf-badge--blue';
         count.textContent = phase.elements.length + (phase.elements.length === 1 ? ' Element' : ' Elemente');
-        header.append(title, count);
+        headerLeft.appendChild(heading);
+        var headerRight = document.createElement('div');
+        headerRight.className = 'pf-phase-header__right';
+        headerRight.appendChild(count);
+        appendActionMenu(headerRight, phase.menuSource);
+        header.append(headerLeft, headerRight);
         if (phase.description) {
             var description = document.createElement('p');
+            description.className = 'pf-phase-desc';
             description.textContent = phase.description;
-            header.appendChild(description);
+            heading.appendChild(description);
         }
         var list = document.createElement('ul');
         list.className = 'pf-plan-compact-list';
@@ -623,7 +659,7 @@ function initializePlanViews() {
             undatedHeading.textContent = 'Aufgaben ohne Datum';
             var undatedList = document.createElement('ul');
             undatedList.className = 'pf-plan-compact-list';
-            undatedTasks.forEach(function (task) { undatedList.appendChild(elementCard(task)); });
+            undatedTasks.forEach(function (task) { undatedList.appendChild(elementCard(task, { calendar: true })); });
             undated.append(undatedHeading, undatedList);
             wrapper.appendChild(undated);
         }
@@ -638,11 +674,12 @@ function initializePlanViews() {
         var dragged = null;
         var handleSelector = '.pf-compact-drag-handle, .pf-compact-phase-drag-handle';
         viewRoot.querySelectorAll('[draggable="true"]').forEach(function (item) {
+            item.draggable = !dragMedia.matches;
             var handle = item.querySelector(handleSelector);
             if (view === 'calendar') handle = item;
             handle?.addEventListener('pointerdown', function () { item.dataset.dragArmed = 'true'; });
             item.addEventListener('dragstart', function (event) {
-                if (item.dataset.dragArmed !== 'true') { event.preventDefault(); return; }
+                if (dragMedia.matches || item.dataset.dragArmed !== 'true') { event.preventDefault(); return; }
                 event.stopPropagation(); dragged = item; item.classList.add('is-dragging');
                 event.dataTransfer.effectAllowed = 'move';
                 event.dataTransfer.setData('text/plain', item.dataset.elementId || item.dataset.sectionId);
@@ -745,6 +782,7 @@ function initializePlanViews() {
                     description: phase.description,
                     sectionId: phase.sectionId,
                     moveUrl: phase.moveUrl,
+                    menuSource: phase.menuSource,
                     elements: phase.elements.filter(function (item) { return filterItem(item, filters); })
                 };
             });
@@ -753,6 +791,16 @@ function initializePlanViews() {
         }
         try { window.localStorage.setItem(storageKey, view); } catch (ignored) { }
     }
+
+    function updateDragMode() {
+        if (!main.isConnected) {
+            dragMedia.removeEventListener('change', updateDragMode);
+            return;
+        }
+        var active = switcher.querySelector('[data-plan-view][aria-pressed="true"]');
+        if (active && active.dataset.planView !== 'list') showView(active.dataset.planView);
+    }
+    dragMedia.addEventListener('change', updateDragMode);
 
     switcher.addEventListener('click', function (event) {
         var button = event.target.closest('[data-plan-view]');

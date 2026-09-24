@@ -532,7 +532,7 @@ main[data-sort-mode] {
     justify-content: center;
     color: var(--pf-text-muted);
     opacity: 0.65;
-    margin-right: 0.35rem;
+    margin-right: 0;
     flex-shrink: 0;
     cursor: grab !important;
     pointer-events: auto;
@@ -792,7 +792,18 @@ main[data-sort-mode] {
         min-width: 0;
     }
     .pf-phase-header__left .pf-drag-handle-visual {
-        margin-right: 0;
+        display: none !important;
+    }
+    .pf-drag-handle,
+    .pf-drag-handle-visual,
+    .element-drag-handle,
+    .pf-compact-drag-handle,
+    .pf-compact-phase-drag-handle,
+    .drag-handle,
+    .pf-phase-drag-handle,
+    .pf-section-drag-handle,
+    .section-drag-handle {
+        display: none !important;
     }
     .pf-phase-display-wrap {
         min-width: 0;
