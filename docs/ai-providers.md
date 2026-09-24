@@ -13,7 +13,22 @@ den Anwendungsstart.
 | `gemini` | `GEMINI_API_KEY` | `gemini-2.5-flash` |
 
 Der Stub ist für lokale Entwicklung und automatisierte Tests vorgesehen. Seine
-Szenarien werden im Entwicklungsprofil über `projectflow.ai.stub.*` gesetzt.
+Szenarien werden im Entwicklungsprofil über `projectflow.ai.stub.*` gesetzt:
+
+- `projectflow.ai.stub.pre-check-scenario`:
+  - `critical-assumption` (Standard im Entwicklungsprofil): Kritische Annahme mit konkretem maschinenlesbaren Änderungsvorschlag (`proposedInputChanges`), der direkt im Wizard übernommen werden kann.
+  - `no-problems`: Vorprüfung ohne gefundene Probleme (überspringt den Review-Schritt direkt zur Generierung).
+  - `risk` / `warning`: Fachliches oder organisatorisches Planungsrisiko (Severity `WARNING`, keine Eingabeänderung).
+  - `assumption`: Planungsrelevante Annahme/Grundlage (Severity `WARNING`, keine Eingabeänderung).
+  - `conflict` / `error`: Blockierender Ziel- oder Rahmenbedingungskonflikt (Severity `ERROR`).
+  - `multiple-warnings`: Kombination aus Risiko, Annahme und kritischer Annahme zur gemeinsamen Überprüfung im UI.
+  - `multiple-issues`: Kombination aus Warnung und blockierendem Fehler.
+  - `dynamic`: Automatische Erkennung passender Hinweise anhand von Schlüsselwörtern in Titel, Ziel oder Rahmenbedingungen.
+
+- `projectflow.ai.stub.generation-scenario`:
+  - `with-dates` (Standard): Vollständiger Projektplan mit passgenauen Terminen innerhalb des Projektzeitraums, Aufwandsschätzungen in Minuten, Aufgabenprioritäten und Abhängigkeiten. Bildet für Umzug und Bildung/Präsentation spezifische Szenarien ab.
+  - `without-dates`: Planstruktur ohne feste Datumsbindung.
+
 
 ## Konfiguration realer Provider
 

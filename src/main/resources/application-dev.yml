@@ -26,5 +26,7 @@ projectflow:
   ai:
     provider: ${PROJECTFLOW_AI_PROVIDER:stub}
     stub:
-      pre-check-scenario: no-problems
+      # no-problems, risk, assumption, critical-assumption, conflict, multiple-warnings, multiple-issues, dynamic
+      pre-check-scenario: ${PROJECTFLOW_AI_STUB_PRE_CHECK_SCENARIO:critical-assumption}
+      # with-dates, without-dates
       generation-scenario: with-dates

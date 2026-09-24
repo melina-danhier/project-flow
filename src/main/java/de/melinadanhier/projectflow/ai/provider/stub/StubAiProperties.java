@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "projectflow.ai.stub")
 public class StubAiProperties {
 
-    private StubAiPreCheckScenario preCheckScenario = StubAiPreCheckScenario.NO_PROBLEMS;
+    private StubAiPreCheckScenario preCheckScenario = StubAiPreCheckScenario.CRITICAL_ASSUMPTION;
 
     private StubAiGenerationScenario generationScenario = StubAiGenerationScenario.WITH_DATES;
 
