@@ -33,6 +33,7 @@ import de.melinadanhier.projectflow.generation.model.wizard.AiWizardSnapshot;
 import de.melinadanhier.projectflow.plancontainer.template.model.CollaborationMode;
 import de.melinadanhier.projectflow.plancontainer.template.model.ProjectCategory;
 import de.melinadanhier.projectflow.planelement.model.TaskPriority;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -49,6 +50,12 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ProviderAiClientTest {
+
+    @BeforeAll
+    static void muteSimulatedFailureLogs() {
+        ((ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(de.melinadanhier.projectflow.ai.provider.AbstractProviderAiClient.class))
+                .setLevel(ch.qos.logback.classic.Level.ERROR);
+    }
 
     private final AiResponsesGateway gateway = mock(AiResponsesGateway.class);
     private final PreCheckPromptBuilder preCheckPrompts = mock(PreCheckPromptBuilder.class);

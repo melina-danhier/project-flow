@@ -103,7 +103,8 @@ public class AiPreCheckProcessor {
                                             AiTechnicalError error) {
         log.error("KI-Pre-Check beendet workflowId={} schemaVersion={} errorCode={} message={}.",
                 workflowId, AiSchemaVersions.PRE_CHECK,
-                error.errorCode(), error.technicalMessage(), error.cause());
+                error.errorCode(), error.technicalMessage());
+        log.debug("Stacktrace für beendeten KI-Pre-Check workflowId={}:", workflowId, error.cause());
         try {
             workflowService.recordFailure(workflowId, runId, error);
         } catch (RuntimeException persistenceException) {

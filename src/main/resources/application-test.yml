@@ -22,3 +22,9 @@ spring:
 projectflow:
   ai:
     provider: stub
+
+logging:
+  level:
+    org.hibernate.orm.persistenceContext: ERROR
+    org.junit.jupiter.engine.descriptor.AbstractExtensionContext: ERROR
+

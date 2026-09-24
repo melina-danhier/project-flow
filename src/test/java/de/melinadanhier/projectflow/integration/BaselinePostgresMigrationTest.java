@@ -1,21 +1,20 @@
 package de.melinadanhier.projectflow.integration;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Optional baseline test for an explicitly supplied, empty, disposable PostgreSQL database. */
-@EnabledIfSystemProperty(named = "projectflow.test.postgres.url", matches = ".+")
+/** Baseline integration test for PostgreSQL database migrations using Testcontainers. */
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(properties = {
-        "spring.datasource.url=${projectflow.test.postgres.url}",
-        "spring.datasource.username=${projectflow.test.postgres.username:projectflow_migration_test}",
-        "spring.datasource.password=${PROJECTFLOW_TEST_POSTGRES_PASSWORD:}",
-        "spring.datasource.driver-class-name=org.postgresql.Driver",
         "spring.flyway.enabled=true",
         "spring.jpa.hibernate.ddl-auto=validate"
 })
@@ -23,6 +22,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BaselinePostgresMigrationTest {
 
     private static final int EXPECTED_APPLICATION_TABLES = 26;
+    private static final int EXPECTED_SQL_MIGRATIONS = 10;
+    private static final String EXPECTED_LATEST_VERSION = "10";
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired
     private JdbcTemplate jdbc;
@@ -33,14 +38,14 @@ class BaselinePostgresMigrationTest {
                 SELECT COUNT(*)
                 FROM flyway_schema_history
                 WHERE type = 'SQL' AND success
-                """, Integer.class)).isEqualTo(5);
+                """, Integer.class)).isEqualTo(EXPECTED_SQL_MIGRATIONS);
         assertThat(jdbc.queryForObject("""
                 SELECT version
                 FROM flyway_schema_history
                 WHERE success AND version IS NOT NULL
                 ORDER BY installed_rank DESC
                 LIMIT 1
-                """, String.class)).isEqualTo("5");
+                """, String.class)).isEqualTo(EXPECTED_LATEST_VERSION);
         assertThat(jdbc.queryForObject("""
                 SELECT COUNT(*)
                 FROM information_schema.tables

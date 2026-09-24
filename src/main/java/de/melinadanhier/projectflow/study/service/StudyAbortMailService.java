@@ -65,7 +65,8 @@ public class StudyAbortMailService {
             mailSender.send(message);
             log.info("Studienabbruch-Mail erfolgreich gesendet.");
         } catch (MailException ex) {
-            log.error("Studienabbruch-Mail konnte nicht gesendet werden.", ex);
+            log.error("Studienabbruch-Mail konnte nicht gesendet werden: {}", ex.getMessage());
+            log.debug("Stacktrace für fehlgeschlagenen Studienabbruch-Mailversand:", ex);
         }
     }
 

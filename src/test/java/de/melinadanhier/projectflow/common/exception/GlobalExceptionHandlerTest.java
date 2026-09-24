@@ -28,17 +28,25 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void persistenceAndUnexpectedFailuresNeverExposeInternalDetails() {
-        String internalDetail = "password=secret; SQLSTATE=23505";
+        ch.qos.logback.classic.Logger logger =
+                (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        ch.qos.logback.classic.Level originalLevel = logger.getLevel();
+        logger.setLevel(ch.qos.logback.classic.Level.OFF);
+        try {
+            String internalDetail = "password=secret; SQLSTATE=23505";
 
-        ModelAndView persistence = handler.handlePersistenceFailure(
-                new DataIntegrityViolationException(internalDetail));
-        ModelAndView unexpected = handler.handleUnexpectedFailure(
-                new IllegalStateException(internalDetail));
+            ModelAndView persistence = handler.handlePersistenceFailure(
+                    new DataIntegrityViolationException(internalDetail));
+            ModelAndView unexpected = handler.handleUnexpectedFailure(
+                    new IllegalStateException(internalDetail));
 
-        assertSafeServerError(persistence, internalDetail,
-                "Die Daten konnten gerade nicht verarbeitet werden. Bitte versuche es später erneut.");
-        assertSafeServerError(unexpected, internalDetail,
-                "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es später erneut.");
+            assertSafeServerError(persistence, internalDetail,
+                    "Die Daten konnten gerade nicht verarbeitet werden. Bitte versuche es später erneut.");
+            assertSafeServerError(unexpected, internalDetail,
+                    "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es später erneut.");
+        } finally {
+            logger.setLevel(originalLevel);
+        }
     }
 
     private void assertSafeServerError(ModelAndView result, String internalDetail,

@@ -1,6 +1,7 @@
 package de.melinadanhier.projectflow.study;
 
 import de.melinadanhier.projectflow.study.service.StudyAbortMailService;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -17,6 +18,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class StudyAbortMailServiceTest {
+
+    @BeforeAll
+    static void muteSimulatedFailureLogs() {
+        ((ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(StudyAbortMailService.class))
+                .setLevel(ch.qos.logback.classic.Level.OFF);
+    }
 
     private final JavaMailSender mailSender = mock(JavaMailSender.class);
 
