@@ -18,11 +18,7 @@
             if (todayCheckbox.checked) {
                 startDateInput.dataset.previousValue = startDateInput.value;
                 startDateInput.value = formatToday();
-                startDateInput.readOnly = true;
-                startDateInput.classList.add('is-readonly-today');
             } else {
-                startDateInput.readOnly = false;
-                startDateInput.classList.remove('is-readonly-today');
                 if (startDateInput.dataset.previousValue !== undefined) {
                     startDateInput.value = startDateInput.dataset.previousValue;
                 }
@@ -34,9 +30,14 @@
         // Pre-check if input already equals today
         if (startDateInput.value && startDateInput.value === formatToday()) {
             todayCheckbox.checked = true;
-            startDateInput.readOnly = true;
-            startDateInput.classList.add('is-readonly-today');
         }
+
+        // When startDate is changed, sync Heute checkbox state
+        const syncToday = () => {
+            todayCheckbox.checked = (startDateInput.value === formatToday());
+        };
+        startDateInput.addEventListener('input', syncToday);
+        startDateInput.addEventListener('change', syncToday);
 
         const form = startDateInput.closest('form');
         form?.addEventListener('submit', () => {

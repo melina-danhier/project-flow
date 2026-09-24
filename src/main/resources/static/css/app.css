@@ -1144,9 +1144,15 @@ select optgroup,
     padding: 0.35rem 0.65rem;
 }
 
+input[type="date"] {
+    cursor: text;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
-    opacity: 0.6;
+    opacity: 0.7;
+    padding: 0.25rem;
+    margin-right: -0.25rem;
     transition: var(--pf-transition);
 }
 
@@ -2262,6 +2268,10 @@ dialog.pf-study-task-dialog .pf-confirm-title:focus {
         font-size: 0.88rem;
         padding: 0.45rem 0.65rem;
     }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        padding: 0.35rem;
+        opacity: 0.85;
+    }
     .pf-card {
         padding: 0.85rem;
     }
@@ -2566,3 +2576,33 @@ body.pf-drawer-open {
     }
 }
 
+
+/* Dedicated calendar target at every breakpoint. */
+.pf-date-control { position: relative; display: block; align-self: start; width: 100%; min-width: 0; }
+.pf-date-control input[type="date"] {
+    width: 100%;
+    padding-inline-end: 2.75rem;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.pf-date-control input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none !important;
+    -webkit-appearance: none;
+    opacity: 0 !important;
+    width: 0;
+    padding: 0;
+    margin: 0;
+    pointer-events: none;
+}
+.pf-date-control__button {
+    position: absolute; inset-inline-end: 0; top: 0; bottom: 0;
+    width: 2.75rem; min-width: 2.75rem; padding: 0; display: flex; align-items: center; justify-content: center;
+    border: 0; background: transparent; color: var(--pf-text-main, #0f172a); cursor: pointer;
+    border-radius: var(--pf-radius-sm);
+}
+.pf-date-control__button:focus-visible { outline: 2px solid var(--pf-primary); outline-offset: -3px; }
+.pf-date-control:has(input:disabled) .pf-date-control__button,
+.pf-date-control:has(input[readonly]) .pf-date-control__button { pointer-events: none; opacity: 0.5; }
+
+.pf-date-control__button svg { width: 22px; height: 22px; flex: 0 0 22px; }
+.pf-date-control__button:hover { background: var(--pf-primary-soft); color: var(--pf-primary); }

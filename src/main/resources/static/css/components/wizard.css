@@ -222,7 +222,7 @@
 
 .is-readonly-today {
     background-color: var(--pf-surface-muted, #f8fafc) !important;
-    cursor: not-allowed;
+    cursor: pointer;
     opacity: 0.85;
 }
 
@@ -437,6 +437,12 @@
         min-width: 0;
         max-width: 100%;
     }
+    .pf-time-section-box {
+        padding: 0.85rem 0.75rem;
+    }
+    .pf-start-date-row {
+        gap: 0.5rem;
+    }
     .pf-time-grid {
         grid-template-columns: 1fr;
         gap: 0.85rem;
@@ -521,3 +527,13 @@
     }
 }
 
+
+.pf-time-tip-alert > .pf-time-tip-alert__icon { flex: 0 0 auto; align-self: flex-start; }
+.pf-time-tip-alert strong { white-space: nowrap; }
+/* Keep the date field at full column width; Heute gets its own row. */
+.pf-start-date-row > .pf-date-control,
+.pf-start-date-row > input[type="date"] {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+}

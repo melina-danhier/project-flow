@@ -101,7 +101,8 @@
                 </div>
 
                 <div class="pf-alert pf-alert--info pf-time-tip-alert" style="margin-bottom: 1.25rem; font-size: 0.88rem; padding: 0.65rem 0.95rem;">
-                    💡 <strong>Tipp:</strong> Startdatum, Endtermin und geplante Dauer sind unabhängig voneinander optional. Mit einem Datum und einer Dauer kann ProjectFlow die fehlende Grenze vorschlagen.
+                    <span class="pf-time-tip-alert__icon" aria-hidden="true">💡</span>
+                    <span><strong>Tipp:</strong> Startdatum, Endtermin und geplante Dauer sind unabhängig voneinander optional. Mit einem Datum und einer Dauer kann ProjectFlow die fehlende Grenze vorschlagen.</span>
                 </div>
 
                 <div class="pf-time-grid">
@@ -111,7 +112,7 @@
                             <span class="pf-hint">(optional)</span>
                         </label>
                         <div class="pf-start-date-row">
-                            <input id="startDate" type="date" th:field="*{startDate}" class="pf-input" style="flex: 1; min-width: 140px;">
+                            <input id="startDate" type="date" th:field="*{startDate}" class="pf-input">
                             <label class="pf-today-checkbox" title="Startdatum auf heutigen Tag setzen">
                                 <input type="checkbox" id="start-date-today-checkbox">
                                 <span>Heute</span>

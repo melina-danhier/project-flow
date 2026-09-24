@@ -1010,6 +1010,32 @@
             window.addEventListener('resize', repositionActiveTooltips, { passive: true });
             window.addEventListener('scroll', repositionActiveTooltips, { passive: true });
         })();
+
+        // A real button keeps the picker target independent of viewport and input padding.
+        (() => {
+            const enhanceDateInputs = () => {
+                document.querySelectorAll('input[type="date"]').forEach(input => {
+                    if (input.closest('.pf-date-control') || typeof input.showPicker !== 'function') return;
+                    const wrapper = document.createElement('span');
+                    wrapper.className = 'pf-date-control';
+                    input.before(wrapper);
+                    wrapper.append(input);
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'pf-date-control__button';
+                    button.setAttribute('aria-label', 'Kalender öffnen');
+                    button.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg>';
+                    button.addEventListener('click', () => {
+                        if (input.disabled || input.readOnly) return;
+                        input.showPicker();
+                    });
+                    input.addEventListener('click', event => event.preventDefault());
+                    wrapper.append(button);
+                });
+            };
+            enhanceDateInputs();
+            new MutationObserver(enhanceDateInputs).observe(document.body, { childList: true, subtree: true });
+        })();
     </script>
 
     <div class="site-footer__inner">
