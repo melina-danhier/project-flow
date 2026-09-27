@@ -17,21 +17,23 @@
                 <th:block th:replace="~{fragments/icons :: arrow-left(14, 2.5)}" />
                 Zurück zu den Entwürfen
             </a>
-            <h1 th:text="${draft.projectTitle}" style="margin: 0 0 0.5rem;">Projekttitel</h1>
-            <div class="pf-project-facts">
-                <span class="pf-badge pf-badge--gray" th:if="${draft.categoryLabel != null and !draft.categoryLabel.isBlank()}" th:text="${draft.categoryLabel}">Kategorie</span>
-                <span class="pf-badge pf-badge--purple pf-info-tooltip"
+            <div class="pf-draft-title">
+                <h1>KI-Entwurf</h1>
+                <span class="pf-info-tooltip"
                       role="button" tabindex="0"
-                      data-tooltip="Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest."
-                      aria-label="Hinweis zum KI-Entwurf: Du musst nicht jedes Element einzeln übernehmen. Offene Elemente werden beim Bestätigen automatisch übernommen. Prüfe den Plan trotzdem und markiere nur Elemente, die du bewusst bestätigen oder ablehnen möchtest."
+                      data-tooltip="Du musst nicht jeden Vorschlag einzeln bestätigen. Offene Vorschläge werden mit übernommen, abgelehnte nicht."
+                      aria-label="Hinweis zum KI-Entwurf: Du musst nicht jeden Vorschlag einzeln bestätigen. Offene Vorschläge werden mit übernommen, abgelehnte nicht."
                       style="display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
-                    <span>KI-Entwurf</span>
                     <svg class="pf-draft-review-info-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="16" x2="12" y2="12"></line>
                         <line x1="12" y1="8" x2="12.01" y2="8"></line>
                     </svg>
                 </span>
+            </div>
+            <div class="pf-project-facts">
+                <span class="pf-draft-project-title" th:text="${draft.projectTitle}">Projekttitel</span>
+                <span class="pf-badge pf-badge--gray" th:if="${draft.categoryLabel != null and !draft.categoryLabel.isBlank()}" th:text="${draft.categoryLabel}">Kategorie</span>
                 <span class="pf-badge pf-badge--blue" role="status" title="Prüfungsfortschritt">
                     <strong th:text="${draft.reviewedElementCount + ' / ' + draft.totalElementCount + ' geprüft'}">0 / 0 geprüft</strong>
                 </span>
@@ -48,15 +50,16 @@
                     <span th:text="${draft.formattedTotalEffort + ' Gesamt'}"></span>
                 </span>
             </div>
+            <p class="pf-draft-guidance">Prüfe und bearbeite die Vorschläge. Mit „Entwurf übernehmen“ startest du das Projekt. Offene Vorschläge werden mit übernommen, abgelehnte nicht.</p>
         </div>
 
         <div class="pf-page-header__actions">
-            <!-- Draft Review Actions (Desktop) -->
+            <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
+                  th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
+                <button type="submit" class="pf-btn pf-btn--primary pf-btn--sm">Entwurf übernehmen</button>
+            </form>
+            <!-- Secondary Draft Review Actions (Desktop) -->
             <div class="pf-draft-header-actions--desktop">
-                <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
-                      th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post">
-                    <button type="submit" class="pf-btn pf-btn--primary pf-btn--sm">Entwurf übernehmen</button>
-                </form>
                 <button th:if="${draft.owner and draft.status.name() != 'APPLIED'}" type="button"
                         class="pf-btn pf-btn--secondary pf-btn--sm" id="open-regenerate-modal-btn">Plan neu generieren</button>
                 <form th:if="${draft.owner and draft.status.name() != 'APPLIED'}" class="pf-header-action-form"
@@ -81,12 +84,6 @@
                     </svg>
                 </button>
                 <div class="pf-dropdown__menu" hidden>
-                    <form th:action="@{/projects/{projectId}/draft/apply(projectId=${draft.projectId})}" method="post" style="margin:0;">
-                        <button type="submit" class="pf-dropdown__item">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            <span>Entwurf übernehmen</span>
-                        </button>
-                    </form>
                     <button type="button" class="pf-dropdown__item" onclick="document.getElementById('regenerate-plan-dialog')?.showModal()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
                         <span>Plan neu generieren</span>

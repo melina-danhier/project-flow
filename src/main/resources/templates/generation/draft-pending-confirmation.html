@@ -14,9 +14,9 @@
                 <th:block th:replace="~{fragments/icons :: arrow-left(14, 2.5)}" />
                 Zurück zum Entwurf
             </a>
-            <h1 th:text="${summary.empty ? 'Vollständig verworfenen Entwurf abschließen' : 'Entwurf jetzt übernehmen?'}" style="margin: 0;">Entwurf übernehmen?</h1>
+            <h1 th:text="${summary.empty ? 'Leeres Projekt erstellen?' : 'Entwurf jetzt übernehmen?'}" style="margin: 0;">Entwurf übernehmen?</h1>
             <p class="pf-page-header__subtitle" th:if="${!summary.empty}">
-                Aus dem geprüften Entwurf wird jetzt der aktive Plan für „<strong th:text="${summary.projectTitle}">Projekt</strong>" initialisiert.
+                Du startest das Projekt „<strong th:text="${summary.projectTitle}">Projekt</strong>“ mit diesem Plan.
             </p>
         </div>
     </div>
@@ -28,7 +28,7 @@
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
-            <span th:text="${summary.pendingElementCount + ' ungeprüfte Elemente werden bei der Übernahme automatisch akzeptiert.'}"></span>
+            <span th:text="${summary.pendingElementCount + ' ungeprüfte Vorschläge werden mit übernommen.'}"></span>
         </div>
 
         <div th:if="${summary.omittedDependencyCount > 0}" class="pf-alert pf-alert--info" role="status">
@@ -38,7 +38,7 @@
         <!-- Empty Draft Section -->
         <div th:if="${summary.empty}">
             <p style="color: var(--pf-text-secondary); margin-bottom: 1.5rem;">
-                Alle Bereiche, Aufgaben und Meilensteine wurden verworfen. Du kannst einen neuen KI-Entwurf erzeugen oder das vorhandene Projekt ohne Planelemente aktivieren.
+                Du hast alle Vorschläge abgelehnt. Erstelle einen neuen Entwurf oder starte ein leeres Projekt.
             </p>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                 <form th:action="@{/projects/{projectId}/draft/regenerate(projectId=${summary.projectId})}" method="post"
@@ -80,7 +80,7 @@
         <!-- Non-Empty Draft Form -->
         <div th:if="${!summary.empty}">
             <p style="color: var(--pf-text-secondary); margin-bottom: 1.5rem;">
-                Nach der Übernahme kannst du die Aufgaben und Meilensteine wie gewohnt im Projektplan anpassen, zuweisen und bearbeiten.
+                Du kannst den Plan auch danach weiter bearbeiten.
             </p>
             <form th:action="@{/projects/{projectId}/draft/continue-with-pending(projectId=${summary.projectId})}" method="post" style="margin: 0;">
                 <input type="hidden" name="draftId" th:value="${summary.draftId}">

@@ -423,7 +423,7 @@ class DraftReviewIntegrationTest {
         mvc.perform(get(f.reviewUrl()).with(user(member)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("KI-Entwurf prüfen")))
-                .andExpect(content().string(not(containsString("Entwurf ausdrücklich übernehmen"))));
+                .andExpect(content().string(not(containsString("/draft/apply"))));
         mvc.perform(post(f.url() + "/elements/" + draft.getElements().getFirst().getId() + "/accept")
                         .param("lockVersion", String.valueOf(draft.getLockVersion()))
                         .with(user(member)).with(csrf()))
@@ -454,14 +454,19 @@ class DraftReviewIntegrationTest {
             project.setEndDate(LocalDate.of(2026, 10, 13));
         });
 
-        mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
+        String html = mvc.perform(get(f.reviewUrl()).with(user(f.owner())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Testprojekt")))
                 .andExpect(content().string(containsString("Umzug")))
                 .andExpect(content().string(containsString("01.09.2026")))
                 .andExpect(content().string(containsString("13.10.2026")))
+                .andExpect(content().string(containsString("<h1>KI-Entwurf</h1>")))
+                .andExpect(content().string(containsString("<span class=\"pf-draft-project-title\">Testprojekt</span>")))
+                .andExpect(content().string(containsString("Entwurf übernehmen")))
                 .andExpect(content().string(not(containsString("Prompt-Version"))))
-                .andExpect(content().string(not(containsString("Schema-Version"))));
+                .andExpect(content().string(not(containsString("Schema-Version"))))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(html).containsOnlyOnce("/draft/apply");
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
                 projects.findById(f.projectId()).orElseThrow().setSubcategory(ProjectSubCategory.OTHER_HOME));

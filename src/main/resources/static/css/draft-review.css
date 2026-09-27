@@ -8,10 +8,18 @@ main[data-sort-mode] {
 }
 
 /* Page Header & Meta */
-.review-header {
+.pf-page-header.review-header {
+    /* Override the global mobile header row enforced in components/projects.css. */
+    flex-direction: column !important;
+    align-items: flex-start !important;
     margin-bottom: 1.25rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--pf-border);
+}
+
+.review-header > .pf-page-header__actions {
+    margin-left: 0;
+    justify-content: flex-start;
 }
 
 .pf-project-facts {
@@ -19,7 +27,6 @@ main[data-sort-mode] {
     flex-wrap: wrap;
     gap: 0.5rem;
     align-items: center;
-    margin-top: 0.5rem;
 }
 
 .pf-header-action-form {
@@ -684,6 +691,31 @@ main[data-sort-mode] {
 .pf-calendar__task--range-end {
     border-top-right-radius: var(--pf-radius-sm);
     border-bottom-right-radius: var(--pf-radius-sm);
+}
+
+.pf-draft-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.pf-draft-title h1 {
+    margin: 0;
+}
+
+.pf-draft-project-title {
+    font-size: 0.875rem;
+    color: var(--pf-text-secondary);
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+.pf-draft-guidance {
+    max-width: 65ch;
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--pf-text-secondary);
 }
 
 .pf-draft-header-actions--desktop {
