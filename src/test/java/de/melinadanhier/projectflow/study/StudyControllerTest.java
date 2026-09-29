@@ -17,6 +17,9 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import de.melinadanhier.projectflow.study.service.StudyTaskNotCompletableException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -107,10 +110,40 @@ class StudyControllerTest {
     }
 
     @Test
+    void completeTaskOneRedirectsGracefullyWhenPlanNotAdopted() {
+        UUID projectId = UUID.randomUUID();
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+        when(trackingService.completeTaskOne(session))
+                .thenThrow(new StudyTaskNotCompletableException("Aufgabe 1 kann erst abgeschlossen werden, wenn ein Plan übernommen wurde."));
+        when(trackingService.activeProjectId(session)).thenReturn(Optional.of(projectId));
+
+        String view = controller.completeTaskOne(session, redirectAttributes);
+
+        assertThat(view).isEqualTo("redirect:/projects/" + projectId + "/draft/review");
+        assertThat(redirectAttributes.getFlashAttributes().get("errorMessage"))
+                .isEqualTo("Aufgabe 1 kann erst abgeschlossen werden, wenn ein Plan übernommen wurde.");
+    }
+
+    @Test
     void completeTaskTwoRedirectsToCompletedWithoutLogout() {
         assertThat(controller.completeTaskTwo(session)).isEqualTo("redirect:/study/completed");
         verify(trackingService).completeTaskTwo(session);
         verifyNoInteractions(studyUserService);
+    }
+
+    @Test
+    void completeTaskTwoRedirectsGracefullyWhenNotCompletable() {
+        UUID projectId = UUID.randomUUID();
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+        doThrow(new StudyTaskNotCompletableException("Aufgabe 2 kann erst abgeschlossen werden, wenn mindestens eine KI-Änderung vorgenommen wurde."))
+                .when(trackingService).completeTaskTwo(session);
+        when(trackingService.activeProjectId(session)).thenReturn(Optional.of(projectId));
+
+        String view = controller.completeTaskTwo(session, redirectAttributes);
+
+        assertThat(view).isEqualTo("redirect:/projects/" + projectId + "/plan");
+        assertThat(redirectAttributes.getFlashAttributes().get("errorMessage"))
+                .isEqualTo("Aufgabe 2 kann erst abgeschlossen werden, wenn mindestens eine KI-Änderung vorgenommen wurde.");
     }
 
     @Test

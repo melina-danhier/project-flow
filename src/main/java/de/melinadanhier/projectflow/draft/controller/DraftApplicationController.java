@@ -107,6 +107,7 @@ public class DraftApplicationController {
 
     private String appliedRedirect(UUID projectId, UUID draftId, RedirectAttributes redirectAttributes,
                                    HttpSession session) {
+        studyTrackingService.bindProjectIfActive(session, projectId);
         studyTrackingService.trackIfActive(session, StudyEventType.PLAN_ADOPTED);
         offerFeedback(session, AiFeedbackContext.PLAN_ADOPTED, draftId,
                 "/projects/" + projectId + "/plan");

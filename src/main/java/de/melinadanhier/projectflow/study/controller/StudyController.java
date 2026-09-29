@@ -23,10 +23,13 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import de.melinadanhier.projectflow.study.service.StudyTaskNotCompletableException;
 
 @Controller
 public class StudyController {
@@ -108,16 +111,54 @@ public class StudyController {
     }
 
     @PostMapping("/study/task-1/complete")
+    public String completeTaskOne(HttpSession session, RedirectAttributes redirectAttributes) {
+        try {
+            UUID projectId = trackingService.completeTaskOne(session);
+            session.setAttribute(StudyTrackingService.SHOW_INTRO_ATTRIBUTE, "TASK_2");
+            return "redirect:/projects/" + projectId + "/plan";
+        } catch (StudyTaskNotCompletableException ex) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            }
+            return trackingService.activeProjectId(session)
+                    .map(id -> "redirect:/projects/" + id + "/draft/review")
+                    .orElse("redirect:/projects");
+        }
+    }
+
     public String completeTaskOne(HttpSession session) {
-        UUID projectId = trackingService.completeTaskOne(session);
-        session.setAttribute(StudyTrackingService.SHOW_INTRO_ATTRIBUTE, "TASK_2");
-        return "redirect:/projects/" + projectId + "/plan";
+        return completeTaskOne(session, null);
     }
 
     @PostMapping("/study/task-2/complete")
+    public String completeTaskTwo(HttpSession session, RedirectAttributes redirectAttributes) {
+        try {
+            trackingService.completeTaskTwo(session);
+            return "redirect:/study/completed";
+        } catch (StudyTaskNotCompletableException ex) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            }
+            return trackingService.activeProjectId(session)
+                    .map(id -> "redirect:/projects/" + id + "/plan")
+                    .orElse("redirect:/projects");
+        }
+    }
+
     public String completeTaskTwo(HttpSession session) {
-        trackingService.completeTaskTwo(session);
-        return "redirect:/study/completed";
+        return completeTaskTwo(session, null);
+    }
+
+    @ExceptionHandler(StudyTaskNotCompletableException.class)
+    public String handleStudyTaskNotCompletable(StudyTaskNotCompletableException exception,
+                                               HttpSession session,
+                                               RedirectAttributes redirectAttributes) {
+        if (redirectAttributes != null) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return trackingService.activeProjectId(session)
+                .map(id -> "redirect:/projects/" + id + "/plan")
+                .orElse("redirect:/projects");
     }
 
     @GetMapping("/study/completed")

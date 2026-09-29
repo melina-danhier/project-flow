@@ -2,6 +2,7 @@ package de.melinadanhier.projectflow.study;
 
 import de.melinadanhier.projectflow.study.domain.*;
 import de.melinadanhier.projectflow.study.repository.*;
+import de.melinadanhier.projectflow.study.service.StudyTaskNotCompletableException;
 import de.melinadanhier.projectflow.study.service.StudyTrackingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
@@ -321,5 +322,114 @@ class StudyTrackingServiceTest {
         var captor = org.mockito.ArgumentCaptor.forClass(StudyEvent.class);
         verify(events, times(1)).save(captor.capture());
         assertThat(captor.getValue().getEventType()).isEqualTo(StudyEventType.STUDY_COMPLETED);
+    }
+
+    @Test
+    void bindProjectIfActiveRebindsToNewProjectWhenPreviousDraftExisted() {
+        UUID id = UUID.randomUUID();
+        UUID draftA = UUID.randomUUID();
+        UUID draftB = UUID.randomUUID();
+
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setProjectId(draftA);
+        study.setCurrentPhase(StudyPhase.TASK_1);
+
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        service.bindProjectIfActive(http, draftB);
+
+        assertThat(study.getProjectId()).isEqualTo(draftB);
+    }
+
+    @Test
+    void bindProjectIfActiveIsIdempotentWhenAlreadyBound() {
+        UUID id = UUID.randomUUID();
+        UUID projectB = UUID.randomUUID();
+
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setProjectId(projectB);
+
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        service.bindProjectIfActive(http, projectB);
+
+        assertThat(study.getProjectId()).isEqualTo(projectB);
+    }
+
+    @Test
+    void bindProjectIfActiveDoesNothingWhenNoActiveSession() {
+        MockHttpSession http = new MockHttpSession();
+        // No session attribute set -> should not throw
+        service.bindProjectIfActive(http, UUID.randomUUID());
+
+        // Inactive session -> should not update
+        UUID id = UUID.randomUUID();
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.COMPLETED);
+        study.setProjectId(UUID.randomUUID());
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        UUID anotherProject = UUID.randomUUID();
+        service.bindProjectIfActive(http, anotherProject);
+        assertThat(study.getProjectId()).isNotEqualTo(anotherProject);
+    }
+
+    @Test
+    void completeTaskOneSucceedsWhenBoundProjectIsAdoptedAndInOverview() {
+        UUID id = UUID.randomUUID();
+        UUID projectB = UUID.randomUUID();
+
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setProjectId(projectB);
+        study.setCurrentPhase(StudyPhase.TASK_1);
+
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        Project adoptedProject = mock(Project.class);
+        when(adoptedProject.getLocation()).thenReturn(ProjectLocation.OVERVIEW);
+        when(projectRepository.findById(projectB)).thenReturn(Optional.of(adoptedProject));
+
+        UUID completedProjectId = service.completeTaskOne(http);
+
+        assertThat(completedProjectId).isEqualTo(projectB);
+        assertThat(study.getCurrentPhase()).isEqualTo(StudyPhase.TASK_2);
+    }
+
+    @Test
+    void completeTaskOneFailsWithStudyTaskNotCompletableExceptionWhenPlanNotAdopted() {
+        UUID id = UUID.randomUUID();
+        UUID draftA = UUID.randomUUID();
+
+        StudySession study = new StudySession();
+        study.setId(id);
+        study.setStatus(StudySessionStatus.ACTIVE);
+        study.setProjectId(draftA);
+        study.setCurrentPhase(StudyPhase.TASK_1);
+
+        MockHttpSession http = new MockHttpSession();
+        http.setAttribute(StudyTrackingService.SESSION_ATTRIBUTE, id);
+        when(sessions.findById(id)).thenReturn(Optional.of(study));
+
+        Project draftProject = mock(Project.class);
+        when(draftProject.getLocation()).thenReturn(ProjectLocation.DRAFT);
+        when(projectRepository.findById(draftA)).thenReturn(Optional.of(draftProject));
+
+        assertThatThrownBy(() -> service.completeTaskOne(http))
+                .isInstanceOf(StudyTaskNotCompletableException.class)
+                .hasMessageContaining("Aufgabe 1 kann erst abgeschlossen werden, wenn ein Plan übernommen wurde.");
     }
 }

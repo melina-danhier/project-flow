@@ -135,16 +135,16 @@ public class StudyTrackingService {
         StudySession studySession = requireActiveSession(httpSession);
 
         if (studySession.getCurrentPhase() != StudyPhase.TASK_1) {
-            throw new IllegalStateException("Aufgabe 1 ist nicht die aktive Phase.");
+            throw new StudyTaskNotCompletableException("Aufgabe 1 ist nicht die aktive Phase.");
         }
         if (studySession.getProjectId() == null) {
-            throw new IllegalStateException("Kein Studienprojekt vorhanden.");
+            throw new StudyTaskNotCompletableException("Kein Studienprojekt vorhanden.");
         }
         boolean hasManageablePlan = projectRepository == null || projectRepository.findById(studySession.getProjectId())
                 .filter(project -> project.getLocation() != ProjectLocation.DRAFT)
                 .isPresent();
         if (!hasManageablePlan) {
-            throw new IllegalStateException("Aufgabe 1 kann erst abgeschlossen werden, wenn ein Plan übernommen wurde.");
+            throw new StudyTaskNotCompletableException("Aufgabe 1 kann erst abgeschlossen werden, wenn ein Plan übernommen wurde.");
         }
 
         recordEvent(studySession, StudyEventType.STUDY_TASK_COMPLETED);
@@ -157,10 +157,10 @@ public class StudyTrackingService {
         StudySession studySession = requireActiveSession(httpSession);
 
         if (studySession.getCurrentPhase() != StudyPhase.TASK_2) {
-            throw new IllegalStateException("Aufgabe 2 ist nicht die aktive Phase.");
+            throw new StudyTaskNotCompletableException("Aufgabe 2 ist nicht die aktive Phase.");
         }
         if (!canCompleteTaskTwo(httpSession)) {
-            throw new IllegalStateException("Aufgabe 2 kann erst abgeschlossen werden, wenn mindestens eine KI-Änderung vorgenommen wurde.");
+            throw new StudyTaskNotCompletableException("Aufgabe 2 kann erst abgeschlossen werden, wenn mindestens eine KI-Änderung vorgenommen wurde.");
         }
 
         recordEvent(studySession, StudyEventType.STUDY_TASK_COMPLETED);
@@ -203,6 +203,12 @@ public class StudyTrackingService {
     public void assignProjectIfActive(HttpSession httpSession, UUID projectId) {
         activeSession(httpSession)
                 .filter(session -> session.getProjectId() == null || (projectRepository != null && !projectRepository.existsById(session.getProjectId())))
+                .ifPresent(session -> session.setProjectId(projectId));
+    }
+
+    @Transactional
+    public void bindProjectIfActive(HttpSession httpSession, UUID projectId) {
+        activeSession(httpSession)
                 .ifPresent(session -> session.setProjectId(projectId));
     }
 
