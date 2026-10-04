@@ -1,8 +1,12 @@
-# ProjectFlow
+# ProjectFlow v1
 
 ProjectFlow ist ein KI-gestütztes Projektplanungstool für Einzelpersonen und kleine Gruppen. Die serverseitig gerenderte Webanwendung unterstützt bei der strukturierten Erstellung und Verwaltung kleiner privater, studentischer und vergleichbarer Projekte.
 
 Das Projekt entsteht als Prototyp im Rahmen der Bachelorarbeit **„Konzeption und Evaluation eines KI-gestützten Projektplanungstools zur Generierung einfacher Projektstrukturen“**.
+
+Die Abgabeversion trägt die Maven-Version `1.0.0`. Der Git-Tag `bachelor-thesis-final`
+ist für den nach Prüfung freigegebenen Commit vorgesehen. Ablauf und Abnahmekriterien
+stehen in der [Release-Checkliste](docs/release-checklist.md).
 
 ## Ziel und Forschungsfrage
 
@@ -24,7 +28,8 @@ Die KI unterstützt die Planung, handelt aber nicht autonom. Generierte Inhalte 
 - Aufgaben mit Terminen, Priorität, Aufwand, Status, Abhängigkeiten und Verantwortlichen
 - einfache Zusammenarbeit über Projektmitglieder sowie Aufgaben- und Meilensteinkommentare
 - lokale KI-Verbesserung einzelner Planelemente sowie überprüfbare Änderungen am Gesamtplan
-- Feedback zu KI-Vorschlägen und Unterstützung einer begleitenden Evaluation
+- Notizen zu Aufgaben und Meilensteinen im Einzelmodus sowie Feedback zu KI-Vorschlägen
+- erhaltene Evaluationsfunktionen bei geschlossenem Studieneinstieg
 
 ## Technischer Überblick
 
@@ -107,11 +112,40 @@ Die vollständige Java-Testsuite wird mit der lokal installierten Maven-Version 
 mvn.cmd test
 ```
 
-Die automatisierten Tests verwenden Stubs beziehungsweise Test-Doubles und rufen keine externen KI-APIs auf. Zusätzlich existiert ein kleiner JavaScript-Test für die clientseitige Projektklassifikation:
+Die automatisierten Tests verwenden Stubs beziehungsweise Test-Doubles und rufen keine externen KI-APIs auf. Die PostgreSQL-Migrationstests benötigen einen laufenden Docker-Daemon; ohne Docker werden sie übersprungen. Die übrigen Integrationstests verwenden H2 und prüfen keine Flyway-Migrationen. Zusätzlich prüfen JavaScript-Tests Projektklassifikation, Datumsauswahl und responsives Drag-and-drop (Node.js erforderlich):
 
 ```powershell
-node --test src/test/js/project-classification.test.cjs
+node --test src/test/js/date-picker.test.cjs src/test/js/plan-drag.test.cjs src/test/js/project-classification.test.cjs
 ```
+
+Ein ausführbares Release-JAR entsteht mit `mvn.cmd clean verify` unter
+`target/projectflow-1.0.0.jar`. Dieser Befehl führt auch die Java-Tests aus.
+
+## Deployment auf Render
+
+Die Anwendung wird als Docker-Web-Service aus dem mitgelieferten `Dockerfile`
+betrieben. Deploymentadresse: [ProjectFlow auf Render](https://project-flow-vqbv.onrender.com/).
+Der Container startet das ausführbare JAR; der Build überspringt Tests,
+deshalb müssen sie vor der Freigabe separat erfolgreich laufen.
+
+Für den Betrieb sind folgende Umgebungsvariablen zu setzen:
+
+| Variable | Wert/Zweck |
+| --- | --- |
+| `SPRING_PROFILES_ACTIVE` | `prod` |
+| `DB_URL` | JDBC-URL der PostgreSQL-Datenbank, z. B. `jdbc:postgresql://host:5432/projectflow` (TLS gemäß Datenbankvorgabe) |
+| `DB_USERNAME`, `DB_PASSWORD` | Datenbankzugangsdaten |
+| `PROJECTFLOW_AI_PROVIDER` | explizit `openai`, `gemini` oder für eine Demo `stub` |
+| `OPENAI_API_KEY` / `GEMINI_API_KEY` | Schlüssel für den gewählten realen Provider |
+| `PORT` | von Render vorgegebener Port; Standard `8080` |
+
+Das Produktionsprofil aktiviert sichere Session-Cookies, verarbeitet Forwarded-Header,
+bindet auf `0.0.0.0` und validiert nach Flyway das Datenbankschema. Als Health-Check
+kann `GET /ping` verwendet werden; dieser prüft die HTTP-Erreichbarkeit, keine
+externen KI-Provider. Produktionsdaten und Secrets gehören nicht in das Image oder Git.
+
+Nach einem Deployment sind Anmeldung, Projekterstellung, Entwurfsübernahme und
+`/study/start` gemäß [Release-Checkliste](docs/release-checklist.md) zu prüfen.
 
 ## Datenbankmigrationen
 
@@ -123,4 +157,12 @@ ProjectFlow ist kein vollständiges Unternehmens-Projektmanagementsystem und kei
 
 ## Evaluation
 
-Der Prototyp ist für eine kleine Nutzerstudie vorgesehen. Bewertet werden insbesondere Passgenauigkeit, Verständlichkeit und Nützlichkeit der erzeugten Projektstrukturen, das Vertrauen in die KI-Unterstützung sowie die Bedienbarkeit der Anwendung.
+Die begleitende Nutzerstudie ist beendet. Bewertet wurden insbesondere Passgenauigkeit,
+Verständlichkeit und Nützlichkeit der erzeugten Projektstrukturen, das Vertrauen in
+die KI-Unterstützung sowie die Bedienbarkeit der Anwendung.
+
+`/study` führt zu `/study/start`. Dort erscheint in v1 nur eine kurze Abschlussinfo;
+auch ein direkter POST erzeugt keine neue Teilnahme. Die Einstellung
+`projectflow.study.enrollment-open` ist standardmäßig `false`. Studienlogik,
+Studieninformationen und Migrationen bleiben zur Nachvollziehbarkeit erhalten.
+Die Schließung löscht keine vorhandenen Studiendaten.

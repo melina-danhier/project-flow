@@ -2,9 +2,13 @@
 
 Das PostgreSQL-Schema wird ausschließlich über die versionierten Flyway-Skripte in
 `src/main/resources/db/migration` geändert. Die vor der Evaluation konsolidierte
-Baseline umfasst die Migrationen V1 bis V5. Sie bildet unmittelbar das aktuelle
-Zielschema ab und setzt eine leere Datenbank voraus. Datenbanken mit der früheren
-Historie V1 bis V42 müssen verworfen und neu angelegt werden.
+Baseline umfasst die Migrationen V1 bis V5. Die Abgabeversion enthält zusätzlich
+V6 bis V10 und damit insgesamt zehn Migrationen. V6 entkoppelt Studiensitzungen,
+V7 ergänzt Unterkategorien, V8 die geplante Projektdauer, V9 wandelt Aufwand in
+Minuten um und V10 ergänzt kaskadierendes Löschen von Entwürfen und Workflows.
+Eine leere Datenbank erhält alle zehn Migrationen. Datenbanken mit der früheren
+Entwicklungshistorie V1 bis V42 benötigen eine separat geplante Datenübernahme;
+benötigte Daten dürfen nicht durch ungeprüftes Löschen verloren gehen.
 
 Ab dieser Baseline dürfen angewendete Migrationen nicht nachträglich verändert
 werden; Schemaänderungen erhalten eine neue Migration.
@@ -16,21 +20,23 @@ parallel auf derselben Datenbank betrieben werden.
 
 ## Automatisierte Tests
 
-`mvn.cmd test` verwendet H2 und deaktiviert Flyway. Der optionale
-`BaselinePostgresMigrationTest` führt die Migrationen gegen eine ausdrücklich angegebene
-PostgreSQL-Datenbank aus und validiert anschließend das JPA-Schema.
+Die meisten Integrationstests verwenden H2 und deaktivieren Flyway.
+`BaselinePostgresMigrationTest` startet dagegen mit Testcontainers selbst eine isolierte
+PostgreSQL-16-Instanz, führt V1–V10 aus und validiert anschließend das JPA-Schema.
+Er prüft außerdem 26 Anwendungstabellen und die statische Projektvorlage.
 
-Der Test verändert die angegebene Datenbank. Deshalb darf ausschließlich eine
-wegwerfbare, isolierte Testdatenbank verwendet werden:
+Für den Test ist ein laufender Docker-Daemon erforderlich:
 
 ```powershell
-mvn.cmd '-Dtest=BaselinePostgresMigrationTest' '-Dprojectflow.test.postgres.url=jdbc:postgresql://127.0.0.1:55432/postgres' '-Dprojectflow.test.postgres.username=projectflow_migration_test' test
+mvn.cmd '-Dtest=BaselinePostgresMigrationTest' test
 ```
 
-URL und Benutzer sind lokal anzupassen. Ein erforderliches Passwort kann über die
-Umgebungsvariable `PROJECTFLOW_TEST_POSTGRES_PASSWORD` bereitgestellt werden. Ohne
-`projectflow.test.postgres.url` wird dieser optionale Test übersprungen. Zugangsdaten
-dürfen nicht in das Repository oder die Befehlszeile übernommen werden.
+Ohne Docker werden die beiden Testfälle übersprungen. Der Test nimmt keine externe
+Datenbank-URL entgegen. Die Compose-Konfiguration verwendet PostgreSQL 18; für dieses
+Ziel zusätzlich den Anwendungsstart gegen eine isolierte leere PostgreSQL-18-Datenbank
+prüfen. Dafür das Produktivprofil mit KI-Stub verwenden und erfolgreiche Migrationen
+sowie Hibernate-Validierung kontrollieren. Niemals produktive Datenbanken dafür nutzen.
+Zugangsdaten dürfen nicht in Git oder die Befehlszeile übernommen werden.
 
 ## Deployment
 
