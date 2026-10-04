@@ -4,5 +4,15 @@ target
 .vscode
 *.iml
 .env
+.env.*
+.agents
+.codex
+AGENTS.md
+AppUpdates*.md
+TaskDetails.md
+FixesAndUpdates
+docs
+src/test
+DESIGN_SYSTEM.md
 docker-compose.yml
 README.md

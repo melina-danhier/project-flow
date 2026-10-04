@@ -1,13 +1,11 @@
 package de.melinadanhier.projectflow.planelement.service;
 
-import de.melinadanhier.projectflow.planelement.mapper.PlanElementMapper;
 import de.melinadanhier.projectflow.common.exception.ResourceNotFoundException;
 import de.melinadanhier.projectflow.common.exception.DomainValidationException;
 import de.melinadanhier.projectflow.plancontainer.project.model.membership.ProjectMember;
 import de.melinadanhier.projectflow.plancontainer.project.repository.ProjectMemberRepository;
 import de.melinadanhier.projectflow.plancontainer.project.service.ProjectAuthorizationService;
 import de.melinadanhier.projectflow.planelement.model.Task;
-import de.melinadanhier.projectflow.planelement.repository.PlanElementRepository;
 import de.melinadanhier.projectflow.planelement.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,8 +17,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PlanElementService {
 
-    private final PlanElementRepository planElementRepository;
-    private final PlanElementMapper planElementMapper;
     private final TaskRepository taskRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectAuthorizationService authorizationService;
