@@ -49,6 +49,29 @@ class StudyControllerTest {
     void setUp() {
         controller = new StudyController(trackingService, studyUserService, enrollmentService, abortMailService, clock);
         ReflectionTestUtils.setField(controller, "questionnaireUrl", "https://survey.example/study");
+        ReflectionTestUtils.setField(controller, "enrollmentOpen", true);
+    }
+
+    @Test
+    void closedStudyShowsInformationWithoutCreatingStudyData() {
+        ReflectionTestUtils.setField(controller, "enrollmentOpen", false);
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        assertThat(controller.information(model)).isEqualTo("study/closed");
+        assertThat(model.get("studyPage")).isEqualTo(true);
+        assertThat(model).doesNotContainKey("studyConsentForm");
+        verifyNoInteractions(trackingService, studyUserService, enrollmentService);
+    }
+
+    @Test
+    void closedStudyRejectsEvenConsentedStartWithoutLoginOrSessionChanges() {
+        ReflectionTestUtils.setField(controller, "enrollmentOpen", false);
+        StudyConsentForm form = new StudyConsentForm();
+        form.setConsent(true);
+
+        assertThat(controller.start(form, bindingResult, new ExtendedModelMap(), session, request, response))
+                .isEqualTo("study/closed");
+        verifyNoInteractions(trackingService, studyUserService, enrollmentService, session, request, response);
     }
 
     @Test

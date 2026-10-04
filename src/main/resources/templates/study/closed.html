@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('Nutzerstudie beendet')}" />
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: site-header}" />
+
+<main class="pf-page-shell" style="max-width: 760px;">
+    <section class="pf-card">
+        <p class="pf-eyebrow">Nutzerstudie</p>
+        <h1>Die Nutzerstudie ist beendet.</h1>
+        <p>Vielen Dank für dein Interesse. Eine Teilnahme ist nicht mehr möglich.</p>
+        <a class="pf-btn pf-btn--primary" th:href="@{/}">Zur Startseite</a>
+    </section>
+</main>
+
+<th:block th:replace="~{fragments/layout :: site-footer}" />
+</body>
+</html>

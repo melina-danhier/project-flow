@@ -179,6 +179,31 @@ class AuthenticationIntegrationTest {
     }
 
     @Test
+    void closedStudyPostCreatesNoUserSessionOrEnrollmentEvenWithConsent() throws Exception {
+        long usersBefore = userRepository.count();
+        MockHttpSession session = new MockHttpSession();
+
+        mockMvc.perform(post("/study/start").session(session).with(csrf()).param("consent", "true"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("study/closed"))
+                .andExpect(content().string(containsString("Die Nutzerstudie ist beendet.")))
+                .andExpect(unauthenticated());
+
+        assertThat(userRepository.count()).isEqualTo(usersBefore);
+        assertThat(session.getAttribute(StudyTrackingService.SESSION_ATTRIBUTE)).isNull();
+        assertThat(session.getAttribute(StudyTrackingService.SHOW_INTRO_ATTRIBUTE)).isNull();
+    }
+
+    @Test
+    void publicPagesNoLongerInviteStudyParticipation() throws Exception {
+        for (String path : new String[]{"/", "/login", "/register"}) {
+            mockMvc.perform(get(path))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(not(containsString("href=\"/study/start\""))));
+        }
+    }
+
+    @Test
     void publicStudyEndpointsAndStaticAssetsPermitAnonymousAccessWhileOtherStudyRoutesRequireAuth() throws Exception {
         mockMvc.perform(get("/study"))
                 .andExpect(status().is3xxRedirection())
@@ -186,7 +211,7 @@ class AuthenticationIntegrationTest {
 
         mockMvc.perform(get("/study/start"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("study/start"));
+                .andExpect(view().name("study/closed"));
 
         mockMvc.perform(get("/study/aborted"))
                 .andExpect(status().isOk())

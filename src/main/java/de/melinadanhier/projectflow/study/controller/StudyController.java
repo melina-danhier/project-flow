@@ -14,7 +14,6 @@ import jakarta.validation.Valid;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -66,6 +65,9 @@ public class StudyController {
     @Value("${projectflow.study.questionnaire-url:}")
     private String questionnaireUrl;
 
+    @Value("${projectflow.study.enrollment-open:false}")
+    private boolean enrollmentOpen;
+
     @GetMapping("/study")
     public String studyRedirect() {
         return "redirect:/study/start";
@@ -74,6 +76,9 @@ public class StudyController {
     @GetMapping("/study/start")
     public String information(Model model) {
         model.addAttribute("studyPage", true);
+        if (!enrollmentOpen) {
+            return "study/closed";
+        }
         if (!model.containsAttribute("studyConsentForm")) {
             model.addAttribute("studyConsentForm", new StudyConsentForm());
         }
@@ -89,6 +94,10 @@ public class StudyController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
+        if (!enrollmentOpen) {
+            model.addAttribute("studyPage", true);
+            return "study/closed";
+        }
         if (bindingResult.hasErrors()) {
             model.addAttribute("studyPage", true);
             return "study/start";
