@@ -5,14 +5,14 @@ ProjectFlow ist ein KI-gestütztes Projektplanungstool für Einzelpersonen und k
 Das Projekt entsteht als Prototyp im Rahmen der Bachelorarbeit **„Konzeption und Evaluation eines KI-gestützten Projektplanungstools zur Generierung einfacher Projektstrukturen“**.
 
 Die Abgabeversion trägt die Maven-Version `1.0.0`. Der Git-Tag `bachelor-thesis-final`
-ist für den nach Prüfung freigegebenen Commit vorgesehen. Ablauf und Abnahmekriterien
-stehen in der [Release-Checkliste](docs/release-checklist.md).
+ist für den nach Prüfung freigegebenen Commit vorgesehen. Referenzstand, Prüfergebnisse
+und Hinweise zur Reproduzierbarkeit stehen in [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
 
 ## Ziel und Forschungsfrage
 
 Im Mittelpunkt steht die Frage:
 
-> Wie kann KI-Unterstützung in einem Projektplanungstool eingesetzt werden, sodass die erzeugten Aufgaben und Projektstrukturen für Einzelpersonen und Kleingruppen bei kleineren Projekten hilfreich, verständlich und erwartungskonform sind?
+> Wie kann KI-Unterstützung in einem Projektplanungstool so gestaltet werden, dass die erzeugten Aufgaben und Projektstrukturen für Einzelpersonen und Kleingruppen bei kleineren Projekten hilfreich, verständlich und erwartungskonform sind?
 
 Die KI unterstützt die Planung, handelt aber nicht autonom. Generierte Inhalte werden zunächst als separater Entwurf angezeigt. Nutzerinnen und Nutzer können Vorschläge prüfen, bearbeiten, ablehnen oder ausdrücklich in ihr Projekt übernehmen.
 
@@ -121,6 +121,8 @@ node --test src/test/js/date-picker.test.cjs src/test/js/plan-drag.test.cjs src/
 Ein ausführbares Release-JAR entsteht mit `mvn.cmd clean verify` unter
 `target/projectflow-1.0.0.jar`. Dieser Befehl führt auch die Java-Tests aus.
 
+Detaillierte Hinweise zur lokalen Ausführung mittels Docker und PostgreSQL, zu den fixierten Referenzständen sowie zur Reproduzierbarkeit der Evaluationsergebnisse finden sich in [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
+
 ## Deployment auf Render
 
 Die Anwendung wird als Docker-Web-Service aus dem mitgelieferten `Dockerfile`
@@ -145,7 +147,7 @@ kann `GET /ping` verwendet werden; dieser prüft die HTTP-Erreichbarkeit, keine
 externen KI-Provider. Produktionsdaten und Secrets gehören nicht in das Image oder Git.
 
 Nach einem Deployment sind Anmeldung, Projekterstellung, Entwurfsübernahme und
-`/study/start` gemäß [Release-Checkliste](docs/release-checklist.md) zu prüfen.
+`/study/start` zu prüfen.
 
 ## Datenbankmigrationen
 
@@ -158,8 +160,8 @@ ProjectFlow ist kein vollständiges Unternehmens-Projektmanagementsystem und kei
 ## Evaluation
 
 Die begleitende Nutzerstudie ist beendet. Bewertet wurden insbesondere Passgenauigkeit,
-Verständlichkeit und Nützlichkeit der erzeugten Projektstrukturen, das Vertrauen in
-die KI-Unterstützung sowie die Bedienbarkeit der Anwendung.
+Verständlichkeit und Nützlichkeit der erzeugten Projektstrukturen, die wahrgenommene
+Kontrolle über die KI-Unterstützung sowie die allgemeine Gebrauchstauglichkeit der Anwendung.
 
 `/study` führt zu `/study/start`. Dort erscheint in v1 nur eine kurze Abschlussinfo;
 auch ein direkter POST erzeugt keine neue Teilnahme. Die Einstellung

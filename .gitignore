@@ -31,13 +31,13 @@ build/
 ### VS Code ###
 .vscode/
 
-# Local files
+# Local configuration and documentation artifacts
 /AGENTS.md
-/AppUpdates.md
-/AppUpdates_Progress.md
-/TaskDetails.md
-/FixesAndUpdates/
+/Literatur/
+/thesis/
 .env
 .env.*
 !.env.example
-
+*.log
+.DS_Store
+Thumbs.db
